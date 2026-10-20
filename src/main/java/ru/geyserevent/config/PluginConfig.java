@@ -127,9 +127,11 @@ public class PluginConfig {
 
     // Excavation (Пляжные Раскопки)
     private String excavationVillagerName;
+    private String excavationVillagerWaitingName;
     private double excavationVillagerScale;
     private int excavationBrushIntervalSeconds;
     private double excavationBrushHandoutRadius;
+    private double excavationBrushRemoveDistance;
 
     // Messages
     private String prefix;
@@ -153,7 +155,7 @@ public class PluginConfig {
         FileConfiguration cfg = plugin.getConfig();
 
         // Bedrock
-        this.strictBedrockOnly = cfg.getBoolean("bedrock.strict-only", true);
+        this.strictBedrockOnly = cfg.getBoolean("bedrock.strict-only", false);
         this.allowAdminBypass = cfg.getBoolean("bedrock.allow-admin-bypass", true);
         this.fallbackPrefix = cfg.getString("bedrock.fallback-prefix", ".");
 
@@ -253,9 +255,11 @@ public class PluginConfig {
 
         // Excavation (Пляжные Раскопки)
         this.excavationVillagerName = cfg.getString("excavation.villager-name", "&e&lАрхеолог &8[&fКисточка: &#E0C912%sec%с&8]");
+        this.excavationVillagerWaitingName = cfg.getString("excavation.villager-waiting-name", "&e&lАрхеолог &8[&6Ожидание&8]");
         this.excavationVillagerScale = Math.max(0.8, cfg.getDouble("excavation.villager-scale", 1.10));
         this.excavationBrushIntervalSeconds = Math.max(5, cfg.getInt("excavation.brush-interval-seconds", 30));
         this.excavationBrushHandoutRadius = Math.max(3.0, cfg.getDouble("excavation.brush-handout-radius", 14.0));
+        this.excavationBrushRemoveDistance = Math.max(10.0, cfg.getDouble("excavation.brush-remove-distance", 22.0));
 
         // Messages
         this.prefix = ColorUtil.color(cfg.getString("messages.prefix", "&e┠ &r"));
@@ -445,9 +449,11 @@ public class PluginConfig {
     public int getRewardThirdPlace() { return rewardThirdPlace; }
 
     public String getExcavationVillagerName() { return excavationVillagerName; }
+    public String getExcavationVillagerWaitingName() { return excavationVillagerWaitingName; }
     public double getExcavationVillagerScale() { return excavationVillagerScale; }
     public int getExcavationBrushIntervalSeconds() { return excavationBrushIntervalSeconds; }
     public double getExcavationBrushHandoutRadius() { return excavationBrushHandoutRadius; }
+    public double getExcavationBrushRemoveDistance() { return excavationBrushRemoveDistance; }
 
     public String getPrefix() { return prefix; }
     public String getMsgOnlyBedrock() { return msgOnlyBedrock; }
