@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.5.0'
+version: '1.6.0'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
@@ -15,9 +15,9 @@ commands:
     aliases: [events, ivent]
     usage: /<command> <delay|gps>
   rift:
-    description: Админ-команды управления ивентами «Адский Разлом» и «Пляжные Раскопки»
+    description: Админ-команды управления ивентами «Адский Разлом» и «Пляжные Раскопки» и GUI-меню лута
     aliases: [geyserevent, razlom, infernalrift]
-    usage: /<command> <start|start-here|stop|brushloot|givebrush|ability|setworld|saveschem|reload|status|top>
+    usage: /<command> <menu|start|start-here|stop|brushloot|givebrush|ability|setworld|saveschem|reload|status|top>
     permission: geyserevent.admin
 
 permissions:

@@ -29,7 +29,7 @@ import java.util.Locale;
 
 /**
  * Админ-команды управления ивентами «Адский Разлом» и «Пляжные Раскопки» (/rift),
- * а также настройка лута для каждой кисточки (/rift brushloot).
+ * а также открытие GUI-меню настройки лута и шансов кисточек (/rift menu).
  */
 public class RiftCommand implements CommandExecutor, TabCompleter {
 
@@ -57,6 +57,22 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         String sub = args[0].toLowerCase(Locale.ROOT);
 
         switch (sub) {
+            case "menu", "gui" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cМеню доступно только в игре!"));
+                    return true;
+                }
+                if (args.length >= 2) {
+                    BrushTier tier = BrushTier.fromString(args[1]);
+                    if (tier != null) {
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier);
+                        return true;
+                    }
+                }
+                plugin.getBrushLootGuiManager().openMainMenu(player);
+                return true;
+            }
+
             case "start" -> {
                 EventType type = null;
                 if (args.length >= 2) {
@@ -104,6 +120,17 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             }
 
             case "brushloot", "loot" -> {
+                if (args.length == 1 && sender instanceof Player player) {
+                    plugin.getBrushLootGuiManager().openMainMenu(player);
+                    return true;
+                }
+                if (args.length == 2 && sender instanceof Player player) {
+                    BrushTier tier = BrushTier.fromString(args[1]);
+                    if (tier != null) {
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier);
+                        return true;
+                    }
+                }
                 handleBrushLootSubcommand(sender, label, args);
                 return true;
             }
@@ -219,17 +246,11 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    /**
-     * Управление таблицами лута для каждой кисточки:
-     * /rift brushloot add <обычная|эпическая|легендарная> [шанс]
-     * /rift brushloot list <обычная|эпическая|легендарная>
-     * /rift brushloot remove <обычная|эпическая|легендарная> <номер>
-     * /rift brushloot clear <обычная|эпическая|легендарная>
-     */
     @SuppressWarnings("deprecation")
     private void handleBrushLootSubcommand(CommandSender sender, String label, String[] args) {
         if (args.length < 3) {
             sender.sendMessage(ColorUtil.color("&e┠ &fНастройка лута кисточек («Пляжные Раскопки»):"));
+            sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fоткрыть удобное GUI-меню настройки лута и шансов"));
             sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot add <обычная|эпическая|легендарная> [шанс] &8— &fдобавить предмет из руки"));
             sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot list <обычная|эпическая|легендарная> &8— &fсписок предметов"));
             sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot remove <обычная|эпическая|легендарная> <номер> &8— &fудалить предмет"));
@@ -317,7 +338,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ColorUtil.color("&e┠ &#34D711Лут кисточки " + tier.getItemTitle() + " &#34D711полностью очищен."));
             }
 
-            default -> sender.sendMessage(ColorUtil.color("&e┠ &cИспользуйте: &#E0C912/" + label + " brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
+            default -> sender.sendMessage(ColorUtil.color("&e┠ &cИспользуйте: &#E0C912/" + label + " menu &cили &#E0C912/" + label + " brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
         }
     }
 
@@ -352,6 +373,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendAdminHelp(CommandSender sender, String label, PluginConfig cfg) {
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fОткрыть GUI-меню настройки лута и шансов кисточек"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation] &8— &fЗапустить ивент в " + cfg.getWorldName()));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation] &8— &fЗапустить на вашей позиции"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить ивент"));
@@ -369,7 +391,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return filterPrefix(Arrays.asList(
-                    "start", "start-here", "stop", "brushloot", "givebrush",
+                    "menu", "gui", "start", "start-here", "stop", "brushloot", "givebrush",
                     "ability", "setworld", "saveschem", "status", "top", "reload"
             ), args[0]);
         }
@@ -378,11 +400,11 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             if (sub.equals("start") || sub.equals("start-here") || sub.equals("starthere")) {
                 return filterPrefix(Arrays.asList("rift", "excavation"), args[1]);
             }
-            if (sub.equals("brushloot") || sub.equals("loot")) {
-                return filterPrefix(Arrays.asList("add", "list", "remove", "clear"), args[1]);
-            }
-            if (sub.equals("givebrush") || sub.equals("brush")) {
+            if (sub.equals("menu") || sub.equals("gui") || sub.equals("givebrush") || sub.equals("brush")) {
                 return filterPrefix(Arrays.asList("common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
+            }
+            if (sub.equals("brushloot") || sub.equals("loot")) {
+                return filterPrefix(Arrays.asList("add", "list", "remove", "clear", "обычная", "эпическая", "легендарная"), args[1]);
             }
             if (sub.equals("ability") || sub.equals("cast")) {
                 return filterPrefix(Arrays.asList("pull", "push", "gather", "minions"), args[1]);

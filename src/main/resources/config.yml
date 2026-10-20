@@ -282,16 +282,16 @@ rewards:
 # ============================================================================
 excavation:
   villager-name: "&e&lАрхеолог &8[&fКисточка: &#E0C912%sec%с&8]"
-  villager-waiting-name: "&e&lАрхеолог &8[&6Ожидание&8]"
+  villager-waiting-name: "&e&lАрхеолог &8[&aНажмите, чтобы забрать!&8]"
   villager-scale: 1.10
   brush-interval-seconds: 30
   brush-handout-radius: 14.0
-  brush-remove-distance: 22.0
+  brush-remove-distance: 30.0
 
   brushes:
     common:
       name: "&aОбычная кисточка"
-      chance: 65.0
+      chance: 35.0
       uses: 3
       loot:
         - material: "GOLD_INGOT"
@@ -315,7 +315,7 @@ excavation:
 
     epic:
       name: "&dЭпическая кисточка"
-      chance: 25.0
+      chance: 40.0
       uses: 4
       loot:
         - material: "DIAMOND"
@@ -342,7 +342,7 @@ excavation:
 
     legendary:
       name: "&6Легендарная кисточка"
-      chance: 10.0
+      chance: 25.0
       uses: 5
       loot:
         - material: "NETHERITE_INGOT"

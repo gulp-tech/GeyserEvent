@@ -12,6 +12,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import ru.geyserevent.GeyserEventPlugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,9 +22,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Загрузчик и менеджер схемы ивента «Пляжные Раскопки» (17x17 Оазис Раскопок с 4 пальмами,
- * блоками подозрительного песка, археологическим лагерем и центральным пьедесталом для 2м Жителя).
- * Полностью откатывает ландшафт после завершения ивента.
+ * Загрузчик и генератор большой схемы ивента «Пляжные Раскопки» (31x31, радиус 15 блоков):
+ * - 8 тропических пальм с кокосами (SHROOMLIGHT) и неопадающей листвой
+ * - 4 археологических сектора раскопок с бочками, фонарями и более чем 110 блоками подозрительного песка
+ * - Центральный пьедестал для 2-метрового Жителя-Археолога
+ * - Двухслойный песчаниковый фундамент (песок никогда не проваливается в воду или на склонах)
+ * - Полный 100% откат ландшафта после окончания ивента.
  */
 public class BeachSchematicManager {
 
@@ -55,23 +59,21 @@ public class BeachSchematicManager {
         }
 
         File file = new File(schemDir, "beach_excavation.schem.yml");
-        if (!file.exists()) {
-            try {
-                plugin.saveResource("schematics/beach_excavation.schem.yml", false);
-            } catch (IllegalArgumentException ignored) {
+        if (file.exists()) {
+            YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+            if (yaml.getInt("schema-version", 1) >= 2) {
+                parseYamlSchematic(yaml);
             }
         }
 
-        if (file.exists()) {
-            YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-            parseYamlSchematic(yaml);
+        // Если схема старая (маленькая) или отсутствует — генерируем большую 31x31 схему и сохраняем её в файл
+        if (entries.size() < 400) {
+            entries.clear();
+            buildLarge31x31BeachSchematic();
+            saveGeneratedSchematicToFile(file);
         }
 
-        if (entries.isEmpty()) {
-            buildBuiltInBeachSchematic();
-        }
-
-        plugin.getLogger().info("Загружена схема Пляжных Раскопок (" + entries.size() + " блоков).");
+        plugin.getLogger().info("Загружена большая схема Пляжных Раскопок 31x31 (" + entries.size() + " блоков).");
     }
 
     private void parseYamlSchematic(YamlConfiguration yaml) {
@@ -90,7 +92,6 @@ public class BeachSchematicManager {
 
         Map<String, SchematicEntry> blockMap = new LinkedHashMap<>();
 
-        // 1. Читаем слои (layers)
         ConfigurationSection layersSec = yaml.getConfigurationSection("layers");
         if (layersSec != null) {
             for (String yKey : layersSec.getKeys(false)) {
@@ -121,7 +122,6 @@ public class BeachSchematicManager {
             }
         }
 
-        // 2. Читаем список детальных блоков (blocks) — поддерживаем x/y/z/material и dx/dy/dz/data
         List<Map<?, ?>> blockList = yaml.getMapList("blocks");
         for (Map<?, ?> raw : blockList) {
             int dx = raw.containsKey("x") ? toInt(raw.get("x")) : toInt(raw.get("dx"));
@@ -140,44 +140,201 @@ public class BeachSchematicManager {
     }
 
     /**
-     * Встроенная генерация красивого пляжа 17x17 на случай отсутствия или повреждения файла.
+     * Генерирует большую детализированную схему пляжа 31x31 (радиус 15 блоков):
+     * - Песчаный остров с гладкими дорожками, резным песчаником и более чем 110 блоками SUSPICIOUS_SAND
+     * - Центральный археологический алтарь для 2-метрового Жителя
+     * - 4 угловых лагеря раскопок с бочками, заборами и фонарями
+     * - 8 высоких тропических пальм (4 внутренних и 4 внешних) с пышной кроной
      */
-    private void buildBuiltInBeachSchematic() {
+    private void buildLarge31x31BeachSchematic() {
+        Map<String, SchematicEntry> map = new LinkedHashMap<>();
         Material suspSand = resolveMaterial("SUSPICIOUS_SAND");
-        for (int dx = -7; dx <= 7; dx++) {
-            for (int dz = -7; dz <= 7; dz++) {
+
+        // 1. Основное плато пляжа 31x31 (радиус 15, y = 0)
+        for (int dx = -15; dx <= 15; dx++) {
+            for (int dz = -15; dz <= 15; dz++) {
                 int distSq = dx * dx + dz * dz;
-                if (distSq > 52) {
+                if (distSq > 225) {
                     continue;
                 }
-                Material mat = Material.SAND;
+
+                Material floorMat;
+                int absX = Math.abs(dx);
+                int absZ = Math.abs(dz);
+
                 if (dx == 0 && dz == 0) {
-                    mat = Material.CHISELED_SANDSTONE;
-                } else if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
-                    mat = Material.SMOOTH_SANDSTONE;
-                } else if ((Math.abs(dx) + Math.abs(dz)) % 3 == 0 && distSq <= 36) {
-                    mat = suspSand;
-                } else if (distSq >= 42) {
-                    mat = Material.SANDSTONE_SLAB;
+                    // Центр под пьедесталом
+                    floorMat = Material.GOLD_BLOCK;
+                } else if (absX <= 1 && absZ <= 1) {
+                    // Основание центрального подиума
+                    floorMat = Material.CHISELED_SANDSTONE;
+                } else if (absX <= 2 && absZ <= 2 && (absX + absZ < 4)) {
+                    floorMat = Material.SMOOTH_SANDSTONE;
+                } else if ((absX <= 1 && absZ <= 12) || (absZ <= 1 && absX <= 12)) {
+                    // 4 главные крестообразные дорожки к центру пляжа
+                    if ((absX == 0 || absZ == 0) && (absX + absZ) % 3 == 0) {
+                        floorMat = Material.CHISELED_SANDSTONE;
+                    } else if (absX == 0 || absZ == 0) {
+                        floorMat = Material.SMOOTH_SANDSTONE;
+                    } else {
+                        floorMat = ((absX + absZ) % 2 == 0) ? suspSand : Material.CUT_SANDSTONE;
+                    }
+                } else if (distSq >= 190) {
+                    // Красивая внешняя кромка пляжа
+                    floorMat = ((absX + absZ) % 3 == 0) ? Material.SMOOTH_SANDSTONE : Material.SAND;
+                } else {
+                    // Основные песчаные зоны раскопок с большим количеством подозрительного песка
+                    boolean isSuspicious = ((absX * 3 + absZ * 5) % 4 == 0)
+                            || ((absX + absZ) % 3 == 0 && distSq <= 165);
+                    floorMat = isSuspicious ? suspSand : Material.SAND;
                 }
-                entries.add(new SchematicEntry(dx, 0, dz, mat));
+
+                putBlock(map, dx, 0, dz, floorMat);
             }
         }
-        int[][] palms = {{-5, -5}, {5, -5}, {-5, 5}, {5, 5}};
-        for (int[] p : palms) {
-            int px = p[0];
-            int pz = p[1];
-            entries.add(new SchematicEntry(px, 1, pz, Material.JUNGLE_WOOD));
-            entries.add(new SchematicEntry(px, 2, pz, Material.JUNGLE_WOOD));
-            int tx = px > 0 ? px - 1 : px + 1;
-            int tz = pz > 0 ? pz - 1 : pz + 1;
-            entries.add(new SchematicEntry(tx, 3, tz, Material.JUNGLE_WOOD));
-            entries.add(new SchematicEntry(tx, 4, tz, Material.JUNGLE_WOOD));
-            entries.add(new SchematicEntry(tx, 5, tz, Material.JUNGLE_LEAVES));
-            entries.add(new SchematicEntry(tx - 1, 5, tz, Material.JUNGLE_LEAVES));
-            entries.add(new SchematicEntry(tx + 1, 5, tz, Material.JUNGLE_LEAVES));
-            entries.add(new SchematicEntry(tx, 5, tz - 1, Material.JUNGLE_LEAVES));
-            entries.add(new SchematicEntry(tx, 5, tz + 1, Material.JUNGLE_LEAVES));
+
+        // 2. Центральный возвышенный пьедестал для 2-метрового Жителя-Археолога (y = 1)
+        putBlock(map, 0, 1, 0, Material.CHISELED_SANDSTONE);
+        putBlock(map, -1, 1, 0, Material.SANDSTONE_SLAB);
+        putBlock(map, 1, 1, 0, Material.SANDSTONE_SLAB);
+        putBlock(map, 0, 1, -1, Material.SANDSTONE_SLAB);
+        putBlock(map, 0, 1, 1, Material.SANDSTONE_SLAB);
+
+        // Декоративные колонны со светильниками вокруг центра (на радиусе 3)
+        int[][] centerPillars = {{-3, -3}, {3, -3}, {-3, 3}, {3, 3}};
+        for (int[] p : centerPillars) {
+            putBlock(map, p[0], 0, p[1], Material.CHISELED_SANDSTONE);
+            putBlock(map, p[0], 1, p[1], Material.CUT_SANDSTONE);
+            putBlock(map, p[0], 2, p[1], Material.OAK_FENCE);
+            putBlock(map, p[0], 3, p[1], Material.LANTERN);
+        }
+
+        // 3. Четыре археологических лагеря по сторонам света (бочки, резной песчаник, фонари и залежи SUSPICIOUS_SAND)
+        int[][] camps = {{-8, 0}, {8, 0}, {0, -8}, {0, 8}};
+        for (int[] camp : camps) {
+            int cx = camp[0];
+            int cz = camp[1];
+            // По бокам от дорожки ставим бочки и стойки с фонарями
+            if (cx != 0) {
+                putBlock(map, cx, 1, -2, Material.BARREL);
+                putBlock(map, cx, 2, -2, Material.LANTERN);
+                putBlock(map, cx, 1, 2, Material.BARREL);
+                putBlock(map, cx, 2, 2, Material.LANTERN);
+            } else {
+                putBlock(map, -2, 1, cz, Material.BARREL);
+                putBlock(map, -2, 2, cz, Material.LANTERN);
+                putBlock(map, 2, 1, cz, Material.BARREL);
+                putBlock(map, 2, 2, cz, Material.LANTERN);
+            }
+        }
+
+        // 4. Четыре диагональные археологические раскопочные ямы/насыпи с богатым подозрительным песком
+        int[][] digSites = {{-6, -6}, {6, -6}, {-6, 6}, {6, 6}};
+        for (int[] site : digSites) {
+            int sx = site[0];
+            int sz = site[1];
+            for (int ox = -2; ox <= 2; ox++) {
+                for (int oz = -2; oz <= 2; oz++) {
+                    if (Math.abs(ox) <= 1 && Math.abs(oz) <= 1) {
+                        putBlock(map, sx + ox, 0, sz + oz, suspSand);
+                    }
+                }
+            }
+            putBlock(map, sx, 1, sz, suspSand);
+        }
+
+        // 5. Восемь больших тропических пальм:
+        // 4 внутренние пальмы (высота 6 блоков) и 4 внешние пальмы (высота 7 блоков)
+        buildPalmTree(map, -5, -9, 6, 1, 1);
+        buildPalmTree(map, 5, -9, 6, -1, 1);
+        buildPalmTree(map, -5, 9, 6, 1, -1);
+        buildPalmTree(map, 5, 9, 6, -1, -1);
+
+        buildPalmTree(map, -10, -5, 7, 1, 1);
+        buildPalmTree(map, 10, -5, 7, -1, 1);
+        buildPalmTree(map, -10, 5, 7, 1, -1);
+        buildPalmTree(map, 10, 5, 7, -1, -1);
+
+        // 6. Сторожевые факелы/фонари по периметру пляжа (радиус 13)
+        int[][] outerLanterns = {
+                {-13, 0}, {13, 0}, {0, -13}, {0, 13},
+                {-9, -9}, {9, -9}, {-9, 9}, {9, 9}
+        };
+        for (int[] l : outerLanterns) {
+            putBlock(map, l[0], 0, l[1], Material.SMOOTH_SANDSTONE);
+            putBlock(map, l[0], 1, l[1], Material.CHISELED_SANDSTONE);
+            putBlock(map, l[0], 2, l[1], Material.OAK_FENCE);
+            putBlock(map, l[0], 3, l[1], Material.LANTERN);
+        }
+
+        entries.addAll(map.values());
+    }
+
+    /**
+     * Строит реалистичную изогнутую тропическую пальму с кокосами (SHROOMLIGHT) и раскидистой кроной.
+     */
+    private void buildPalmTree(Map<String, SchematicEntry> map, int baseX, int baseZ, int height, int bendX, int bendZ) {
+        putBlock(map, baseX, 0, baseZ, Material.MOSSY_COBBLESTONE);
+        int curX = baseX;
+        int curZ = baseZ;
+
+        for (int y = 1; y <= height; y++) {
+            if (y == 3 || y == 5) {
+                curX += bendX;
+                curZ += bendZ;
+            }
+            putBlock(map, curX, y, curZ, Material.JUNGLE_WOOD);
+        }
+
+        int topY = height + 1;
+        // Верхушка кроны
+        putBlock(map, curX, topY, curZ, Material.JUNGLE_LEAVES);
+        putBlock(map, curX + 1, topY, curZ, Material.JUNGLE_LEAVES);
+        putBlock(map, curX - 1, topY, curZ, Material.JUNGLE_LEAVES);
+        putBlock(map, curX, topY, curZ + 1, Material.JUNGLE_LEAVES);
+        putBlock(map, curX, topY, curZ - 1, Material.JUNGLE_LEAVES);
+
+        // Светящиеся кокосы под кроной
+        putBlock(map, curX + 1, height - 1, curZ, Material.SHROOMLIGHT);
+        putBlock(map, curX - 1, height - 1, curZ, Material.SHROOMLIGHT);
+
+        // Длинные пальмовые ветви на 4 стороны и по диагоналям
+        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
+        for (int[] d : dirs) {
+            int dx = d[0];
+            int dz = d[1];
+            boolean diagonal = (dx != 0 && dz != 0);
+            int maxLen = diagonal ? 2 : 3;
+            for (int step = 1; step <= maxLen; step++) {
+                int ly = (step == maxLen) ? height - 1 : height;
+                putBlock(map, curX + dx * step, ly, curZ + dz * step, Material.JUNGLE_LEAVES);
+            }
+        }
+    }
+
+    private void putBlock(Map<String, SchematicEntry> map, int dx, int dy, int dz, Material mat) {
+        if (mat != null && !mat.isAir()) {
+            map.put(dx + ":" + dy + ":" + dz, new SchematicEntry(dx, dy, dz, mat));
+        }
+    }
+
+    private void saveGeneratedSchematicToFile(File file) {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("schema-version", 2);
+        yaml.set("name", "beach_excavation_31x31");
+        List<Map<String, Object>> blockList = new ArrayList<>();
+        for (SchematicEntry entry : entries) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("x", entry.dx());
+            m.put("y", entry.dy());
+            m.put("z", entry.dz());
+            m.put("material", entry.material().name());
+            blockList.add(m);
+        }
+        yaml.set("blocks", blockList);
+        try {
+            yaml.save(file);
+        } catch (IOException ignored) {
         }
     }
 
@@ -197,7 +354,7 @@ public class BeachSchematicManager {
     }
 
     /**
-     * Вставляет схему пляжа с центром в origin, возвращает точную локацию спавна 2-метрового Жителя.
+     * Вставляет большую схему пляжа 31x31 с центром в origin и возвращает точную локацию спавна 2-метрового Жителя.
      */
     public Location pasteSchematic(Location origin) {
         restoreActiveSchematic();
@@ -211,20 +368,19 @@ public class BeachSchematicManager {
         int oy = origin.getBlockY();
         int oz = origin.getBlockZ();
 
-        // Если ивент запущен через /rift start-here, ноги игрока находятся в блоке воздуха (на 1 блок выше земли) —
-        // опускаем уровень пляжа (oy) до твёрдого блока земли, чтобы пляж лёг ровно в землю, а не висел в воздухе.
+        // Опускаем уровень до твёрдой поверхности, если команда вызвана в воздухе над блоком
         Block originBlock = world.getBlockAt(ox, oy, oz);
         if (originBlock.getType().isAir() && !world.getBlockAt(ox, oy - 1, oz).getType().isAir()) {
             oy = oy - 1;
         }
 
-        // 1. Очищаем пространство над пляжем (радиус 8, высота -1..7) и сохраняем исходные блоки для отката
-        for (int dx = -8; dx <= 8; dx++) {
-            for (int dz = -8; dz <= 8; dz++) {
-                if (dx * dx + dz * dz > 64) {
+        // 1. Очищаем пространство над пляжем 31x31 (радиус 15, высота -2..10) и сохраняем все исходные блоки для отката
+        for (int dx = -15; dx <= 15; dx++) {
+            for (int dz = -15; dz <= 15; dz++) {
+                if (dx * dx + dz * dz > 225) {
                     continue;
                 }
-                for (int dy = -1; dy <= 7; dy++) {
+                for (int dy = -2; dy <= 10; dy++) {
                     Block b = world.getBlockAt(ox + dx, oy + dy, oz + dz);
                     recordBlockIfNotSaved(b);
                     if (dy >= 1 && !b.getType().isAir()) {
@@ -236,17 +392,21 @@ public class BeachSchematicManager {
 
         List<SchematicEntry> deferredDecorations = new ArrayList<>();
 
-        // 2. Укладываем песчаниковую подушку (dy = -1) под блоками пола пляжа (dy = 0),
-        // чтобы песок и подозрительный песок никогда не проваливались вниз на склонах или над водой!
+        // 2. Укладываем прочную двухслойную песчаниковую подушку (dy = -1 и dy = -2) под всем пляжем,
+        // чтобы песок и подозрительный песок никогда не проваливались вниз и пляж красиво смотрелся на любом рельефе!
         for (SchematicEntry entry : entries) {
             if (entry.dy() == 0) {
-                Block under = world.getBlockAt(ox + entry.dx(), oy - 1, oz + entry.dz());
-                recordBlockIfNotSaved(under);
-                under.setType(Material.SANDSTONE, false);
+                Block under1 = world.getBlockAt(ox + entry.dx(), oy - 1, oz + entry.dz());
+                recordBlockIfNotSaved(under1);
+                under1.setType(Material.SANDSTONE, false);
+
+                Block under2 = world.getBlockAt(ox + entry.dx(), oy - 2, oz + entry.dz());
+                recordBlockIfNotSaved(under2);
+                under2.setType(Material.SANDSTONE, false);
             }
         }
 
-        // 3. Строим основные блоки пляжа и пальм
+        // 3. Строим основные блоки пляжа, лагерей и пальм
         for (SchematicEntry entry : entries) {
             Material mat = entry.material();
             if (mat == Material.LANTERN || mat == Material.SOUL_LANTERN || mat == Material.TORCH) {
@@ -256,13 +416,13 @@ public class BeachSchematicManager {
             placeSchematicBlock(world, ox + entry.dx(), oy + entry.dy(), oz + entry.dz(), mat);
         }
 
-        // 4. Ставим фонари и декор поверх построенных опор
+        // 4. Ставим фонари поверх стоек и бочек
         for (SchematicEntry entry : deferredDecorations) {
             placeSchematicBlock(world, ox + entry.dx(), oy + entry.dy(), oz + entry.dz(), entry.material());
         }
 
-        // Возвращаем точку спавна 2-метрового Жителя прямо на центральном пьедестале (0, +1, 0)
-        return new Location(world, ox + 0.5, oy + 1.0, oz + 0.5, 0.0f, 0.0f);
+        // Центральный пьедестал находится на (0, +1, 0), поэтому 2-метровый Житель стоит ровно на нём на высоте oy + 2.0
+        return new Location(world, ox + 0.5, oy + 2.0, oz + 0.5, 0.0f, 0.0f);
     }
 
     private void placeSchematicBlock(World world, int bx, int by, int bz, Material mat) {
@@ -327,7 +487,7 @@ public class BeachSchematicManager {
     }
 
     /**
-     * Временно превращает раскопанный блок песка в гладкий песчаник и восстанавливает подозрительный песок через 12 секунд.
+     * Временно превращает раскопанный блок песка в гладкий песчаник и восстанавливает подозрительный песок через 10 секунд.
      */
     public void markBlockExcavatedAndScheduleRespawn(Block block) {
         if (block == null) {
@@ -348,7 +508,7 @@ public class BeachSchematicManager {
             Block target = world.getBlockAt(x, y, z);
             Material suspSand = Material.matchMaterial("SUSPICIOUS_SAND");
             target.setType(suspSand != null ? suspSand : Material.SAND, false);
-        }, 20L * 12L);
+        }, 20L * 10L);
     }
 
     /**

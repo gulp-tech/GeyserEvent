@@ -25,6 +25,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
@@ -34,7 +35,6 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -102,30 +102,40 @@ public class RiftEventListener implements Listener {
         plugin.getTopRightHudManager().removeHudFromPlayer(player);
         brushStrokeCooldown.remove(player.getUniqueId());
         villagerClickCooldown.remove(player.getUniqueId());
-        Bukkit.getScheduler().runTask(plugin, () ->
-                plugin.getRiftManager().refreshVillagerWaitingState()
-        );
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         event.getDrops().removeIf(item -> plugin.getBrushLootManager().getBrushTier(item) != null);
-        Bukkit.getScheduler().runTask(plugin, () ->
-                plugin.getRiftManager().refreshVillagerWaitingState()
-        );
     }
 
+    /**
+     * Кисточки можно выкидывать на землю, но поднимать можно только если в инвентаре меньше 3 кисточек!
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onPlayerDropItem(PlayerDropItemEvent event) {
-        ItemStack dropped = event.getItemDrop().getItemStack();
-        if (plugin.getBrushLootManager().getBrushTier(dropped) != null) {
+    public void onEntityPickupItem(EntityPickupItemEvent event) {
+        ItemStack stack = event.getItem().getItemStack();
+        if (plugin.getBrushLootManager().getBrushTier(stack) == null) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Player player)) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ColorUtil.color("&e┠ &cКисточку раскопок нельзя выбрасывать."));
+            return;
+        }
+        int currentBrushes = plugin.getBrushLootManager().countPlayerBrushes(player);
+        if (currentBrushes >= 3) {
+            event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
+        // 1. Обработка кликов в GUI-меню настройки лута и шансов кисточек (/rift menu)
+        if (plugin.getBrushLootGuiManager().handleInventoryClick(event)) {
+            return;
+        }
+
+        // 2. Запрет перекладывания кисточек в сундуки / эндер-сундук / бочки / шалкеры
         if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
             return;
         }
@@ -143,6 +153,9 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryDrag(InventoryDragEvent event) {
+        if (plugin.getBrushLootGuiManager().handleInventoryDrag(event)) {
+            return;
+        }
         if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
             return;
         }
@@ -196,7 +209,7 @@ public class RiftEventListener implements Listener {
     }
 
     /**
-     * Взаимодействие с 2-метровым Жителем-Археологом (ПКМ — работает и на телефонах, и на Bedrock ПК).
+     * Клик по 2-метровому Жителю-Археологу для получения кисточки (ПКМ / ЛКМ — работает и на телефонах, и на Bedrock ПК).
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
@@ -313,7 +326,7 @@ public class RiftEventListener implements Listener {
         } else {
             blockExcavationStep.remove(blockKey);
 
-            // Выдаём лут из таблицы данной кисточки
+            // Выдаём лут из таблицы данной кисточки БЕЗ сообщения в чат «Вы раскопал...»
             ItemStack reward = plugin.getBrushLootManager().rollLootForBrush(tier);
             Map<Integer, ItemStack> leftovers = player.getInventory().addItem(reward);
             if (!leftovers.isEmpty()) {
@@ -324,21 +337,12 @@ public class RiftEventListener implements Listener {
 
             plugin.getBrushLootManager().consumeBrushUse(player, handItem);
             plugin.getBeachSchematicManager().markBlockExcavatedAndScheduleRespawn(block);
-            plugin.getRiftManager().refreshVillagerWaitingState();
 
             block.getWorld().playSound(effectLoc, Sound.BLOCK_SAND_BREAK, 1.2f, 1.1f);
             block.getWorld().playSound(effectLoc, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.3f);
             block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 16, 0.3, 0.3, 0.3, 0.05);
-
-            String itemName = (reward.hasItemMeta() && reward.getItemMeta() != null && reward.getItemMeta().hasDisplayName())
-                    ? reward.getItemMeta().getDisplayName()
-                    : reward.getType().name();
-            String msg = ColorUtil.color(
-                    "&e┠ &fВы раскопали (&r" + tier.getItemTitle() + "&f): &#E0C912" + itemName + " &7x" + reward.getAmount()
-            );
-            player.sendMessage(msg);
             try {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(""));
             } catch (Throwable ignored) {
             }
         }
@@ -435,7 +439,7 @@ public class RiftEventListener implements Listener {
         Entity victim = event.getEntity();
         Entity damager = event.getDamager();
 
-        // Если игрок нажал ЛКМ по 2-метровому Жителю (часто на Bedrock ПК / телефонах) — выдаём кисточку!
+        // Если игрок нажал ЛКМ по 2-метровому Жителю — тоже выдаём кисточку!
         if (manager.isExcavationVillager(victim)) {
             event.setCancelled(true);
             if (damager instanceof Player player) {

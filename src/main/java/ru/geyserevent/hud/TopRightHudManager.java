@@ -86,8 +86,8 @@ public class TopRightHudManager {
         String title;
         BarColor color;
         if (type == EventType.BEACH_EXCAVATION) {
-            String brushStatus = manager.isVillagerWaitingForBrushUse()
-                    ? "&6Ожидание"
+            String brushStatus = manager.isBrushReadyToClaim()
+                    ? "&aГотова!"
                     : "&#E0C912" + manager.getSecondsUntilNextBrush() + "с";
             title = ColorUtil.color(String.format(
                     "%s &8| &fКисточка: %s &8| &fКоординаты: &#E0C912%d %d %d",

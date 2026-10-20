@@ -1,7 +1,6 @@
 package ru.geyserevent.excavation;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -9,6 +8,8 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -28,7 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Менеджер кисточек раскопок (Обычная, Эпическая, Легендарная) и их таблиц лута.
- * Позволяет настраивать лут как через config.yml, так и командами прямо из игры.
+ * Позволяет настраивать лут и шансы через GUI-меню (/rift menu), команды (/rift brushloot) и config.yml.
  */
 public class BrushLootManager {
 
@@ -54,14 +55,25 @@ public class BrushLootManager {
         FileConfiguration cfg = plugin.getConfig();
         lootByTier.clear();
 
+        // Авто-обновление старых шансов (65/25/10 -> 35/40/25), чтобы редкие кисточки выпадали значительно чаще
+        double cChance = cfg.getDouble("excavation.brushes.common.chance", 35.0);
+        double eChance = cfg.getDouble("excavation.brushes.epic.chance", 40.0);
+        double lChance = cfg.getDouble("excavation.brushes.legendary.chance", 25.0);
+        if (Math.abs(cChance - 65.0) < 0.01 && Math.abs(eChance - 25.0) < 0.01 && Math.abs(lChance - 10.0) < 0.01) {
+            cfg.set("excavation.brushes.common.chance", 35.0);
+            cfg.set("excavation.brushes.epic.chance", 40.0);
+            cfg.set("excavation.brushes.legendary.chance", 25.0);
+            plugin.saveConfig();
+        }
+
         for (BrushTier tier : BrushTier.values()) {
             String basePath = "excavation.brushes." + tier.getConfigKey();
             double defaultWeight = switch (tier) {
-                case COMMON -> 65.0;
-                case EPIC -> 25.0;
-                case LEGENDARY -> 10.0;
+                case COMMON -> 35.0;
+                case EPIC -> 40.0;
+                case LEGENDARY -> 25.0;
             };
-            brushWeights.put(tier, Math.max(0.1, cfg.getDouble(basePath + ".chance", defaultWeight)));
+            brushWeights.put(tier, Math.max(1.0, cfg.getDouble(basePath + ".chance", defaultWeight)));
             brushUses.put(tier, Math.max(1, cfg.getInt(basePath + ".uses", tier.getDefaultUses())));
 
             List<BrushLootEntry> entries = new ArrayList<>();
@@ -122,12 +134,12 @@ public class BrushLootManager {
     }
 
     /**
-     * Выбирает случайную редкость кисточки (Обычная, Эпическая, Легендарная) по шансам из конфига.
+     * Выбирает случайную редкость кисточки (Обычная, Эпическая, Легендарная) с повышенным шансом на редкие.
      */
     public BrushTier rollRandomBrushTier() {
-        double wCommon = brushWeights.getOrDefault(BrushTier.COMMON, 65.0);
-        double wEpic = brushWeights.getOrDefault(BrushTier.EPIC, 25.0);
-        double wLeg = brushWeights.getOrDefault(BrushTier.LEGENDARY, 10.0);
+        double wCommon = brushWeights.getOrDefault(BrushTier.COMMON, 35.0);
+        double wEpic = brushWeights.getOrDefault(BrushTier.EPIC, 40.0);
+        double wLeg = brushWeights.getOrDefault(BrushTier.LEGENDARY, 25.0);
         double total = wCommon + wEpic + wLeg;
 
         double roll = ThreadLocalRandom.current().nextDouble(0.0, total);
@@ -138,6 +150,17 @@ public class BrushLootManager {
         } else {
             return BrushTier.LEGENDARY;
         }
+    }
+
+    public double getBrushWeight(BrushTier tier) {
+        return brushWeights.getOrDefault(tier, 35.0);
+    }
+
+    public void setBrushWeight(BrushTier tier, double weight) {
+        double clamped = Math.max(1.0, Math.min(500.0, Math.round(weight * 10.0) / 10.0));
+        brushWeights.put(tier, clamped);
+        plugin.getConfig().set("excavation.brushes." + tier.getConfigKey() + ".chance", clamped);
+        plugin.saveConfig();
     }
 
     /**
@@ -205,22 +228,35 @@ public class BrushLootManager {
     }
 
     /**
-     * Проверяет, есть ли у игрока хотя бы одна кисточка раскопок в инвентаре, левой руке или на курсоре.
+     * Подсчитывает общее количество кисточек ивента в инвентаре игрока (максимум разрешено держать 3 шт.).
      */
-    public boolean hasAnyEventBrush(Player player) {
+    public int countPlayerBrushes(Player player) {
         if (player == null) {
-            return false;
+            return 0;
         }
+        int count = 0;
         PlayerInventory inv = player.getInventory();
-        for (ItemStack item : inv.getContents()) {
+        for (ItemStack item : inv.getStorageContents()) {
             if (getBrushTier(item) != null) {
-                return true;
+                count += item.getAmount();
             }
         }
-        if (getBrushTier(inv.getItemInOffHand()) != null) {
-            return true;
+        ItemStack off = inv.getItemInOffHand();
+        if (getBrushTier(off) != null) {
+            count += off.getAmount();
         }
-        return getBrushTier(player.getItemOnCursor()) != null;
+        ItemStack cursor = player.getItemOnCursor();
+        if (getBrushTier(cursor) != null) {
+            count += cursor.getAmount();
+        }
+        return count;
+    }
+
+    /**
+     * Проверяет, есть ли у игрока хотя бы одна кисточка раскопок.
+     */
+    public boolean hasAnyEventBrush(Player player) {
+        return countPlayerBrushes(player) > 0;
     }
 
     /**
@@ -251,33 +287,19 @@ public class BrushLootManager {
     }
 
     /**
-     * Удаляет кисточки ивента у всех игроков онлайн.
+     * Удаляет кисточки ивента у всех игроков онлайн и лежащие на земле.
      */
     public void removeAllEventBrushesFromOnlinePlayers() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             removeAllEventBrushes(player);
         }
-    }
-
-    /**
-     * Проверяет, есть ли сейчас на пляже хотя бы один игрок с активной кисточкой.
-     * Пока кисточка есть — Житель находится в режиме ожидания («Ожидание»).
-     */
-    public boolean hasActiveBrushOnBeach(Location beachCenter, double maxRadius) {
-        if (beachCenter == null || beachCenter.getWorld() == null) {
-            return false;
-        }
-        World world = beachCenter.getWorld();
-        double maxDistSq = maxRadius * maxRadius;
-        for (Player player : world.getPlayers()) {
-            if (player.isDead() || !player.isOnline()) {
-                continue;
-            }
-            if (player.getLocation().distanceSquared(beachCenter) <= maxDistSq && hasAnyEventBrush(player)) {
-                return true;
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntitiesByClass(Item.class)) {
+                if (entity instanceof Item itemEntity && getBrushTier(itemEntity.getItemStack()) != null) {
+                    itemEntity.remove();
+                }
             }
         }
-        return false;
     }
 
     /**
@@ -338,11 +360,25 @@ public class BrushLootManager {
     }
 
     /**
-     * Добавляет предмет из руки администратора в таблицу лута указанной кисточки и сохраняет в config.yml.
+     * Добавляет предмет в таблицу лута указанной кисточки и сохраняет в config.yml.
      */
     public void addLootItem(BrushTier tier, ItemStack item, double chance) {
         List<BrushLootEntry> list = lootByTier.computeIfAbsent(tier, k -> new ArrayList<>());
-        list.add(new BrushLootEntry(item.clone(), Math.max(0.1, chance)));
+        list.add(new BrushLootEntry(item.clone(), Math.max(0.5, chance)));
+        saveTierLootToConfig(tier, list);
+    }
+
+    /**
+     * Изменяет шанс выпадения предмета в таблице лута кисточки (для GUI-меню).
+     */
+    public void updateLootEntryChance(BrushTier tier, int index0Based, double newChance) {
+        List<BrushLootEntry> list = lootByTier.get(tier);
+        if (list == null || index0Based < 0 || index0Based >= list.size()) {
+            return;
+        }
+        double clamped = Math.max(0.5, Math.min(100.0, Math.round(newChance * 10.0) / 10.0));
+        BrushLootEntry old = list.get(index0Based);
+        list.set(index0Based, new BrushLootEntry(old.item(), clamped));
         saveTierLootToConfig(tier, list);
     }
 
