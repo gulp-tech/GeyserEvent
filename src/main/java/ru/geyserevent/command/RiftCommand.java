@@ -1,6 +1,7 @@
 package ru.geyserevent.command;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Player;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityType;
 import ru.geyserevent.config.PluginConfig;
+import ru.geyserevent.event.DamageLeaderboard;
 import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.util.ColorUtil;
 
@@ -22,7 +24,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Обработчик команд /rift (/event, /razlom, /geyserevent).
+ * Админ-команды управления ивентом «Адский Разлом» (/rift).
+ * Без каких-либо меню — только прямые команды управления.
  */
 public class RiftCommand implements CommandExecutor, TabCompleter {
 
@@ -34,133 +37,61 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission("geyserevent.admin")) {
+            sender.sendMessage(ColorUtil.color("&e┠ &cУ вас нет прав администратора! Для игроков: &#34D711/event delay &cи &#34D711/event gps"));
+            return true;
+        }
+
         PluginConfig cfg = plugin.getPluginConfig();
         InfernalRiftManager manager = plugin.getRiftManager();
 
-        // Если команда вызвана игроком без аргументов — открываем нативное окно Bedrock (Cumulus)
-        if (args.length == 0 || args[0].equalsIgnoreCase("menu")) {
-            if (!(sender instanceof Player player)) {
-                sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cЭта команда доступна только игрокам. Для консоли: /rift <start|stop|reload|setworld>"));
-                return true;
-            }
-            if (!plugin.getBedrockService().canParticipate(player)) {
-                player.sendMessage(cfg.getMsgOnlyBedrock());
-                return true;
-            }
-            plugin.getFormMenu().openMainForm(player);
+        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+            sendAdminHelp(sender, label, cfg);
             return true;
         }
 
         String sub = args[0].toLowerCase(Locale.ROOT);
 
         switch (sub) {
-            case "top" -> {
-                if (sender instanceof Player player) {
-                    if (!plugin.getBedrockService().canParticipate(player)) {
-                        player.sendMessage(cfg.getMsgOnlyBedrock());
-                        return true;
-                    }
-                    plugin.getFormMenu().openLeaderboardForm(player);
-                } else {
-                    sender.sendMessage(cfg.getPrefix() + "Топ урона доступен в игре.");
-                }
-                return true;
-            }
-
-            case "compass", "nav" -> {
-                if (!(sender instanceof Player player)) {
-                    sender.sendMessage(cfg.getPrefix() + "Только для игроков.");
-                    return true;
-                }
-                if (!plugin.getBedrockService().canParticipate(player)) {
-                    player.sendMessage(cfg.getMsgOnlyBedrock());
-                    return true;
-                }
-                boolean enabled = manager.toggleCompass(player);
-                player.sendMessage(cfg.getPrefix() + ColorUtil.color(
-                        enabled ? "&aНавигатор до Адского Разлома включён!" : "&eНавигатор до Адского Разлома выключен."
-                ));
-                return true;
-            }
-
-            case "info", "boss" -> {
-                if (sender instanceof Player player) {
-                    if (!plugin.getBedrockService().canParticipate(player)) {
-                        player.sendMessage(cfg.getMsgOnlyBedrock());
-                        return true;
-                    }
-                    plugin.getFormMenu().openBossInfoForm(player);
-                }
-                return true;
-            }
-
-            case "admin" -> {
-                if (!(sender instanceof Player player)) {
-                    return true;
-                }
-                if (!player.hasPermission("geyserevent.admin")) {
-                    player.sendMessage(cfg.getPrefix() + ColorUtil.color("&cУ вас нет прав администратора!"));
-                    return true;
-                }
-                plugin.getFormMenu().openAdminForm(player);
-                return true;
-            }
-
             case "start" -> {
-                if (!sender.hasPermission("geyserevent.admin")) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cНедостаточно прав!"));
-                    return true;
-                }
                 if (manager.startEventRandomInConfiguredWorld()) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&aИвент «Адский Разлом» запущен в мире &e" + cfg.getWorldName() + "&a!"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент «Адский Разлом» запущен в мире &#E0C912" + cfg.getWorldName() + "&#34D711!"));
                 } else {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cНе удалось запустить ивент в мире &e" + cfg.getWorldName()
-                            + "&c. Убедитесь, что мир загружен, или используйте &e/rift start-here&c."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cНе удалось запустить ивент в мире &#E0C912" + cfg.getWorldName()
+                            + "&c. Убедитесь, что мир создан, или используйте &#E0C912/rift start-here&c."));
                 }
                 return true;
             }
 
             case "start-here", "starthere" -> {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cЭту команду может выполнить только игрок!"));
-                    return true;
-                }
-                if (!player.hasPermission("geyserevent.admin")) {
-                    player.sendMessage(cfg.getPrefix() + ColorUtil.color("&cНедостаточно прав!"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cЭту команду может выполнить только игрок!"));
                     return true;
                 }
                 if (manager.startEventAt(player.getLocation())) {
-                    player.sendMessage(cfg.getPrefix() + ColorUtil.color("&aИвент «Адский Разлом» запущен прямо на вашей позиции!"));
+                    player.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент «Адский Разлом» запущен прямо на вашей позиции!"));
                 }
                 return true;
             }
 
             case "stop" -> {
-                if (!sender.hasPermission("geyserevent.admin")) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cНедостаточно прав!"));
-                    return true;
-                }
                 if (!manager.isActive()) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&eИвент сейчас не активен."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &eИвент сейчас не активен."));
                     return true;
                 }
                 manager.stopEvent(false);
-                sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&aИвент остановлен, схематика полностью откачена."));
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент остановлен, схематика полностью откачена."));
                 return true;
             }
 
             case "ability", "cast" -> {
-                if (!sender.hasPermission("geyserevent.admin")) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cНедостаточно прав!"));
-                    return true;
-                }
                 if (args.length < 2) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&eИспользование: &6/" + label + " ability <pull|push|gather|minions>"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " ability <pull|push|gather|minions>"));
                     return true;
                 }
                 LivingEntity boss = manager.getBossEntity();
                 if (boss == null || boss.isDead()) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cБосс сейчас не активен!"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cБосс сейчас не активен!"));
                     return true;
                 }
                 BossAbilityType type = switch (args[1].toLowerCase(Locale.ROOT)) {
@@ -171,37 +102,29 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     default -> null;
                 };
                 if (type == null) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cНеизвестная способность! Доступно: &epull, push, gather, minions"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cНеизвестная способность! Доступно: &#E0C912pull, push, gather, minions"));
                     return true;
                 }
                 int count = plugin.getAbilityController().executeAbility(boss, type);
-                sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&aБосс применил способность &e"
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Босс применил способность &#E0C912"
                         + type.getDisplayName() + " &7(целей/мобов: &f" + count + "&7)."));
                 return true;
             }
 
             case "setworld" -> {
-                if (!sender.hasPermission("geyserevent.admin")) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cНедостаточно прав!"));
-                    return true;
-                }
                 if (args.length < 2) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&eИспользование: &6/" + label + " setworld <имя_мира> &7(текущий: &e" + cfg.getWorldName() + "&7)"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " setworld <имя_мира> &7(текущий: &#E0C912" + cfg.getWorldName() + "&7)"));
                     return true;
                 }
                 String newWorld = args[1];
                 cfg.setWorldNameAndSave(newWorld);
-                sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&aМир появления ивента изменён на &e" + newWorld + " &aи сохранён в config.yml!"));
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Мир появления ивента изменён на &#E0C912" + newWorld + " &#34D711и сохранён в config.yml!"));
                 return true;
             }
 
             case "saveschem" -> {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(cfg.getPrefix() + "Только для игроков.");
-                    return true;
-                }
-                if (!player.hasPermission("geyserevent.admin")) {
-                    player.sendMessage(cfg.getPrefix() + ColorUtil.color("&cНедостаточно прав!"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cТолько для игроков."));
                     return true;
                 }
                 int radius = 6;
@@ -213,56 +136,82 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 }
                 try {
                     int saved = plugin.getSchematicManager().saveCustomSchematicFromWorld(player.getLocation(), radius);
-                    player.sendMessage(cfg.getPrefix() + ColorUtil.color("&aСхематика успешно сохранена (&e" + saved + " блоков&a)!"));
+                    player.sendMessage(ColorUtil.color("&e┠ &#34D711Схематика успешно сохранена (&f" + saved + " блоков&#34D711)!"));
                 } catch (IOException ex) {
-                    player.sendMessage(cfg.getPrefix() + ColorUtil.color("&cОшибка сохранения схематики: " + ex.getMessage()));
+                    player.sendMessage(ColorUtil.color("&e┠ &cОшибка сохранения схематики: " + ex.getMessage()));
+                }
+                return true;
+            }
+
+            case "status", "info" -> {
+                if (manager.isActive() && manager.getRiftCenterLocation() != null) {
+                    Location loc = manager.getRiftCenterLocation();
+                    sender.sendMessage(ColorUtil.color("&e┠ &fСтатус ивента: &#34D711АКТИВЕН"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fМир: &#E0C912" + loc.getWorld().getName()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912" + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fЗдоровье босса: &c" + (int) Math.ceil(manager.getBossCurrentHealth()) + "/" + (int) Math.ceil(manager.getBossMaxHealth()) + " ❤"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fЖивых приспешников: &#E0C912" + plugin.getAbilityController().getActiveMinionCount()));
+                } else {
+                    sender.sendMessage(ColorUtil.color("&e┠ &fСтатус ивента: &cОжидание"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fДо авто-старта: &#E0C912" + ColorUtil.formatDurationVerbose(manager.getSecondsUntilNextStart())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fМир в конфиге: &#E0C912" + cfg.getWorldName()));
+                }
+                return true;
+            }
+
+            case "top" -> {
+                List<DamageLeaderboard.DamageEntry> top = manager.getLeaderboard().getTop(5);
+                sender.sendMessage(ColorUtil.color("&e┠ &fТекущий топ урона по Боссу:"));
+                if (top.isEmpty()) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Пока никто не нанёс урона."));
+                } else {
+                    for (int i = 0; i < top.size(); i++) {
+                        DamageLeaderboard.DamageEntry e = top.get(i);
+                        sender.sendMessage(ColorUtil.color("&e┠ &6#" + (i + 1) + " &#E0C912" + e.playerName() + " &8— &c" + (int) e.damage() + " ❤"));
+                    }
                 }
                 return true;
             }
 
             case "reload" -> {
-                if (!sender.hasPermission("geyserevent.admin")) {
-                    sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&cНедостаточно прав!"));
-                    return true;
-                }
                 cfg.reload();
                 plugin.getSchematicManager().loadSchematicFile();
                 plugin.getBedrockService().detectHooks();
                 plugin.getPlayerPointsHook().setupHook();
+                plugin.getTopRightHudManager().exportAndInstallResourcePack();
                 manager.startAutoScheduler();
-                sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&aКонфигурация и схематика GeyserEvent успешно перезагружены!"));
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Конфигурация, схематика и ресурспак GeyserEvent успешно перезагружены!"));
                 return true;
             }
 
             default -> {
-                sender.sendMessage(cfg.getPrefix() + ColorUtil.color("&eДоступные команды:"));
-                sender.sendMessage(ColorUtil.color(" &6/" + label + " &8— &fОткрыть меню Адского Разлома (Bedrock UI)"));
-                sender.sendMessage(ColorUtil.color(" &6/" + label + " top &8— &fТоп урона и награды (3000/2000/1000 осколков)"));
-                sender.sendMessage(ColorUtil.color(" &6/" + label + " compass &8— &fВкл/выкл навигатор до Разлома"));
-                if (sender.hasPermission("geyserevent.admin")) {
-                    sender.sendMessage(ColorUtil.color(" &c/" + label + " start &8— &7Запустить ивент в мире " + cfg.getWorldName()));
-                    sender.sendMessage(ColorUtil.color(" &c/" + label + " start-here &8— &7Запустить ивент на вашей позиции"));
-                    sender.sendMessage(ColorUtil.color(" &c/" + label + " stop &8— &7Остановить ивент и откатить блоки"));
-                    sender.sendMessage(ColorUtil.color(" &c/" + label + " ability <pull|push|gather|minions> &8— &7Способность босса"));
-                    sender.sendMessage(ColorUtil.color(" &c/" + label + " setworld <мир> &8— &7Изменить мир ивента"));
-                    sender.sendMessage(ColorUtil.color(" &c/" + label + " reload &8— &7Перезагрузить конфиг и схематику"));
-                }
+                sendAdminHelp(sender, label, cfg);
                 return true;
             }
         }
     }
 
+    private void sendAdminHelp(CommandSender sender, String label, PluginConfig cfg) {
+        sender.sendMessage(ColorUtil.color("&e┠ &fАдмин-команды &#34D711Адский Разлом&f:"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start &8— &fЗапустить ивент в мире " + cfg.getWorldName()));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here &8— &fЗапустить ивент прямо здесь"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить ивент и откатить схематику"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " ability <pull|push|gather|minions> &8— &fСпособность босса"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " setworld <мир> &8— &fИзменить мир ивента"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " saveschem [радиус] &8— &fСохранить свою схематику"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " status &8| &#E0C912top &8— &fСтатус и топ урона"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " reload &8— &fПерезагрузить конфиг и схематику"));
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1) {
-            List<String> base = new ArrayList<>(Arrays.asList("menu", "top", "compass", "info"));
-            if (sender.hasPermission("geyserevent.admin")) {
-                base.addAll(Arrays.asList("admin", "start", "start-here", "stop", "ability", "setworld", "saveschem", "reload"));
-            }
-            return filterPrefix(base, args[0]);
+        if (!sender.hasPermission("geyserevent.admin")) {
+            return Collections.emptyList();
         }
-
-        if (args.length == 2 && sender.hasPermission("geyserevent.admin")) {
+        if (args.length == 1) {
+            return filterPrefix(Arrays.asList("start", "start-here", "stop", "ability", "setworld", "saveschem", "status", "top", "reload"), args[0]);
+        }
+        if (args.length == 2) {
             if (args[0].equalsIgnoreCase("ability") || args[0].equalsIgnoreCase("cast")) {
                 return filterPrefix(Arrays.asList("pull", "push", "gather", "minions"), args[1]);
             }
@@ -277,7 +226,6 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return filterPrefix(worlds, args[1]);
             }
         }
-
         return Collections.emptyList();
     }
 

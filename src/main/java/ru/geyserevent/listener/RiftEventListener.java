@@ -19,10 +19,15 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.projectiles.ProjectileSource;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.event.InfernalRiftManager;
+import ru.geyserevent.util.ColorUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +37,9 @@ import java.util.UUID;
  * Слушатель событий ивента «Адский Разлом»:
  * - Блокирует телепортацию игроков и мобов через портал схематики
  * - Проверяет участие только с Bedrock (GeyserMC)
- * - Обрабатывает 3500 HP и 15 урона Босса
+ * - Активирует GPS-трекер (/event gps) при переходе игрока в мир ивента
+ * - Выдаёт лут с приспешников (адские предметы, опыт, алмазы, золото и редко незерит)
+ * - Защищает босса от лодок/вагонеток/удочек и расстрела издалека
  * - Защищает схематику от грифа и взрывов
  */
 public class RiftEventListener implements Listener {
@@ -42,6 +49,19 @@ public class RiftEventListener implements Listener {
 
     public RiftEventListener(GeyserEventPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Когда игрок переходит в другой мир — проверяем, нужно ли активировать /event gps.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+        plugin.getRiftManager().handlePlayerChangedWorld(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        plugin.getTopRightHudManager().removeHudFromPlayer(event.getPlayer());
     }
 
     /**
@@ -89,6 +109,28 @@ public class RiftEventListener implements Listener {
     }
 
     /**
+     * Запрещает сажать босса и приспешников в лодки или вагонетки.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onVehicleEnter(VehicleEnterEvent event) {
+        Entity entered = event.getEntered();
+        if (plugin.getRiftManager().isBoss(entered) || plugin.getAbilityController().isMinion(entered)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Запрещает цеплять босса удочкой.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerFish(PlayerFishEvent event) {
+        Entity caught = event.getCaught();
+        if (caught != null && (plugin.getRiftManager().isBoss(caught) || plugin.getAbilityController().isMinion(caught))) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
      * Запрещает боссу и приспешникам атаковать друг друга.
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -107,7 +149,6 @@ public class RiftEventListener implements Listener {
             return;
         }
 
-        // Если цель — игрок не с Bedrock (и включён строгий режим), босс не агрится на него
         if (sourceIsRiftMob && target instanceof Player player && !plugin.getBedrockService().canParticipate(player)) {
             event.setCancelled(true);
         }
@@ -155,6 +196,17 @@ public class RiftEventListener implements Listener {
                     attacker.sendMessage(plugin.getPluginConfig().getMsgOnlyBedrock());
                     return;
                 }
+
+                // Защита от расстрела Босса из лука/арбалета с огромного расстояния
+                if (victimIsBoss && damager instanceof Projectile) {
+                    double maxRange = plugin.getPluginConfig().getMaxRangedAttackDistance();
+                    if (attacker.getWorld().equals(victim.getWorld())
+                            && attacker.getLocation().distanceSquared(victim.getLocation()) > maxRange * maxRange) {
+                        event.setCancelled(true);
+                        attacker.sendMessage(ColorUtil.color("&e┠ &cВы слишком далеко от Босса! Подойдите ближе к Разлому для нанесения урона."));
+                        return;
+                    }
+                }
             }
 
             if (victimIsBoss && victim instanceof LivingEntity boss) {
@@ -198,25 +250,24 @@ public class RiftEventListener implements Listener {
     }
 
     /**
-     * Очистка стандартного дропа босса и приспешников (награды выдаются в осколках PlayerPoints).
+     * Смерть Босса (награды через PlayerPoints) и Смерть Приспешника (выпадение адского лута, алмазов, золота и редкого незерита).
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
         if (plugin.getRiftManager().isBoss(entity)) {
             event.getDrops().clear();
-            event.setDroppedExp(500);
+            event.setDroppedExp(600);
             if (!plugin.getRiftManager().isDefeated()) {
                 plugin.getRiftManager().handleBossDefeated();
             }
         } else if (plugin.getAbilityController().isMinion(entity)) {
-            event.getDrops().clear();
-            event.setDroppedExp(25);
+            plugin.getMinionLootManager().handleMinionDeath(event);
         }
     }
 
     /**
-     * Защита схематики Адского Разлома от разрушения блоками/игроками.
+     * Защита схематики Адского Разлома от разрушения.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {

@@ -2,7 +2,6 @@ package ru.geyserevent.hook;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.geysermc.cumulus.form.Form;
 import org.geysermc.floodgate.api.FloodgateApi;
 import org.geysermc.geyser.api.GeyserApi;
 import ru.geyserevent.GeyserEventPlugin;
@@ -10,8 +9,7 @@ import ru.geyserevent.GeyserEventPlugin;
 import java.util.UUID;
 
 /**
- * Сервис проверки игроков Bedrock Edition (GeyserMC / Floodgate)
- * и отправки нативных форм Cumulus UI.
+ * Сервис проверки игроков Bedrock Edition (GeyserMC / Floodgate).
  */
 public class BedrockService {
 
@@ -32,7 +30,7 @@ public class BedrockService {
             plugin.getLogger().info("Подключена поддержка GeyserMC API (Bedrock Edition).");
         }
         if (floodgateApiAvailable) {
-            plugin.getLogger().info("Подключена поддержка Floodgate API (Bedrock Forms & Auth).");
+            plugin.getLogger().info("Подключена поддержка Floodgate API.");
         }
         if (!geyserApiAvailable && !floodgateApiAvailable) {
             plugin.getLogger().warning("Geyser API / Floodgate API не обнаружены в classpath! Будет использована резервная проверка по префиксу/UUID.");
@@ -98,7 +96,7 @@ public class BedrockService {
     }
 
     /**
-     * Проверяет, может ли игрок участвовать в ивенте и использовать меню.
+     * Проверяет, может ли игрок участвовать в ивенте и использовать команды /event.
      * Учитывает настройку bedrock.strict-only и право обхода для админов.
      */
     public boolean canParticipate(Player player) {
@@ -126,42 +124,5 @@ public class BedrockService {
             }
         }
         return count;
-    }
-
-    /**
-     * Отправляет нативное окно Bedrock (Cumulus SimpleForm / CustomForm / ModalForm) игроку.
-     *
-     * @return true, если форма успешно отправлена через Geyser или Floodgate API
-     */
-    public boolean sendCumulusForm(Player player, Form form) {
-        if (player == null || form == null) {
-            return false;
-        }
-        if (!plugin.getPluginConfig().isUseCumulusForms()) {
-            return false;
-        }
-        UUID uuid = player.getUniqueId();
-
-        if (geyserApiAvailable) {
-            try {
-                GeyserApi api = GeyserApi.api();
-                if (api != null && api.isBedrockPlayer(uuid)) {
-                    return api.sendForm(uuid, form);
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-
-        if (floodgateApiAvailable) {
-            try {
-                FloodgateApi api = FloodgateApi.getInstance();
-                if (api != null && api.isFloodgatePlayer(uuid)) {
-                    return api.sendForm(uuid, form);
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-
-        return false;
     }
 }

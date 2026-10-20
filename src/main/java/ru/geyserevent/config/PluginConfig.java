@@ -1,32 +1,54 @@
 package ru.geyserevent.config;
 
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.util.ColorUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Конфигурация плагина GeyserEvent (Адский Разлом).
+ * Конфигурация плагина GeyserEvent v1.1.0 (Адский Разлом).
  */
 public class PluginConfig {
+
+    public record LootItemConfig(
+            String key,
+            Material material,
+            double chancePercent,
+            int minAmount,
+            int maxAmount,
+            boolean rare
+    ) {
+    }
 
     private final GeyserEventPlugin plugin;
 
     // Bedrock (GeyserMC)
     private boolean strictBedrockOnly;
     private boolean allowAdminBypass;
-    private boolean useCumulusForms;
-    private boolean actionbarCompass;
     private String fallbackPrefix;
+
+    // ResourcePack & Top-Right HUD
+    private boolean autoInstallResourcePackToGeyser;
+    private boolean topRightHudEnabled;
+    private String topRightHudTitle;
+    private String topRightEventDisplayName;
+    private String topRightRarityDisplay;
 
     // Event
     private String worldName;
+    private String lootRarity;
     private boolean autoStart;
     private int intervalMinutes;
     private int durationMinutes;
     private int minBedrockPlayers;
     private int cleanupDelaySeconds;
+    private double gpsArrivalDistance;
+    private boolean gpsParticleTrail;
     private int centerX;
     private int centerZ;
     private int minRadius;
@@ -40,7 +62,7 @@ public class PluginConfig {
     private int protectionRadius;
     private boolean disablePortalTeleport;
 
-    // Boss (Большой Брутальный Пиглин 2м)
+    // Boss
     private String bossName;
     private double bossHealth;
     private double bossDamage;
@@ -52,8 +74,9 @@ public class PluginConfig {
     private double bossMovementSpeed;
     private double bossKnockbackResistance;
     private double bossLeashRadius;
+    private double maxRangedAttackDistance;
 
-    // Minions (Приспешники)
+    // Minions & Minion Loot
     private boolean minionsEnabled;
     private int minionSummonIntervalSeconds;
     private int minionCountPerWave;
@@ -64,8 +87,13 @@ public class PluginConfig {
     private double minionDamage;
     private double minionScale;
     private Material minionWeaponMaterial;
+    private boolean minionLootEnabled;
+    private int minionMinExp;
+    private int minionMaxExp;
+    private boolean announceRareDrops;
+    private final List<LootItemConfig> minionLootItems = new ArrayList<>();
 
-    // Abilities (в радиусе 15 блоков)
+    // Abilities (Radius 15 blocks)
     private double abilityRadius;
     private int abilityCastIntervalSeconds;
 
@@ -88,7 +116,7 @@ public class PluginConfig {
     private double gatherDamage;
     private int gatherSlownessTicks;
 
-    // Rewards (PlayerPoints — Осколки)
+    // Rewards (PlayerPoints)
     private String currencyName;
     private boolean usePlayerPointsApi;
     private String fallbackCommand;
@@ -105,13 +133,18 @@ public class PluginConfig {
     private String msgAbilityPush;
     private String msgAbilityGather;
     private String msgAbilityMinions;
+    private String msgRareMinionDrop;
+    private List<String> spawnBroadcastLines;
+    private List<String> delayWaitingLines;
+    private List<String> delayActiveLines;
+    private List<String> gpsArrivedInfoLines;
 
     public PluginConfig(GeyserEventPlugin plugin) {
         this.plugin = plugin;
         reload();
     }
 
-    public void reload() {
+    public final void reload() {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
         FileConfiguration cfg = plugin.getConfig();
@@ -119,17 +152,27 @@ public class PluginConfig {
         // Bedrock
         this.strictBedrockOnly = cfg.getBoolean("bedrock.strict-only", true);
         this.allowAdminBypass = cfg.getBoolean("bedrock.allow-admin-bypass", true);
-        this.useCumulusForms = cfg.getBoolean("bedrock.use-cumulus-forms", true);
-        this.actionbarCompass = cfg.getBoolean("bedrock.actionbar-compass", true);
         this.fallbackPrefix = cfg.getString("bedrock.fallback-prefix", ".");
+
+        // ResourcePack & Top-Right HUD
+        this.autoInstallResourcePackToGeyser = cfg.getBoolean("resourcepack.auto-install-to-geyser", true);
+        this.topRightHudEnabled = cfg.getBoolean("resourcepack.top-right-hud.enabled", true);
+        this.topRightHudTitle = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.title", "&#FF2E2E&l🔥 АДСКИЙ РАЗЛОМ"));
+        this.topRightEventDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.event-display-name", "&#FF4500Адский Разлом"));
+        this.topRightRarityDisplay = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.rarity-display",
+                "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"));
 
         // Event
         this.worldName = cfg.getString("event.world", "world2");
+        this.lootRarity = ColorUtil.color(cfg.getString("event.loot-rarity",
+                "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"));
         this.autoStart = cfg.getBoolean("event.auto-start", true);
         this.intervalMinutes = Math.max(1, cfg.getInt("event.interval-minutes", 60));
         this.durationMinutes = Math.max(1, cfg.getInt("event.duration-minutes", 25));
         this.minBedrockPlayers = Math.max(0, cfg.getInt("event.min-bedrock-players", 1));
         this.cleanupDelaySeconds = Math.max(1, cfg.getInt("event.cleanup-delay-seconds", 20));
+        this.gpsArrivalDistance = Math.max(2.0, cfg.getDouble("event.gps.arrival-distance", 10.0));
+        this.gpsParticleTrail = cfg.getBoolean("event.gps.particle-trail", true);
         this.centerX = cfg.getInt("event.spawn.center-x", 0);
         this.centerZ = cfg.getInt("event.spawn.center-z", 0);
         this.minRadius = Math.max(10, cfg.getInt("event.spawn.min-radius", 100));
@@ -155,6 +198,7 @@ public class PluginConfig {
         this.bossMovementSpeed = cfg.getDouble("boss.movement-speed", 0.35);
         this.bossKnockbackResistance = cfg.getDouble("boss.knockback-resistance", 0.85);
         this.bossLeashRadius = Math.max(12.0, cfg.getDouble("boss.leash-radius", 35.0));
+        this.maxRangedAttackDistance = Math.max(10.0, cfg.getDouble("boss.max-ranged-attack-distance", 28.0));
 
         // Minions
         this.minionsEnabled = cfg.getBoolean("minions.enabled", true);
@@ -167,6 +211,13 @@ public class PluginConfig {
         this.minionDamage = Math.max(1.0, cfg.getDouble("minions.damage", 7.0));
         this.minionScale = Math.max(0.5, cfg.getDouble("minions.scale", 0.92));
         this.minionWeaponMaterial = parseMaterial(cfg.getString("minions.weapon", "GOLDEN_AXE"), Material.GOLDEN_AXE);
+
+        // Minion Loot
+        this.minionLootEnabled = cfg.getBoolean("minions.loot.enabled", true);
+        this.minionMinExp = Math.max(0, cfg.getInt("minions.loot.min-exp", 50));
+        this.minionMaxExp = Math.max(this.minionMinExp, cfg.getInt("minions.loot.max-exp", 120));
+        this.announceRareDrops = cfg.getBoolean("minions.loot.announce-rare-drops", true);
+        loadMinionLootTable(cfg.getConfigurationSection("minions.loot.items"));
 
         // Abilities (Radius 15 blocks)
         this.abilityRadius = Math.max(3.0, cfg.getDouble("abilities.radius", 15.0));
@@ -197,21 +248,81 @@ public class PluginConfig {
         this.rewardThirdPlace = cfg.getInt("rewards.places.3", 1000);
 
         // Messages
-        this.prefix = ColorUtil.color(cfg.getString("messages.prefix", "&8[&4&lАдский Разлом&8] &r"));
+        this.prefix = ColorUtil.color(cfg.getString("messages.prefix", "&e┠ &r"));
         this.msgOnlyBedrock = ColorUtil.color(cfg.getString("messages.only-bedrock",
-                "&cЭтот ивент и меню доступны только для игроков с Bedrock Edition (GeyserMC)!"));
+                "&e┠ &cЭтот ивент доступен только для игроков с Bedrock Edition (GeyserMC)!"));
         this.msgPortalNoTeleport = ColorUtil.color(cfg.getString("messages.portal-no-teleport",
-                "&cПортал Адского Разлома нестабилен — телепортация заблокирована!"));
+                "&e┠ &cПортал Адского Разлома нестабилен — телепортация заблокирована!"));
         this.msgRegionProtected = ColorUtil.color(cfg.getString("messages.region-protected",
-                "&cВы не можете ломать или ставить блоки в зоне Адского Разлома!"));
+                "&e┠ &cВы не можете ломать или ставить блоки в зоне Адского Разлома!"));
         this.msgAbilityPull = ColorUtil.color(cfg.getString("messages.ability-pull",
-                "&6&l⚡ &eБрутальный Пиглин &6&lПРИТЯНУЛ &eвас к себе цепями Разлома!"));
+                "&e┠ &6⚡ &fБрутальный Пиглин &#FF8C00притянул &fвас к себе цепями Разлома!"));
         this.msgAbilityPush = ColorUtil.color(cfg.getString("messages.ability-push",
-                "&c&l💥 &eБрутальный Пиглин &c&lОТТОЛКНУЛ &eвсех сокрушительной волной!"));
+                "&e┠ &c💥 &fБрутальный Пиглин &#FF3333оттолкнул &fвсех сокрушительной волной!"));
         this.msgAbilityGather = ColorUtil.color(cfg.getString("messages.ability-gather",
-                "&5&l🌀 &eБрутальный Пиглин &d&lСТЯНУЛ ВСЕХ В ОДНУ ТОЧКУ &eперед собой!"));
+                "&e┠ &d🌀 &fБрутальный Пиглин &#D442FFстянул всех в одну точку &fперед собой!"));
         this.msgAbilityMinions = ColorUtil.color(cfg.getString("messages.ability-minions",
-                "&4&l🔥 &cВладыка Разлома призвал подкрепление приспешников из портала!"));
+                "&e┠ &4🔥 &fВладыка Разлома призвал подкрепление приспешников из портала!"));
+        this.msgRareMinionDrop = cfg.getString("messages.rare-minion-drop",
+                "&e┠ &fИгрок &#E0C912%player% &fвыбил редкий дроп с приспешника: &#FF4500%item% &7(x%amount%)");
+
+        this.spawnBroadcastLines = cfg.getStringList("messages.spawn-broadcast");
+        if (this.spawnBroadcastLines.isEmpty()) {
+            this.spawnBroadcastLines = List.of(
+                    "&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fпоявился на карте.",
+                    "&e┠ &fРедкость: %loot%",
+                    "&e┠ &fЗдоровье босса: &c%hp% ❤ &7(Урон: &c%damage%&7)",
+                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%"
+            );
+        }
+
+        this.delayWaitingLines = cfg.getStringList("messages.delay-waiting");
+        if (this.delayWaitingLines.isEmpty()) {
+            this.delayWaitingLines = List.of(
+                    "&e┠ &fДо появления ивента &#34D711Адский-Разлом&f:",
+                    "&e┠ &fОсталось времени: &#E0C912%time%",
+                    "&e┠ &fМир появления: &#E0C912%world%"
+            );
+        }
+
+        this.delayActiveLines = cfg.getStringList("messages.delay-active");
+        if (this.delayActiveLines.isEmpty()) {
+            this.delayActiveLines = List.of(
+                    "&e┠ &#34D711Адский-Разлом &fуже активен на карте!",
+                    "&e┠ &fЗдоровье босса: &c%hp%/%max_hp% ❤",
+                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%",
+                    "&e┠ &fВключить трекер: &#34D711/event gps"
+            );
+        }
+
+        this.gpsArrivedInfoLines = cfg.getStringList("messages.gps-arrived-info");
+        if (this.gpsArrivedInfoLines.isEmpty()) {
+            this.gpsArrivedInfoLines = List.of(
+                    "&e┠ &#34D711Вы прибыли к ивенту Адский Разлом! &7(GPS-трекер отключён)",
+                    "&e┠ &fБосс: &cБольшой Брутальный Пиглин (2м)",
+                    "&e┠ &fЗдоровье: &c%hp%/%max_hp% ❤ &7| &fУрон: &c%damage%",
+                    "&e┠ &fРедкость: %loot%",
+                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%",
+                    "&e┠ &fНаграды: &61м: &d%r1% &7| &f2м: &d%r2% &7| &c3м: &d%r3% %currency%"
+            );
+        }
+    }
+
+    private void loadMinionLootTable(ConfigurationSection sec) {
+        minionLootItems.clear();
+        if (sec != null) {
+            for (String key : sec.getKeys(false)) {
+                ConfigurationSection itemSec = sec.getConfigurationSection(key);
+                if (itemSec == null) continue;
+                Material mat = Material.matchMaterial(itemSec.getString("material", ""));
+                if (mat == null || mat.isAir()) continue;
+                double chance = itemSec.getDouble("chance", 25.0);
+                int min = Math.max(1, itemSec.getInt("min", 1));
+                int max = Math.max(min, itemSec.getInt("max", min));
+                boolean rare = itemSec.getBoolean("rare", false);
+                minionLootItems.add(new LootItemConfig(key, mat, chance, min, max, rare));
+            }
+        }
     }
 
     private Material parseMaterial(String name, Material fallback) {
@@ -235,34 +346,6 @@ public class PluginConfig {
         plugin.saveConfig();
     }
 
-    public void updateFromAdminForm(
-            String newWorld,
-            double newHealth,
-            double newDamage,
-            double newAbilityRadius,
-            int firstReward,
-            int secondReward,
-            int thirdReward
-    ) {
-        this.worldName = newWorld;
-        this.bossHealth = newHealth;
-        this.bossDamage = newDamage;
-        this.abilityRadius = newAbilityRadius;
-        this.rewardFirstPlace = firstReward;
-        this.rewardSecondPlace = secondReward;
-        this.rewardThirdPlace = thirdReward;
-
-        FileConfiguration cfg = plugin.getConfig();
-        cfg.set("event.world", newWorld);
-        cfg.set("boss.health", newHealth);
-        cfg.set("boss.damage", newDamage);
-        cfg.set("abilities.radius", newAbilityRadius);
-        cfg.set("rewards.places.1", firstReward);
-        cfg.set("rewards.places.2", secondReward);
-        cfg.set("rewards.places.3", thirdReward);
-        plugin.saveConfig();
-    }
-
     public int getRewardForPlace(int place) {
         return switch (place) {
             case 1 -> rewardFirstPlace;
@@ -274,16 +357,23 @@ public class PluginConfig {
 
     public boolean isStrictBedrockOnly() { return strictBedrockOnly; }
     public boolean isAllowAdminBypass() { return allowAdminBypass; }
-    public boolean isUseCumulusForms() { return useCumulusForms; }
-    public boolean isActionbarCompass() { return actionbarCompass; }
     public String getFallbackPrefix() { return fallbackPrefix; }
 
+    public boolean isAutoInstallResourcePackToGeyser() { return autoInstallResourcePackToGeyser; }
+    public boolean isTopRightHudEnabled() { return topRightHudEnabled; }
+    public String getTopRightHudTitle() { return topRightHudTitle; }
+    public String getTopRightEventDisplayName() { return topRightEventDisplayName; }
+    public String getTopRightRarityDisplay() { return topRightRarityDisplay; }
+
     public String getWorldName() { return worldName; }
+    public String getLootRarity() { return lootRarity; }
     public boolean isAutoStart() { return autoStart; }
     public int getIntervalMinutes() { return intervalMinutes; }
     public int getDurationMinutes() { return durationMinutes; }
     public int getMinBedrockPlayers() { return minBedrockPlayers; }
     public int getCleanupDelaySeconds() { return cleanupDelaySeconds; }
+    public double getGpsArrivalDistance() { return gpsArrivalDistance; }
+    public boolean isGpsParticleTrail() { return gpsParticleTrail; }
     public int getCenterX() { return centerX; }
     public int getCenterZ() { return centerZ; }
     public int getMinRadius() { return minRadius; }
@@ -307,6 +397,7 @@ public class PluginConfig {
     public double getBossMovementSpeed() { return bossMovementSpeed; }
     public double getBossKnockbackResistance() { return bossKnockbackResistance; }
     public double getBossLeashRadius() { return bossLeashRadius; }
+    public double getMaxRangedAttackDistance() { return maxRangedAttackDistance; }
 
     public boolean isMinionsEnabled() { return minionsEnabled; }
     public int getMinionSummonIntervalSeconds() { return minionSummonIntervalSeconds; }
@@ -318,6 +409,11 @@ public class PluginConfig {
     public double getMinionDamage() { return minionDamage; }
     public double getMinionScale() { return minionScale; }
     public Material getMinionWeaponMaterial() { return minionWeaponMaterial; }
+    public boolean isMinionLootEnabled() { return minionLootEnabled; }
+    public int getMinionMinExp() { return minionMinExp; }
+    public int getMinionMaxExp() { return minionMaxExp; }
+    public boolean isAnnounceRareDrops() { return announceRareDrops; }
+    public List<LootItemConfig> getMinionLootItems() { return minionLootItems; }
 
     public double getAbilityRadius() { return abilityRadius; }
     public int getAbilityCastIntervalSeconds() { return abilityCastIntervalSeconds; }
@@ -346,11 +442,16 @@ public class PluginConfig {
     public int getRewardThirdPlace() { return rewardThirdPlace; }
 
     public String getPrefix() { return prefix; }
-    public String getMsgOnlyBedrock() { return prefix + msgOnlyBedrock; }
-    public String getMsgPortalNoTeleport() { return prefix + msgPortalNoTeleport; }
-    public String getMsgRegionProtected() { return prefix + msgRegionProtected; }
-    public String getMsgAbilityPull() { return prefix + msgAbilityPull; }
-    public String getMsgAbilityPush() { return prefix + msgAbilityPush; }
-    public String getMsgAbilityGather() { return prefix + msgAbilityGather; }
-    public String getMsgAbilityMinions() { return prefix + msgAbilityMinions; }
+    public String getMsgOnlyBedrock() { return msgOnlyBedrock; }
+    public String getMsgPortalNoTeleport() { return msgPortalNoTeleport; }
+    public String getMsgRegionProtected() { return msgRegionProtected; }
+    public String getMsgAbilityPull() { return msgAbilityPull; }
+    public String getMsgAbilityPush() { return msgAbilityPush; }
+    public String getMsgAbilityGather() { return msgAbilityGather; }
+    public String getMsgAbilityMinions() { return msgAbilityMinions; }
+    public String getMsgRareMinionDrop() { return msgRareMinionDrop; }
+    public List<String> getSpawnBroadcastLines() { return spawnBroadcastLines; }
+    public List<String> getDelayWaitingLines() { return delayWaitingLines; }
+    public List<String> getDelayActiveLines() { return delayActiveLines; }
+    public List<String> getGpsArrivedInfoLines() { return gpsArrivedInfoLines; }
 }

@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Утилита для форматирования текста и расчёта направления компаса для Bedrock-игроков.
+ * Утилита для форматирования текста (включая HEX &#RRGGBB) и расчёта направления GPS-трекера.
  */
 public final class ColorUtil {
 
@@ -41,7 +41,7 @@ public final class ColorUtil {
     }
 
     /**
-     * Вычисляет стрелку направления относительно взгляда игрока (удобно для экранов телефонов Bedrock).
+     * Вычисляет стрелку направления относительно взгляда игрока (для GPS-трекера /event gps).
      */
     public static String getDirectionArrow(Player player, Location target) {
         if (player == null || target == null || !player.getWorld().equals(target.getWorld())) {
@@ -88,5 +88,26 @@ public final class ColorUtil {
         long minutes = totalSeconds / 60;
         long seconds = totalSeconds % 60;
         return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    /**
+     * Форматирует секунды в читаемый вид для /event delay (например: "42 мин. 15 сек.").
+     */
+    public static String formatDurationVerbose(long totalSeconds) {
+        if (totalSeconds <= 0) {
+            return "несколько секунд";
+        }
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) {
+            sb.append(hours).append(" ч. ");
+        }
+        if (minutes > 0 || hours > 0) {
+            sb.append(minutes).append(" мин. ");
+        }
+        sb.append(seconds).append(" сек.");
+        return sb.toString().trim();
     }
 }

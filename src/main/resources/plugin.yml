@@ -1,26 +1,31 @@
 name: GeyserEvent
-version: '1.0.0'
+version: '1.1.0'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
-description: Адский Разлом (Вторжение Босса) для Purpur 26.2 — только для игроков Bedrock (GeyserMC) с наградами через PlayerPoints
+description: Адский Разлом (Вторжение Босса) для Purpur 26.2 — только для игроков Bedrock (GeyserMC) с собственным ресурспаком HUD, GPS-трекером и наградами через PlayerPoints
 softdepend:
   - Geyser-Spigot
   - floodgate
   - PlayerPoints
 
 commands:
+  event:
+    description: Команды ивента для игроков (/event delay, /event gps)
+    aliases: [events, ivent]
+    usage: /<command> <delay|gps>
   rift:
-    description: Главное меню и управление ивентом «Адский Разлом» (Bedrock GeyserMC)
-    aliases: [event, geyserevent, razlom, infernalrift]
-    usage: /<command> [menu|top|compass|start|start-here|stop|ability|setworld|saveschem|reload]
+    description: Админ-команды управления ивентом «Адский Разлом»
+    aliases: [geyserevent, razlom, infernalrift]
+    usage: /<command> <start|start-here|stop|ability|setworld|saveschem|reload|status|top>
+    permission: geyserevent.admin
 
 permissions:
   geyserevent.use:
-    description: Доступ к меню и участию в ивенте Адский Разлом (только для Bedrock игроков)
+    description: Доступ к командам /event delay и /event gps (только для Bedrock игроков)
     default: true
   geyserevent.admin:
-    description: Полное управление ивентом Адский Разлом (старт, стоп, настройка, способности)
+    description: Полное управление ивентом Адский Разлом (/rift start, stop, ability, setworld, saveschem, reload)
     default: op
   geyserevent.bypass.bedrock:
     description: Позволяет администраторам с Java-клиента управлять ивентом и тестировать его
