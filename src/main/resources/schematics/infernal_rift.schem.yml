@@ -1,0 +1,194 @@
+# ============================================================================
+# Схематика ивента «Адский Разлом» (Infernal Rift)
+# Портал размещается без физики (applyPhysics=false) и защищён от телепортации!
+# Вы также можете сохранить свою постройку из игры командой: /rift saveschem <радиус>
+# ============================================================================
+
+name: "infernal_rift"
+description: "Алтарь и Врата Адского Разлома с защитой от телепортации"
+boss-spawn-offset:
+  x: 0.5
+  y: 1.0
+  z: 2.5
+  yaw: 0.0
+  pitch: 0.0
+
+# Палитра символов для послойной схемы (11x11, центр в X=5, Z=5)
+palette:
+  '.': "AIR"
+  'B': "BLACKSTONE"
+  'P': "POLISHED_BLACKSTONE_BRICKS"
+  'C': "CRACKED_POLISHED_BLACKSTONE_BRICKS"
+  'G': "GILDED_BLACKSTONE"
+  'M': "MAGMA_BLOCK"
+  'O': "OBSIDIAN"
+  'Y': "CRYING_OBSIDIAN"
+  'L': "LODESTONE"
+  'W': "POLISHED_BLACKSTONE_WALL"
+  'N': "NETHERRACK"
+  'F': "SOUL_FIRE"
+  'X': "NETHER_PORTAL"
+  'S': "SOUL_LANTERN"
+  'H': "CRIMSON_NYLIUM"
+
+# Слои по высоте Y относительно земли (y=0 — уровень поверхности земли)
+# Каждая строка — ось X (от -5 до +5), список строк — ось Z (от -5 до +5)
+layers:
+  0:
+    - "..B P C B C P B.."
+    - ".B Y P G O G P Y B."
+    - "B P C O Y O Y O C P B"
+    - "P G O Y M G M Y O G P"
+    - "C O Y M P C P M Y O C"
+    - "B G O G C P C G O G B"
+    - "C O Y M P H P M Y O C"
+    - "P G O Y M L M Y O G P"
+    - "B P C O Y H Y O C P B"
+    - ".B Y P G O G P Y B."
+    - "..B P C B C P B.."
+
+  1:
+    - "..................."
+    - ".Y...............Y."
+    - "..................."
+    - "....Y O Y O Y......"
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - ".Y...............Y."
+    - "..................."
+
+  2:
+    - "..................."
+    - ".W...............W."
+    - "..................."
+    - "....O Y X X X Y O.."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - ".W...............W."
+    - "..................."
+
+  3:
+    - "..................."
+    - ".W...............W."
+    - "..................."
+    - "....Y O X X X O Y.."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - ".W...............W."
+    - "..................."
+
+  4:
+    - "..................."
+    - ".N...............N."
+    - "..................."
+    - "....O Y X X X Y O.."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - ".N...............N."
+    - "..................."
+
+  5:
+    - "..................."
+    - ".F...............F."
+    - "..................."
+    - "....Y O X X X O Y.."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - ".F...............F."
+    - "..................."
+
+  6:
+    - "..................."
+    - "..................."
+    - "..................."
+    - "......O Y O Y O...."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+
+  7:
+    - "..................."
+    - "..................."
+    - "..................."
+    - "........Y G Y......"
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+    - "..................."
+
+# Дополнительные точечные блоки (dx, dy, dz относительно центра схематики)
+blocks:
+  # Центральная арка портала Адского Разлома (z = -2)
+  - { x: -3, y: 1, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: -2, y: 1, z: -2, material: "OBSIDIAN" }
+  - { x: -1, y: 1, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: 0,  y: 1, z: -2, material: "GILDED_BLACKSTONE" }
+  - { x: 1,  y: 1, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: 2,  y: 1, z: -2, material: "OBSIDIAN" }
+  - { x: 3,  y: 1, z: -2, material: "CRYING_OBSIDIAN" }
+
+  # Стойки и само полотно портала (NETHER_PORTAL без телепортации)
+  - { x: -3, y: 2, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+  - { x: -2, y: 2, z: -2, material: "OBSIDIAN" }
+  - { x: -1, y: 2, z: -2, material: "NETHER_PORTAL" }
+  - { x: 0,  y: 2, z: -2, material: "NETHER_PORTAL" }
+  - { x: 1,  y: 2, z: -2, material: "NETHER_PORTAL" }
+  - { x: 2,  y: 2, z: -2, material: "OBSIDIAN" }
+  - { x: 3,  y: 2, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+
+  - { x: -3, y: 3, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+  - { x: -2, y: 3, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: -1, y: 3, z: -2, material: "NETHER_PORTAL" }
+  - { x: 0,  y: 3, z: -2, material: "NETHER_PORTAL" }
+  - { x: 1,  y: 3, z: -2, material: "NETHER_PORTAL" }
+  - { x: 2,  y: 3, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: 3,  y: 3, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+
+  - { x: -2, y: 4, z: -2, material: "OBSIDIAN" }
+  - { x: -1, y: 4, z: -2, material: "NETHER_PORTAL" }
+  - { x: 0,  y: 4, z: -2, material: "NETHER_PORTAL" }
+  - { x: 1,  y: 4, z: -2, material: "NETHER_PORTAL" }
+  - { x: 2,  y: 4, z: -2, material: "OBSIDIAN" }
+
+  - { x: -2, y: 5, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: -1, y: 5, z: -2, material: "NETHER_PORTAL" }
+  - { x: 0,  y: 5, z: -2, material: "NETHER_PORTAL" }
+  - { x: 1,  y: 5, z: -2, material: "NETHER_PORTAL" }
+  - { x: 2,  y: 5, z: -2, material: "CRYING_OBSIDIAN" }
+
+  - { x: -2, y: 6, z: -2, material: "OBSIDIAN" }
+  - { x: -1, y: 6, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: 0,  y: 6, z: -2, material: "GILDED_BLACKSTONE" }
+  - { x: 1,  y: 6, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: 2,  y: 6, z: -2, material: "OBSIDIAN" }
+
+  - { x: -1, y: 7, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+  - { x: 0,  y: 7, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: 1,  y: 7, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+  - { x: 0,  y: 8, z: -2, material: "SOUL_FIRE" }
+
+  # Фонари душ по бокам врат
+  - { x: -2, y: 4, z: -1, material: "SOUL_LANTERN" }
+  - { x: 2,  y: 4, z: -1, material: "SOUL_LANTERN" }

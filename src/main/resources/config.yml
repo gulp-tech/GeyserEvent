@@ -1,0 +1,141 @@
+# ============================================================================
+# GeyserEvent — Ивент «Адский Разлом (Вторжение Босса)» для Purpur 26.2
+# Специально разработан для игроков Bedrock Edition (GeyserMC)
+# ============================================================================
+
+bedrock:
+  # Строгий режим: участвовать в ивенте, наносить урон боссу, получать награды
+  # и открывать меню могут ТОЛЬКО игроки с Bedrock Edition (через GeyserMC / Floodgate).
+  strict-only: true
+  # Разрешить администраторам с правом geyserevent.bypass.bedrock обходить проверку (для тестов)
+  allow-admin-bypass: true
+  # Использовать нативные окна Bedrock (Cumulus SimpleForm / CustomForm) вместо сундучных меню
+  use-cumulus-forms: true
+  # Отображать компактный компас-навигатор в ActionBar для экранов телефонов/консолей
+  actionbar-compass: true
+  # Префикс никнейма Floodgate/Geyser как резервная проверка (если API временно недоступен)
+  fallback-prefix: "."
+
+event:
+  # Мир, в котором появляется ивент «Адский Разлом» (можно изменить в любой момент)
+  world: "world2"
+  # Автоматический запуск ивента по таймеру
+  auto-start: true
+  # Интервал между автоматическими запусками (в минутах)
+  interval-minutes: 60
+  # Максимальная длительность ивента (в минутах), если босса не убили
+  duration-minutes: 25
+  # Минимальное количество Bedrock-игроков онлайн для авто-старта
+  min-bedrock-players: 1
+  # Задержка перед очисткой схематики после убийства босса (в секундах)
+  cleanup-delay-seconds: 20
+
+  # Настройки поиска случайных координат в мире world2
+  spawn:
+    center-x: 0
+    center-z: 0
+    min-radius: 100
+    max-radius: 1000
+    max-attempts: 35
+
+schematic:
+  # Файл схематики в папке plugins/GeyserEvent/schematics/
+  file: "infernal_rift.schem.yml"
+  # Восстанавливать ли исходный ландшафт после завершения ивента
+  restore-blocks-on-end: true
+  # Запрещать ли ломать и ставить блоки в зоне схематики Разлома
+  protect-region: true
+  protection-radius: 12
+  # Блокировать телепортацию игроков и мобов через портал Адского Разлома
+  disable-portal-teleport: true
+
+boss:
+  # Отображаемое имя босса (%hp% и %max_hp% обновляются в реальном времени)
+  name: "&4&lБрутальный Владыка Разлома &8[&c%hp%&7/&c%max_hp% ❤&8]"
+  # Здоровье босса (поддерживается любое значение > 2048 даже без правки spigot.yml)
+  health: 3500.0
+  # Чистый урон от удара босса
+  damage: 15.0
+  # Размер босса в метрах и множитель масштаба (Attribute.SCALE в Purpur 26.2)
+  # Обычный брутальный пиглин ~1.95м; scale 1.15 - 1.25 делает его массивным 2+ метровым гигантом
+  height-meters: 2.0
+  scale: 1.22
+  # Оружие в главной руке
+  weapon:
+    material: "NETHERITE_AXE"
+    name: "&4&lСекира Адского Разлома"
+    enchanted-glow: true
+  # Скорость передвижения и сопротивление откидыванию
+  movement-speed: 0.35
+  knockback-resistance: 0.85
+  # Максимальная дистанция увода босса от портала (в блоках). Если увести дальше — вернётся к порталу
+  leash-radius: 35.0
+
+minions:
+  # Призыв приспешников боссом раз в некоторое время
+  enabled: true
+  # Интервал призыва приспешников (в секундах)
+  summon-interval-seconds: 25
+  # Количество приспешников за один призыв
+  count-per-wave: 3
+  # Максимальное число живых приспешников одновременно
+  max-active: 8
+  # Тип моба приспешника (PIGLIN_BRUTE, PIGLIN, WITHER_SKELETON, ZOMBIFIED_PIGLIN)
+  entity-type: "PIGLIN_BRUTE"
+  name: "&cПриспешник Разлома &7[%hp% ❤]"
+  health: 60.0
+  damage: 7.0
+  scale: 0.92
+  weapon: "GOLDEN_AXE"
+
+abilities:
+  # Радиус действия всех способностей босса (в блоках)
+  radius: 15.0
+  # Интервал использования способностей боссом (в секундах)
+  cast-interval-seconds: 14
+
+  # 1. Притягивание игроков к боссу (в радиусе 15 блоков)
+  pull:
+    enabled: true
+    horizontal-strength: 1.65
+    vertical-boost: 0.42
+    damage: 4.0
+    slowness-ticks: 40
+
+  # 2. Отталкивание игроков ударной волной от босса (в радиусе 15 блоков)
+  push:
+    enabled: true
+    horizontal-strength: 2.05
+    vertical-boost: 0.65
+    damage: 6.0
+
+  # 3. Собрать всех игроков в одно место (гравитационная воронка в радиусе 15 блоков)
+  gather:
+    enabled: true
+    # На каком расстоянии перед боссом создаётся точка стяжки всех игроков
+    distance-in-front: 3.5
+    damage: 5.0
+    slowness-ticks: 60
+
+rewards:
+  # Название донат-валюты (через плагин PlayerPoints)
+  currency-name: "осколков"
+  # Использовать ли напрямую PlayerPoints API
+  use-playerpoints-api: true
+  # Резервная консольная команда, если API недоступен (%player% и %amount%)
+  fallback-command: "points give %player% %amount%"
+  # Награды по местам в топе нанесённого урона
+  places:
+    1: 3000
+    2: 2000
+    3: 1000
+
+messages:
+  prefix: "&8[&4&lАдский Разлом&8] &r"
+  only-bedrock: "&cЭтот ивент и меню доступны только для игроков с Bedrock Edition (GeyserMC)!"
+  portal-no-teleport: "&cПортал Адского Разлома нестабилен — телепортация заблокирована!"
+  region-protected: "&cВы не можете ломать или ставить блоки в зоне Адского Разлома!"
+  ability-pull: "&6&l⚡ &eБрутальный Пиглин &6&lПРИТЯНУЛ &eвас к себе цепями Разлома!"
+  ability-push: "&c&l💥 &eБрутальный Пиглин &c&lОТТОЛКНУЛ &eвсех сокрушительной волной!"
+  ability-gather: "&5&l🌀 &eБрутальный Пиглин &d&lСТЯНУЛ ВСЕХ В ОДНУ ТОЧКУ &eперед собой!"
+  ability-minions: "&4&l🔥 &cВладыка Разлома призвал подкрепление приспешников из портала!"
