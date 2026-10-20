@@ -17,6 +17,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -27,15 +28,22 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.projectiles.ProjectileSource;
 import ru.geyserevent.GeyserEventPlugin;
@@ -45,6 +53,7 @@ import ru.geyserevent.excavation.BrushTier;
 import ru.geyserevent.util.ColorUtil;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -56,6 +65,7 @@ public class RiftEventListener implements Listener {
     private final GeyserEventPlugin plugin;
     private final Map<UUID, Long> portalMessageCooldown = new HashMap<>();
     private final Map<UUID, Long> brushStrokeCooldown = new HashMap<>();
+    private final Map<UUID, Long> villagerClickCooldown = new HashMap<>();
     private final Map<String, Integer> blockExcavationStep = new HashMap<>();
 
     public RiftEventListener(GeyserEventPlugin plugin) {
@@ -64,6 +74,8 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        plugin.getBrushLootManager().removeAllEventBrushes(player);
         if (plugin.getRiftManager().isActive()) {
             Bukkit.getScheduler().runTaskLater(plugin, () ->
                     plugin.getTopRightHudManager().updateTopRightHud(), 10L
@@ -76,37 +88,151 @@ public class RiftEventListener implements Listener {
         plugin.getRiftManager().handlePlayerChangedWorld(event.getPlayer());
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        Bukkit.getScheduler().runTaskLater(plugin, () ->
+                plugin.getRiftManager().enforceBrushZoneForPlayers(), 2L
+        );
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
-        plugin.getTopRightHudManager().removeHudFromPlayer(event.getPlayer());
-        brushStrokeCooldown.remove(event.getPlayer().getUniqueId());
+        Player player = event.getPlayer();
+        plugin.getBrushLootManager().removeAllEventBrushes(player);
+        plugin.getTopRightHudManager().removeHudFromPlayer(player);
+        brushStrokeCooldown.remove(player.getUniqueId());
+        villagerClickCooldown.remove(player.getUniqueId());
+        Bukkit.getScheduler().runTask(plugin, () ->
+                plugin.getRiftManager().refreshVillagerWaitingState()
+        );
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        event.getDrops().removeIf(item -> plugin.getBrushLootManager().getBrushTier(item) != null);
+        Bukkit.getScheduler().runTask(plugin, () ->
+                plugin.getRiftManager().refreshVillagerWaitingState()
+        );
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        ItemStack dropped = event.getItemDrop().getItemStack();
+        if (plugin.getBrushLootManager().getBrushTier(dropped) != null) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ColorUtil.color("&e┠ &cКисточку раскопок нельзя выбрасывать."));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
+            return;
+        }
+        ItemStack current = event.getCurrentItem();
+        ItemStack cursor = event.getCursor();
+        ItemStack hotbar = (event.getHotbarButton() >= 0 && event.getWhoClicked() instanceof Player p)
+                ? p.getInventory().getItem(event.getHotbarButton())
+                : null;
+        if (plugin.getBrushLootManager().getBrushTier(current) != null
+                || plugin.getBrushLootManager().getBrushTier(cursor) != null
+                || plugin.getBrushLootManager().getBrushTier(hotbar) != null) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
+            return;
+        }
+        if (plugin.getBrushLootManager().getBrushTier(event.getOldCursor()) != null) {
+            event.setCancelled(true);
+        }
     }
 
     /**
-     * Взаимодействие с 2-метровым Жителем-Археологом на «Пляжных Раскопках».
+     * Запрет команд /ah sell и /ah sellinv, когда кисточка раскопок в руке (или в инвентаре).
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
+        Player player = event.getPlayer();
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        ItemStack offHand = player.getInventory().getItemInOffHand();
+        boolean holdingBrush = plugin.getBrushLootManager().getBrushTier(mainHand) != null
+                || plugin.getBrushLootManager().getBrushTier(offHand) != null
+                || plugin.getBrushLootManager().hasAnyEventBrush(player);
+
+        if (!holdingBrush) {
+            return;
+        }
+
+        String raw = event.getMessage().trim().toLowerCase(Locale.ROOT);
+        if (raw.startsWith("/")) {
+            raw = raw.substring(1).trim();
+        }
+        String[] parts = raw.split("\\s+");
+        if (parts.length == 0) {
+            return;
+        }
+        String baseCmd = parts[0];
+        int colonIdx = baseCmd.indexOf(':');
+        if (colonIdx >= 0) {
+            baseCmd = baseCmd.substring(colonIdx + 1);
+        }
+
+        boolean isAhCommand = baseCmd.equals("ah") || baseCmd.equals("auc") || baseCmd.equals("auction")
+                || baseCmd.equals("auctions") || baseCmd.equals("ca") || baseCmd.equals("crazyauctions");
+        if (isAhCommand && parts.length >= 2) {
+            String sub = parts[1];
+            if (sub.startsWith("sell") || sub.equals("s") || sub.equals("bid")) {
+                event.setCancelled(true);
+                player.sendMessage(ColorUtil.color("&e┠ &cНельзя использовать /ah sell с кисточкой раскопок в руке!"));
+            }
+        } else if (baseCmd.equals("ahsell") || baseCmd.equals("sellinv")) {
+            event.setCancelled(true);
+            player.sendMessage(ColorUtil.color("&e┠ &cНельзя использовать эту команду с кисточкой раскопок в руке!"));
+        }
+    }
+
+    /**
+     * Взаимодействие с 2-метровым Жителем-Археологом (ПКМ — работает и на телефонах, и на Bedrock ПК).
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Entity clicked = event.getRightClicked();
         if (plugin.getRiftManager().isExcavationVillager(clicked)) {
             event.setCancelled(true);
-            if (event.getHand() == EquipmentSlot.HAND) {
-                plugin.getRiftManager().handleVillagerRightClick(event.getPlayer());
-            }
+            triggerVillagerClickDebounced(event.getPlayer());
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
+        Entity clicked = event.getRightClicked();
+        if (plugin.getRiftManager().isExcavationVillager(clicked)) {
+            event.setCancelled(true);
+            triggerVillagerClickDebounced(event.getPlayer());
+        }
+    }
+
+    private void triggerVillagerClickDebounced(Player player) {
+        long now = System.currentTimeMillis();
+        long last = villagerClickCooldown.getOrDefault(player.getUniqueId(), 0L);
+        if (now - last < 250L) {
+            return;
+        }
+        villagerClickCooldown.put(player.getUniqueId(), now);
+        plugin.getRiftManager().handleVillagerInteraction(player);
+    }
+
     /**
-     * Раскопка подозрительного песка кисточкой (Обычной, Эпической, Легендарной) на «Пляжных Раскопках».
+     * Раскопка песка кисточкой (ПКМ или ЛКМ — одинаково удобно и на телефонах, и на Bedrock ПК).
      */
-    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerExcavateSand(PlayerInteractEvent event) {
         InfernalRiftManager manager = plugin.getRiftManager();
         if (!manager.isActive() || manager.getActiveEventType() != EventType.BEACH_EXCAVATION) {
-            return;
-        }
-        if (event.getHand() == EquipmentSlot.OFF_HAND) {
             return;
         }
         Action action = event.getAction();
@@ -118,24 +244,47 @@ public class RiftEventListener implements Listener {
             return;
         }
 
-        Player player = event.getPlayer();
+        if (tryExcavateSandStroke(event.getPlayer(), block)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onBlockDamageExcavate(BlockDamageEvent event) {
+        InfernalRiftManager manager = plugin.getRiftManager();
+        if (!manager.isActive() || manager.getActiveEventType() != EventType.BEACH_EXCAVATION) {
+            return;
+        }
+        Block block = event.getBlock();
+        if (!plugin.getBeachSchematicManager().isExcavatableBeachSand(block)) {
+            return;
+        }
+        if (tryExcavateSandStroke(event.getPlayer(), block)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private boolean tryExcavateSandStroke(Player player, Block block) {
         ItemStack handItem = player.getInventory().getItemInMainHand();
         BrushTier tier = plugin.getBrushLootManager().getBrushTier(handItem);
         if (tier == null) {
-            return;
+            handItem = player.getInventory().getItemInOffHand();
+            tier = plugin.getBrushLootManager().getBrushTier(handItem);
         }
-
-        event.setCancelled(true);
+        if (tier == null) {
+            return false;
+        }
 
         if (!plugin.getBedrockService().canParticipate(player)) {
             player.sendMessage(plugin.getPluginConfig().getMsgOnlyBedrock());
-            return;
+            return true;
         }
 
         long now = System.currentTimeMillis();
         long lastStroke = brushStrokeCooldown.getOrDefault(player.getUniqueId(), 0L);
-        if (now - lastStroke < 650L) {
-            return;
+        if (now - lastStroke < 600L) {
+            return true;
         }
         brushStrokeCooldown.put(player.getUniqueId(), now);
 
@@ -164,7 +313,7 @@ public class RiftEventListener implements Listener {
         } else {
             blockExcavationStep.remove(blockKey);
 
-            // Завершение раскопки: выдаём лут по редкости кисточки
+            // Выдаём лут из таблицы данной кисточки
             ItemStack reward = plugin.getBrushLootManager().rollLootForBrush(tier);
             Map<Integer, ItemStack> leftovers = player.getInventory().addItem(reward);
             if (!leftovers.isEmpty()) {
@@ -175,6 +324,7 @@ public class RiftEventListener implements Listener {
 
             plugin.getBrushLootManager().consumeBrushUse(player, handItem);
             plugin.getBeachSchematicManager().markBlockExcavatedAndScheduleRespawn(block);
+            plugin.getRiftManager().refreshVillagerWaitingState();
 
             block.getWorld().playSound(effectLoc, Sound.BLOCK_SAND_BREAK, 1.2f, 1.1f);
             block.getWorld().playSound(effectLoc, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.3f);
@@ -192,6 +342,7 @@ public class RiftEventListener implements Listener {
             } catch (Throwable ignored) {
             }
         }
+        return true;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -278,14 +429,22 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         InfernalRiftManager manager = plugin.getRiftManager();
         Entity victim = event.getEntity();
         Entity damager = event.getDamager();
 
+        // Если игрок нажал ЛКМ по 2-метровому Жителю (часто на Bedrock ПК / телефонах) — выдаём кисточку!
         if (manager.isExcavationVillager(victim)) {
             event.setCancelled(true);
+            if (damager instanceof Player player) {
+                triggerVillagerClickDebounced(player);
+            }
+            return;
+        }
+
+        if (event.isCancelled()) {
             return;
         }
 

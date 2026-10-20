@@ -34,6 +34,7 @@ import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.excavation.BrushTier;
 import ru.geyserevent.util.ColorUtil;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -75,6 +76,7 @@ public class InfernalRiftManager {
 
     private int brushCountdownSeconds;
     private boolean brushReadyToClaim;
+    private boolean villagerWaitingForBrushUse;
 
     private BossBar bossBar;
     private BukkitTask autoStartTask;
@@ -124,7 +126,9 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Быстрый цикл обновления локатора (/event gps) каждые 5 тиков (0.25 сек).
+     * Быстрый цикл каждые 5 тиков (0.25 сек):
+     * 1) Обновляет локатор (/event gps)
+     * 2) Удаляет кисточки у игроков, которые ушли далеко от пляжа
      */
     private void startFastGpsLoop() {
         if (gpsFastTask != null) {
@@ -133,9 +137,59 @@ public class InfernalRiftManager {
         gpsFastTask = new BukkitRunnable() {
             @Override
             public void run() {
+                enforceBrushZoneForPlayers();
                 updateGpsTrackerForPlayers();
             }
         }.runTaskTimer(plugin, 5L, 5L);
+    }
+
+    /**
+     * Проверяет всех игроков онлайн: если у игрока есть кисточка ивента, но он ушёл далеко от пляжа
+     * (или ивент Пляжные Раскопки не активен), кисточки мгновенно удаляются.
+     */
+    public void enforceBrushZoneForPlayers() {
+        double maxDist = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
+        double maxDistSq = maxDist * maxDist;
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!plugin.getBrushLootManager().hasAnyEventBrush(player)) {
+                continue;
+            }
+            boolean outside = !active
+                    || activeEventType != EventType.BEACH_EXCAVATION
+                    || riftCenterLocation == null
+                    || riftCenterLocation.getWorld() == null
+                    || !player.getWorld().equals(riftCenterLocation.getWorld())
+                    || player.getLocation().distanceSquared(riftCenterLocation) > maxDistSq;
+
+            if (outside) {
+                if (plugin.getBrushLootManager().removeAllEventBrushes(player)) {
+                    player.sendMessage(ColorUtil.color("&e┠ &cВы ушли далеко от пляжа раскопок — кисточки пропали."));
+                    refreshVillagerWaitingState();
+                }
+            }
+        }
+    }
+
+    /**
+     * Мгновенно пересчитывает состояние ожидания Жителя-Археолога (например, когда кисточка сломалась или пропала).
+     */
+    public void refreshVillagerWaitingState() {
+        if (!active || activeEventType != EventType.BEACH_EXCAVATION || riftCenterLocation == null) {
+            return;
+        }
+        double maxDist = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
+        boolean hasActiveBrush = plugin.getBrushLootManager().hasActiveBrushOnBeach(riftCenterLocation, maxDist);
+        this.villagerWaitingForBrushUse = hasActiveBrush;
+        if (hasActiveBrush) {
+            this.brushReadyToClaim = false;
+            this.brushCountdownSeconds = plugin.getPluginConfig().getExcavationBrushIntervalSeconds();
+        }
+        LivingEntity villager = getExcavationVillagerEntity();
+        if (villager != null) {
+            updateExcavationVillagerNameAndBar(villager);
+        }
+        plugin.getTopRightHudManager().updateTopRightHud();
     }
 
     private void resetNextAutoStartTimer() {
@@ -198,13 +252,14 @@ public class InfernalRiftManager {
         this.eventEndEpochSeconds = (System.currentTimeMillis() / 1000L) + (cfg.getDurationMinutes() * 60L);
 
         if (this.activeEventType == EventType.BEACH_EXCAVATION) {
-            // 1. Строим схему «Пляжные Раскопки»
-            plugin.getBeachSchematicManager().pasteSchematic(this.riftCenterLocation);
-            this.bossHomeLocation = this.riftCenterLocation.clone().add(0, 2.0, 0);
+            // 1. Строим схему «Пляжные Раскопки» и получаем точную точку спавна 2м Жителя на пьедестале
+            this.bossHomeLocation = plugin.getBeachSchematicManager().pasteSchematic(this.riftCenterLocation);
+            this.riftCenterLocation = this.bossHomeLocation.clone().subtract(0, 1.0, 0);
 
             // 2. Спавним 2-метрового Жителя-Археолога в центре пляжа
             this.brushCountdownSeconds = cfg.getExcavationBrushIntervalSeconds();
             this.brushReadyToClaim = false;
+            this.villagerWaitingForBrushUse = false;
             Villager villager = spawnExcavationVillager(this.bossHomeLocation);
             this.villagerUuid = villager.getUniqueId();
 
@@ -355,20 +410,35 @@ public class InfernalRiftManager {
         LivingEntity villager = getExcavationVillagerEntity();
         if (villager != null && villager.isValid() && bossHomeLocation != null) {
             if (!villager.getLocation().getWorld().equals(bossHomeLocation.getWorld())
-                    || villager.getLocation().distanceSquared(bossHomeLocation) > 1.0) {
+                    || villager.getLocation().distanceSquared(bossHomeLocation) > 0.25) {
                 villager.teleport(bossHomeLocation);
             }
         }
 
-        if (brushCountdownSeconds > 0) {
-            brushCountdownSeconds--;
-        }
+        // Проверяем, есть ли у кого-то на пляже активная кисточка.
+        // Пока кисточка есть — Житель находится в режиме «Ожидание» и таймер стоит на паузе!
+        boolean hasBrushOnBeach = plugin.getBrushLootManager().hasActiveBrushOnBeach(
+                riftCenterLocation,
+                cfg.getExcavationBrushRemoveDistance()
+        );
 
-        if (brushCountdownSeconds <= 0) {
-            brushReadyToClaim = true;
-            if (tryHandoutBrushToNearestPlayer()) {
-                brushReadyToClaim = false;
-                brushCountdownSeconds = cfg.getExcavationBrushIntervalSeconds();
+        if (hasBrushOnBeach) {
+            this.villagerWaitingForBrushUse = true;
+            this.brushReadyToClaim = false;
+            this.brushCountdownSeconds = cfg.getExcavationBrushIntervalSeconds();
+        } else {
+            this.villagerWaitingForBrushUse = false;
+            if (brushCountdownSeconds > 0) {
+                brushCountdownSeconds--;
+            }
+
+            if (brushCountdownSeconds <= 0) {
+                brushReadyToClaim = true;
+                if (tryHandoutBrushToBeachPlayer()) {
+                    brushReadyToClaim = false;
+                    villagerWaitingForBrushUse = true;
+                    brushCountdownSeconds = cfg.getExcavationBrushIntervalSeconds();
+                }
             }
         }
 
@@ -379,10 +449,10 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Выдаёт 1 случайную кисточку (Обычная, Эпическая, Легендарная) ближайшему игроку на пляже раз в 30 секунд.
+     * Выдаёт 1 случайную кисточку (Обычная, Эпическая, Легендарная) случайному игроку на пляже
+     * (одинаковый шанс и для игроков с телефонов, и для игроков с Bedrock ПК).
      */
-    @SuppressWarnings("deprecation")
-    public boolean tryHandoutBrushToNearestPlayer() {
+    public boolean tryHandoutBrushToBeachPlayer() {
         if (riftCenterLocation == null || riftCenterLocation.getWorld() == null) {
             return false;
         }
@@ -391,30 +461,31 @@ public class InfernalRiftManager {
         double maxDist = cfg.getExcavationBrushHandoutRadius();
         double maxDistSq = maxDist * maxDist;
 
-        Player closest = null;
-        double bestDistSq = maxDistSq;
-
+        List<Player> candidates = new ArrayList<>();
         for (Player p : w.getPlayers()) {
-            if (p.isDead() || !plugin.getBedrockService().canParticipate(p)) {
+            if (p.isDead() || !p.isOnline() || !plugin.getBedrockService().canParticipate(p)) {
                 continue;
             }
-            double dSq = p.getLocation().distanceSquared(riftCenterLocation);
-            if (dSq <= bestDistSq) {
-                bestDistSq = dSq;
-                closest = p;
+            if (p.getLocation().distanceSquared(riftCenterLocation) <= maxDistSq
+                    && !plugin.getBrushLootManager().hasAnyEventBrush(p)) {
+                candidates.add(p);
             }
         }
 
-        if (closest == null) {
+        if (candidates.isEmpty()) {
             return false;
         }
 
-        giveRandomBrushToPlayer(closest);
+        Player recipient = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+        giveRandomBrushToPlayer(recipient);
         return true;
     }
 
+    /**
+     * Обрабатывает клик (ПКМ или ЛКМ) по 2-метровому Жителю-Археологу как с телефона, так и с Bedrock ПК.
+     */
     @SuppressWarnings("deprecation")
-    public void handleVillagerRightClick(Player player) {
+    public void handleVillagerInteraction(Player player) {
         if (!active || activeEventType != EventType.BEACH_EXCAVATION) {
             return;
         }
@@ -423,14 +494,30 @@ public class InfernalRiftManager {
             return;
         }
 
+        double maxDist = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
+        boolean hasBrushOnBeach = plugin.getBrushLootManager().hasActiveBrushOnBeach(riftCenterLocation, maxDist);
+
+        if (hasBrushOnBeach) {
+            this.villagerWaitingForBrushUse = true;
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            String msg = ColorUtil.color("&eАрхеолог &8| &6Ожидание &8(&fДождитесь окончания текущей кисточки&8)");
+            try {
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
+            } catch (Throwable ignored) {
+            }
+            return;
+        }
+
         if (brushReadyToClaim || brushCountdownSeconds <= 0) {
             brushReadyToClaim = false;
+            villagerWaitingForBrushUse = true;
             brushCountdownSeconds = plugin.getPluginConfig().getExcavationBrushIntervalSeconds();
             giveRandomBrushToPlayer(player);
             LivingEntity v = getExcavationVillagerEntity();
             if (v != null) {
                 updateExcavationVillagerNameAndBar(v);
             }
+            plugin.getTopRightHudManager().updateTopRightHud();
         } else {
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, 1.0f, 1.0f);
             String msg = ColorUtil.color("&eАрхеолог &8| &fСледующая кисточка через &#E0C912" + brushCountdownSeconds + " сек.");
@@ -467,7 +554,7 @@ public class InfernalRiftManager {
                 "&e┠ &fВы получили от Археолога предмет: " + tier.getItemTitle()
         ));
         try {
-            String ab = ColorUtil.color("&eПолучена: " + tier.getItemTitle() + " &8(&fРаскопайте песок на пляже!&8)");
+            String ab = ColorUtil.color("&eПолучена: " + tier.getItemTitle() + " &8(&fНажмите по песку на пляже!&8)");
             recipient.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(ab));
         } catch (Throwable ignored) {
         }
@@ -699,6 +786,7 @@ public class InfernalRiftManager {
         }
         villagerUuid = null;
 
+        plugin.getBrushLootManager().removeAllEventBrushesFromOnlinePlayers();
         plugin.getAbilityController().removeAllMinions();
         plugin.getSchematicManager().restoreSchematic();
         plugin.getBeachSchematicManager().restoreActiveSchematic();
@@ -712,6 +800,8 @@ public class InfernalRiftManager {
 
         this.active = false;
         this.defeated = false;
+        this.villagerWaitingForBrushUse = false;
+        this.brushReadyToClaim = false;
         this.bossPhase = 1;
         this.riftCenterLocation = null;
         this.bossHomeLocation = null;
@@ -723,7 +813,9 @@ public class InfernalRiftManager {
             return;
         }
         String customName;
-        if (brushReadyToClaim || brushCountdownSeconds <= 0) {
+        if (villagerWaitingForBrushUse) {
+            customName = ColorUtil.color(plugin.getPluginConfig().getExcavationVillagerWaitingName());
+        } else if (brushReadyToClaim || brushCountdownSeconds <= 0) {
             customName = ColorUtil.color("&e&lАрхеолог &8[&aКисточка готова!&8]");
         } else {
             String raw = plugin.getPluginConfig().getExcavationVillagerName()
@@ -738,9 +830,12 @@ public class InfernalRiftManager {
             double progress = totalSec > 0 ? Math.max(0.0, Math.min(1.0, (double) remSec / totalSec)) : 1.0;
             bossBar.setProgress(progress);
 
+            String brushStatus = villagerWaitingForBrushUse
+                    ? "&6Ожидание"
+                    : "&#E0C912" + brushCountdownSeconds + "с";
             String barTitle = String.format(
-                    "&e&lПЛЯЖНЫЕ РАСКОПКИ &8| &fКисточка: &#E0C912%dс &8| &#E0C912%d %d %d",
-                    brushCountdownSeconds,
+                    "&e&lПЛЯЖНЫЕ РАСКОПКИ &8| &fКисточка: %s &8| &#E0C912%d %d %d",
+                    brushStatus,
                     riftCenterLocation.getBlockX(),
                     riftCenterLocation.getBlockY(),
                     riftCenterLocation.getBlockZ()
@@ -907,6 +1002,10 @@ public class InfernalRiftManager {
     }
 
     public void handlePlayerChangedWorld(Player player) {
+        if (plugin.getBrushLootManager().removeAllEventBrushes(player)) {
+            player.sendMessage(ColorUtil.color("&e┠ &cВы покинули мир раскопок — кисточки пропали."));
+            refreshVillagerWaitingState();
+        }
         if (!active || riftCenterLocation == null || riftCenterLocation.getWorld() == null) {
             return;
         }
@@ -1086,6 +1185,10 @@ public class InfernalRiftManager {
 
     public EventType getActiveEventType() {
         return activeEventType;
+    }
+
+    public boolean isVillagerWaitingForBrushUse() {
+        return villagerWaitingForBrushUse;
     }
 
     public int getSecondsUntilNextBrush() {

@@ -1,15 +1,18 @@
 package ru.geyserevent.excavation;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.Sound;
-import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -159,7 +162,7 @@ public class BrushLootManager {
             List<String> lore = List.of(
                     ColorUtil.color("&7Редкость: " + tier.getItemTitle()),
                     ColorUtil.color("&7Зарядов раскопок: &e" + uses),
-                    ColorUtil.color("&8Нажмите ПКМ по песку на пляже")
+                    ColorUtil.color("&8Нажмите по песку на пляже")
             );
             meta.setLore(lore);
 
@@ -180,7 +183,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Определяет редкость кисточки в руке игрока (или null, если это не кисточка ивента).
+     * Определяет редкость кисточки (или null, если это не кисточка ивента).
      */
     public BrushTier getBrushTier(ItemStack item) {
         if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
@@ -199,6 +202,82 @@ public class BrushLootManager {
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    /**
+     * Проверяет, есть ли у игрока хотя бы одна кисточка раскопок в инвентаре, левой руке или на курсоре.
+     */
+    public boolean hasAnyEventBrush(Player player) {
+        if (player == null) {
+            return false;
+        }
+        PlayerInventory inv = player.getInventory();
+        for (ItemStack item : inv.getContents()) {
+            if (getBrushTier(item) != null) {
+                return true;
+            }
+        }
+        if (getBrushTier(inv.getItemInOffHand()) != null) {
+            return true;
+        }
+        return getBrushTier(player.getItemOnCursor()) != null;
+    }
+
+    /**
+     * Удаляет все кисточки ивента у игрока (при уходе далеко от пляжа, выходе с сервера или окончании ивента).
+     */
+    public boolean removeAllEventBrushes(Player player) {
+        if (player == null) {
+            return false;
+        }
+        boolean removed = false;
+        PlayerInventory inv = player.getInventory();
+        ItemStack[] contents = inv.getContents();
+        for (int i = 0; i < contents.length; i++) {
+            if (getBrushTier(contents[i]) != null) {
+                inv.setItem(i, null);
+                removed = true;
+            }
+        }
+        if (getBrushTier(inv.getItemInOffHand()) != null) {
+            inv.setItemInOffHand(null);
+            removed = true;
+        }
+        if (getBrushTier(player.getItemOnCursor()) != null) {
+            player.setItemOnCursor(null);
+            removed = true;
+        }
+        return removed;
+    }
+
+    /**
+     * Удаляет кисточки ивента у всех игроков онлайн.
+     */
+    public void removeAllEventBrushesFromOnlinePlayers() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            removeAllEventBrushes(player);
+        }
+    }
+
+    /**
+     * Проверяет, есть ли сейчас на пляже хотя бы один игрок с активной кисточкой.
+     * Пока кисточка есть — Житель находится в режиме ожидания («Ожидание»).
+     */
+    public boolean hasActiveBrushOnBeach(Location beachCenter, double maxRadius) {
+        if (beachCenter == null || beachCenter.getWorld() == null) {
+            return false;
+        }
+        World world = beachCenter.getWorld();
+        double maxDistSq = maxRadius * maxRadius;
+        for (Player player : world.getPlayers()) {
+            if (player.isDead() || !player.isOnline()) {
+                continue;
+            }
+            if (player.getLocation().distanceSquared(beachCenter) <= maxDistSq && hasAnyEventBrush(player)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -226,7 +305,7 @@ public class BrushLootManager {
                 meta.setLore(List.of(
                         ColorUtil.color("&7Редкость: " + tier.getItemTitle()),
                         ColorUtil.color("&7Зарядов раскопок: &e" + remaining),
-                        ColorUtil.color("&8Нажмите ПКМ по песку на пляже")
+                        ColorUtil.color("&8Нажмите по песку на пляже")
                 ));
             }
             brush.setItemMeta(meta);

@@ -75,7 +75,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.4.0 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.5.0 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Ивенты: Адский Разлом + Пляжные Раскопки");
         getLogger().info(" Команды игроков: /event delay, /event gps");
         getLogger().info(" Админ-команды: /rift <start|start-here|stop|brushloot|givebrush|ability|setworld|reload>");

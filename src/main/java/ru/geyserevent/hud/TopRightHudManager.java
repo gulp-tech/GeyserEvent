@@ -86,10 +86,13 @@ public class TopRightHudManager {
         String title;
         BarColor color;
         if (type == EventType.BEACH_EXCAVATION) {
+            String brushStatus = manager.isVillagerWaitingForBrushUse()
+                    ? "&6Ожидание"
+                    : "&#E0C912" + manager.getSecondsUntilNextBrush() + "с";
             title = ColorUtil.color(String.format(
-                    "%s &8| &fКисточка через: &#E0C912%dс &8| &fКоординаты: &#E0C912%d %d %d",
+                    "%s &8| &fКисточка: %s &8| &fКоординаты: &#E0C912%d %d %d",
                     cfg.getTopRightExcavationDisplayName(),
-                    manager.getSecondsUntilNextBrush(),
+                    brushStatus,
                     loc.getBlockX(),
                     loc.getBlockY(),
                     loc.getBlockZ()

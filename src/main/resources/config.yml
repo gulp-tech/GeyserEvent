@@ -4,9 +4,8 @@
 # ============================================================================
 
 bedrock:
-  # Строгий режим: участвовать в ивенте, наносить урон боссу, получать награды
-  # и использовать /event могут ТОЛЬКО игроки с Bedrock Edition (GeyserMC / Floodgate).
-  strict-only: true
+  # Строгий режим: если false — участвовать и брать кисточки могут и игроки с телефонов, и игроки с Bedrock ПК без ограничений.
+  strict-only: false
   # Разрешить администраторам с правом geyserevent.bypass.bedrock обходить проверку
   allow-admin-bypass: true
   # Префикс никнейма Floodgate/Geyser как резервная проверка
@@ -283,9 +282,11 @@ rewards:
 # ============================================================================
 excavation:
   villager-name: "&e&lАрхеолог &8[&fКисточка: &#E0C912%sec%с&8]"
+  villager-waiting-name: "&e&lАрхеолог &8[&6Ожидание&8]"
   villager-scale: 1.10
   brush-interval-seconds: 30
   brush-handout-radius: 14.0
+  brush-remove-distance: 22.0
 
   brushes:
     common:
