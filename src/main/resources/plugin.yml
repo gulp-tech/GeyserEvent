@@ -1,0 +1,32 @@
+name: GeyserEvent
+version: '1.4.0'
+main: ru.geyserevent.GeyserEventPlugin
+api-version: '1.21'
+authors: [GeyserEvent]
+description: Ивенты «Адский Разлом» и «Пляжные Раскопки» для Purpur 26.2 — только для игроков Bedrock (GeyserMC)
+softdepend:
+  - Geyser-Spigot
+  - floodgate
+  - PlayerPoints
+
+commands:
+  event:
+    description: Команды ивента для игроков (/event delay, /event gps)
+    aliases: [events, ivent]
+    usage: /<command> <delay|gps>
+  rift:
+    description: Админ-команды управления ивентами «Адский Разлом» и «Пляжные Раскопки»
+    aliases: [geyserevent, razlom, infernalrift]
+    usage: /<command> <start|start-here|stop|brushloot|givebrush|ability|setworld|saveschem|reload|status|top>
+    permission: geyserevent.admin
+
+permissions:
+  geyserevent.use:
+    description: Доступ к командам /event delay и /event gps (только для Bedrock игроков)
+    default: true
+  geyserevent.admin:
+    description: Полное управление ивентами Адский Разлом и Пляжные Раскопки (/rift)
+    default: op
+  geyserevent.bypass.bedrock:
+    description: Позволяет администраторам с Java-клиента управлять ивентами и тестировать их
+    default: op

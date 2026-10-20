@@ -1,0 +1,401 @@
+# ============================================================================
+# GeyserEvent v1.4.0 — Ивенты «Адский Разлом» и «Пляжные Раскопки» (Purpur 26.2)
+# Специально разработан для игроков Bedrock Edition (GeyserMC)
+# ============================================================================
+
+bedrock:
+  # Строгий режим: участвовать в ивенте, наносить урон боссу, получать награды
+  # и использовать /event могут ТОЛЬКО игроки с Bedrock Edition (GeyserMC / Floodgate).
+  strict-only: true
+  # Разрешить администраторам с правом geyserevent.bypass.bedrock обходить проверку
+  allow-admin-bypass: true
+  # Префикс никнейма Floodgate/Geyser как резервная проверка
+  fallback-prefix: "."
+
+resourcepack:
+  # Автоматически экспортировать Bedrock ресурспак (GeyserEvent-Pack.mcpack)
+  # и копировать его в папку plugins/Geyser-Spigot/packs/
+  auto-install-to-geyser: true
+  # Отображать инфо-панель в правом верхнем углу экрана во время ивента
+  # (через BossBar и GeyserEvent-Pack.mcpack — НЕ трогает Scoreboard сервера!)
+  top-right-hud:
+    enabled: true
+    title: "&#FF2E2E&lАДСКИЙ РАЗЛОМ"
+    event-display-name: "&#34D711Адский-Разлом"
+    excavation-display-name: "&#34D711Пляжные-Раскопки"
+    rarity-display: "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"
+
+event:
+  # Мир, в котором появляются ивенты «Адский Разлом» и «Пляжные Раскопки»
+  world: "world2"
+  # Название редкости для плейсхолдера %loot%
+  loot-rarity: "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"
+  # Автоматический запуск случайного ивента по таймеру
+  auto-start: true
+  # Интервал между автоматическими запусками (в минутах)
+  interval-minutes: 60
+  # Длительность ивента (в минутах). Через 20 минут ивент пропадает.
+  duration-minutes: 20
+  # Минимальное количество Bedrock-игроков онлайн для авто-старта
+  min-bedrock-players: 1
+  # Задержка перед очисткой после убийства босса (в секундах)
+  cleanup-delay-seconds: 15
+
+  # Настройки локатора (/event gps)
+  gps:
+    # На каком расстоянии (в блоках) от ивента локатор автоматически молча отключается
+    arrival-distance: 10.0
+    # Показывать ли путеводные частицы перед игроком в сторону ивента
+    particle-trail: true
+
+  # Настройки поиска случайных координат в мире world2
+  spawn:
+    center-x: 0
+    center-z: 0
+    min-radius: 100
+    max-radius: 1000
+    max-attempts: 35
+
+schematic:
+  file: "infernal_rift.schem.yml"
+  restore-blocks-on-end: true
+  protect-region: true
+  protection-radius: 12
+  disable-portal-teleport: true
+
+# ============================================================================
+# Ивент 1: «Адский Разлом (Вторжение Босса)»
+# ============================================================================
+boss:
+  name: "&4&lБрутальный Владыка Разлома &8[&c%hp%&7/&c%max_hp% ❤&8]"
+  health: 3500.0
+  damage: 8.0
+  height-meters: 2.0
+  scale: 1.22
+  weapon:
+    material: "NETHERITE_AXE"
+    name: "&4&lСекира Адского Разлома"
+    enchanted-glow: true
+  movement-speed: 0.35
+  knockback-resistance: 0.85
+  leash-radius: 35.0
+  max-ranged-attack-distance: 28.0
+
+minions:
+  enabled: true
+  # Приспешники появляются только когда игрок подходит к боссу ближе чем на 20 блоков
+  trigger-radius: 20.0
+  summon-interval-seconds: 25
+  count-per-wave: 3
+  max-active: 8
+  entity-type: "PIGLIN_BRUTE"
+  name: "&cПриспешник Разлома &7[%hp% ❤]"
+  health: 60.0
+  damage: 7.0
+  scale: 0.92
+  weapon: "GOLDEN_AXE"
+
+  loot:
+    enabled: true
+    min-exp: 50
+    max-exp: 120
+    items:
+      magma_cream:
+        material: "MAGMA_CREAM"
+        chance: 65.0
+        min: 2
+        max: 5
+        rare: false
+      blaze_rod:
+        material: "BLAZE_ROD"
+        chance: 55.0
+        min: 1
+        max: 4
+        rare: false
+      blaze_powder:
+        material: "BLAZE_POWDER"
+        chance: 50.0
+        min: 2
+        max: 5
+        rare: false
+      quartz:
+        material: "QUARTZ"
+        chance: 60.0
+        min: 4
+        max: 10
+        rare: false
+      glowstone_dust:
+        material: "GLOWSTONE_DUST"
+        chance: 55.0
+        min: 3
+        max: 8
+        rare: false
+      nether_wart:
+        material: "NETHER_WART"
+        chance: 50.0
+        min: 3
+        max: 7
+        rare: false
+      ghast_tear:
+        material: "GHAST_TEAR"
+        chance: 35.0
+        min: 1
+        max: 2
+        rare: false
+      crying_obsidian:
+        material: "CRYING_OBSIDIAN"
+        chance: 40.0
+        min: 1
+        max: 3
+        rare: false
+      fire_charge:
+        material: "FIRE_CHARGE"
+        chance: 45.0
+        min: 2
+        max: 4
+        rare: false
+      gold_ingot:
+        material: "GOLD_INGOT"
+        chance: 65.0
+        min: 3
+        max: 8
+        rare: false
+      gold_block:
+        material: "GOLD_BLOCK"
+        chance: 25.0
+        min: 1
+        max: 2
+        rare: false
+      golden_apple:
+        material: "GOLDEN_APPLE"
+        chance: 30.0
+        min: 1
+        max: 2
+        rare: false
+      diamond:
+        material: "DIAMOND"
+        chance: 45.0
+        min: 2
+        max: 5
+        rare: false
+      diamond_block:
+        material: "DIAMOND_BLOCK"
+        chance: 12.0
+        min: 1
+        max: 1
+        rare: false
+      ancient_debris:
+        material: "ANCIENT_DEBRIS"
+        chance: 9.0
+        min: 1
+        max: 2
+        rare: true
+      netherite_scrap:
+        material: "NETHERITE_SCRAP"
+        chance: 8.0
+        min: 1
+        max: 2
+        rare: true
+      netherite_upgrade_template:
+        material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+        chance: 6.0
+        min: 1
+        max: 1
+        rare: true
+      netherite_ingot:
+        material: "NETHERITE_INGOT"
+        chance: 3.5
+        min: 1
+        max: 1
+        rare: true
+      netherite_sword:
+        material: "NETHERITE_SWORD"
+        chance: 1.5
+        min: 1
+        max: 1
+        rare: true
+      netherite_pickaxe:
+        material: "NETHERITE_PICKAXE"
+        chance: 1.5
+        min: 1
+        max: 1
+        rare: true
+      netherite_chestplate:
+        material: "NETHERITE_CHESTPLATE"
+        chance: 1.2
+        min: 1
+        max: 1
+        rare: true
+      netherite_leggings:
+        material: "NETHERITE_LEGGINGS"
+        chance: 1.2
+        min: 1
+        max: 1
+        rare: true
+      netherite_helmet:
+        material: "NETHERITE_HELMET"
+        chance: 1.5
+        min: 1
+        max: 1
+        rare: true
+      netherite_boots:
+        material: "NETHERITE_BOOTS"
+        chance: 1.5
+        min: 1
+        max: 1
+        rare: true
+
+abilities:
+  radius: 15.0
+  cast-interval-seconds: 14
+
+  pull:
+    enabled: true
+    horizontal-strength: 1.65
+    vertical-boost: 0.42
+    damage: 4.0
+    slowness-ticks: 40
+
+  push:
+    enabled: true
+    horizontal-strength: 2.05
+    vertical-boost: 0.65
+    damage: 6.0
+
+  gather:
+    enabled: true
+    distance-in-front: 3.5
+    damage: 5.0
+    slowness-ticks: 60
+
+rewards:
+  currency-name: "осколков"
+  use-playerpoints-api: true
+  fallback-command: "points give %player% %amount%"
+  places:
+    1: 3000
+    2: 2000
+    3: 1000
+
+# ============================================================================
+# Ивент 2: «Пляжные Раскопки» (2-метровый Житель выдаёт кисточки раз в 30 сек)
+# Настройка лута из игры: /rift brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>
+# ============================================================================
+excavation:
+  villager-name: "&e&lАрхеолог &8[&fКисточка: &#E0C912%sec%с&8]"
+  villager-scale: 1.10
+  brush-interval-seconds: 30
+  brush-handout-radius: 14.0
+
+  brushes:
+    common:
+      name: "&aОбычная кисточка"
+      chance: 65.0
+      uses: 3
+      loot:
+        - material: "GOLD_INGOT"
+          amount: 4
+          chance: 45.0
+        - material: "IRON_INGOT"
+          amount: 6
+          chance: 50.0
+        - material: "EMERALD"
+          amount: 3
+          chance: 40.0
+        - material: "DIAMOND"
+          amount: 2
+          chance: 25.0
+        - material: "GOLDEN_APPLE"
+          amount: 1
+          chance: 20.0
+        - material: "EXPERIENCE_BOTTLE"
+          amount: 8
+          chance: 35.0
+
+    epic:
+      name: "&dЭпическая кисточка"
+      chance: 25.0
+      uses: 4
+      loot:
+        - material: "DIAMOND"
+          amount: 5
+          chance: 45.0
+        - material: "GOLD_BLOCK"
+          amount: 2
+          chance: 40.0
+        - material: "GOLDEN_APPLE"
+          amount: 3
+          chance: 35.0
+        - material: "EMERALD_BLOCK"
+          amount: 2
+          chance: 30.0
+        - material: "NETHERITE_SCRAP"
+          amount: 1
+          chance: 18.0
+        - material: "TOTEM_OF_UNDYING"
+          amount: 1
+          chance: 15.0
+        - material: "EXPERIENCE_BOTTLE"
+          amount: 16
+          chance: 35.0
+
+    legendary:
+      name: "&6Легендарная кисточка"
+      chance: 10.0
+      uses: 5
+      loot:
+        - material: "NETHERITE_INGOT"
+          amount: 1
+          chance: 25.0
+        - material: "ANCIENT_DEBRIS"
+          amount: 2
+          chance: 35.0
+        - material: "DIAMOND_BLOCK"
+          amount: 2
+          chance: 40.0
+        - material: "ENCHANTED_GOLDEN_APPLE"
+          amount: 1
+          chance: 15.0
+        - material: "TOTEM_OF_UNDYING"
+          amount: 1
+          chance: 30.0
+        - material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+          amount: 1
+          chance: 25.0
+        - material: "NETHERITE_PICKAXE"
+          amount: 1
+          chance: 10.0
+
+messages:
+  prefix: "&e┠ &r"
+  only-bedrock: "&e┠ &cДоступно только для игроков с Bedrock Edition (GeyserMC)."
+  portal-no-teleport: "&e┠ &cТелепортация через этот портал отключена."
+  region-protected: "&e┠ &cЗдесь нельзя ломать или ставить блоки."
+
+  # Сообщение появления ивента «Адский Разлом»
+  spawn-broadcast:
+    - '&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fпоявился на карте.'
+    - '&e┠ &fЗдоровье: &c%hp% ❤'
+    - '&e┠ &fКоординаты: &#E0C912%x% %y% %z%'
+
+  # Сообщение появления ивента «Пляжные Раскопки»
+  excavation-spawn-broadcast:
+    - '&e┠ &#34D711П&#40CE10л&#4CC50Eя&#58BC0Dж&#64B30Bн&#70AA0Aы&#7CA109е-&#889807Р&#948F06а&#A08605с&#AC7D03к&#B87402о&#C46B01п&#CF7C00к&#DB8500и &fпоявились на карте.'
+    - '&e┠ &fЖитель выдаёт кисточку: &#E0C912каждые 30 сек.'
+    - '&e┠ &fКоординаты: &#E0C912%x% %y% %z%'
+
+  # /event delay (до начала ивента — НЕ показывает какой ивент будет следующим!)
+  delay-waiting:
+    - '&e┠ &fДо появления следующего ивента: &#E0C912%time%'
+
+  # /event delay (когда идёт «Адский Разлом»)
+  delay-active:
+    - '&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fактивен на карте.'
+    - '&e┠ &fЗдоровье: &c%hp%/%max_hp% ❤'
+    - '&e┠ &fКоординаты: &#E0C912%x% %y% %z%'
+
+  # /event delay (когда идут «Пляжные Раскопки»)
+  excavation-delay-active:
+    - '&e┠ &#34D711П&#40CE10л&#4CC50Eя&#58BC0Dж&#64B30Bн&#70AA0Aы&#7CA109е-&#889807Р&#948F06а&#A08605с&#AC7D03к&#B87402о&#C46B01п&#CF7C00к&#DB8500и &fактивны на карте.'
+    - '&e┠ &fДо конца раскопок: &#E0C912%remaining%'
+    - '&e┠ &fКоординаты: &#E0C912%x% %y% %z%'
