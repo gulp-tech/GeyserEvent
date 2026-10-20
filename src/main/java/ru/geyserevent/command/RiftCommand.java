@@ -24,8 +24,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Админ-команды управления ивентом «Адский Разлом» (/rift).
- * Без каких-либо меню — только прямые команды управления.
+ * Админ-команды управления ивентом (/rift).
  */
 public class RiftCommand implements CommandExecutor, TabCompleter {
 
@@ -38,7 +37,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("geyserevent.admin")) {
-            sender.sendMessage(ColorUtil.color("&e┠ &cУ вас нет прав администратора! Для игроков: &#34D711/event delay &cи &#34D711/event gps"));
+            sender.sendMessage(ColorUtil.color("&e┠ &cНедостаточно прав."));
             return true;
         }
 
@@ -54,33 +53,28 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
 
         switch (sub) {
             case "start" -> {
-                if (manager.startEventRandomInConfiguredWorld()) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент «Адский Разлом» запущен в мире &#E0C912" + cfg.getWorldName() + "&#34D711!"));
-                } else {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cНе удалось запустить ивент в мире &#E0C912" + cfg.getWorldName()
-                            + "&c. Убедитесь, что мир создан, или используйте &#E0C912/rift start-here&c."));
+                if (!manager.startEventRandomInConfiguredWorld()) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cНе удалось найти мир &#E0C912" + cfg.getWorldName() + "&c."));
                 }
                 return true;
             }
 
             case "start-here", "starthere" -> {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cЭту команду может выполнить только игрок!"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cТолько для игроков."));
                     return true;
                 }
-                if (manager.startEventAt(player.getLocation())) {
-                    player.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент «Адский Разлом» запущен прямо на вашей позиции!"));
-                }
+                manager.startEventAt(player.getLocation());
                 return true;
             }
 
             case "stop" -> {
                 if (!manager.isActive()) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &eИвент сейчас не активен."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cИвент не активен."));
                     return true;
                 }
                 manager.stopEvent(false);
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент остановлен, схематика полностью откачена."));
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент остановлен."));
                 return true;
             }
 
@@ -91,7 +85,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 }
                 LivingEntity boss = manager.getBossEntity();
                 if (boss == null || boss.isDead()) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cБосс сейчас не активен!"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cБосс не активен."));
                     return true;
                 }
                 BossAbilityType type = switch (args[1].toLowerCase(Locale.ROOT)) {
@@ -102,23 +96,21 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     default -> null;
                 };
                 if (type == null) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cНеизвестная способность! Доступно: &#E0C912pull, push, gather, minions"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cДоступно: &#E0C912pull, push, gather, minions"));
                     return true;
                 }
-                int count = plugin.getAbilityController().executeAbility(boss, type);
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Босс применил способность &#E0C912"
-                        + type.getDisplayName() + " &7(целей/мобов: &f" + count + "&7)."));
+                plugin.getAbilityController().executeAbility(boss, type);
                 return true;
             }
 
             case "setworld" -> {
                 if (args.length < 2) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " setworld <имя_мира> &7(текущий: &#E0C912" + cfg.getWorldName() + "&7)"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " setworld <мир>"));
                     return true;
                 }
                 String newWorld = args[1];
                 cfg.setWorldNameAndSave(newWorld);
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Мир появления ивента изменён на &#E0C912" + newWorld + " &#34D711и сохранён в config.yml!"));
+                sender.sendMessage(ColorUtil.color("&e┠ &fМир ивента: &#E0C912" + newWorld));
                 return true;
             }
 
@@ -127,7 +119,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(ColorUtil.color("&e┠ &cТолько для игроков."));
                     return true;
                 }
-                int radius = 6;
+                int radius = 7;
                 if (args.length >= 2) {
                     try {
                         radius = Math.max(2, Math.min(20, Integer.parseInt(args[1])));
@@ -136,9 +128,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 }
                 try {
                     int saved = plugin.getSchematicManager().saveCustomSchematicFromWorld(player.getLocation(), radius);
-                    player.sendMessage(ColorUtil.color("&e┠ &#34D711Схематика успешно сохранена (&f" + saved + " блоков&#34D711)!"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &#34D711Сохранено блоков: &#E0C912" + saved));
                 } catch (IOException ex) {
-                    player.sendMessage(ColorUtil.color("&e┠ &cОшибка сохранения схематики: " + ex.getMessage()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cОшибка: " + ex.getMessage()));
                 }
                 return true;
             }
@@ -146,28 +138,22 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             case "status", "info" -> {
                 if (manager.isActive() && manager.getRiftCenterLocation() != null) {
                     Location loc = manager.getRiftCenterLocation();
-                    sender.sendMessage(ColorUtil.color("&e┠ &fСтатус ивента: &#34D711АКТИВЕН"));
-                    sender.sendMessage(ColorUtil.color("&e┠ &fМир: &#E0C912" + loc.getWorld().getName()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fЗдоровье: &c" + (int) Math.ceil(manager.getBossCurrentHealth()) + "/" + (int) Math.ceil(manager.getBossMaxHealth()) + " ❤"));
                     sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912" + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()));
-                    sender.sendMessage(ColorUtil.color("&e┠ &fЗдоровье босса: &c" + (int) Math.ceil(manager.getBossCurrentHealth()) + "/" + (int) Math.ceil(manager.getBossMaxHealth()) + " ❤"));
-                    sender.sendMessage(ColorUtil.color("&e┠ &fЖивых приспешников: &#E0C912" + plugin.getAbilityController().getActiveMinionCount()));
                 } else {
-                    sender.sendMessage(ColorUtil.color("&e┠ &fСтатус ивента: &cОжидание"));
-                    sender.sendMessage(ColorUtil.color("&e┠ &fДо авто-старта: &#E0C912" + ColorUtil.formatDurationVerbose(manager.getSecondsUntilNextStart())));
-                    sender.sendMessage(ColorUtil.color("&e┠ &fМир в конфиге: &#E0C912" + cfg.getWorldName()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fДо появления: &#E0C912" + ColorUtil.formatDurationVerbose(manager.getSecondsUntilNextStart())));
                 }
                 return true;
             }
 
             case "top" -> {
                 List<DamageLeaderboard.DamageEntry> top = manager.getLeaderboard().getTop(5);
-                sender.sendMessage(ColorUtil.color("&e┠ &fТекущий топ урона по Боссу:"));
                 if (top.isEmpty()) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &7Пока никто не нанёс урона."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Урон ещё не нанесён."));
                 } else {
                     for (int i = 0; i < top.size(); i++) {
                         DamageLeaderboard.DamageEntry e = top.get(i);
-                        sender.sendMessage(ColorUtil.color("&e┠ &6#" + (i + 1) + " &#E0C912" + e.playerName() + " &8— &c" + (int) e.damage() + " ❤"));
+                        sender.sendMessage(ColorUtil.color("&e┠ &6" + (i + 1) + " место: &#E0C912" + e.playerName() + " &8— &c" + (int) e.damage() + " ❤"));
                     }
                 }
                 return true;
@@ -180,7 +166,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 plugin.getPlayerPointsHook().setupHook();
                 plugin.getTopRightHudManager().exportAndInstallResourcePack();
                 manager.startAutoScheduler();
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Конфигурация, схематика и ресурспак GeyserEvent успешно перезагружены!"));
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Конфиг перезагружен."));
                 return true;
             }
 
@@ -192,15 +178,12 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendAdminHelp(CommandSender sender, String label, PluginConfig cfg) {
-        sender.sendMessage(ColorUtil.color("&e┠ &fАдмин-команды &#34D711Адский Разлом&f:"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start &8— &fЗапустить ивент в мире " + cfg.getWorldName()));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here &8— &fЗапустить ивент прямо здесь"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить ивент и откатить схематику"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " ability <pull|push|gather|minions> &8— &fСпособность босса"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " setworld <мир> &8— &fИзменить мир ивента"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " saveschem [радиус] &8— &fСохранить свою схематику"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " status &8| &#E0C912top &8— &fСтатус и топ урона"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " reload &8— &fПерезагрузить конфиг и схематику"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start &8— &fЗапустить в мире " + cfg.getWorldName()));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here &8— &fЗапустить на вашей позиции"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить ивент"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " ability <pull|push|gather|minions>"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " setworld <мир>"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " reload"));
     }
 
     @Override

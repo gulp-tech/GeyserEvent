@@ -1,11 +1,10 @@
 # ============================================================================
-# Схематика ивента «Адский Разлом» (Infernal Rift)
-# Портал размещается без физики (applyPhysics=false) и защищён от телепортации!
-# Вы также можете сохранить свою постройку из игры командой: /rift saveschem <радиус>
+# Улучшенная схематика ивента «Адский Разлом» (15x15 Цитадель Разлома)
+# Портал размещается без физики распада и НЕ телепортирует игроков.
 # ============================================================================
 
-name: "infernal_rift"
-description: "Алтарь и Врата Адского Разлома с защитой от телепортации"
+name: "infernal_rift_citadel"
+description: "Цитадель и Врата Адского Разлома"
 boss-spawn-offset:
   x: 0.5
   y: 1.0
@@ -13,182 +12,276 @@ boss-spawn-offset:
   yaw: 0.0
   pitch: 0.0
 
-# Палитра символов для послойной схемы (11x11, центр в X=5, Z=5)
+# Палитра символов для послойной схемы (15x15, центр в X=7, Z=7)
 palette:
   '.': "AIR"
   'B': "BLACKSTONE"
   'P': "POLISHED_BLACKSTONE_BRICKS"
   'C': "CRACKED_POLISHED_BLACKSTONE_BRICKS"
+  'H': "CHISELED_POLISHED_BLACKSTONE"
   'G': "GILDED_BLACKSTONE"
   'M': "MAGMA_BLOCK"
   'O': "OBSIDIAN"
   'Y': "CRYING_OBSIDIAN"
   'L': "LODESTONE"
-  'W': "POLISHED_BLACKSTONE_WALL"
+  'W': "POLISHED_BLACKSTONE_BRICK_WALL"
+  'F': "NETHER_BRICK_FENCE"
   'N': "NETHERRACK"
-  'F': "SOUL_FIRE"
+  'S': "SOUL_FIRE"
   'X': "NETHER_PORTAL"
-  'S': "SOUL_LANTERN"
-  'H': "CRIMSON_NYLIUM"
+  'T': "SOUL_LANTERN"
+  'K': "CHAIN"
+  'R': "CRIMSON_NYLIUM"
+  'D': "POLISHED_BLACKSTONE_BRICK_SLAB"
+  'A': "RESPAWN_ANCHOR"
 
-# Слои по высоте Y относительно земли (y=0 — уровень поверхности земли)
-# Каждая строка — ось X (от -5 до +5), список строк — ось Z (от -5 до +5)
 layers:
+  # Уровень земли (y = 0): 15x15 бастионный кратер с жилами магмы, плачущего обсидиана и золочёного чернита
   0:
-    - "..B P C B C P B.."
-    - ".B Y P G O G P Y B."
-    - "B P C O Y O Y O C P B"
-    - "P G O Y M G M Y O G P"
-    - "C O Y M P C P M Y O C"
-    - "B G O G C P C G O G B"
-    - "C O Y M P H P M Y O C"
-    - "P G O Y M L M Y O G P"
-    - "B P C O Y H Y O C P B"
-    - ".B Y P G O G P Y B."
-    - "..B P C B C P B.."
+    - "....D B P C P B D...."
+    - "..D B P C G C P B D.."
+    - ".B P Y O P H P O Y P B."
+    - "D P O Y M G M Y O P D"
+    - "B C P M P C P M P C B"
+    - "P G H G C R C G H G P"
+    - "C O M P R M R P M O C"
+    - "P H G C M L M C G H P"
+    - "C O M P R M R P M O C"
+    - "P G H G C R C G H G P"
+    - "B C P M P C P M P C B"
+    - "D P O Y M G M Y O P D"
+    - ".B P Y O P H P O Y P B."
+    - "..D B P C G C P B D.."
+    - "....D B P C P B D...."
 
+  # Уровень y = 1: ступени, угловые башни-жаровни и мощное основание портала
   1:
-    - "..................."
-    - ".Y...............Y."
-    - "..................."
-    - "....Y O Y O Y......"
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - ".Y...............Y."
-    - "..................."
+    - "......................"
+    - "......................"
+    - "..H...............H.."
+    - "...D.............D..."
+    - ".....P O Y H Y O P..."
+    - "....P Y O G G O Y P.."
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "...D.............D..."
+    - "..H...............H.."
+    - "......................"
+    - "......................"
 
+  # Уровень y = 2: колонны башен и нижний ярус врат Разлома
   2:
-    - "..................."
-    - ".W...............W."
-    - "..................."
-    - "....O Y X X X Y O.."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - ".W...............W."
-    - "..................."
+    - "......................"
+    - "......................"
+    - "..Y...............Y.."
+    - "......................"
+    - ".....W O X X X O W..."
+    - "....W Y.........Y W.."
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "..Y...............Y.."
+    - "......................"
+    - "......................"
 
+  # Уровень y = 3
   3:
-    - "..................."
-    - ".W...............W."
-    - "..................."
-    - "....Y O X X X O Y.."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - ".W...............W."
-    - "..................."
+    - "......................"
+    - "......................"
+    - "..W...............W.."
+    - "......................"
+    - ".....W Y X X X Y W..."
+    - "....F...........F...."
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "..W...............W.."
+    - "......................"
+    - "......................"
 
+  # Уровень y = 4
   4:
-    - "..................."
-    - ".N...............N."
-    - "..................."
-    - "....O Y X X X Y O.."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - ".N...............N."
-    - "..................."
+    - "......................"
+    - "......................"
+    - "..W...............W.."
+    - "......................"
+    - ".....W O X X X O W..."
+    - "....T...........T...."
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "..W...............W.."
+    - "......................"
+    - "......................"
 
+  # Уровень y = 5
   5:
-    - "..................."
-    - ".F...............F."
-    - "..................."
-    - "....Y O X X X O Y.."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - ".F...............F."
-    - "..................."
+    - "......................"
+    - "......................"
+    - "..N...............N.."
+    - "......................"
+    - "......O Y X X X Y O.."
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "..N...............N.."
+    - "......................"
+    - "......................"
 
+  # Уровень y = 6
   6:
-    - "..................."
-    - "..................."
-    - "..................."
-    - "......O Y O Y O...."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
+    - "......................"
+    - "......................"
+    - "..S...............S.."
+    - "......................"
+    - "......Y O Y H Y O Y.."
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "......................"
+    - "..S...............S.."
+    - "......................"
+    - "......................"
 
-  7:
-    - "..................."
-    - "..................."
-    - "..................."
-    - "........Y G Y......"
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-    - "..................."
-
-# Дополнительные точечные блоки (dx, dy, dz относительно центра схематики)
+# Детальные 3D-блоки центральной арки Врат Разлома, рогов и алтаря
 blocks:
-  # Центральная арка портала Адского Разлома (z = -2)
+  # Центральный пьедестал и обрамление пола
+  - { x: 0,  y: 0, z: 0,  material: "LODESTONE" }
+  - { x: 0,  y: 0, z: 2,  material: "CHISELED_POLISHED_BLACKSTONE" }
+  - { x: -2, y: 1, z: 0,  material: "SOUL_LANTERN" }
+  - { x: 2,  y: 1, z: 0,  material: "SOUL_LANTERN" }
+
+  # Внешний контур ступеней по краям (радиус 6)
+  - { x: 0,  y: 1, z: 6,  material: "POLISHED_BLACKSTONE_BRICK_SLAB" }
+  - { x: -1, y: 1, z: 6,  material: "POLISHED_BLACKSTONE_BRICK_SLAB" }
+  - { x: 1,  y: 1, z: 6,  material: "POLISHED_BLACKSTONE_BRICK_SLAB" }
+  - { x: -6, y: 1, z: 0,  material: "POLISHED_BLACKSTONE_BRICK_SLAB" }
+  - { x: 6,  y: 1, z: 0,  material: "POLISHED_BLACKSTONE_BRICK_SLAB" }
+
+  # 4 угловых башни с вечным огнём душ (x = ±5, z = ±5)
+  - { x: -5, y: 1, z: -5, material: "POLISHED_BLACKSTONE_BRICKS" }
+  - { x: -5, y: 2, z: -5, material: "CRYING_OBSIDIAN" }
+  - { x: -5, y: 3, z: -5, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: -5, y: 4, z: -5, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: -5, y: 5, z: -5, material: "NETHERRACK" }
+  - { x: -5, y: 6, z: -5, material: "SOUL_FIRE" }
+
+  - { x: 5,  y: 1, z: -5, material: "POLISHED_BLACKSTONE_BRICKS" }
+  - { x: 5,  y: 2, z: -5, material: "CRYING_OBSIDIAN" }
+  - { x: 5,  y: 3, z: -5, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: 5,  y: 4, z: -5, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: 5,  y: 5, z: -5, material: "NETHERRACK" }
+  - { x: 5,  y: 6, z: -5, material: "SOUL_FIRE" }
+
+  - { x: -5, y: 1, z: 5,  material: "POLISHED_BLACKSTONE_BRICKS" }
+  - { x: -5, y: 2, z: 5,  material: "CRYING_OBSIDIAN" }
+  - { x: -5, y: 3, z: 5,  material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: -5, y: 4, z: 5,  material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: -5, y: 5, z: 5,  material: "NETHERRACK" }
+  - { x: -5, y: 6, z: 5,  material: "SOUL_FIRE" }
+
+  - { x: 5,  y: 1, z: 5,  material: "POLISHED_BLACKSTONE_BRICKS" }
+  - { x: 5,  y: 2, z: 5,  material: "CRYING_OBSIDIAN" }
+  - { x: 5,  y: 3, z: 5,  material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: 5,  y: 4, z: 5,  material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: 5,  y: 5, z: 5,  material: "NETHERRACK" }
+  - { x: 5,  y: 6, z: 5,  material: "SOUL_FIRE" }
+
+  # Массивные 3D-Врата Адского Разлома (z = -3, -2, -1)
+  - { x: -3, y: 1, z: -3, material: "POLISHED_BLACKSTONE_BRICKS" }
+  - { x: -2, y: 1, z: -3, material: "CRYING_OBSIDIAN" }
+  - { x: -1, y: 1, z: -3, material: "OBSIDIAN" }
+  - { x: 0,  y: 1, z: -3, material: "GILDED_BLACKSTONE" }
+  - { x: 1,  y: 1, z: -3, material: "OBSIDIAN" }
+  - { x: 2,  y: 1, z: -3, material: "CRYING_OBSIDIAN" }
+  - { x: 3,  y: 1, z: -3, material: "POLISHED_BLACKSTONE_BRICKS" }
+
+  - { x: -4, y: 1, z: -2, material: "POLISHED_BLACKSTONE_BRICKS" }
   - { x: -3, y: 1, z: -2, material: "CRYING_OBSIDIAN" }
   - { x: -2, y: 1, z: -2, material: "OBSIDIAN" }
   - { x: -1, y: 1, z: -2, material: "CRYING_OBSIDIAN" }
-  - { x: 0,  y: 1, z: -2, material: "GILDED_BLACKSTONE" }
+  - { x: 0,  y: 1, z: -2, material: "CHISELED_POLISHED_BLACKSTONE" }
   - { x: 1,  y: 1, z: -2, material: "CRYING_OBSIDIAN" }
   - { x: 2,  y: 1, z: -2, material: "OBSIDIAN" }
   - { x: 3,  y: 1, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: 4,  y: 1, z: -2, material: "POLISHED_BLACKSTONE_BRICKS" }
 
-  # Стойки и само полотно портала (NETHER_PORTAL без телепортации)
-  - { x: -3, y: 2, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+  # Высокие колонны и полотно портала (y = 2..6, x = -1..1, z = -2)
+  - { x: -4, y: 2, z: -2, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: -3, y: 2, z: -2, material: "POLISHED_BLACKSTONE_BRICKS" }
   - { x: -2, y: 2, z: -2, material: "OBSIDIAN" }
   - { x: -1, y: 2, z: -2, material: "NETHER_PORTAL" }
   - { x: 0,  y: 2, z: -2, material: "NETHER_PORTAL" }
   - { x: 1,  y: 2, z: -2, material: "NETHER_PORTAL" }
   - { x: 2,  y: 2, z: -2, material: "OBSIDIAN" }
-  - { x: 3,  y: 2, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+  - { x: 3,  y: 2, z: -2, material: "POLISHED_BLACKSTONE_BRICKS" }
+  - { x: 4,  y: 2, z: -2, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
 
-  - { x: -3, y: 3, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+  - { x: -3, y: 3, z: -2, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
   - { x: -2, y: 3, z: -2, material: "CRYING_OBSIDIAN" }
   - { x: -1, y: 3, z: -2, material: "NETHER_PORTAL" }
   - { x: 0,  y: 3, z: -2, material: "NETHER_PORTAL" }
   - { x: 1,  y: 3, z: -2, material: "NETHER_PORTAL" }
   - { x: 2,  y: 3, z: -2, material: "CRYING_OBSIDIAN" }
-  - { x: 3,  y: 3, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
+  - { x: 3,  y: 3, z: -2, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
 
+  - { x: -3, y: 4, z: -2, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
   - { x: -2, y: 4, z: -2, material: "OBSIDIAN" }
   - { x: -1, y: 4, z: -2, material: "NETHER_PORTAL" }
   - { x: 0,  y: 4, z: -2, material: "NETHER_PORTAL" }
   - { x: 1,  y: 4, z: -2, material: "NETHER_PORTAL" }
   - { x: 2,  y: 4, z: -2, material: "OBSIDIAN" }
+  - { x: 3,  y: 4, z: -2, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
 
+  - { x: -3, y: 5, z: -2, material: "POLISHED_BLACKSTONE_BRICKS" }
   - { x: -2, y: 5, z: -2, material: "CRYING_OBSIDIAN" }
   - { x: -1, y: 5, z: -2, material: "NETHER_PORTAL" }
   - { x: 0,  y: 5, z: -2, material: "NETHER_PORTAL" }
   - { x: 1,  y: 5, z: -2, material: "NETHER_PORTAL" }
   - { x: 2,  y: 5, z: -2, material: "CRYING_OBSIDIAN" }
+  - { x: 3,  y: 5, z: -2, material: "POLISHED_BLACKSTONE_BRICKS" }
 
+  - { x: -3, y: 6, z: -2, material: "CRYING_OBSIDIAN" }
   - { x: -2, y: 6, z: -2, material: "OBSIDIAN" }
   - { x: -1, y: 6, z: -2, material: "CRYING_OBSIDIAN" }
   - { x: 0,  y: 6, z: -2, material: "GILDED_BLACKSTONE" }
   - { x: 1,  y: 6, z: -2, material: "CRYING_OBSIDIAN" }
   - { x: 2,  y: 6, z: -2, material: "OBSIDIAN" }
+  - { x: 3,  y: 6, z: -2, material: "CRYING_OBSIDIAN" }
 
-  - { x: -1, y: 7, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
-  - { x: 0,  y: 7, z: -2, material: "CRYING_OBSIDIAN" }
-  - { x: 1,  y: 7, z: -2, material: "POLISHED_BLACKSTONE_WALL" }
-  - { x: 0,  y: 8, z: -2, material: "SOUL_FIRE" }
+  # Верхняя корона и рога портала (y = 7..9)
+  - { x: -3, y: 7, z: -2, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
+  - { x: -1, y: 7, z: -2, material: "POLISHED_BLACKSTONE_BRICKS" }
+  - { x: 0,  y: 7, z: -2, material: "CHISELED_POLISHED_BLACKSTONE" }
+  - { x: 1,  y: 7, z: -2, material: "POLISHED_BLACKSTONE_BRICKS" }
+  - { x: 3,  y: 7, z: -2, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
 
-  # Фонари душ по бокам врат
+  - { x: -3, y: 8, z: -2, material: "NETHER_BRICK_FENCE" }
+  - { x: 0,  y: 8, z: -2, material: "NETHERRACK" }
+  - { x: 3,  y: 8, z: -2, material: "NETHER_BRICK_FENCE" }
+  - { x: 0,  y: 9, z: -2, material: "SOUL_FIRE" }
+
+  # Подвесные фонари душ перед порталом
+  - { x: -2, y: 5, z: -1, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
   - { x: -2, y: 4, z: -1, material: "SOUL_LANTERN" }
+  - { x: 2,  y: 5, z: -1, material: "POLISHED_BLACKSTONE_BRICK_WALL" }
   - { x: 2,  y: 4, z: -1, material: "SOUL_LANTERN" }

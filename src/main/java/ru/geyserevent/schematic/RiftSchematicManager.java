@@ -23,22 +23,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Менеджер схематики «Адский Разлом».
+ * Менеджер улучшенной схематики «Адский Разлом» (15x15 Цитадель Разлома).
  * Загружает и строит портал Разлома без физики распада портала,
  * защищает игроков от телепортации в Ад и полностью откатывает ландшафт после ивента.
  */
 public class RiftSchematicManager {
 
     private final GeyserEventPlugin plugin;
-
-    /**
-     * Сохранённые состояния исходных блоков мира для полного отката после ивента.
-     */
     private final List<SavedBlock> savedBlocks = new ArrayList<>();
-
-    /**
-     * Координаты всех блоков активной схематики и блоков портала (ключ: "world:x:y:z").
-     */
     private final Set<String> schematicBlockKeys = new HashSet<>();
     private final Set<String> portalBlockKeys = new HashSet<>();
 
@@ -58,9 +50,6 @@ public class RiftSchematicManager {
         loadSchematicFile();
     }
 
-    /**
-     * Загружает файл схематики из plugins/GeyserEvent/schematics/infernal_rift.schem.yml.
-     */
     public final void loadSchematicFile() {
         loadedBlocks.clear();
         File schemDir = new File(plugin.getDataFolder(), "schematics");
@@ -85,8 +74,6 @@ public class RiftSchematicManager {
         if (loadedBlocks.isEmpty()) {
             buildBuiltInFallbackSchematic();
         }
-
-        plugin.getLogger().info("Загружена схематика Адского Разлома (" + loadedBlocks.size() + " блоков).");
     }
 
     private void parseYamlSchematic(YamlConfiguration yaml) {
@@ -112,7 +99,6 @@ public class RiftSchematicManager {
 
         Map<String, RelativeBlock> blockMap = new LinkedHashMap<>();
 
-        // 1. Читаем послойную матрицу (layers)
         ConfigurationSection layersSec = yaml.getConfigurationSection("layers");
         if (layersSec != null) {
             for (String yKey : layersSec.getKeys(false)) {
@@ -143,7 +129,6 @@ public class RiftSchematicManager {
             }
         }
 
-        // 2. Читаем точечные блоки (blocks)
         List<Map<?, ?>> blockList = yaml.getMapList("blocks");
         for (Map<?, ?> entry : blockList) {
             int dx = toInt(entry.get("x"), 0);
@@ -170,21 +155,17 @@ public class RiftSchematicManager {
         }
     }
 
-    /**
-     * Встроенная процедурная схематика на случай, если файл схематики был повреждён.
-     */
     private void buildBuiltInFallbackSchematic() {
-        for (int dx = -4; dx <= 4; dx++) {
-            for (int dz = -4; dz <= 4; dz++) {
-                if (dx * dx + dz * dz <= 20) {
-                    Material floor = (dx == 0 && dz == 2) ? Material.LODESTONE
+        for (int dx = -6; dx <= 6; dx++) {
+            for (int dz = -6; dz <= 6; dz++) {
+                if (dx * dx + dz * dz <= 38) {
+                    Material floor = (dx == 0 && dz == 0) ? Material.LODESTONE
                             : ((Math.abs(dx) + Math.abs(dz)) % 3 == 0 ? Material.CRYING_OBSIDIAN
                             : ((Math.abs(dx) + Math.abs(dz)) % 2 == 0 ? Material.POLISHED_BLACKSTONE_BRICKS : Material.MAGMA_BLOCK));
                     loadedBlocks.add(new RelativeBlock(dx, 0, dz, floor));
                 }
             }
         }
-        // Рамка портала и полотно NETHER_PORTAL
         for (int dx = -2; dx <= 2; dx++) {
             loadedBlocks.add(new RelativeBlock(dx, 1, -2, Material.OBSIDIAN));
             loadedBlocks.add(new RelativeBlock(dx, 6, -2, Material.CRYING_OBSIDIAN));
@@ -198,9 +179,6 @@ public class RiftSchematicManager {
         }
     }
 
-    /**
-     * Размещает схематику Адского Разлома в мире и сохраняет затронутые блоки для последующего отката.
-     */
     public Location pasteSchematic(Location center) {
         restoreSchematic();
 
@@ -216,13 +194,13 @@ public class RiftSchematicManager {
 
         Set<String> capturedCoords = new HashSet<>();
 
-        // Сначала очищаем пространство арены (радиус 5, высота 1..8) и запоминаем блоки
-        for (int dx = -5; dx <= 5; dx++) {
-            for (int dz = -5; dz <= 5; dz++) {
-                if (dx * dx + dz * dz > 28) {
+        // Очищаем пространство 15x15 (радиус 7, высота 0..10) и запоминаем блоки для отката
+        for (int dx = -7; dx <= 7; dx++) {
+            for (int dz = -7; dz <= 7; dz++) {
+                if (dx * dx + dz * dz > 52) {
                     continue;
                 }
-                for (int dy = 0; dy <= 8; dy++) {
+                for (int dy = 0; dy <= 10; dy++) {
                     int bx = cx + dx;
                     int by = cy + dy;
                     int bz = cz + dz;
@@ -239,7 +217,6 @@ public class RiftSchematicManager {
             }
         }
 
-        // Размещаем все блоки схематики (сначала твёрдые блоки, затем огонь и портал без физики)
         List<RelativeBlock> deferredPortalAndFire = new ArrayList<>();
 
         for (RelativeBlock rel : loadedBlocks) {
@@ -272,7 +249,6 @@ public class RiftSchematicManager {
             return;
         }
 
-        // Важно: applyPhysics = false предотвращает разрушение блоков NETHER_PORTAL
         block.setType(material, false);
 
         if (material == Material.NETHER_PORTAL) {
@@ -285,12 +261,8 @@ public class RiftSchematicManager {
         }
     }
 
-    /**
-     * Полностью восстанавливает исходные блоки мира после окончания ивента.
-     */
     public void restoreSchematic() {
         if (!savedBlocks.isEmpty() && plugin.getPluginConfig().isRestoreBlocksOnEnd()) {
-            // Сначала убираем порталы и огонь, чтобы они не вызвали обновление соседних блоков
             for (SavedBlock saved : savedBlocks) {
                 Block b = saved.world().getBlockAt(saved.x(), saved.y(), saved.z());
                 if (b.getType() == Material.NETHER_PORTAL
@@ -299,7 +271,6 @@ public class RiftSchematicManager {
                     b.setType(Material.AIR, false);
                 }
             }
-            // Восстанавливаем в обратном порядке
             List<SavedBlock> reverse = new ArrayList<>(savedBlocks);
             Collections.reverse(reverse);
             for (SavedBlock saved : reverse) {
@@ -313,9 +284,6 @@ public class RiftSchematicManager {
         activeCenter = null;
     }
 
-    /**
-     * Возвращает точку спавна Босса перед вратами Адского Разлома.
-     */
     public Location getBossSpawnLocation() {
         if (activeCenter == null) {
             return null;
@@ -327,10 +295,6 @@ public class RiftSchematicManager {
         );
     }
 
-    /**
-     * Проверяет, принадлежит ли блок или локация порталу/зоне Адского Разлома
-     * (чтобы заблокировать телепортацию игроков и мобов через портал).
-     */
     public boolean isRiftPortalOrZone(Location loc) {
         if (loc == null || loc.getWorld() == null) {
             return false;
@@ -346,9 +310,6 @@ public class RiftSchematicManager {
         return false;
     }
 
-    /**
-     * Проверяет, находится ли блок под защитой схематики Разлома от разрушения/строительства.
-     */
     public boolean isProtectedBlock(Location loc) {
         if (!plugin.getPluginConfig().isProtectRegion() || loc == null || loc.getWorld() == null) {
             return false;
@@ -367,9 +328,6 @@ public class RiftSchematicManager {
         return false;
     }
 
-    /**
-     * Сохраняет постройку вокруг администратора в файл схематики infernal_rift.schem.yml.
-     */
     public int saveCustomSchematicFromWorld(Location center, int radius) throws IOException {
         World world = center.getWorld();
         if (world == null) {

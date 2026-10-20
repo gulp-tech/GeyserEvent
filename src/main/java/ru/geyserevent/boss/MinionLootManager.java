@@ -1,18 +1,15 @@
 package ru.geyserevent.boss;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.config.PluginConfig;
-import ru.geyserevent.util.ColorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,10 +17,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Менеджер выпадения лута и опыта с приспешников Босса:
- * - Повышенный опыт (EXP)
- * - Адские предметы (стержни ифрита, сгустки магмы, кварц, слеза гаста, светокамень, нарост, плачущий обсидиан)
- * - Золото и алмазы (слитки, блоки, золотые яблоки, алмазы)
- * - Редко: всё, что связано с незеритом (древние обломки, лом, кузнечный шаблон, слиток, незеритовые вещи)
+ * - Адские предметы, опыт, алмазы, золото и редко — всё что связано с незеритом.
+ * - Без лишних сообщений в чат при выпадении редкого лута.
+ * - Чем дольше игроки не могут убить Босса, тем сильнее ухудшается лут и опыт с приспешников.
  */
 public class MinionLootManager {
 
@@ -34,23 +30,42 @@ public class MinionLootManager {
     }
 
     /**
-     * Генерирует и добавляет лут при смерти приспешника Разлома.
+     * Вычисляет множитель качества лута приспешников (от 1.0 до 0.15)
+     * в зависимости от того, сколько времени уже прошло с начала ивента.
      */
+    public double getLootQualityMultiplier() {
+        int elapsed = plugin.getRiftManager().getSecondsElapsed();
+        int maxSeconds = Math.max(60, plugin.getPluginConfig().getDurationMinutes() * 60);
+        double progress = (double) elapsed / (double) maxSeconds;
+
+        if (progress <= 0.25) {
+            return 1.0;   // Первые 25% времени (0-5 мин): 100% лучший лут
+        } else if (progress <= 0.50) {
+            return 0.65;  // 25-50% времени (5-10 мин): 65% качества
+        } else if (progress <= 0.75) {
+            return 0.35;  // 50-75% времени (10-15 мин): 35% качества (без незерита)
+        } else {
+            return 0.15;  // Последние 25% времени (15-20 мин): 15% (минимальный лут)
+        }
+    }
+
     public void handleMinionDeath(EntityDeathEvent event) {
         event.getDrops().clear();
         PluginConfig cfg = plugin.getPluginConfig();
 
         if (!cfg.isMinionLootEnabled()) {
-            event.setDroppedExp(35);
+            event.setDroppedExp(25);
             return;
         }
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        int exp = rnd.nextInt(cfg.getMinionMinExp(), cfg.getMinionMaxExp() + 1);
-        event.setDroppedExp(exp);
+        double quality = getLootQualityMultiplier();
+
+        int rawExp = rnd.nextInt(cfg.getMinionMinExp(), cfg.getMinionMaxExp() + 1);
+        int finalExp = Math.max(5, (int) Math.round(rawExp * quality));
+        event.setDroppedExp(finalExp);
 
         LivingEntity minion = event.getEntity();
-        Player killer = minion.getKiller();
         Location loc = minion.getLocation();
         World world = loc.getWorld();
 
@@ -58,66 +73,52 @@ public class MinionLootManager {
         List<PluginConfig.LootItemConfig> table = cfg.getMinionLootItems();
 
         for (PluginConfig.LootItemConfig entry : table) {
+            // Если прошло больше половины времени ивента — незерит и алмазные блоки перестают падать
+            if (quality <= 0.35 && (entry.rare()
+                    || entry.material() == Material.DIAMOND_BLOCK
+                    || entry.material() == Material.GOLD_BLOCK)) {
+                continue;
+            }
+            // В последней четверти времени падают только базовые адские ресурсы и немного золота
+            if (quality <= 0.15 && (entry.material() == Material.DIAMOND
+                    || entry.material() == Material.GOLDEN_APPLE
+                    || entry.material() == Material.GHAST_TEAR)) {
+                continue;
+            }
+
+            double effectiveChance = entry.rare()
+                    ? entry.chancePercent() * (quality * quality)
+                    : entry.chancePercent() * quality;
+
             double roll = rnd.nextDouble(0.0, 100.0);
-            if (roll <= entry.chancePercent()) {
-                int amount = (entry.minAmount() >= entry.maxAmount())
+            if (roll <= effectiveChance) {
+                int baseAmount = (entry.minAmount() >= entry.maxAmount())
                         ? entry.minAmount()
                         : rnd.nextInt(entry.minAmount(), entry.maxAmount() + 1);
-                ItemStack stack = new ItemStack(entry.material(), amount);
-                generatedDrops.add(stack);
+                int scaledAmount = Math.max(1, (int) Math.round(baseAmount * quality));
+                generatedDrops.add(new ItemStack(entry.material(), scaledAmount));
 
-                if (entry.rare()) {
-                    onRareNetheriteDrop(killer, loc, entry.material(), amount);
+                if (entry.rare() && world != null) {
+                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.0, 0), 25, 0.3, 0.4, 0.3, 0.05);
+                    world.playSound(loc, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.4f, 1.2f);
                 }
             }
         }
 
-        // Гарантируем минимум 2 предмета (адский ресурс + золото/алмаз), если рандом ничего не выбрал
         if (generatedDrops.isEmpty()) {
-            generatedDrops.add(new ItemStack(Material.GOLD_INGOT, rnd.nextInt(3, 7)));
-            generatedDrops.add(new ItemStack(Material.BLAZE_ROD, rnd.nextInt(1, 3)));
+            if (quality >= 0.5) {
+                generatedDrops.add(new ItemStack(Material.GOLD_INGOT, rnd.nextInt(2, 5)));
+                generatedDrops.add(new ItemStack(Material.BLAZE_ROD, rnd.nextInt(1, 3)));
+            } else {
+                generatedDrops.add(new ItemStack(Material.QUARTZ, rnd.nextInt(1, 3)));
+                generatedDrops.add(new ItemStack(Material.GOLD_NUGGET, rnd.nextInt(2, 5)));
+            }
         }
 
         event.getDrops().addAll(generatedDrops);
 
         if (world != null) {
-            world.spawnParticle(Particle.LAVA, loc.clone().add(0, 0.8, 0), 12, 0.3, 0.3, 0.3, 0.05);
-            world.playSound(loc, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.2f, 0.9f);
+            world.spawnParticle(Particle.LAVA, loc.clone().add(0, 0.8, 0), 8, 0.3, 0.3, 0.3, 0.04);
         }
-    }
-
-    private void onRareNetheriteDrop(Player killer, Location loc, Material material, int amount) {
-        World world = loc.getWorld();
-        if (world != null) {
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.0, 0), 35, 0.4, 0.5, 0.4, 0.06);
-            world.playSound(loc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.5f, 1.2f);
-        }
-
-        if (plugin.getPluginConfig().isAnnounceRareDrops()) {
-            String killerName = (killer != null) ? killer.getName() : "Неизвестный воин";
-            String itemName = translateNetheriteName(material);
-            String msg = plugin.getPluginConfig().getMsgRareMinionDrop()
-                    .replace("%player%", killerName)
-                    .replace("%item%", itemName)
-                    .replace("%amount%", String.valueOf(amount));
-            Bukkit.broadcastMessage(ColorUtil.color(msg));
-        }
-    }
-
-    private String translateNetheriteName(Material material) {
-        return switch (material) {
-            case ANCIENT_DEBRIS -> "Древние обломки";
-            case NETHERITE_SCRAP -> "Незеритовый лом";
-            case NETHERITE_UPGRADE_SMITHING_TEMPLATE -> "Кузнечный шаблон (Незеритовое улучшение)";
-            case NETHERITE_INGOT -> "Незеритовый слиток";
-            case NETHERITE_SWORD -> "Незеритовый меч";
-            case NETHERITE_PICKAXE -> "Незеритовая кирка";
-            case NETHERITE_AXE -> "Незеритовый топор";
-            case NETHERITE_HELMET -> "Незеритовый шлем";
-            case NETHERITE_CHESTPLATE -> "Незеритовый нагрудник";
-            case NETHERITE_LEGGINGS -> "Незеритовые поножи";
-            case NETHERITE_BOOTS -> "Незеритовые ботинки";
-            default -> material.name();
-        };
     }
 }

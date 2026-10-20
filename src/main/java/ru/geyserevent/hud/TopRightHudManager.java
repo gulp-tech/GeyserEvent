@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import ru.geyserevent.GeyserEventPlugin;
@@ -14,6 +15,7 @@ import ru.geyserevent.util.ColorUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -23,14 +25,12 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Менеджер HUD-панели в правом верхнем углу экрана для Bedrock-игроков (GeyserMC)
- * и авто-установщик кастомного ресурспака GeyserEvent-Pack.mcpack.
- *
- * Отображает в правом верхнем углу:
- * - Какой ивент активен
- * - Координаты (X Y Z)
- * - Редкость ивента
- * - Здоровье босса (3500/3500 ❤)
+ * Менеджер инфо-панели в правом верхнем углу экрана и установщик ресурспака.
+ * Когда появляется ивент, отображает справа вверху:
+ * - Какой ивент
+ * - Координаты
+ * - Редкость
+ * - Здоровье босса
  */
 public class TopRightHudManager {
 
@@ -45,34 +45,34 @@ public class TopRightHudManager {
     }
 
     /**
-     * Экспортирует встроенный Bedrock-ресурспак GeyserEvent-Pack.mcpack
-     * в папку плагина и автоматически копирует его в plugins/Geyser-Spigot/packs/ (если папка есть).
+     * Экспортирует встроенные ресурспаки (GeyserEvent-Pack.mcpack и GeyserEvent-ResourcePack.zip)
+     * и автоматически копирует .mcpack в plugins/Geyser-Spigot/packs/.
      */
     public final void exportAndInstallResourcePack() {
         File packDir = new File(plugin.getDataFolder(), "resourcepack");
         if (!packDir.exists()) {
             packDir.mkdirs();
         }
-        File exportedPack = new File(packDir, "GeyserEvent-Pack.mcpack");
-        if (!exportedPack.exists()) {
-            try {
-                plugin.saveResource("resourcepack/GeyserEvent-Pack.mcpack", true);
-            } catch (Exception ex) {
-                plugin.getLogger().warning("Не удалось распаковать GeyserEvent-Pack.mcpack: " + ex.getMessage());
-            }
+
+        File exportedMcpack = new File(packDir, "GeyserEvent-Pack.mcpack");
+        try {
+            plugin.saveResource("resourcepack/GeyserEvent-Pack.mcpack", true);
+        } catch (Exception ignored) {
         }
 
-        if (plugin.getPluginConfig().isAutoInstallResourcePackToGeyser() && exportedPack.exists()) {
+        if (plugin.getPluginConfig().isAutoInstallResourcePackToGeyser() && exportedMcpack.exists()) {
             File pluginsDir = plugin.getDataFolder().getParentFile();
             if (pluginsDir != null) {
-                File geyserPacksDir = new File(pluginsDir, "Geyser-Spigot/packs");
-                if (geyserPacksDir.exists() && geyserPacksDir.isDirectory()) {
+                File geyserDir = new File(pluginsDir, "Geyser-Spigot");
+                File geyserPacksDir = new File(geyserDir, "packs");
+                if (geyserDir.exists()) {
+                    if (!geyserPacksDir.exists()) {
+                        geyserPacksDir.mkdirs();
+                    }
                     File targetFile = new File(geyserPacksDir, "GeyserEvent-Pack.mcpack");
                     try {
-                        Files.copy(exportedPack.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        plugin.getLogger().info("Кастомный ресурспак GeyserEvent-Pack.mcpack автоматически установлен в Geyser-Spigot/packs/!");
-                    } catch (IOException ex) {
-                        plugin.getLogger().warning("Не удалось скопировать ресурспак в Geyser-Spigot/packs: " + ex.getMessage());
+                        Files.copy(exportedMcpack.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException ignored) {
                     }
                 }
             }
@@ -80,7 +80,7 @@ public class TopRightHudManager {
     }
 
     /**
-     * Обновляет HUD в правом верхнем углу у всех участников ивента.
+     * Обновляет панель информации об ивенте в правом верхнем углу экрана.
      */
     public void updateTopRightHud() {
         PluginConfig cfg = plugin.getPluginConfig();
@@ -99,14 +99,13 @@ public class TopRightHudManager {
         Location loc = manager.getRiftCenterLocation();
         int curHp = (int) Math.ceil(manager.getBossCurrentHealth());
         int maxHp = (int) Math.ceil(manager.getBossMaxHealth());
-        String worldName = loc.getWorld() != null ? loc.getWorld().getName() : cfg.getWorldName();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (!plugin.getBedrockService().canParticipate(player)) {
                 removeHudFromPlayer(player);
                 continue;
             }
-            applyHudToPlayer(player, sbManager, cfg, manager, worldName, loc, curHp, maxHp);
+            applyHudToPlayer(player, sbManager, cfg, loc, curHp, maxHp);
         }
     }
 
@@ -115,8 +114,6 @@ public class TopRightHudManager {
             Player player,
             ScoreboardManager sbManager,
             PluginConfig cfg,
-            InfernalRiftManager manager,
-            String worldName,
             Location loc,
             int curHp,
             int maxHp
@@ -130,37 +127,57 @@ public class TopRightHudManager {
             Scoreboard customBoard = sbManager.getNewScoreboard();
             obj = customBoard.registerNewObjective(OBJECTIVE_NAME, "dummy", cfg.getTopRightHudTitle());
             obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+            hideObjectiveNumbers(obj);
             player.setScoreboard(customBoard);
             current = customBoard;
         } else {
             obj.setDisplayName(cfg.getTopRightHudTitle());
+            hideObjectiveNumbers(obj);
         }
 
-        // Очищаем старые строки
         for (String entry : new ArrayList<>(current.getEntries())) {
             current.resetScores(entry);
         }
 
-        int myDmg = (int) Math.round(manager.getLeaderboard().getDamage(uuid));
-        int myRank = manager.getLeaderboard().getPlayerRank(uuid);
-        String rankSuffix = myRank > 0 ? " &7(#" + myRank + ")" : "";
-
         List<String> lines = List.of(
                 ColorUtil.color("&e┏ &8&m──────────────────"),
                 ColorUtil.color("&e┠ &fИвент: " + cfg.getTopRightEventDisplayName()),
+                ColorUtil.color("&e┠ &fКоординаты: &#E0C912" + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()),
                 ColorUtil.color("&e┠ &fРедкость: " + cfg.getTopRightRarityDisplay()),
                 ColorUtil.color("&e┠ &fЗдоровье: &c" + curHp + "&7/&c" + maxHp + " ❤"),
-                ColorUtil.color("&e┠ &fМир: &#E0C912" + worldName),
-                ColorUtil.color("&e┠ &fКоорд: &#E0C912" + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()),
-                ColorUtil.color("&e┠ &fВаш урон: &a" + myDmg + " ❤" + rankSuffix),
-                ColorUtil.color("&e┗ &fТрекер: &6/event gps")
+                ColorUtil.color("&e┗ &8&m──────────────────")
         );
 
-        int score = lines.size();
+        int scoreVal = lines.size();
         for (String line : lines) {
-            // Ограничиваем длину строки для совместимости с экранами телефонов Bedrock
-            String safeLine = line.length() > 48 ? line.substring(0, 48) : line;
-            obj.getScore(safeLine).setScore(score--);
+            Score score = obj.getScore(line);
+            score.setScore(scoreVal--);
+            hideScoreNumber(score);
+        }
+    }
+
+    /**
+     * Скрывает красные цифры справа у Objective через Paper/Purpur NumberFormat.blank().
+     */
+    private void hideObjectiveNumbers(Objective obj) {
+        try {
+            Class<?> nfClass = Class.forName("io.papermc.paper.scoreboard.numbers.NumberFormat");
+            Method blankMethod = nfClass.getMethod("blank");
+            Object blankFormat = blankMethod.invoke(null);
+            Method setFormat = obj.getClass().getMethod("numberFormat", nfClass);
+            setFormat.invoke(obj, blankFormat);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void hideScoreNumber(Score score) {
+        try {
+            Class<?> nfClass = Class.forName("io.papermc.paper.scoreboard.numbers.NumberFormat");
+            Method blankMethod = nfClass.getMethod("blank");
+            Object blankFormat = blankMethod.invoke(null);
+            Method setFormat = score.getClass().getMethod("numberFormat", nfClass);
+            setFormat.invoke(score, blankFormat);
+        } catch (Throwable ignored) {
         }
     }
 

@@ -11,7 +11,6 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarFlag;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Entity;
@@ -32,17 +31,16 @@ import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.util.ColorUtil;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Главный менеджер ивента «Адский Разлом (Вторжение Босса)».
- * Управляет расписанием, спавном схематики в мире world2,
- * Большим Брутальным Пиглином (2м, 3500 HP, 15 урона, Незеритовый топор),
- * фазами ярости, GPS-трекером (/event gps), HUD в правом верхнем углу и наградами PlayerPoints.
  */
 public class InfernalRiftManager {
 
@@ -51,9 +49,11 @@ public class InfernalRiftManager {
     private final DamageLeaderboard leaderboard = new DamageLeaderboard();
 
     /**
-     * Игроки, включившие GPS-трекер командой /event gps.
+     * Игроки с включённым локатором (/event gps) и их персональные BossBar-индикаторы.
      */
     private final Set<UUID> gpsTrackedPlayers = new HashSet<>();
+    private final Set<UUID> gpsWasOutsideRadius = new HashSet<>();
+    private final Map<UUID, BossBar> gpsBossBars = new HashMap<>();
 
     private boolean active = false;
     private boolean defeated = false;
@@ -68,21 +68,21 @@ public class InfernalRiftManager {
     private BossBar bossBar;
     private BukkitTask autoStartTask;
     private BukkitTask activeTickTask;
+    private BukkitTask gpsFastTask;
     private BukkitTask cleanupTask;
 
     private long nextAutoStartEpochSeconds;
     private long eventEndEpochSeconds;
     private int secondsElapsed;
+    private int minionCooldownSeconds;
 
     public InfernalRiftManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
         this.bossKey = new NamespacedKey(plugin, "infernal_rift_boss");
         startAutoScheduler();
+        startFastGpsLoop();
     }
 
-    /**
-     * Запускает таймер автоматического старта ивента.
-     */
     public final void startAutoScheduler() {
         if (autoStartTask != null) {
             autoStartTask.cancel();
@@ -108,37 +108,45 @@ public class InfernalRiftManager {
         }.runTaskTimer(plugin, 20L, 20L);
     }
 
+    /**
+     * Быстрый цикл обновления локатора (/event gps) каждые 5 тиков (0.25 сек),
+     * чтобы локатор отображался мгновенно и плавно.
+     */
+    private void startFastGpsLoop() {
+        if (gpsFastTask != null) {
+            gpsFastTask.cancel();
+        }
+        gpsFastTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                updateGpsTrackerForPlayers();
+            }
+        }.runTaskTimer(plugin, 5L, 5L);
+    }
+
     private void resetNextAutoStartTimer() {
         long now = System.currentTimeMillis() / 1000L;
         this.nextAutoStartEpochSeconds = now + (plugin.getPluginConfig().getIntervalMinutes() * 60L);
     }
 
-    /**
-     * Запускает ивент «Адский Разлом» на случайных координатах в мире из config.yml (по умолчанию world2).
-     */
     public boolean startEventRandomInConfiguredWorld() {
         PluginConfig cfg = plugin.getPluginConfig();
         String worldName = cfg.getWorldName();
         World world = Bukkit.getWorld(worldName);
 
         if (world == null) {
-            plugin.getLogger().warning("Мир '" + worldName + "' не найден! Создайте мир '" + worldName
-                    + "' или измените параметр event.world в config.yml (/rift setworld <мир>).");
+            plugin.getLogger().warning("Мир '" + worldName + "' не найден! Измените event.world в config.yml (/rift setworld <мир>).");
             return false;
         }
 
         Location safeSpot = findSafeSurfaceLocation(world, cfg);
         if (safeSpot == null) {
-            plugin.getLogger().warning("Не удалось найти безопасную точку спавна в мире '" + worldName + "'.");
             return false;
         }
 
         return startEventAt(safeSpot);
     }
 
-    /**
-     * Запускает ивент «Адский Разлом» в конкретной точке мира.
-     */
     public boolean startEventAt(Location targetCenter) {
         if (targetCenter == null || targetCenter.getWorld() == null) {
             return false;
@@ -158,27 +166,28 @@ public class InfernalRiftManager {
         this.defeated = false;
         this.bossPhase = 1;
         this.secondsElapsed = 0;
+        this.minionCooldownSeconds = 0;
         this.leaderboard.clear();
         this.riftCenterLocation = targetCenter.getBlock().getLocation().add(0.5, 0, 0.5);
 
-        // 1. Строим схематику Адского Разлома (с защитой портала от телепортации)
+        // 1. Строим улучшенную схематику Адского Разлома
         this.bossHomeLocation = plugin.getSchematicManager().pasteSchematic(this.riftCenterLocation);
         if (this.bossHomeLocation == null) {
             this.bossHomeLocation = this.riftCenterLocation.clone().add(0, 1, 2);
         }
 
-        // 2. Спавним Большого Брутального Пиглина (2 метра, 3500 HP, 15 урона, Незеритовый топор)
+        // 2. Спавним Большого Брутального Пиглина (2м, 3500 HP, 15 урона, Незеритовый топор)
         this.bossMaxHealth = cfg.getBossHealth();
         this.bossCurrentHealth = this.bossMaxHealth;
         PiglinBrute boss = spawnInfernalPiglinBoss(this.bossHomeLocation);
         this.bossUuid = boss.getUniqueId();
 
-        // 3. Создаём BossBar и HUD в правом верхнем углу
+        // 3. Таймер на 20 минут (если не убьют за 20 минут — пропадёт)
         this.eventEndEpochSeconds = (System.currentTimeMillis() / 1000L) + (cfg.getDurationMinutes() * 60L);
         createAndShowBossBar();
         plugin.getTopRightHudManager().updateTopRightHud();
 
-        // 4. Анонсируем вторжение в фирменном стиле &e┠
+        // 4. Анонсируем появление ивента
         broadcastEventStart();
 
         // 5. Запускаем основной цикл ивента
@@ -202,10 +211,7 @@ public class InfernalRiftManager {
         boss.setCustomNameVisible(true);
         boss.setGlowing(true);
 
-        // Размер 2 метра (Attribute.SCALE)
         BossAbilityController.applyEntityScale(boss, cfg.getBossScale());
-
-        // Скорость, сопротивление откидыванию и базовый урон 15
         BossAbilityController.setEntityAttribute(boss, "MOVEMENT_SPEED", "generic.movement_speed", cfg.getBossMovementSpeed());
         BossAbilityController.setEntityAttribute(boss, "KNOCKBACK_RESISTANCE", "generic.knockback_resistance", cfg.getBossKnockbackResistance());
         BossAbilityController.setEntityAttribute(boss, "ATTACK_DAMAGE", "generic.attack_damage", cfg.getBossDamage());
@@ -244,11 +250,18 @@ public class InfernalRiftManager {
                 }
 
                 secondsElapsed++;
+                if (minionCooldownSeconds > 0) {
+                    minionCooldownSeconds--;
+                }
+
                 PluginConfig cfg = plugin.getPluginConfig();
                 long now = System.currentTimeMillis() / 1000L;
 
+                // Если босса не убили в течение 20 минут — он пропадает
                 if (now >= eventEndEpochSeconds) {
-                    Bukkit.broadcastMessage(ColorUtil.color("&e┠ &cВремя вторжения истекло! &fБрутальный Владыка скрылся обратно в Адском Разломе."));
+                    Bukkit.broadcastMessage(ColorUtil.color(
+                            "&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fзакончился."
+                    ));
                     stopEvent(false);
                     return;
                 }
@@ -262,7 +275,7 @@ public class InfernalRiftManager {
                     piglin.setImmuneToZombification(true);
                 }
 
-                // Проверка дистанции увода босса от портала (Leash)
+                // Возврат босса к алтарю при уводе слишком далеко
                 if (bossHomeLocation != null && boss.getWorld().equals(bossHomeLocation.getWorld())) {
                     double maxDist = cfg.getBossLeashRadius();
                     if (boss.getLocation().distanceSquared(bossHomeLocation) > maxDist * maxDist) {
@@ -272,14 +285,14 @@ public class InfernalRiftManager {
                     }
                 }
 
-                // Фоновые частицы вокруг портала Адского Разлома
+                // Фоновые частицы врат Разлома
                 if (riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
                     World w = riftCenterLocation.getWorld();
                     w.spawnParticle(Particle.PORTAL, riftCenterLocation.clone().add(0, 3.5, -2.0), 18, 1.2, 1.5, 0.3, 0.25);
                     w.spawnParticle(Particle.SOUL_FIRE_FLAME, riftCenterLocation.clone().add(0, 1.2, 0), 6, 2.5, 0.3, 2.5, 0.01);
                 }
 
-                // В 3-й фазе ярости (< 20% HP) способности срабатывают чаще
+                // Способности босса в радиусе 15 блоков
                 int castInterval = (bossPhase >= 3)
                         ? Math.max(5, cfg.getAbilityCastIntervalSeconds() - 4)
                         : cfg.getAbilityCastIntervalSeconds();
@@ -288,34 +301,34 @@ public class InfernalRiftManager {
                     plugin.getAbilityController().castNextRotationAbility(boss);
                 }
 
-                // Периодический призыв приспешников
-                if (cfg.isMinionsEnabled() && secondsElapsed % cfg.getMinionSummonIntervalSeconds() == 0) {
-                    plugin.getAbilityController().summonMinions(boss);
+                // Приспешники появляются тогда, когда игрок подошёл ближе чем на 20 блоков (без сообщений в чат!)
+                if (cfg.isMinionsEnabled() && minionCooldownSeconds <= 0) {
+                    int spawned = plugin.getAbilityController().summonMinions(boss, false);
+                    if (spawned > 0) {
+                        minionCooldownSeconds = cfg.getMinionSummonIntervalSeconds();
+                    }
                 }
 
-                // Обновляем BossBar, HUD в правом верхнем углу и GPS-трекер (/event gps)
                 updateBossNameAndHealthBar(boss);
                 plugin.getTopRightHudManager().updateTopRightHud();
-                updateGpsTrackerForPlayers();
             }
         }.runTaskTimer(plugin, 20L, 20L);
     }
 
     /**
-     * Обрабатывает получение урона Боссом (с учётом пула 3500 HP, фаз ярости и таблицы урона игроков).
+     * Обрабатывает урон по Боссу, ограничивая засчитанный урон текущим остатком HP (чтобы не было 3501 из 3500).
      */
     public boolean handleBossDamaged(LivingEntity boss, Player attacker, double damageAmount) {
         if (!active || defeated || damageAmount <= 0) {
             return false;
         }
 
-        if (attacker != null) {
-            leaderboard.addDamage(attacker.getUniqueId(), attacker.getName(), damageAmount);
+        double effectiveDamage = Math.min(damageAmount, this.bossCurrentHealth);
+        if (attacker != null && effectiveDamage > 0) {
+            leaderboard.addDamage(attacker.getUniqueId(), attacker.getName(), effectiveDamage);
         }
 
-        this.bossCurrentHealth = Math.max(0.0, this.bossCurrentHealth - damageAmount);
-
-        // Проверка переходов в фазы ярости (50% и 20% HP)
+        this.bossCurrentHealth = Math.max(0.0, this.bossCurrentHealth - effectiveDamage);
         checkBossEnragePhases(boss);
 
         if (this.bossCurrentHealth <= 0.0) {
@@ -347,8 +360,7 @@ public class InfernalRiftManager {
                 w.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.5, 0), 90, 1.0, 1.2, 1.0, 0.1);
             }
             boss.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 120, 0, false, false));
-            plugin.getAbilityController().summonMinions(boss);
-            Bukkit.broadcastMessage(ColorUtil.color("&e┠ &4&l🔥 ФАЗА II: &fУ Брутального Пиглина осталось меньше &c50% ❤&f! Он впал в ярость и призвал стражу!"));
+            plugin.getAbilityController().summonMinions(boss, false);
         } else if (bossPhase == 2 && ratio <= 0.20 && ratio > 0.0) {
             bossPhase = 3;
             Location loc = boss.getLocation();
@@ -360,14 +372,9 @@ public class InfernalRiftManager {
             }
             boss.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 120, 1, false, false));
             plugin.getAbilityController().castGatherAllAbility(boss);
-            Bukkit.broadcastMessage(ColorUtil.color("&e┠ &4&l⚡ ФАЗА III: &fУ Босса осталось меньше &c20% ❤&f! Разлом нестабилен — способности ускорены!"));
         }
     }
 
-    /**
-     * Завершает ивент победой игроков, выдаёт 3000 / 2000 / 1000 осколков через PlayerPoints
-     * и запускает таймер отката схематики.
-     */
     public void handleBossDefeated() {
         if (!active) {
             return;
@@ -380,7 +387,7 @@ public class InfernalRiftManager {
 
         plugin.getAbilityController().removeAllMinions();
         plugin.getTopRightHudManager().clearAllHud();
-        gpsTrackedPlayers.clear();
+        clearAllGpsTrackers();
 
         if (riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
             World w = riftCenterLocation.getWorld();
@@ -392,9 +399,8 @@ public class InfernalRiftManager {
         distributeTopRewards();
 
         if (bossBar != null) {
-            bossBar.setProgress(0.0);
-            bossBar.setColor(BarColor.GREEN);
-            bossBar.setTitle(ColorUtil.color("&a&l✔ АДСКИЙ РАЗЛОМ ЗАКРЫТ! &7Топ-3 получили осколки!"));
+            bossBar.removeAll();
+            bossBar = null;
         }
 
         int delaySec = plugin.getPluginConfig().getCleanupDelaySeconds();
@@ -407,23 +413,19 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Выдаёт награды за 1, 2 и 3 место по нанесённому урону через PlayerPoints:
-     * 1 место — 3000 осколков
-     * 2 место — 2000 осколков
-     * 3 место — 1000 осколков
+     * Выдаёт награды за 1, 2 и 3 место через PlayerPoints без неизвестных символов.
      */
     private void distributeTopRewards() {
         PluginConfig cfg = plugin.getPluginConfig();
         List<DamageLeaderboard.DamageEntry> top = leaderboard.getTop(3);
         String currency = cfg.getCurrencyName();
 
-        Bukkit.broadcastMessage(ColorUtil.color("&e┏ &8&m──────────────────────────────────────────"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fзавершён! Босс повержен!"));
+        Bukkit.broadcastMessage(ColorUtil.color(
+                "&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fзавершён."
+        ));
 
-        if (top.isEmpty()) {
-            Bukkit.broadcastMessage(ColorUtil.color("&e┠ &cНикто из игроков не нанёс урона боссу."));
-        } else {
-            String[] medals = {"&6🥇 1 место", "&f🥈 2 место", "&c🥉 3 место"};
+        if (!top.isEmpty()) {
+            String[] placeLabels = {"&61 место", "&f2 место", "&c3 место"};
             for (int i = 0; i < top.size(); i++) {
                 int place = i + 1;
                 DamageLeaderboard.DamageEntry entry = top.get(i);
@@ -433,30 +435,25 @@ public class InfernalRiftManager {
                     plugin.getPlayerPointsHook().giveShards(entry.uuid(), entry.playerName(), rewardShards);
                 }
 
-                double percent = (bossMaxHealth > 0) ? Math.min(100.0, (entry.damage() / bossMaxHealth) * 100.0) : 0.0;
+                int dealtDmg = (int) Math.round(entry.damage());
                 Bukkit.broadcastMessage(ColorUtil.color(String.format(
-                        "&e┠ %s: &#E0C912%s &8— &c%.0f ❤ &7(%.1f%%) &8» &#34D711+%d %s",
-                        medals[i], entry.playerName(), entry.damage(), percent, rewardShards, currency
+                        "&e┠ %s: &#E0C912%s &8(&c%d ❤&8) &8— &#34D711+%d %s",
+                        placeLabels[i], entry.playerName(), dealtDmg, rewardShards, currency
                 )));
 
                 Player onlineWinner = Bukkit.getPlayer(entry.uuid());
                 if (onlineWinner != null && onlineWinner.isOnline()) {
                     onlineWinner.sendTitle(
-                            ColorUtil.color("&6&l🏆 " + place + " МЕСТО!"),
-                            ColorUtil.color("&a+" + rewardShards + " " + currency + " &7(Урон: " + (int) entry.damage() + ")"),
+                            ColorUtil.color("&6&l" + place + " МЕСТО!"),
+                            ColorUtil.color("&a+" + rewardShards + " " + currency + " &7(Урон: " + dealtDmg + ")"),
                             10, 80, 20
                     );
                     onlineWinner.playSound(onlineWinner.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.5f, 0.8f);
                 }
             }
         }
-
-        Bukkit.broadcastMessage(ColorUtil.color("&e┗ &8&m──────────────────────────────────────────"));
     }
 
-    /**
-     * Полностью останавливает активный ивент, удаляет босса/приспешников, скрывает HUD и откатывает схематику.
-     */
     public void stopEvent(boolean distributeRewards) {
         if (activeTickTask != null) {
             activeTickTask.cancel();
@@ -480,7 +477,7 @@ public class InfernalRiftManager {
         plugin.getAbilityController().removeAllMinions();
         plugin.getSchematicManager().restoreSchematic();
         plugin.getTopRightHudManager().clearAllHud();
-        gpsTrackedPlayers.clear();
+        clearAllGpsTrackers();
 
         if (bossBar != null) {
             bossBar.removeAll();
@@ -524,10 +521,9 @@ public class InfernalRiftManager {
             bossBar.removeAll();
         }
         bossBar = Bukkit.createBossBar(
-                ColorUtil.color("&4&lАДСКИЙ РАЗЛОМ &8| &cВторжение Босса"),
+                ColorUtil.color("&4&lАДСКИЙ РАЗЛОМ &8| &c❤ " + (int) bossCurrentHealth + "/" + (int) bossMaxHealth),
                 BarColor.RED,
-                BarStyle.SEGMENTED_10,
-                BarFlag.PLAY_BOSS_MUSIC
+                BarStyle.SEGMENTED_10
         );
         bossBar.setProgress(1.0);
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -538,13 +534,13 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Обновляет GPS-трекер (/event gps) для игроков, которые находятся в мире ивента.
-     * Если игрок подошёл ближе чем на 10 блоков (arrival-distance: 10.0) —
-     * трекер автоматически отключается и выводится информация об ивенте!
+     * Обновляет локатор (/event gps) каждые 5 тиков.
+     * Показывает локатор в BossBar + ActionBar + компасе.
+     * Когда игрок подходит ближе чем на 10 блоков к ивенту — локатор молча пропадает (без сообщений в чат).
      */
     @SuppressWarnings("deprecation")
     private void updateGpsTrackerForPlayers() {
-        if (bossBar == null || riftCenterLocation == null || riftCenterLocation.getWorld() == null) {
+        if (!active || riftCenterLocation == null || riftCenterLocation.getWorld() == null) {
             return;
         }
         PluginConfig cfg = plugin.getPluginConfig();
@@ -552,11 +548,7 @@ public class InfernalRiftManager {
         double arrivalDist = cfg.getGpsArrivalDistance();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!plugin.getBedrockService().canParticipate(player)) {
-                bossBar.removePlayer(player);
-                continue;
-            }
-            if (!bossBar.getPlayers().contains(player)) {
+            if (bossBar != null && plugin.getBedrockService().canParticipate(player) && !bossBar.getPlayers().contains(player)) {
                 bossBar.addPlayer(player);
             }
 
@@ -565,38 +557,63 @@ public class InfernalRiftManager {
                 continue;
             }
 
-            // Трекер работает и отображается тогда, когда игрок находится в мире ивента
+            // Локатор появляется, когда игрок находится в мире ивента
             if (!player.getWorld().equals(eventWorld)) {
+                BossBar personalBar = gpsBossBars.get(uuid);
+                if (personalBar != null) {
+                    personalBar.setTitle(ColorUtil.color(
+                            "&eЛокатор &8| &fПерейдите в мир &#E0C912" + eventWorld.getName()
+                                    + " &8(&#E0C912" + riftCenterLocation.getBlockX() + " " + riftCenterLocation.getBlockY() + " " + riftCenterLocation.getBlockZ() + "&8)"
+                    ));
+                }
                 continue;
             }
 
             Location targetLoc = getBossEntity() != null ? getBossEntity().getLocation() : riftCenterLocation;
             double dist = player.getLocation().distance(targetLoc);
 
-            // Если игрок подошёл ближе чем на 10 блоков — отключаем трекер и показываем инфо об ивенте!
-            if (dist <= arrivalDist) {
-                gpsTrackedPlayers.remove(uuid);
-                sendGpsArrivalEventInfo(player);
+            if (dist > arrivalDist + 1.5) {
+                gpsWasOutsideRadius.add(uuid);
+            }
+
+            // Когда игрок подошёл ближе чем на 10 блоков (после того как шёл издалека) — молча отключаем локатор!
+            if (dist <= arrivalDist && gpsWasOutsideRadius.contains(uuid)) {
+                disableGpsSilently(player);
                 continue;
             }
 
+            player.setCompassTarget(targetLoc);
             String arrow = ColorUtil.getDirectionArrow(player, targetLoc);
-            String actionbarText = ColorUtil.color(String.format(
-                    "&e🧭 GPS: &#34D711%s %dм &8| &fКоординаты: &#E0C912%d %d %d &8| &c❤ %d",
+            int blocks = (int) Math.round(dist);
+
+            String locatorLine = ColorUtil.color(String.format(
+                    "&eЛокатор: &#34D711%s %dм &8| &fКоординаты: &#E0C912%d %d %d",
                     arrow,
-                    (int) Math.round(dist),
+                    blocks,
                     riftCenterLocation.getBlockX(),
                     riftCenterLocation.getBlockY(),
-                    riftCenterLocation.getBlockZ(),
-                    (int) Math.ceil(bossCurrentHealth)
+                    riftCenterLocation.getBlockZ()
             ));
 
+            // 1. Персональный BossBar локатора (гарантированно виден и на Bedrock, и на Java)
+            BossBar personalBar = gpsBossBars.computeIfAbsent(uuid, k -> {
+                BossBar b = Bukkit.createBossBar(locatorLine, BarColor.YELLOW, BarStyle.SOLID);
+                b.addPlayer(player);
+                return b;
+            });
+            personalBar.setTitle(locatorLine);
+            personalBar.setProgress(Math.max(0.05, Math.min(1.0, 1.0 - (dist / 500.0))));
+            if (!personalBar.getPlayers().contains(player)) {
+                personalBar.addPlayer(player);
+            }
+
+            // 2. ActionBar локатора
             try {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(actionbarText));
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(locatorLine));
             } catch (Throwable ignored) {
             }
 
-            // Визуальная дорожка путеводных частиц перед игроком
+            // 3. Путеводная частица перед игроком
             if (cfg.isGpsParticleTrail()) {
                 spawnGpsDirectionParticles(player, targetLoc);
             }
@@ -604,44 +621,46 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Вызывается, когда игрок с включённым /event gps подошёл ближе чем на 10 блоков к ивенту.
+     * Молча выключает локатор без спама в чат, когда игрок подошёл ближе чем на 10 блоков.
      */
     @SuppressWarnings("deprecation")
-    private void sendGpsArrivalEventInfo(Player player) {
-        PluginConfig cfg = plugin.getPluginConfig();
-        Location loc = riftCenterLocation != null ? riftCenterLocation : player.getLocation();
-
-        player.playSound(player.getLocation(), Sound.UI_TOAST_IN, 1.5f, 1.2f);
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.2f, 1.1f);
-
-        try {
-            player.spigot().sendMessage(
-                    ChatMessageType.ACTION_BAR,
-                    TextComponent.fromLegacyText(ColorUtil.color("&#34D711✔ Вы прибыли к Адскому Разлому! GPS-трекер отключён."))
-            );
-        } catch (Throwable ignored) {
+    private void disableGpsSilently(Player player) {
+        UUID uuid = player.getUniqueId();
+        gpsTrackedPlayers.remove(uuid);
+        gpsWasOutsideRadius.remove(uuid);
+        BossBar bar = gpsBossBars.remove(uuid);
+        if (bar != null) {
+            bar.removeAll();
         }
-
-        for (String rawLine : cfg.getGpsArrivedInfoLines()) {
-            player.sendMessage(formatEventPlaceholders(rawLine, loc));
+        try {
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(""));
+        } catch (Throwable ignored) {
         }
     }
 
-    /**
-     * Вызывается при переходе игрока между мирами (PlayerChangedWorldEvent).
-     * Если у игрока стоял /event gps и он перешёл в мир ивента — активирует трекер!
-     */
+    private void clearAllGpsTrackers() {
+        gpsTrackedPlayers.clear();
+        gpsWasOutsideRadius.clear();
+        for (BossBar bar : gpsBossBars.values()) {
+            bar.removeAll();
+        }
+        gpsBossBars.clear();
+    }
+
     public void handlePlayerChangedWorld(Player player) {
         if (!active || riftCenterLocation == null || riftCenterLocation.getWorld() == null) {
             return;
         }
-        if (!gpsTrackedPlayers.contains(player.getUniqueId())) {
+        UUID uuid = player.getUniqueId();
+        if (!gpsTrackedPlayers.contains(uuid)) {
             return;
         }
         if (player.getWorld().equals(riftCenterLocation.getWorld())) {
-            int dist = (int) Math.round(player.getLocation().distance(riftCenterLocation));
-            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.2f, 1.3f);
-            player.sendMessage(ColorUtil.color("&e┠ &fВы перешли в мир ивента! &#34D711GPS-трекер активирован &7(До цели: &#E0C912" + dist + "м&7)."));
+            double dist = player.getLocation().distance(riftCenterLocation);
+            if (dist > plugin.getPluginConfig().getGpsArrivalDistance()) {
+                gpsWasOutsideRadius.add(uuid);
+            }
+            updateGpsTrackerForPlayers();
         }
     }
 
@@ -652,80 +671,49 @@ public class InfernalRiftManager {
             return;
         }
         dir.normalize();
-        for (double step = 1.5; step <= 3.5; step += 1.0) {
-            Location point = eye.clone().add(dir.clone().multiply(step));
-            player.spawnParticle(Particle.END_ROD, point, 1, 0.02, 0.02, 0.02, 0.0);
-        }
+        Location point = eye.clone().add(dir.multiply(2.0));
+        player.spawnParticle(Particle.END_ROD, point, 1, 0.02, 0.02, 0.02, 0.0);
     }
 
     /**
-     * Включает или выключает GPS-трекер (/event gps) для игрока.
+     * Включает или выключает локатор (/event gps) для игрока.
      */
     public void togglePlayerGps(Player player) {
         UUID uuid = player.getUniqueId();
-        PluginConfig cfg = plugin.getPluginConfig();
 
         if (gpsTrackedPlayers.contains(uuid)) {
-            gpsTrackedPlayers.remove(uuid);
-            player.sendMessage(ColorUtil.color("&e┠ &fGPS-трекер &#FF4500отключён&f."));
+            disableGpsSilently(player);
+            player.sendMessage(ColorUtil.color("&e┠ &fЛокатор &#FF4500выключен&f."));
             return;
         }
 
-        if (!active || riftCenterLocation == null || riftCenterLocation.getWorld() == null) {
-            gpsTrackedPlayers.add(uuid);
-            player.sendMessage(ColorUtil.color("&e┠ &fGPS-трекер &#34D711поставлен в ожидание&f!"));
-            player.sendMessage(ColorUtil.color("&e┠ &fОн автоматически включится, когда начнётся ивент в мире &#E0C912" + cfg.getWorldName() + "&f."));
-            return;
-        }
+        gpsTrackedPlayers.add(uuid);
 
-        World eventWorld = riftCenterLocation.getWorld();
-        if (player.getWorld().equals(eventWorld)) {
-            double dist = player.getLocation().distance(riftCenterLocation);
-            if (dist <= cfg.getGpsArrivalDistance()) {
-                sendGpsArrivalEventInfo(player);
-                return;
+        if (active && riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
+            if (player.getWorld().equals(riftCenterLocation.getWorld())) {
+                double dist = player.getLocation().distance(riftCenterLocation);
+                if (dist > plugin.getPluginConfig().getGpsArrivalDistance()) {
+                    gpsWasOutsideRadius.add(uuid);
+                } else {
+                    gpsWasOutsideRadius.remove(uuid);
+                }
+            } else {
+                gpsWasOutsideRadius.add(uuid);
             }
-            gpsTrackedPlayers.add(uuid);
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.2f, 1.5f);
-            player.sendMessage(ColorUtil.color("&e┠ &fGPS-трекер &#34D711включён&f! Идите по стрелке (&#E0C912"
-                    + (int) Math.round(dist) + "м&f). При приближении ближе 10 блоков трекер отключится."));
-        } else {
-            gpsTrackedPlayers.add(uuid);
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.2f, 1.2f);
-            player.sendMessage(ColorUtil.color("&e┠ &fGPS-трекер &#34D711установлен&f!"));
-            player.sendMessage(ColorUtil.color("&e┠ &fТрекер появится автоматически, когда вы перейдёте в мир &#E0C912" + eventWorld.getName() + "&f."));
+            updateGpsTrackerForPlayers();
         }
+
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.4f);
+        player.sendMessage(ColorUtil.color("&e┠ &fЛокатор &#34D711включён&f."));
     }
 
-    /**
-     * Анонсирует появление ивента в чате в фирменном стиле &e┠.
-     */
     private void broadcastEventStart() {
         PluginConfig cfg = plugin.getPluginConfig();
         for (String line : cfg.getSpawnBroadcastLines()) {
             Bukkit.broadcastMessage(formatEventPlaceholders(line, riftCenterLocation));
         }
-
-        String worldName = riftCenterLocation.getWorld().getName();
-        int x = riftCenterLocation.getBlockX();
-        int y = riftCenterLocation.getBlockY();
-        int z = riftCenterLocation.getBlockZ();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (plugin.getBedrockService().canParticipate(player)) {
-                player.sendTitle(
-                        ColorUtil.color("&#34D711&lАДСКИЙ РАЗЛОМ"),
-                        ColorUtil.color("&fКоординаты: &#E0C912" + x + " " + y + " " + z + " &7(" + worldName + ")"),
-                        10, 70, 20
-                );
-                player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 0.7f);
-            }
-        }
     }
 
-    /**
-     * Подставляет плейсхолдеры (%loot%, %x%, %y%, %z%, %world%, %hp%, %max_hp%, %damage%, %time%, %remaining%) в строку.
-     */
     public String formatEventPlaceholders(String rawLine, Location loc) {
         PluginConfig cfg = plugin.getPluginConfig();
         String worldName = (loc != null && loc.getWorld() != null) ? loc.getWorld().getName() : cfg.getWorldName();
@@ -814,6 +802,10 @@ public class InfernalRiftManager {
 
     public boolean isDefeated() {
         return defeated;
+    }
+
+    public int getSecondsElapsed() {
+        return secondsElapsed;
     }
 
     public Location getRiftCenterLocation() {

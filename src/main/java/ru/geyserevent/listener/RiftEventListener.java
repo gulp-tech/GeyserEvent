@@ -1,5 +1,6 @@
 package ru.geyserevent.listener;
 
+import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -21,6 +22,7 @@ import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
@@ -34,13 +36,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Слушатель событий ивента «Адский Разлом»:
- * - Блокирует телепортацию игроков и мобов через портал схематики
- * - Проверяет участие только с Bedrock (GeyserMC)
- * - Активирует GPS-трекер (/event gps) при переходе игрока в мир ивента
- * - Выдаёт лут с приспешников (адские предметы, опыт, алмазы, золото и редко незерит)
- * - Защищает босса от лодок/вагонеток/удочек и расстрела издалека
- * - Защищает схематику от грифа и взрывов
+ * Слушатель событий ивента «Адский Разлом».
  */
 public class RiftEventListener implements Listener {
 
@@ -51,9 +47,15 @@ public class RiftEventListener implements Listener {
         this.plugin = plugin;
     }
 
-    /**
-     * Когда игрок переходит в другой мир — проверяем, нужно ли активировать /event gps.
-     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        if (plugin.getRiftManager().isActive()) {
+            Bukkit.getScheduler().runTaskLater(plugin, () ->
+                    plugin.getTopRightHudManager().updateTopRightHud(), 10L
+            );
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
         plugin.getRiftManager().handlePlayerChangedWorld(event.getPlayer());
@@ -64,9 +66,6 @@ public class RiftEventListener implements Listener {
         plugin.getTopRightHudManager().removeHudFromPlayer(event.getPlayer());
     }
 
-    /**
-     * Запрещает порталу Адского Разлома телепортировать игроков в Незер.
-     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
         if (!plugin.getPluginConfig().isDisablePortalTeleport()) {
@@ -84,9 +83,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Запрещает порталу Адского Разлома телепортировать босса, приспешников и любые сущности.
-     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent event) {
         Entity entity = event.getEntity();
@@ -97,9 +93,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Запрещает зомбификацию Брутального Пиглина и его приспешников в мире world2.
-     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTransform(EntityTransformEvent event) {
         Entity entity = event.getEntity();
@@ -108,9 +101,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Запрещает сажать босса и приспешников в лодки или вагонетки.
-     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onVehicleEnter(VehicleEnterEvent event) {
         Entity entered = event.getEntered();
@@ -119,9 +109,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Запрещает цеплять босса удочкой.
-     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerFish(PlayerFishEvent event) {
         Entity caught = event.getCaught();
@@ -130,9 +117,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Запрещает боссу и приспешникам атаковать друг друга.
-     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTarget(EntityTargetLivingEntityEvent event) {
         Entity source = event.getEntity();
@@ -154,9 +138,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Обработка боя с Боссом и его приспешниками.
-     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         InfernalRiftManager manager = plugin.getRiftManager();
@@ -168,42 +149,36 @@ public class RiftEventListener implements Listener {
         boolean damagerIsBoss = manager.isBoss(damager);
         boolean damagerIsMinion = plugin.getAbilityController().isMinion(damager);
 
-        // 1. Защита от урона между боссом и его приспешниками
         if ((victimIsBoss || victimIsMinion) && (damagerIsBoss || damagerIsMinion)) {
             event.setCancelled(true);
             return;
         }
 
-        // 2. Когда Босс бьёт игрока Незеритовым топором — гарантируем урон 15
         if (damagerIsBoss) {
             event.setDamage(plugin.getPluginConfig().getBossDamage());
             return;
         }
 
-        // 3. Когда приспешник бьёт игрока — устанавливаем урон приспешника
         if (damagerIsMinion) {
             event.setDamage(plugin.getPluginConfig().getMinionDamage());
             return;
         }
 
-        // 4. Когда урон наносится Боссу или приспешнику
         if (victimIsBoss || victimIsMinion) {
             Player attacker = resolveAttackerPlayer(damager);
             if (attacker != null) {
-                // Проверка: только для игроков с Bedrock Edition (GeyserMC)
                 if (!plugin.getBedrockService().canParticipate(attacker)) {
                     event.setCancelled(true);
                     attacker.sendMessage(plugin.getPluginConfig().getMsgOnlyBedrock());
                     return;
                 }
 
-                // Защита от расстрела Босса из лука/арбалета с огромного расстояния
                 if (victimIsBoss && damager instanceof Projectile) {
                     double maxRange = plugin.getPluginConfig().getMaxRangedAttackDistance();
                     if (attacker.getWorld().equals(victim.getWorld())
                             && attacker.getLocation().distanceSquared(victim.getLocation()) > maxRange * maxRange) {
                         event.setCancelled(true);
-                        attacker.sendMessage(ColorUtil.color("&e┠ &cВы слишком далеко от Босса! Подойдите ближе к Разлому для нанесения урона."));
+                        attacker.sendMessage(ColorUtil.color("&e┠ &cПодойдите ближе к Боссу для нанесения урона."));
                         return;
                     }
                 }
@@ -211,19 +186,16 @@ public class RiftEventListener implements Listener {
 
             if (victimIsBoss && victim instanceof LivingEntity boss) {
                 double finalDmg = Math.max(0.5, event.getFinalDamage());
-                event.setDamage(0.0); // Управляем пулом 3500 HP вручную
+                event.setDamage(0.0);
                 manager.handleBossDamaged(boss, attacker, finalDmg);
             } else if (victimIsMinion && victim instanceof LivingEntity minion) {
-                org.bukkit.Bukkit.getScheduler().runTask(plugin, () ->
+                Bukkit.getScheduler().runTask(plugin, () ->
                         plugin.getAbilityController().updateMinionName(minion)
                 );
             }
         }
     }
 
-    /**
-     * Защита Босса от удушья в стенах, падения и прочего не-боевого урона.
-     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBossEnvironmentalDamage(EntityDamageEvent event) {
         if (event instanceof EntityDamageByEntityEvent) {
@@ -249,9 +221,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Смерть Босса (награды через PlayerPoints) и Смерть Приспешника (выпадение адского лута, алмазов, золота и редкого незерита).
-     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
@@ -266,9 +235,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Защита схематики Адского Разлома от разрушения.
-     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         if (!plugin.getRiftManager().isActive()) {
@@ -280,9 +246,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Защита схематики Адского Разлома от застраивания блоками.
-     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
         if (!plugin.getRiftManager().isActive()) {
@@ -294,9 +257,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /**
-     * Защита блоков схематики от взрывов кристаллов и динамита.
-     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
         if (!plugin.getRiftManager().isActive()) {

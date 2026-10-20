@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Конфигурация плагина GeyserEvent v1.1.0 (Адский Разлом).
+ * Конфигурация плагина GeyserEvent v1.2.0 (Адский Разлом).
  */
 public class PluginConfig {
 
@@ -78,6 +78,7 @@ public class PluginConfig {
 
     // Minions & Minion Loot
     private boolean minionsEnabled;
+    private double minionTriggerRadius;
     private int minionSummonIntervalSeconds;
     private int minionCountPerWave;
     private int maxActiveMinions;
@@ -90,7 +91,6 @@ public class PluginConfig {
     private boolean minionLootEnabled;
     private int minionMinExp;
     private int minionMaxExp;
-    private boolean announceRareDrops;
     private final List<LootItemConfig> minionLootItems = new ArrayList<>();
 
     // Abilities (Radius 15 blocks)
@@ -129,15 +129,9 @@ public class PluginConfig {
     private String msgOnlyBedrock;
     private String msgPortalNoTeleport;
     private String msgRegionProtected;
-    private String msgAbilityPull;
-    private String msgAbilityPush;
-    private String msgAbilityGather;
-    private String msgAbilityMinions;
-    private String msgRareMinionDrop;
     private List<String> spawnBroadcastLines;
     private List<String> delayWaitingLines;
     private List<String> delayActiveLines;
-    private List<String> gpsArrivedInfoLines;
 
     public PluginConfig(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -157,8 +151,8 @@ public class PluginConfig {
         // ResourcePack & Top-Right HUD
         this.autoInstallResourcePackToGeyser = cfg.getBoolean("resourcepack.auto-install-to-geyser", true);
         this.topRightHudEnabled = cfg.getBoolean("resourcepack.top-right-hud.enabled", true);
-        this.topRightHudTitle = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.title", "&#FF2E2E&l🔥 АДСКИЙ РАЗЛОМ"));
-        this.topRightEventDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.event-display-name", "&#FF4500Адский Разлом"));
+        this.topRightHudTitle = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.title", "&#FF2E2E&l⚡ АДСКИЙ РАЗЛОМ"));
+        this.topRightEventDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.event-display-name", "&#34D711Адский-Разлом"));
         this.topRightRarityDisplay = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.rarity-display",
                 "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"));
 
@@ -168,9 +162,9 @@ public class PluginConfig {
                 "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"));
         this.autoStart = cfg.getBoolean("event.auto-start", true);
         this.intervalMinutes = Math.max(1, cfg.getInt("event.interval-minutes", 60));
-        this.durationMinutes = Math.max(1, cfg.getInt("event.duration-minutes", 25));
+        this.durationMinutes = Math.max(1, cfg.getInt("event.duration-minutes", 20));
         this.minBedrockPlayers = Math.max(0, cfg.getInt("event.min-bedrock-players", 1));
-        this.cleanupDelaySeconds = Math.max(1, cfg.getInt("event.cleanup-delay-seconds", 20));
+        this.cleanupDelaySeconds = Math.max(1, cfg.getInt("event.cleanup-delay-seconds", 15));
         this.gpsArrivalDistance = Math.max(2.0, cfg.getDouble("event.gps.arrival-distance", 10.0));
         this.gpsParticleTrail = cfg.getBoolean("event.gps.particle-trail", true);
         this.centerX = cfg.getInt("event.spawn.center-x", 0);
@@ -202,6 +196,7 @@ public class PluginConfig {
 
         // Minions
         this.minionsEnabled = cfg.getBoolean("minions.enabled", true);
+        this.minionTriggerRadius = Math.max(5.0, cfg.getDouble("minions.trigger-radius", 20.0));
         this.minionSummonIntervalSeconds = Math.max(5, cfg.getInt("minions.summon-interval-seconds", 25));
         this.minionCountPerWave = Math.max(1, cfg.getInt("minions.count-per-wave", 3));
         this.maxActiveMinions = Math.max(1, cfg.getInt("minions.max-active", 8));
@@ -216,7 +211,6 @@ public class PluginConfig {
         this.minionLootEnabled = cfg.getBoolean("minions.loot.enabled", true);
         this.minionMinExp = Math.max(0, cfg.getInt("minions.loot.min-exp", 50));
         this.minionMaxExp = Math.max(this.minionMinExp, cfg.getInt("minions.loot.max-exp", 120));
-        this.announceRareDrops = cfg.getBoolean("minions.loot.announce-rare-drops", true);
         loadMinionLootTable(cfg.getConfigurationSection("minions.loot.items"));
 
         // Abilities (Radius 15 blocks)
@@ -250,28 +244,17 @@ public class PluginConfig {
         // Messages
         this.prefix = ColorUtil.color(cfg.getString("messages.prefix", "&e┠ &r"));
         this.msgOnlyBedrock = ColorUtil.color(cfg.getString("messages.only-bedrock",
-                "&e┠ &cЭтот ивент доступен только для игроков с Bedrock Edition (GeyserMC)!"));
+                "&e┠ &cДоступно только для игроков с Bedrock Edition (GeyserMC)."));
         this.msgPortalNoTeleport = ColorUtil.color(cfg.getString("messages.portal-no-teleport",
-                "&e┠ &cПортал Адского Разлома нестабилен — телепортация заблокирована!"));
+                "&e┠ &cТелепортация через этот портал отключена."));
         this.msgRegionProtected = ColorUtil.color(cfg.getString("messages.region-protected",
-                "&e┠ &cВы не можете ломать или ставить блоки в зоне Адского Разлома!"));
-        this.msgAbilityPull = ColorUtil.color(cfg.getString("messages.ability-pull",
-                "&e┠ &6⚡ &fБрутальный Пиглин &#FF8C00притянул &fвас к себе цепями Разлома!"));
-        this.msgAbilityPush = ColorUtil.color(cfg.getString("messages.ability-push",
-                "&e┠ &c💥 &fБрутальный Пиглин &#FF3333оттолкнул &fвсех сокрушительной волной!"));
-        this.msgAbilityGather = ColorUtil.color(cfg.getString("messages.ability-gather",
-                "&e┠ &d🌀 &fБрутальный Пиглин &#D442FFстянул всех в одну точку &fперед собой!"));
-        this.msgAbilityMinions = ColorUtil.color(cfg.getString("messages.ability-minions",
-                "&e┠ &4🔥 &fВладыка Разлома призвал подкрепление приспешников из портала!"));
-        this.msgRareMinionDrop = cfg.getString("messages.rare-minion-drop",
-                "&e┠ &fИгрок &#E0C912%player% &fвыбил редкий дроп с приспешника: &#FF4500%item% &7(x%amount%)");
+                "&e┠ &cЗдесь нельзя ломать или ставить блоки."));
 
         this.spawnBroadcastLines = cfg.getStringList("messages.spawn-broadcast");
         if (this.spawnBroadcastLines.isEmpty()) {
             this.spawnBroadcastLines = List.of(
                     "&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fпоявился на карте.",
-                    "&e┠ &fРедкость: %loot%",
-                    "&e┠ &fЗдоровье босса: &c%hp% ❤ &7(Урон: &c%damage%&7)",
+                    "&e┠ &fЗдоровье: &c%hp% ❤",
                     "&e┠ &fКоординаты: &#E0C912%x% %y% %z%"
             );
         }
@@ -279,31 +262,16 @@ public class PluginConfig {
         this.delayWaitingLines = cfg.getStringList("messages.delay-waiting");
         if (this.delayWaitingLines.isEmpty()) {
             this.delayWaitingLines = List.of(
-                    "&e┠ &fДо появления ивента &#34D711Адский-Разлом&f:",
-                    "&e┠ &fОсталось времени: &#E0C912%time%",
-                    "&e┠ &fМир появления: &#E0C912%world%"
+                    "&e┠ &fДо появления ивента &#34D711Адский-Разлом&f: &#E0C912%time%"
             );
         }
 
         this.delayActiveLines = cfg.getStringList("messages.delay-active");
         if (this.delayActiveLines.isEmpty()) {
             this.delayActiveLines = List.of(
-                    "&e┠ &#34D711Адский-Разлом &fуже активен на карте!",
-                    "&e┠ &fЗдоровье босса: &c%hp%/%max_hp% ❤",
-                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%",
-                    "&e┠ &fВключить трекер: &#34D711/event gps"
-            );
-        }
-
-        this.gpsArrivedInfoLines = cfg.getStringList("messages.gps-arrived-info");
-        if (this.gpsArrivedInfoLines.isEmpty()) {
-            this.gpsArrivedInfoLines = List.of(
-                    "&e┠ &#34D711Вы прибыли к ивенту Адский Разлом! &7(GPS-трекер отключён)",
-                    "&e┠ &fБосс: &cБольшой Брутальный Пиглин (2м)",
-                    "&e┠ &fЗдоровье: &c%hp%/%max_hp% ❤ &7| &fУрон: &c%damage%",
-                    "&e┠ &fРедкость: %loot%",
-                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%",
-                    "&e┠ &fНаграды: &61м: &d%r1% &7| &f2м: &d%r2% &7| &c3м: &d%r3% %currency%"
+                    "&e┠ &#34D711Адский-Разлом &fактивен на карте.",
+                    "&e┠ &fЗдоровье: &c%hp%/%max_hp% ❤",
+                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%"
             );
         }
     }
@@ -400,6 +368,7 @@ public class PluginConfig {
     public double getMaxRangedAttackDistance() { return maxRangedAttackDistance; }
 
     public boolean isMinionsEnabled() { return minionsEnabled; }
+    public double getMinionTriggerRadius() { return minionTriggerRadius; }
     public int getMinionSummonIntervalSeconds() { return minionSummonIntervalSeconds; }
     public int getMinionCountPerWave() { return minionCountPerWave; }
     public int getMaxActiveMinions() { return maxActiveMinions; }
@@ -412,7 +381,6 @@ public class PluginConfig {
     public boolean isMinionLootEnabled() { return minionLootEnabled; }
     public int getMinionMinExp() { return minionMinExp; }
     public int getMinionMaxExp() { return minionMaxExp; }
-    public boolean isAnnounceRareDrops() { return announceRareDrops; }
     public List<LootItemConfig> getMinionLootItems() { return minionLootItems; }
 
     public double getAbilityRadius() { return abilityRadius; }
@@ -445,13 +413,7 @@ public class PluginConfig {
     public String getMsgOnlyBedrock() { return msgOnlyBedrock; }
     public String getMsgPortalNoTeleport() { return msgPortalNoTeleport; }
     public String getMsgRegionProtected() { return msgRegionProtected; }
-    public String getMsgAbilityPull() { return msgAbilityPull; }
-    public String getMsgAbilityPush() { return msgAbilityPush; }
-    public String getMsgAbilityGather() { return msgAbilityGather; }
-    public String getMsgAbilityMinions() { return msgAbilityMinions; }
-    public String getMsgRareMinionDrop() { return msgRareMinionDrop; }
     public List<String> getSpawnBroadcastLines() { return spawnBroadcastLines; }
     public List<String> getDelayWaitingLines() { return delayWaitingLines; }
     public List<String> getDelayActiveLines() { return delayActiveLines; }
-    public List<String> getGpsArrivedInfoLines() { return gpsArrivedInfoLines; }
 }

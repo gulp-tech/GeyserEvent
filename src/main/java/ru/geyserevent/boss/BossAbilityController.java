@@ -2,9 +2,9 @@ package ru.geyserevent.boss;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Registry;
@@ -14,7 +14,6 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.PiglinAbstract;
@@ -39,7 +38,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Контроллер способностей Большого Брутального Пиглина и его приспешников.
- * Все боевые способности действуют в радиусе 15 блоков от босса (настраивается в config.yml).
+ * - Способности действуют в радиусе 15 блоков от босса.
+ * - Приспешники появляются только когда игрок подходит ближе чем на 20 блоков (без сообщений в чат).
  */
 public class BossAbilityController {
 
@@ -53,9 +53,6 @@ public class BossAbilityController {
         this.minionKey = new NamespacedKey(plugin, "rift_minion");
     }
 
-    /**
-     * Выбирает и применяет следующую способность босса по ротации (если в радиусе 15 блоков есть игроки).
-     */
     public void castNextRotationAbility(LivingEntity boss) {
         if (boss == null || boss.isDead() || !boss.isValid()) {
             return;
@@ -80,9 +77,6 @@ public class BossAbilityController {
         executeAbility(boss, chosen);
     }
 
-    /**
-     * Принудительно активирует указанную способность босса.
-     */
     public int executeAbility(LivingEntity boss, BossAbilityType type) {
         if (boss == null || boss.isDead() || !boss.isValid()) {
             return 0;
@@ -91,13 +85,12 @@ public class BossAbilityController {
             case PULL -> castPullAbility(boss);
             case PUSH -> castPushAbility(boss);
             case GATHER -> castGatherAllAbility(boss);
-            case SUMMON_MINIONS -> summonMinions(boss);
+            case SUMMON_MINIONS -> summonMinions(boss, true);
         };
     }
 
     /**
      * 1. СПОСОБНОСТЬ: ПРИТЯГИВАНИЕ (в радиусе 15 блоков от босса).
-     * Цепями Адского Разлома притягивает всех игроков к боссу.
      */
     public int castPullAbility(LivingEntity boss) {
         PluginConfig cfg = plugin.getPluginConfig();
@@ -141,8 +134,7 @@ public class BossAbilityController {
                 target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slowTicks, 1, false, false, true));
             }
             target.playSound(playerLoc, Sound.ITEM_TRIDENT_RIPTIDE_3, 1.0f, 0.7f);
-            target.sendMessage(cfg.getMsgAbilityPull());
-            sendActionBar(target, "§6§l⚡ Босс притянул вас к себе!");
+            sendActionBar(target, "§6§l⚡ §eБосс притянул вас к себе!");
         }
 
         return targets.size();
@@ -150,7 +142,6 @@ public class BossAbilityController {
 
     /**
      * 2. СПОСОБНОСТЬ: ОТТАЛКИВАНИЕ (в радиусе 15 блоков от босса).
-     * Брутальный Пиглин бьёт топором о землю и отбрасывает всех игроков в радиусе 15 блоков.
      */
     public int castPushAbility(LivingEntity boss) {
         PluginConfig cfg = plugin.getPluginConfig();
@@ -169,7 +160,6 @@ public class BossAbilityController {
         world.playSound(bossLoc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.75f);
         world.playSound(bossLoc, Sound.ENTITY_PIGLIN_BRUTE_ANGRY, 2.0f, 0.5f);
 
-        // Визуальное кольцо взрывной волны
         spawnShockwaveRing(bossLoc.clone().add(0, 0.3, 0), Math.min(cfg.getAbilityRadius(), 15.0));
 
         double horizStrength = cfg.getPushHorizontalStrength();
@@ -194,8 +184,7 @@ public class BossAbilityController {
                 target.damage(damage);
             }
             world.spawnParticle(Particle.LAVA, playerLoc.clone().add(0, 1.0, 0), 10, 0.3, 0.3, 0.3, 0.05);
-            target.sendMessage(cfg.getMsgAbilityPush());
-            sendActionBar(target, "§c§l💥 Ударная волна отбросила вас!");
+            sendActionBar(target, "§c§l✦ §eУдарная волна отбросила вас!");
         }
 
         return targets.size();
@@ -203,8 +192,6 @@ public class BossAbilityController {
 
     /**
      * 3. СПОСОБНОСТЬ: СОБРАТЬ ВСЕХ В ОДНО МЕСТО (в радиусе 15 блоков от босса).
-     * Создаёт гравитационную воронку перед боссом и стягивает ВСЕХ игроков
-     * в радиусе 15 блоков в одну общую точку!
      */
     public int castGatherAllAbility(LivingEntity boss) {
         PluginConfig cfg = plugin.getPluginConfig();
@@ -221,7 +208,6 @@ public class BossAbilityController {
 
         boss.swingMainHand();
 
-        // Вычисляем единую точку стяжки прямо перед боссом
         Vector lookDir = bossLoc.getDirection().setY(0);
         if (lookDir.lengthSquared() < 0.01) {
             lookDir = new Vector(0, 0, 1);
@@ -231,7 +217,6 @@ public class BossAbilityController {
 
         Location gatherPoint = bossLoc.clone().add(lookDir.multiply(cfg.getGatherDistanceInFront()));
         gatherPoint.setY(bossLoc.getY());
-        // Если точка оказалась внутри твёрдого блока — берём безопасную высоту рядом с боссом
         if (gatherPoint.getBlock().getType().isSolid()) {
             gatherPoint.add(0, 1.0, 0);
             if (gatherPoint.getBlock().getType().isSolid()) {
@@ -239,7 +224,6 @@ public class BossAbilityController {
             }
         }
 
-        // Эффект гравитационной воронки в точке стяжки
         world.playSound(gatherPoint, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 2.0f, 0.5f);
         world.playSound(gatherPoint, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.6f);
         world.spawnParticle(Particle.PORTAL, gatherPoint.clone().add(0, 1.0, 0), 90, 0.6, 0.8, 0.6, 0.35);
@@ -252,7 +236,6 @@ public class BossAbilityController {
             Location oldLoc = target.getLocation();
             drawParticleLine(oldLoc.clone().add(0, 1.0, 0), gatherPoint.clone().add(0, 1.0, 0), Particle.PORTAL, 0.5);
 
-            // Сохраняем направление камеры игрока (чтобы на телефоне/консоли Bedrock не сбивался прицел)
             Location destination = gatherPoint.clone();
             destination.setYaw(oldLoc.getYaw());
             destination.setPitch(oldLoc.getPitch());
@@ -267,11 +250,9 @@ public class BossAbilityController {
                 target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slowTicks, 2, false, false, true));
             }
             target.playSound(destination, Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1.2f, 0.6f);
-            target.sendMessage(cfg.getMsgAbilityGather());
-            sendActionBar(target, "§5§l🌀 Все игроки стянуты в одну точку!");
+            sendActionBar(target, "§d§l✦ §fБосс стянул всех в одну точку!");
         }
 
-        // Направляем босса на точку скопления игроков
         if (boss instanceof Mob mob && !targets.isEmpty()) {
             mob.setTarget(targets.get(0));
         }
@@ -281,11 +262,24 @@ public class BossAbilityController {
 
     /**
      * 4. СПОСОБНОСТЬ: ПРИЗЫВ ПРИСПЕШНИКОВ.
-     * Призывает свиту приспешников вокруг босса.
+     * Срабатывает ТОЛЬКО если хотя бы один игрок подошёл ближе чем на 20 блоков к боссу (или если вызвано админом force=true).
+     * Никаких сообщений в чат не отправляется!
      */
-    public int summonMinions(LivingEntity boss) {
+    public int summonMinions(LivingEntity boss, boolean force) {
         PluginConfig cfg = plugin.getPluginConfig();
         if (!cfg.isMinionsEnabled() || boss == null || boss.isDead()) {
+            return 0;
+        }
+
+        Location bossLoc = boss.getLocation();
+        World world = bossLoc.getWorld();
+        if (world == null) {
+            return 0;
+        }
+
+        // Проверяем наличие игроков ближе чем на 20 блоков от босса
+        List<Player> playersWithin20 = getTargetPlayersInRadius(bossLoc, cfg.getMinionTriggerRadius());
+        if (!force && playersWithin20.isEmpty()) {
             return 0;
         }
 
@@ -297,13 +291,6 @@ public class BossAbilityController {
         }
 
         int toSpawn = Math.min(cfg.getMinionCountPerWave(), maxAllowed - currentCount);
-        Location bossLoc = boss.getLocation();
-        World world = bossLoc.getWorld();
-        if (world == null) {
-            return 0;
-        }
-
-        List<Player> nearbyPlayers = getTargetPlayersInRadius(bossLoc, cfg.getAbilityRadius() + 10.0);
         int spawned = 0;
 
         for (int i = 0; i < toSpawn; i++) {
@@ -314,7 +301,7 @@ public class BossAbilityController {
 
             Entity entity = world.spawnEntity(spawnLoc, cfg.getMinionEntityType());
             if (entity instanceof LivingEntity minion) {
-                configureMinion(minion, nearbyPlayers);
+                configureMinion(minion, playersWithin20);
                 activeMinions.add(minion.getUniqueId());
                 world.spawnParticle(Particle.FLAME, spawnLoc.clone().add(0, 1.0, 0), 25, 0.3, 0.5, 0.3, 0.05);
                 world.spawnParticle(Particle.LARGE_SMOKE, spawnLoc.clone().add(0, 1.0, 0), 15, 0.3, 0.5, 0.3, 0.02);
@@ -323,11 +310,8 @@ public class BossAbilityController {
         }
 
         if (spawned > 0) {
-            world.playSound(bossLoc, Sound.BLOCK_PORTAL_TRAVEL, 0.8f, 1.4f);
-            world.playSound(bossLoc, Sound.ENTITY_PIGLIN_BRUTE_CONVERTED_TO_ZOMBIFIED, 1.8f, 0.7f);
-            for (Player p : nearbyPlayers) {
-                p.sendMessage(cfg.getMsgAbilityMinions());
-            }
+            world.playSound(bossLoc, Sound.BLOCK_PORTAL_TRAVEL, 0.7f, 1.4f);
+            world.playSound(bossLoc, Sound.ENTITY_PIGLIN_BRUTE_ANGRY, 1.5f, 0.8f);
         }
 
         return spawned;
@@ -388,7 +372,7 @@ public class BossAbilityController {
         Iterator<UUID> it = activeMinions.iterator();
         while (it.hasNext()) {
             UUID uuid = it.next();
-            Entity entity = org.bukkit.Bukkit.getEntity(uuid);
+            Entity entity = Bukkit.getEntity(uuid);
             if (entity == null || entity.isDead() || !entity.isValid()) {
                 it.remove();
             }
@@ -397,7 +381,7 @@ public class BossAbilityController {
 
     public void removeAllMinions() {
         for (UUID uuid : activeMinions) {
-            Entity entity = org.bukkit.Bukkit.getEntity(uuid);
+            Entity entity = Bukkit.getEntity(uuid);
             if (entity != null && entity.isValid()) {
                 entity.remove();
             }
@@ -410,9 +394,6 @@ public class BossAbilityController {
         return activeMinions.size();
     }
 
-    /**
-     * Находит всех подходящих игроков (Bedrock GeyserMC) в заданном радиусе (по умолчанию 15 блоков) от босса.
-     */
     public List<Player> getTargetPlayersInRadius(Location center, double radius) {
         List<Player> list = new ArrayList<>();
         World world = center.getWorld();
@@ -481,16 +462,10 @@ public class BossAbilityController {
         }
     }
 
-    /**
-     * Универсальная установка масштаба (SCALE) моба для Purpur 1.21+ и Purpur 26.2 (2 метра для босса).
-     */
     public static void applyEntityScale(LivingEntity entity, double scale) {
         setEntityAttribute(entity, "SCALE", "generic.scale", scale);
     }
 
-    /**
-     * Совместимая с Purpur 26.2 и 1.21.x установка атрибута сущности (учитывает переименование GENERIC_* -> *).
-     */
     public static void setEntityAttribute(LivingEntity entity, String shortName, String registryKey, double value) {
         if (entity == null) {
             return;
@@ -519,9 +494,6 @@ public class BossAbilityController {
         }
     }
 
-    /**
-     * Создаёт зачарованный Незеритовый топор для Босса.
-     */
     public static ItemStack createBossAxe(PluginConfig cfg) {
         ItemStack item = new ItemStack(cfg.getBossWeaponMaterial());
         ItemMeta meta = item.getItemMeta();
