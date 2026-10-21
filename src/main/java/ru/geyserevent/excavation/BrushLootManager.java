@@ -28,7 +28,8 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Менеджер кисточек раскопок (Обычная, Эпическая, Легендарная) и их таблиц лута.
+ * Менеджер предметов ивентов (Кисточки «Пляжных Раскопок» и Реагенты «Котла Алхимика»)
+ * и их общих таблиц лута 3 уровней редкости (Обычная, Эпическая, Легендарная).
  * Позволяет настраивать лут и шансы через GUI-меню (/rift menu), команды (/rift brushloot) и config.yml.
  */
 public class BrushLootManager {
@@ -39,6 +40,7 @@ public class BrushLootManager {
     private final GeyserEventPlugin plugin;
     private final NamespacedKey tierKey;
     private final NamespacedKey usesKey;
+    private final NamespacedKey reagentKey;
 
     private final Map<BrushTier, List<BrushLootEntry>> lootByTier = new EnumMap<>(BrushTier.class);
     private final Map<BrushTier, Double> brushWeights = new EnumMap<>(BrushTier.class);
@@ -48,6 +50,7 @@ public class BrushLootManager {
         this.plugin = plugin;
         this.tierKey = new NamespacedKey(plugin, "brush_tier");
         this.usesKey = new NamespacedKey(plugin, "brush_uses");
+        this.reagentKey = new NamespacedKey(plugin, "alchemist_reagent");
         reload();
     }
 
@@ -55,7 +58,7 @@ public class BrushLootManager {
         FileConfiguration cfg = plugin.getConfig();
         lootByTier.clear();
 
-        // Авто-обновление старых шансов (65/25/10 -> 35/40/25), чтобы редкие кисточки выпадали значительно чаще
+        // Авто-обновление старых шансов (65/25/10 -> 35/40/25), чтобы редкие кисточки и реагенты выпадали значительно чаще
         double cChance = cfg.getDouble("excavation.brushes.common.chance", 35.0);
         double eChance = cfg.getDouble("excavation.brushes.epic.chance", 40.0);
         double lChance = cfg.getDouble("excavation.brushes.legendary.chance", 25.0);
@@ -134,7 +137,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Выбирает случайную редкость кисточки (Обычная, Эпическая, Легендарная) с повышенным шансом на редкие.
+     * Выбирает случайную редкость (Обычная, Эпическая, Легендарная) с повышенным шансом на редкие.
      */
     public BrushTier rollRandomBrushTier() {
         double wCommon = brushWeights.getOrDefault(BrushTier.COMMON, 35.0);
@@ -164,7 +167,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Создаёт предмет кисточки указанной редкости.
+     * Создаёт предмет кисточки указанной редкости для ивента «Пляжные Раскопки».
      */
     @SuppressWarnings("deprecation")
     public ItemStack createBrushItem(BrushTier tier) {
@@ -206,7 +209,124 @@ public class BrushLootManager {
     }
 
     /**
-     * Определяет редкость кисточки (или null, если это не кисточка ивента).
+     * Создаёт нестабильный Алхимический Реагент указанной редкости для ивента «Котёл Алхимика».
+     */
+    @SuppressWarnings("deprecation")
+    public ItemStack createReagentItem(BrushTier tier) {
+        Material mat = switch (tier) {
+            case COMMON -> Material.SLIME_BALL;
+            case EPIC -> Material.AMETHYST_SHARD;
+            case LEGENDARY -> Material.BLAZE_POWDER;
+        };
+        String title = getReagentDisplayName(tier);
+
+        ItemStack stack = new ItemStack(mat, 1);
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ColorUtil.color(title));
+            List<String> lore = List.of(
+                    ColorUtil.color("&7Ивент: &dКотёл Алхимика"),
+                    ColorUtil.color("&8Нажмите по Алхимику или Котлу в центре,"),
+                    ColorUtil.color("&8чтобы сварить предмет этой редкости!")
+            );
+            meta.setLore(lore);
+
+            Enchantment unb = Registry.ENCHANTMENT.get(NamespacedKey.minecraft("unbreaking"));
+            if (unb != null) {
+                meta.addEnchant(unb, 1, true);
+            }
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
+
+            PersistentDataContainer pdc = meta.getPersistentDataContainer();
+            pdc.set(tierKey, PersistentDataType.STRING, tier.name());
+            pdc.set(reagentKey, PersistentDataType.BYTE, (byte) 1);
+            pdc.set(usesKey, PersistentDataType.INTEGER, 1);
+            stack.setItemMeta(meta);
+        }
+        return stack;
+    }
+
+    public String getReagentDisplayName(BrushTier tier) {
+        return switch (tier) {
+            case COMMON -> "&aОбычный реагент &7(Болотный Спороцвет)";
+            case EPIC -> "&dЭпический реагент &7(Кристалл Бездны)";
+            case LEGENDARY -> "&6Легендарный реагент &7(Сердце Пламени)";
+        };
+    }
+
+    /**
+     * Проверяет, является ли предмет Алхимическим Реагентом.
+     */
+    public boolean isReagentItem(ItemStack item) {
+        if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        return meta != null && meta.getPersistentDataContainer().has(reagentKey, PersistentDataType.BYTE);
+    }
+
+    /**
+     * Проверяет, есть ли у игрока хотя бы один Алхимический Реагент.
+     */
+    public boolean hasAnyReagent(Player player) {
+        if (player == null) {
+            return false;
+        }
+        for (ItemStack item : player.getInventory().getStorageContents()) {
+            if (isReagentItem(item)) {
+                return true;
+            }
+        }
+        return isReagentItem(player.getInventory().getItemInOffHand());
+    }
+
+    /**
+     * Находит и забирает 1 Алхимический Реагент у игрока (сначала проверяет руки, затем инвентарь).
+     * Возвращает редкость сданного реагента или null, если реагентов нет.
+     */
+    public BrushTier findAndConsumeReagent(Player player) {
+        if (player == null) {
+            return null;
+        }
+        PlayerInventory inv = player.getInventory();
+
+        // 1. Проверяем основную руку
+        ItemStack main = inv.getItemInMainHand();
+        if (isReagentItem(main)) {
+            BrushTier tier = getBrushTier(main);
+            main.setAmount(main.getAmount() - 1);
+            return tier;
+        }
+
+        // 2. Проверяем вторую руку
+        ItemStack off = inv.getItemInOffHand();
+        if (isReagentItem(off)) {
+            BrushTier tier = getBrushTier(off);
+            off.setAmount(off.getAmount() - 1);
+            return tier;
+        }
+
+        // 3. Ищем в инвентаре (сначала Легендарный -> Эпический -> Обычный)
+        BrushTier[] priority = {BrushTier.LEGENDARY, BrushTier.EPIC, BrushTier.COMMON};
+        ItemStack[] contents = inv.getStorageContents();
+        for (BrushTier targetTier : priority) {
+            for (int i = 0; i < contents.length; i++) {
+                ItemStack st = contents[i];
+                if (isReagentItem(st) && getBrushTier(st) == targetTier) {
+                    if (st.getAmount() <= 1) {
+                        inv.setItem(i, null);
+                    } else {
+                        st.setAmount(st.getAmount() - 1);
+                    }
+                    return targetTier;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Определяет редкость кисточки или реагента (или null, если это обычный предмет).
      */
     public BrushTier getBrushTier(ItemStack item) {
         if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
@@ -228,7 +348,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Подсчитывает общее количество кисточек ивента в инвентаре игрока (максимум разрешено держать 3 шт.).
+     * Подсчитывает общее количество кисточек/реагентов ивента в инвентаре игрока (максимум разрешено держать 3 шт.).
      */
     public int countPlayerBrushes(Player player) {
         if (player == null) {
@@ -253,14 +373,14 @@ public class BrushLootManager {
     }
 
     /**
-     * Проверяет, есть ли у игрока хотя бы одна кисточка раскопок.
+     * Проверяет, есть ли у игрока хотя бы одна кисточка или реагент ивента.
      */
     public boolean hasAnyEventBrush(Player player) {
         return countPlayerBrushes(player) > 0;
     }
 
     /**
-     * Удаляет все кисточки ивента у игрока (при уходе далеко от пляжа, выходе с сервера или окончании ивента).
+     * Удаляет все кисточки и реагенты ивента у игрока (при уходе далеко от зоны ивента, выходе с сервера или окончании ивента).
      */
     public boolean removeAllEventBrushes(Player player) {
         if (player == null) {
@@ -287,7 +407,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Удаляет кисточки ивента у всех игроков онлайн и лежащие на земле.
+     * Удаляет кисточки и реагенты ивента у всех игроков онлайн и лежащие на земле.
      */
     public void removeAllEventBrushesFromOnlinePlayers() {
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -335,7 +455,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Выбирает случайный предмет из таблицы лута указанной кисточки.
+     * Выбирает случайный предмет из таблицы лута указанной редкости.
      */
     public ItemStack rollLootForBrush(BrushTier tier) {
         List<BrushLootEntry> list = lootByTier.get(tier);
@@ -360,7 +480,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Добавляет предмет в таблицу лута указанной кисточки и сохраняет в config.yml.
+     * Добавляет предмет в таблицу лута указанной редкости и сохраняет в config.yml.
      */
     public void addLootItem(BrushTier tier, ItemStack item, double chance) {
         List<BrushLootEntry> list = lootByTier.computeIfAbsent(tier, k -> new ArrayList<>());
@@ -369,7 +489,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Изменяет шанс выпадения предмета в таблице лута кисточки (для GUI-меню).
+     * Изменяет шанс выпадения предмета в таблице лута (для GUI-меню).
      */
     public void updateLootEntryChance(BrushTier tier, int index0Based, double newChance) {
         List<BrushLootEntry> list = lootByTier.get(tier);
@@ -383,7 +503,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Удаляет предмет по номеру (начиная с 1) из таблицы лута указанной кисточки.
+     * Удаляет предмет по номеру (начиная с 1) из таблицы лута указанной редкости.
      */
     public boolean removeLootItem(BrushTier tier, int index1Based) {
         List<BrushLootEntry> list = lootByTier.get(tier);
@@ -396,7 +516,7 @@ public class BrushLootManager {
     }
 
     /**
-     * Очищает все предметы из таблицы лута указанной кисточки.
+     * Очищает все предметы из таблицы лута указанной редкости.
      */
     public void clearLoot(BrushTier tier) {
         List<BrushLootEntry> list = lootByTier.computeIfAbsent(tier, k -> new ArrayList<>());

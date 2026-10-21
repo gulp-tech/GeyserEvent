@@ -38,6 +38,7 @@ public class PluginConfig {
     private String topRightHudTitle;
     private String topRightEventDisplayName;
     private String topRightExcavationDisplayName;
+    private String topRightCauldronDisplayName;
     private String topRightRarityDisplay;
 
     // Event
@@ -140,9 +141,11 @@ public class PluginConfig {
     private String msgRegionProtected;
     private List<String> spawnBroadcastLines;
     private List<String> excavationSpawnBroadcastLines;
+    private List<String> cauldronSpawnBroadcastLines;
     private List<String> delayWaitingLines;
     private List<String> delayActiveLines;
     private List<String> excavationDelayActiveLines;
+    private List<String> cauldronDelayActiveLines;
 
     public PluginConfig(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -165,6 +168,7 @@ public class PluginConfig {
         this.topRightHudTitle = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.title", "&#FF2E2E&lАДСКИЙ РАЗЛОМ"));
         this.topRightEventDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.event-display-name", "&#34D711Адский-Разлом"));
         this.topRightExcavationDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.excavation-display-name", "&#34D711Пляжные-Раскопки"));
+        this.topRightCauldronDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.cauldron-display-name", "&#34D711Котёл-Алхимика"));
         this.topRightRarityDisplay = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.rarity-display",
                 "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"));
 
@@ -288,6 +292,15 @@ public class PluginConfig {
             );
         }
 
+        this.cauldronSpawnBroadcastLines = cfg.getStringList("messages.cauldron-spawn-broadcast");
+        if (this.cauldronSpawnBroadcastLines.isEmpty()) {
+            this.cauldronSpawnBroadcastLines = List.of(
+                    "&e┠ &#34D711К&#42CE0Fо&#50C50Eт&#5EBC0Cё&#6CB30Bл-&#7AAA09А&#88A108л&#969806х&#A48F05и&#B28603м&#C07D02и&#CE7400к&#DC6B00а &fпоявился на карте.",
+                    "&e┠ &fСобирайте реагенты на болоте и сдавайте Алхимику!",
+                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%"
+            );
+        }
+
         this.delayWaitingLines = cfg.getStringList("messages.delay-waiting");
         if (this.delayWaitingLines.isEmpty()) {
             this.delayWaitingLines = List.of(
@@ -309,6 +322,15 @@ public class PluginConfig {
             this.excavationDelayActiveLines = List.of(
                     "&e┠ &#34D711П&#40CE10л&#4CC50Eя&#58BC0Dж&#64B30Bн&#70AA0Aы&#7CA109е-&#889807Р&#948F06а&#A08605с&#AC7D03к&#B87402о&#C46B01п&#CF7C00к&#DB8500и &fактивны на карте.",
                     "&e┠ &fДо конца раскопок: &#E0C912%remaining%",
+                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%"
+            );
+        }
+
+        this.cauldronDelayActiveLines = cfg.getStringList("messages.cauldron-delay-active");
+        if (this.cauldronDelayActiveLines.isEmpty()) {
+            this.cauldronDelayActiveLines = List.of(
+                    "&e┠ &#34D711К&#42CE0Fо&#50C50Eт&#5EBC0Cё&#6CB30Bл-&#7AAA09А&#88A108л&#969806х&#A48F05и&#B28603м&#C07D02и&#CE7400к&#DC6B00а &fактивен на карте.",
+                    "&e┠ &fДо конца ивента: &#E0C912%remaining%",
                     "&e┠ &fКоординаты: &#E0C912%x% %y% %z%"
             );
         }
@@ -370,6 +392,7 @@ public class PluginConfig {
     public String getTopRightHudTitle() { return topRightHudTitle; }
     public String getTopRightEventDisplayName() { return topRightEventDisplayName; }
     public String getTopRightExcavationDisplayName() { return topRightExcavationDisplayName; }
+    public String getTopRightCauldronDisplayName() { return topRightCauldronDisplayName; }
     public String getTopRightRarityDisplay() { return topRightRarityDisplay; }
 
     public String getWorldName() { return worldName; }
@@ -461,7 +484,9 @@ public class PluginConfig {
     public String getMsgRegionProtected() { return msgRegionProtected; }
     public List<String> getSpawnBroadcastLines() { return spawnBroadcastLines; }
     public List<String> getExcavationSpawnBroadcastLines() { return excavationSpawnBroadcastLines; }
+    public List<String> getCauldronSpawnBroadcastLines() { return cauldronSpawnBroadcastLines; }
     public List<String> getDelayWaitingLines() { return delayWaitingLines; }
     public List<String> getDelayActiveLines() { return delayActiveLines; }
     public List<String> getExcavationDelayActiveLines() { return excavationDelayActiveLines; }
+    public List<String> getCauldronDelayActiveLines() { return cauldronDelayActiveLines; }
 }

@@ -4,6 +4,7 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.boss.MinionLootManager;
+import ru.geyserevent.cauldron.AlchemistSchematicManager;
 import ru.geyserevent.command.EventPlayerCommand;
 import ru.geyserevent.command.RiftCommand;
 import ru.geyserevent.config.PluginConfig;
@@ -18,9 +19,10 @@ import ru.geyserevent.listener.RiftEventListener;
 import ru.geyserevent.schematic.RiftSchematicManager;
 
 /**
- * Главный класс плагина GeyserEvent v1.6.0 — два анархических ивента:
+ * Главный класс плагина GeyserEvent v1.7.0 — три анархических ивента:
  * 1) «Адский Разлом (Вторжение Босса)»
- * 2) «Пляжные Раскопки (Большая схема 31x31, 2-метровый Житель с кисточками по клику, GUI-меню /rift menu)»
+ * 2) «Пляжные Раскопки (Большая схема 31x31, 2-метровый Житель с кисточками по клику)»
+ * 3) «Котёл Алхимика (Мистическое болото 31x31, сбор реагентов и варка в котле)»
  * Специально для Purpur 26.2 с поддержкой игроков Bedrock Edition (GeyserMC).
  */
 public final class GeyserEventPlugin extends JavaPlugin {
@@ -30,6 +32,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private PlayerPointsHook playerPointsHook;
     private RiftSchematicManager schematicManager;
     private BeachSchematicManager beachSchematicManager;
+    private AlchemistSchematicManager alchemistSchematicManager;
     private BrushLootManager brushLootManager;
     private BrushLootGuiManager brushLootGuiManager;
     private TopRightHudManager topRightHudManager;
@@ -46,9 +49,10 @@ public final class GeyserEventPlugin extends JavaPlugin {
         this.bedrockService = new BedrockService(this);
         this.playerPointsHook = new PlayerPointsHook(this);
 
-        // 3. Менеджеры схем («Адский Разлом» и «Пляжные Раскопки» 31x31), кисточек, GUI-меню и HUD
+        // 3. Менеджеры схем («Адский Разлом», «Пляжные Раскопки» 31x31, «Котёл Алхимика» 31x31), лута, GUI-меню и HUD
         this.schematicManager = new RiftSchematicManager(this);
         this.beachSchematicManager = new BeachSchematicManager(this);
+        this.alchemistSchematicManager = new AlchemistSchematicManager(this);
         this.brushLootManager = new BrushLootManager(this);
         this.brushLootGuiManager = new BrushLootGuiManager(this);
         this.topRightHudManager = new TopRightHudManager(this);
@@ -78,9 +82,9 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.6.0 успешно запущен! (Purpur 26.2)");
-        getLogger().info(" Ивенты: Адский Разлом + Пляжные Раскопки (31x31)");
-        getLogger().info(" Меню настройки лута кисточек: /rift menu");
+        getLogger().info(" GeyserEvent v1.7.0 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" Ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
+        getLogger().info(" Меню настройки лута: /rift menu");
         getLogger().info(" Команды игроков: /event delay, /event gps");
         getLogger().info("==================================================");
     }
@@ -96,6 +100,9 @@ public final class GeyserEventPlugin extends JavaPlugin {
             }
             if (this.beachSchematicManager != null) {
                 this.beachSchematicManager.restoreActiveSchematic();
+            }
+            if (this.alchemistSchematicManager != null) {
+                this.alchemistSchematicManager.restoreActiveSchematic();
             }
             if (this.topRightHudManager != null) {
                 this.topRightHudManager.clearAllHud();
@@ -122,6 +129,10 @@ public final class GeyserEventPlugin extends JavaPlugin {
 
     public BeachSchematicManager getBeachSchematicManager() {
         return beachSchematicManager;
+    }
+
+    public AlchemistSchematicManager getAlchemistSchematicManager() {
+        return alchemistSchematicManager;
     }
 
     public BrushLootManager getBrushLootManager() {

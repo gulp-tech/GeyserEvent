@@ -47,6 +47,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * Главный менеджер ивентов:
  * 1) «Адский Разлом (Вторжение Босса)»
  * 2) «Пляжные Раскопки (2-метровый Житель с кисточками по клику)»
+ * 3) «Котёл Алхимика (Мистическое болото 31x31, сбор реагентов и варка в котле)»
  */
 public class InfernalRiftManager {
 
@@ -76,6 +77,7 @@ public class InfernalRiftManager {
 
     private int brushCountdownSeconds;
     private boolean brushReadyToClaim;
+    private int reagentSproutCooldownSeconds;
 
     private BossBar bossBar;
     private BukkitTask autoStartTask;
@@ -112,9 +114,8 @@ public class InfernalRiftManager {
                 if (now >= nextAutoStartEpochSeconds) {
                     int onlineBedrock = plugin.getBedrockService().getOnlineBedrockCount();
                     if (onlineBedrock >= plugin.getPluginConfig().getMinBedrockPlayers()) {
-                        EventType randomType = ThreadLocalRandom.current().nextBoolean()
-                                ? EventType.INFERNAL_RIFT
-                                : EventType.BEACH_EXCAVATION;
+                        EventType[] types = EventType.values();
+                        EventType randomType = types[ThreadLocalRandom.current().nextInt(types.length)];
                         startEventRandomInConfiguredWorld(randomType);
                     } else {
                         nextAutoStartEpochSeconds = now + 300L;
@@ -126,7 +127,7 @@ public class InfernalRiftManager {
 
     /**
      * Быстрый цикл каждые 5 тиков (0.25 сек):
-     * 1) Проверяет и удаляет кисточки у тех, кто ушёл далеко от пляжа
+     * 1) Проверяет и удаляет кисточки/реагенты у тех, кто ушёл далеко от ивента
      * 2) Обновляет локатор (/event gps)
      */
     private void startFastGpsLoop() {
@@ -143,8 +144,8 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Проверяет всех игроков онлайн: если у игрока есть кисточка ивента, но он ушёл далеко от пляжа
-     * (или ивент Пляжные Раскопки не активен), кисточки мгновенно удаляются.
+     * Проверяет всех игроков онлайн: если у игрока есть кисточка или реагент ивента, но он ушёл далеко от зоны
+     * (или соответствующий ивент не активен), кисточки/реагенты мгновенно удаляются.
      */
     public void enforceBrushZoneForPlayers() {
         double maxDist = Math.max(28.0, plugin.getPluginConfig().getExcavationBrushRemoveDistance());
@@ -154,22 +155,31 @@ public class InfernalRiftManager {
             if (!plugin.getBrushLootManager().hasAnyEventBrush(player)) {
                 continue;
             }
-            boolean outside = !active
-                    || activeEventType != EventType.BEACH_EXCAVATION
+            boolean isItemEventActive = active
+                    && (activeEventType == EventType.BEACH_EXCAVATION || activeEventType == EventType.ALCHEMIST_CAULDRON);
+            boolean outside = !isItemEventActive
                     || riftCenterLocation == null
                     || riftCenterLocation.getWorld() == null
                     || !player.getWorld().equals(riftCenterLocation.getWorld())
                     || player.getLocation().distanceSquared(riftCenterLocation) > maxDistSq;
 
             if (outside) {
+                boolean hadReagent = plugin.getBrushLootManager().hasAnyReagent(player);
                 if (plugin.getBrushLootManager().removeAllEventBrushes(player)) {
-                    player.sendMessage(ColorUtil.color("&e┠ &cВы ушли далеко от пляжа раскопок — кисточки пропали."));
+                    if (hadReagent) {
+                        player.sendMessage(ColorUtil.color("&e┠ &cВы ушли далеко от Котла Алхимика — нестабильные реагенты испарились."));
+                    } else {
+                        player.sendMessage(ColorUtil.color("&e┠ &cВы ушли далеко от пляжа раскопок — кисточки пропали."));
+                    }
                 }
             }
         }
 
-        // Если кисточку выкинули за пределами пляжа — тоже удаляем предмет с земли
-        if (active && activeEventType == EventType.BEACH_EXCAVATION && riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
+        // Если кисточку или реагент выкинули за пределами зоны ивента — тоже удаляем предмет с земли
+        if (active
+                && (activeEventType == EventType.BEACH_EXCAVATION || activeEventType == EventType.ALCHEMIST_CAULDRON)
+                && riftCenterLocation != null
+                && riftCenterLocation.getWorld() != null) {
             World w = riftCenterLocation.getWorld();
             for (Entity entity : w.getEntitiesByClass(Item.class)) {
                 if (entity instanceof Item itemEntity && plugin.getBrushLootManager().getBrushTier(itemEntity.getItemStack()) != null) {
@@ -182,9 +192,9 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Динамический интервал выдачи кисточек у Жителя:
-     * Под конец ивента Житель начинает раздавать кисточки значительно быстрее!
-     * - Первые 10 минут (осталось > 10 мин): 30 сек (базовый интервал)
+     * Динамический интервал выдачи кисточек / реагентов у НПС:
+     * Под конец ивента НПС начинает раздавать предметы значительно быстрее!
+     * - Первые 10 минут (осталось > 10 мин): 30 сек
      * - Осталось 5..10 минут: 20 сек
      * - Осталось 2..5 минут: 12 сек
      * - Последние 2 минуты: 7 сек
@@ -202,15 +212,30 @@ public class InfernalRiftManager {
         return base;
     }
 
+    /**
+     * Динамический интервал появления новых Реагентов на 16 пьедесталах болота («Котёл Алхимика»):
+     * Под конец ивента котёл закипает и реагенты вырастают намного быстрее!
+     */
+    public int getDynamicReagentSproutIntervalSeconds() {
+        long rem = getSecondsRemainingInEvent();
+        if (rem <= 120L) {
+            return 4;
+        } else if (rem <= 300L) {
+            return 6;
+        } else if (rem <= 600L) {
+            return 9;
+        }
+        return 12;
+    }
+
     private void resetNextAutoStartTimer() {
         long now = System.currentTimeMillis() / 1000L;
         this.nextAutoStartEpochSeconds = now + (plugin.getPluginConfig().getIntervalMinutes() * 60L);
     }
 
     public boolean startEventRandomInConfiguredWorld() {
-        EventType randomType = ThreadLocalRandom.current().nextBoolean()
-                ? EventType.INFERNAL_RIFT
-                : EventType.BEACH_EXCAVATION;
+        EventType[] types = EventType.values();
+        EventType randomType = types[ThreadLocalRandom.current().nextInt(types.length)];
         return startEventRandomInConfiguredWorld(randomType);
     }
 
@@ -271,6 +296,23 @@ public class InfernalRiftManager {
             this.brushReadyToClaim = false;
             Villager villager = spawnExcavationVillager(this.bossHomeLocation);
             this.villagerUuid = villager.getUniqueId();
+
+            createAndShowBossBar();
+            plugin.getTopRightHudManager().updateTopRightHud();
+            broadcastEventStart();
+            startActiveTickLoop();
+            return true;
+        } else if (this.activeEventType == EventType.ALCHEMIST_CAULDRON) {
+            // 1. Строим большую схему 31x31 «Котёл Алхимика» и получаем точку спавна 2м Алхимика у котла
+            this.bossHomeLocation = plugin.getAlchemistSchematicManager().pasteSchematic(this.riftCenterLocation);
+            this.riftCenterLocation = this.bossHomeLocation.clone().subtract(0, 2.0, 0);
+
+            // 2. Спавним 2-метрового Магистра Алхимика в центре болота
+            this.brushCountdownSeconds = cfg.getExcavationBrushIntervalSeconds();
+            this.brushReadyToClaim = false;
+            this.reagentSproutCooldownSeconds = getDynamicReagentSproutIntervalSeconds();
+            Villager alchemist = spawnAlchemistNpc(this.bossHomeLocation);
+            this.villagerUuid = alchemist.getUniqueId();
 
             createAndShowBossBar();
             plugin.getTopRightHudManager().updateTopRightHud();
@@ -340,6 +382,48 @@ public class InfernalRiftManager {
         return villager;
     }
 
+    /**
+     * Спавнит 2-метрового Магистра Алхимика (Житель-Священник в пурпурном болотном одеянии с Дыханием Дракона в руке).
+     */
+    private Villager spawnAlchemistNpc(Location loc) {
+        PluginConfig cfg = plugin.getPluginConfig();
+        World world = loc.getWorld();
+
+        Entity spawned = world.spawnEntity(loc, EntityType.VILLAGER);
+        Villager alchemist = (Villager) spawned;
+
+        alchemist.getPersistentDataContainer().set(villagerKey, PersistentDataType.BYTE, (byte) 1);
+        alchemist.setAdult();
+        alchemist.setProfession(Villager.Profession.CLERIC);
+        alchemist.setVillagerType(Villager.Type.SWAMP);
+        alchemist.setAI(false);
+        alchemist.setGravity(false);
+        alchemist.setInvulnerable(true);
+        alchemist.setCollidable(false);
+        alchemist.setRemoveWhenFarAway(false);
+        alchemist.setPersistent(true);
+        alchemist.setCanPickupItems(false);
+        alchemist.setCustomNameVisible(true);
+        alchemist.setGlowing(true);
+
+        BossAbilityController.applyEntityScale(alchemist, cfg.getExcavationVillagerScale());
+
+        EntityEquipment equip = alchemist.getEquipment();
+        if (equip != null) {
+            equip.setItemInMainHand(new ItemStack(Material.DRAGON_BREATH, 1));
+            equip.setItemInMainHandDropChance(0.0f);
+        }
+
+        updateAlchemistNameAndBar(alchemist);
+
+        world.playSound(loc, Sound.BLOCK_BREWING_STAND_BREW, 2.0f, 0.8f);
+        world.playSound(loc, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 2.0f, 0.9f);
+        world.spawnParticle(Particle.WITCH, loc.clone().add(0, 1.2, 0), 65, 0.9, 1.1, 0.9, 0.06);
+        world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.0, 0), 40, 0.8, 0.9, 0.8, 0.04);
+
+        return alchemist;
+    }
+
     private PiglinBrute spawnInfernalPiglinBoss(Location loc) {
         PluginConfig cfg = plugin.getPluginConfig();
         World world = loc.getWorld();
@@ -400,6 +484,8 @@ public class InfernalRiftManager {
 
                 if (activeEventType == EventType.BEACH_EXCAVATION) {
                     tickBeachExcavation(cfg, now);
+                } else if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
+                    tickAlchemistCauldron(cfg, now);
                 } else {
                     tickInfernalRift(cfg, now);
                 }
@@ -449,15 +535,85 @@ public class InfernalRiftManager {
         plugin.getTopRightHudManager().updateTopRightHud();
     }
 
+    private void tickAlchemistCauldron(PluginConfig cfg, long now) {
+        if (now >= eventEndEpochSeconds) {
+            Bukkit.broadcastMessage(ColorUtil.color(
+                    "&e┠ &#34D711К&#42CE0Fо&#50C50Eт&#5EBC0Cё&#6CB30Bл-&#7AAA09А&#88A108л&#969806х&#A48F05и&#B28603м&#C07D02и&#CE7400к&#DC6B00а &fзакончился."
+            ));
+            stopEvent(false);
+            return;
+        }
+
+        LivingEntity alchemist = getExcavationVillagerEntity();
+        if (alchemist != null && alchemist.isValid() && bossHomeLocation != null) {
+            if (!alchemist.getLocation().getWorld().equals(bossHomeLocation.getWorld())
+                    || alchemist.getLocation().distanceSquared(bossHomeLocation) > 0.25) {
+                alchemist.teleport(bossHomeLocation);
+            }
+        }
+
+        // 1. Красивые атмосферные частицы над 4 котлами и над всеми активными реагентами на 16 пьедесталах
+        plugin.getAlchemistSchematicManager().spawnAmbientEffects();
+
+        // 2. Периодический звук бурления центрального котла
+        if (secondsElapsed % 4 == 0 && bossHomeLocation != null && bossHomeLocation.getWorld() != null) {
+            bossHomeLocation.getWorld().playSound(bossHomeLocation, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1.4f, 0.9f);
+        }
+
+        // 3. Рост новых нестабильных Реагентов на 16 пьедесталах болота (ускоряется под конец ивента!)
+        if (reagentSproutCooldownSeconds > 0) {
+            reagentSproutCooldownSeconds--;
+        }
+        if (reagentSproutCooldownSeconds <= 0) {
+            BrushTier tier = plugin.getBrushLootManager().rollRandomBrushTier();
+            plugin.getAlchemistSchematicManager().spawnRandomReagentNode(tier);
+            reagentSproutCooldownSeconds = getDynamicReagentSproutIntervalSeconds();
+        }
+
+        // 4. Таймер бонусного реагента у самого Алхимика (также без режима ожидания и с ускорением под конец!)
+        if (!brushReadyToClaim) {
+            if (brushCountdownSeconds > 0) {
+                brushCountdownSeconds--;
+            }
+            if (brushCountdownSeconds <= 0) {
+                brushReadyToClaim = true;
+                if (bossHomeLocation != null && bossHomeLocation.getWorld() != null) {
+                    bossHomeLocation.getWorld().playSound(bossHomeLocation, Sound.BLOCK_BREWING_STAND_BREW, 1.5f, 1.2f);
+                    bossHomeLocation.getWorld().spawnParticle(
+                            Particle.WITCH,
+                            bossHomeLocation.clone().add(0, 1.3, 0),
+                            30, 0.5, 0.6, 0.5, 0.05
+                    );
+                }
+            }
+        }
+
+        // 5. Подсветка (Glowing) для курьеров, несущих реагент по болоту к котлу
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (plugin.getBrushLootManager().hasAnyReagent(p)) {
+                p.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 45, 0, false, false));
+            }
+        }
+
+        if (alchemist != null) {
+            updateAlchemistNameAndBar(alchemist);
+        }
+        plugin.getTopRightHudManager().updateTopRightHud();
+    }
+
     /**
-     * Обрабатывает клик (ПКМ или ЛКМ) по 2-метровому Жителю-Археологу.
-     * Чтобы забрать кисточку — нужно кликнуть по Жителю.
-     * Как только игрок забрал кисточку — Житель сразу запускает таймер следующей кисточки (без режима ожидания),
-     * причём под конец ивента таймер становится быстрее!
+     * Обрабатывает клик (ПКМ или ЛКМ) по 2-метровому Жителю-Археологу или Магистру Алхимику.
      */
     @SuppressWarnings("deprecation")
     public void handleVillagerInteraction(Player player) {
-        if (!active || activeEventType != EventType.BEACH_EXCAVATION) {
+        if (!active) {
+            return;
+        }
+        if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
+            handleAlchemistInteraction(player);
+            return;
+        }
+        if (activeEventType != EventType.BEACH_EXCAVATION) {
             return;
         }
         if (!plugin.getBedrockService().canParticipate(player)) {
@@ -501,6 +657,120 @@ public class InfernalRiftManager {
             } catch (Throwable ignored) {
             }
         }
+    }
+
+    /**
+     * Обрабатывает клик по 2-метровому Алхимику или центральному Котлу:
+     * 1) Если у игрока есть сорванный Реагент — мгновенно варит его в Котле и выдаёт награду этой редкости!
+     * 2) Если реагента нет, но у Алхимика готов бонусный реагент по таймеру — выдаёт реагент игроку!
+     */
+    @SuppressWarnings("deprecation")
+    public void handleAlchemistInteraction(Player player) {
+        if (!active || activeEventType != EventType.ALCHEMIST_CAULDRON) {
+            return;
+        }
+        if (!plugin.getBedrockService().canParticipate(player)) {
+            player.sendMessage(plugin.getPluginConfig().getMsgOnlyBedrock());
+            return;
+        }
+
+        // 1. Если у игрока в инвентаре есть Реагент — сдаём его Алхимику и варим награду!
+        if (plugin.getBrushLootManager().hasAnyReagent(player)) {
+            brewPlayerReagentInCauldron(player);
+            return;
+        }
+
+        // 2. Если реагентов с собой нет, проверяем готовность бонусного реагента у самого Алхимика
+        if (brushReadyToClaim || brushCountdownSeconds <= 0) {
+            if (plugin.getBrushLootManager().countPlayerBrushes(player) >= 3) {
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                String msg = ColorUtil.color("&e┠ &cВ инвентаре можно держать максимум 3 реагента!");
+                player.sendMessage(msg);
+                return;
+            }
+            if (player.getInventory().firstEmpty() == -1) {
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                player.sendMessage(ColorUtil.color("&e┠ &cОсвободите место в инвентаре!"));
+                return;
+            }
+
+            brushReadyToClaim = false;
+            brushCountdownSeconds = getDynamicBrushIntervalSeconds();
+
+            BrushTier tier = plugin.getBrushLootManager().rollRandomBrushTier();
+            ItemStack reagent = plugin.getBrushLootManager().createReagentItem(tier);
+            player.getInventory().addItem(reagent);
+
+            player.playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.2f, 1.2f);
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.2f);
+            if (bossHomeLocation != null && bossHomeLocation.getWorld() != null) {
+                bossHomeLocation.getWorld().spawnParticle(
+                        Particle.WITCH,
+                        bossHomeLocation.clone().add(0, 1.2, 0),
+                        30, 0.5, 0.6, 0.5, 0.05
+                );
+            }
+
+            player.sendMessage(ColorUtil.color(
+                    "&e┠ &fВы получили у Алхимика: " + plugin.getBrushLootManager().getReagentDisplayName(tier)
+            ));
+            try {
+                String ab = ColorUtil.color("&dНажмите по Алхимику или Котлу ещё раз, чтобы сварить реагент!");
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(ab));
+            } catch (Throwable ignored) {
+            }
+
+            LivingEntity v = getExcavationVillagerEntity();
+            if (v != null) {
+                updateAlchemistNameAndBar(v);
+            }
+            plugin.getTopRightHudManager().updateTopRightHud();
+        } else {
+            player.playSound(player.getLocation(), Sound.BLOCK_BREWING_STAND_BREW, 1.0f, 1.2f);
+            String msg = ColorUtil.color(
+                    "&dАлхимик &8| &fСорвите реагент на болоте или ждите &#E0C912" + brushCountdownSeconds + " сек."
+            );
+            try {
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    /**
+     * Варит 1 реагент игрока в Котле Алхимика и выдаёт предмет соответствующей редкости (без спама в чат).
+     */
+    @SuppressWarnings("deprecation")
+    public boolean brewPlayerReagentInCauldron(Player player) {
+        BrushTier tier = plugin.getBrushLootManager().findAndConsumeReagent(player);
+        if (tier == null) {
+            return false;
+        }
+
+        ItemStack reward = plugin.getBrushLootManager().rollLootForBrush(tier);
+        Map<Integer, ItemStack> leftovers = player.getInventory().addItem(reward);
+        if (!leftovers.isEmpty()) {
+            for (ItemStack drop : leftovers.values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), drop);
+            }
+        }
+
+        Location effectLoc = (bossHomeLocation != null) ? bossHomeLocation.clone().add(0, 0.8, 0) : player.getLocation();
+        World w = effectLoc.getWorld();
+        if (w != null) {
+            w.playSound(effectLoc, Sound.BLOCK_BREWING_STAND_BREW, 1.6f, 1.15f);
+            w.playSound(effectLoc, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.2f, 1.3f);
+            w.spawnParticle(Particle.WITCH, effectLoc, 35, 0.6, 0.7, 0.6, 0.08);
+            w.spawnParticle(Particle.SOUL_FIRE_FLAME, effectLoc, 25, 0.5, 0.6, 0.5, 0.05);
+            w.spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 20, 0.6, 0.6, 0.6, 0.05);
+        }
+
+        try {
+            String ab = ColorUtil.color("&dКотёл Алхимика &8| &aСварен предмет (" + tier.getItemTitle() + "&a)!");
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(ab));
+        } catch (Throwable ignored) {
+        }
+        return true;
     }
 
     @SuppressWarnings("deprecation")
@@ -760,6 +1030,7 @@ public class InfernalRiftManager {
         plugin.getAbilityController().removeAllMinions();
         plugin.getSchematicManager().restoreSchematic();
         plugin.getBeachSchematicManager().restoreActiveSchematic();
+        plugin.getAlchemistSchematicManager().restoreActiveSchematic();
         plugin.getTopRightHudManager().clearAllHud();
         clearAllGpsTrackers();
 
@@ -811,6 +1082,36 @@ public class InfernalRiftManager {
         }
     }
 
+    public void updateAlchemistNameAndBar(LivingEntity alchemist) {
+        if (alchemist == null) {
+            return;
+        }
+        String customName;
+        if (brushReadyToClaim || brushCountdownSeconds <= 0) {
+            customName = ColorUtil.color("&d&lАлхимик &8[&aРеагент готов — Нажмите!&8]");
+        } else {
+            customName = ColorUtil.color("&d&lАлхимик &8[&fСдайте реагент &7| &#E0C912" + brushCountdownSeconds + "с&8]");
+        }
+        alchemist.setCustomName(customName);
+
+        if (bossBar != null && riftCenterLocation != null) {
+            long remSec = getSecondsRemainingInEvent();
+            long totalSec = plugin.getPluginConfig().getDurationMinutes() * 60L;
+            double progress = totalSec > 0 ? Math.max(0.0, Math.min(1.0, (double) remSec / totalSec)) : 1.0;
+            bossBar.setProgress(progress);
+
+            int activeNodes = plugin.getAlchemistSchematicManager().getActiveReagentCount();
+            String barTitle = String.format(
+                    "&d&lКОТЁЛ АЛХИМИКА &8| &fРеагентов на болоте: &a%d шт. &8| &#E0C912%d %d %d",
+                    activeNodes,
+                    riftCenterLocation.getBlockX(),
+                    riftCenterLocation.getBlockY(),
+                    riftCenterLocation.getBlockZ()
+            );
+            bossBar.setTitle(ColorUtil.color(barTitle));
+        }
+    }
+
     public void updateBossNameAndHealthBar(LivingEntity boss) {
         if (boss == null) {
             return;
@@ -843,6 +1144,12 @@ public class InfernalRiftManager {
             bossBar = Bukkit.createBossBar(
                     ColorUtil.color("&e&lПЛЯЖНЫЕ РАСКОПКИ &8| &fНажмите по Жителю за кисточкой"),
                     BarColor.YELLOW,
+                    BarStyle.SEGMENTED_10
+            );
+        } else if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
+            bossBar = Bukkit.createBossBar(
+                    ColorUtil.color("&d&lКОТЁЛ АЛХИМИКА &8| &fСобирайте реагенты и сдавайте Алхимику"),
+                    BarColor.PURPLE,
                     BarStyle.SEGMENTED_10
             );
         } else {
@@ -968,8 +1275,13 @@ public class InfernalRiftManager {
     }
 
     public void handlePlayerChangedWorld(Player player) {
+        boolean hadReagent = plugin.getBrushLootManager().hasAnyReagent(player);
         if (plugin.getBrushLootManager().removeAllEventBrushes(player)) {
-            player.sendMessage(ColorUtil.color("&e┠ &cВы покинули мир раскопок — кисточки пропали."));
+            if (hadReagent) {
+                player.sendMessage(ColorUtil.color("&e┠ &cВы покинули мир Котла Алхимика — реагенты испарились."));
+            } else {
+                player.sendMessage(ColorUtil.color("&e┠ &cВы покинули мир раскопок — кисточки пропали."));
+            }
         }
         if (!active || riftCenterLocation == null || riftCenterLocation.getWorld() == null) {
             return;
@@ -1029,9 +1341,11 @@ public class InfernalRiftManager {
 
     private void broadcastEventStart() {
         PluginConfig cfg = plugin.getPluginConfig();
-        List<String> lines = (activeEventType == EventType.BEACH_EXCAVATION)
-                ? cfg.getExcavationSpawnBroadcastLines()
-                : cfg.getSpawnBroadcastLines();
+        List<String> lines = switch (activeEventType) {
+            case BEACH_EXCAVATION -> cfg.getExcavationSpawnBroadcastLines();
+            case ALCHEMIST_CAULDRON -> cfg.getCauldronSpawnBroadcastLines();
+            default -> cfg.getSpawnBroadcastLines();
+        };
         for (String line : lines) {
             Bukkit.broadcastMessage(formatEventPlaceholders(line, riftCenterLocation));
         }

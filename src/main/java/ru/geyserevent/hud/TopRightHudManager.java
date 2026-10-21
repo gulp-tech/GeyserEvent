@@ -98,6 +98,21 @@ public class TopRightHudManager {
                     loc.getBlockZ()
             ));
             color = BarColor.YELLOW;
+        } else if (type == EventType.ALCHEMIST_CAULDRON) {
+            int activeReagents = plugin.getAlchemistSchematicManager().getActiveReagentCount();
+            String status = manager.isBrushReadyToClaim()
+                    ? "&aГотов у Алхимика!"
+                    : "&#E0C912" + manager.getSecondsUntilNextBrush() + "с";
+            title = ColorUtil.color(String.format(
+                    "%s &8| &fРеагенты: &a%d шт. &7(%s&7) &8| &fКоординаты: &#E0C912%d %d %d",
+                    cfg.getTopRightCauldronDisplayName(),
+                    activeReagents,
+                    status,
+                    loc.getBlockX(),
+                    loc.getBlockY(),
+                    loc.getBlockZ()
+            ));
+            color = BarColor.PURPLE;
         } else {
             title = ColorUtil.color(String.format(
                     "%s &8| &fРедкость: %s &8| &fКоординаты: &#E0C912%d %d %d",

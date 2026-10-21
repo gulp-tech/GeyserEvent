@@ -78,7 +78,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     type = EventType.fromString(args[1]);
                     if (type == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift &c(Адский Разлом) или &#E0C912excavation &c(Пляжные Раскопки)."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift &c(Разлом), &#E0C912excavation &c(Раскопки) или &#E0C912cauldron &c(Котёл Алхимика)."));
                         return true;
                     }
                 }
@@ -100,7 +100,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     EventType parsed = EventType.fromString(args[1]);
                     if (parsed == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift &cили &#E0C912excavation&c."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation &cили &#E0C912cauldron&c."));
                         return true;
                     }
                     type = parsed;
@@ -136,7 +136,12 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             }
 
             case "givebrush", "brush" -> {
-                handleGiveBrushSubcommand(sender, label, args);
+                handleGiveBrushSubcommand(sender, label, args, false);
+                return true;
+            }
+
+            case "givereagent", "reagent" -> {
+                handleGiveBrushSubcommand(sender, label, args, true);
                 return true;
             }
 
@@ -230,12 +235,13 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 cfg.reload();
                 plugin.getSchematicManager().loadSchematicFile();
                 plugin.getBeachSchematicManager().loadSchematic();
+                plugin.getAlchemistSchematicManager().loadSchematic();
                 plugin.getBrushLootManager().reload();
                 plugin.getBedrockService().detectHooks();
                 plugin.getPlayerPointsHook().setupHook();
                 plugin.getTopRightHudManager().exportAndInstallResourcePack();
                 manager.startAutoScheduler();
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Конфиг и таблицы лута кисточек перезагружены."));
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Конфиг, схемы и таблицы лута перезагружены."));
                 return true;
             }
 
@@ -342,9 +348,10 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    private void handleGiveBrushSubcommand(CommandSender sender, String label, String[] args) {
+    private void handleGiveBrushSubcommand(CommandSender sender, String label, String[] args, boolean isReagent) {
         if (args.length < 2) {
-            sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " givebrush <обычная|эпическая|легендарная> [игрок]"));
+            String cmdName = isReagent ? "givereagent" : "givebrush";
+            sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " " + cmdName + " <обычная|эпическая|легендарная> [игрок]"));
             return;
         }
         BrushTier tier = BrushTier.fromString(args[1]);
@@ -367,18 +374,25 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        ItemStack brush = plugin.getBrushLootManager().createBrushItem(tier);
-        target.getInventory().addItem(brush);
-        sender.sendMessage(ColorUtil.color("&e┠ &fВыдана " + tier.getItemTitle() + " &fигроку &#E0C912" + target.getName() + "&f."));
+        if (isReagent) {
+            ItemStack reagent = plugin.getBrushLootManager().createReagentItem(tier);
+            target.getInventory().addItem(reagent);
+            sender.sendMessage(ColorUtil.color("&e┠ &fВыдан " + plugin.getBrushLootManager().getReagentDisplayName(tier) + " &fигроку &#E0C912" + target.getName() + "&f."));
+        } else {
+            ItemStack brush = plugin.getBrushLootManager().createBrushItem(tier);
+            target.getInventory().addItem(brush);
+            sender.sendMessage(ColorUtil.color("&e┠ &fВыдана " + tier.getItemTitle() + " &fигроку &#E0C912" + target.getName() + "&f."));
+        }
     }
 
     private void sendAdminHelp(CommandSender sender, String label, PluginConfig cfg) {
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fОткрыть GUI-меню настройки лута и шансов кисточек"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation] &8— &fЗапустить ивент в " + cfg.getWorldName()));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation] &8— &fЗапустить на вашей позиции"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fОткрыть GUI-меню настройки лута и шансов"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation|cauldron] &8— &fЗапустить ивент в " + cfg.getWorldName()));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation|cauldron] &8— &fЗапустить на вашей позиции"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить ивент"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " givebrush <обычная|эпическая|легендарная> [игрок]"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " givereagent <обычная|эпическая|легендарная> [игрок]"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " ability <pull|push|gather|minions>"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " setworld <мир>"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " reload"));
@@ -391,16 +405,17 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return filterPrefix(Arrays.asList(
-                    "menu", "gui", "start", "start-here", "stop", "brushloot", "givebrush",
+                    "menu", "gui", "start", "start-here", "stop", "brushloot", "givebrush", "givereagent",
                     "ability", "setworld", "saveschem", "status", "top", "reload"
             ), args[0]);
         }
         if (args.length == 2) {
             String sub = args[0].toLowerCase(Locale.ROOT);
             if (sub.equals("start") || sub.equals("start-here") || sub.equals("starthere")) {
-                return filterPrefix(Arrays.asList("rift", "excavation"), args[1]);
+                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron"), args[1]);
             }
-            if (sub.equals("menu") || sub.equals("gui") || sub.equals("givebrush") || sub.equals("brush")) {
+            if (sub.equals("menu") || sub.equals("gui") || sub.equals("givebrush") || sub.equals("brush")
+                    || sub.equals("givereagent") || sub.equals("reagent")) {
                 return filterPrefix(Arrays.asList("common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
             }
             if (sub.equals("brushloot") || sub.equals("loot")) {

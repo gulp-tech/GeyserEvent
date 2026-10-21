@@ -58,7 +58,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Слушатель событий ивентов «Адский Разлом» и «Пляжные Раскопки».
+ * Слушатель событий ивентов «Адский Разлом», «Пляжные Раскопки» и «Котёл Алхимика».
  */
 public class RiftEventListener implements Listener {
 
@@ -110,7 +110,7 @@ public class RiftEventListener implements Listener {
     }
 
     /**
-     * Кисточки можно выкидывать на землю, но поднимать можно только если в инвентаре меньше 3 кисточек!
+     * Кисточки и реагенты можно выкидывать на землю, но поднимать можно только если в инвентаре меньше 3 штук!
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPickupItem(EntityPickupItemEvent event) {
@@ -130,12 +130,12 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
-        // 1. Обработка кликов в GUI-меню настройки лута и шансов кисточек (/rift menu)
+        // 1. Обработка кликов в GUI-меню настройки лута и шансов (/rift menu)
         if (plugin.getBrushLootGuiManager().handleInventoryClick(event)) {
             return;
         }
 
-        // 2. Запрет перекладывания кисточек в сундуки / эндер-сундук / бочки / шалкеры
+        // 2. Запрет перекладывания кисточек и реагентов в сундуки / эндер-сундук / бочки / шалкеры
         if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
             return;
         }
@@ -165,18 +165,18 @@ public class RiftEventListener implements Listener {
     }
 
     /**
-     * Запрет команд /ah sell и /ah sellinv, когда кисточка раскопок в руке (или в инвентаре).
+     * Запрет команд /ah sell и /ah sellinv, когда кисточка или реагент в руке (или в инвентаре).
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
         Player player = event.getPlayer();
         ItemStack mainHand = player.getInventory().getItemInMainHand();
         ItemStack offHand = player.getInventory().getItemInOffHand();
-        boolean holdingBrush = plugin.getBrushLootManager().getBrushTier(mainHand) != null
+        boolean holdingEventItem = plugin.getBrushLootManager().getBrushTier(mainHand) != null
                 || plugin.getBrushLootManager().getBrushTier(offHand) != null
                 || plugin.getBrushLootManager().hasAnyEventBrush(player);
 
-        if (!holdingBrush) {
+        if (!holdingEventItem) {
             return;
         }
 
@@ -200,16 +200,16 @@ public class RiftEventListener implements Listener {
             String sub = parts[1];
             if (sub.startsWith("sell") || sub.equals("s") || sub.equals("bid")) {
                 event.setCancelled(true);
-                player.sendMessage(ColorUtil.color("&e┠ &cНельзя использовать /ah sell с кисточкой раскопок в руке!"));
+                player.sendMessage(ColorUtil.color("&e┠ &cНельзя использовать /ah sell с предметом ивента в инвентаре!"));
             }
         } else if (baseCmd.equals("ahsell") || baseCmd.equals("sellinv")) {
             event.setCancelled(true);
-            player.sendMessage(ColorUtil.color("&e┠ &cНельзя использовать эту команду с кисточкой раскопок в руке!"));
+            player.sendMessage(ColorUtil.color("&e┠ &cНельзя использовать эту команду с предметом ивента в инвентаре!"));
         }
     }
 
     /**
-     * Клик по 2-метровому Жителю-Археологу для получения кисточки (ПКМ / ЛКМ — работает и на телефонах, и на Bedrock ПК).
+     * Клик по 2-метровому Жителю-Археологу или Магистру Алхимику (ПКМ / ЛКМ).
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
@@ -240,12 +240,12 @@ public class RiftEventListener implements Listener {
     }
 
     /**
-     * Раскопка песка кисточкой (ПКМ или ЛКМ — одинаково удобно и на телефонах, и на Bedrock ПК).
+     * Обработка кликов по блокам в ивентах «Пляжные Раскопки» и «Котёл Алхимика».
      */
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerExcavateSand(PlayerInteractEvent event) {
+    public void onPlayerInteractBlock(PlayerInteractEvent event) {
         InfernalRiftManager manager = plugin.getRiftManager();
-        if (!manager.isActive() || manager.getActiveEventType() != EventType.BEACH_EXCAVATION) {
+        if (!manager.isActive()) {
             return;
         }
         Action action = event.getAction();
@@ -253,28 +253,121 @@ public class RiftEventListener implements Listener {
             return;
         }
         Block block = event.getClickedBlock();
-        if (block == null || !plugin.getBeachSchematicManager().isExcavatableBeachSand(block)) {
+        if (block == null) {
             return;
         }
 
-        if (tryExcavateSandStroke(event.getPlayer(), block)) {
-            event.setCancelled(true);
+        if (manager.getActiveEventType() == EventType.BEACH_EXCAVATION) {
+            if (plugin.getBeachSchematicManager().isExcavatableBeachSand(block)) {
+                if (tryExcavateSandStroke(event.getPlayer(), block)) {
+                    event.setCancelled(true);
+                }
+            }
+        } else if (manager.getActiveEventType() == EventType.ALCHEMIST_CAULDRON) {
+            // 1. Клик по одному из 4 центральных Котлов вокруг Алхимика — варим реагент!
+            if (plugin.getAlchemistSchematicManager().isCentralCauldronBlock(block)) {
+                event.setCancelled(true);
+                triggerVillagerClickDebounced(event.getPlayer());
+                return;
+            }
+            // 2. Клик по выросшему на пьедестале Реагенту — собираем его!
+            Block nodeBlock = plugin.getAlchemistSchematicManager().resolveReagentNodeBlock(block);
+            if (nodeBlock != null) {
+                event.setCancelled(true);
+                tryHarvestAlchemistReagent(event.getPlayer(), nodeBlock);
+            }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onBlockDamageExcavate(BlockDamageEvent event) {
+    public void onBlockDamageEventAction(BlockDamageEvent event) {
         InfernalRiftManager manager = plugin.getRiftManager();
-        if (!manager.isActive() || manager.getActiveEventType() != EventType.BEACH_EXCAVATION) {
+        if (!manager.isActive()) {
             return;
         }
         Block block = event.getBlock();
-        if (!plugin.getBeachSchematicManager().isExcavatableBeachSand(block)) {
+        if (manager.getActiveEventType() == EventType.BEACH_EXCAVATION) {
+            if (plugin.getBeachSchematicManager().isExcavatableBeachSand(block)) {
+                if (tryExcavateSandStroke(event.getPlayer(), block)) {
+                    event.setCancelled(true);
+                }
+            }
+        } else if (manager.getActiveEventType() == EventType.ALCHEMIST_CAULDRON) {
+            if (plugin.getAlchemistSchematicManager().isCentralCauldronBlock(block)) {
+                event.setCancelled(true);
+                triggerVillagerClickDebounced(event.getPlayer());
+                return;
+            }
+            Block nodeBlock = plugin.getAlchemistSchematicManager().resolveReagentNodeBlock(block);
+            if (nodeBlock != null) {
+                event.setCancelled(true);
+                tryHarvestAlchemistReagent(event.getPlayer(), nodeBlock);
+            }
+        }
+    }
+
+    /**
+     * Сбор выросшего нестабильного Реагента с пьедестала в ивенте «Котёл Алхимика».
+     */
+    @SuppressWarnings("deprecation")
+    private void tryHarvestAlchemistReagent(Player player, Block nodeBlock) {
+        if (!plugin.getBedrockService().canParticipate(player)) {
+            player.sendMessage(plugin.getPluginConfig().getMsgOnlyBedrock());
             return;
         }
-        if (tryExcavateSandStroke(event.getPlayer(), block)) {
-            event.setCancelled(true);
+
+        long now = System.currentTimeMillis();
+        long last = brushStrokeCooldown.getOrDefault(player.getUniqueId(), 0L);
+        if (now - last < 300L) {
+            return;
         }
+        brushStrokeCooldown.put(player.getUniqueId(), now);
+
+        if (plugin.getBrushLootManager().countPlayerBrushes(player) >= 3) {
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            String msg = ColorUtil.color("&e┠ &cВ инвентаре максимум 3 реагента! Сдайте их Алхимику у котла.");
+            player.sendMessage(msg);
+            try {
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
+            } catch (Throwable ignored) {
+            }
+            return;
+        }
+
+        if (player.getInventory().firstEmpty() == -1) {
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            player.sendMessage(ColorUtil.color("&e┠ &cОсвободите место в инвентаре для сбора реагента!"));
+            return;
+        }
+
+        BrushTier tier = plugin.getAlchemistSchematicManager().harvestReagentAt(nodeBlock);
+        if (tier == null) {
+            return;
+        }
+
+        ItemStack reagent = plugin.getBrushLootManager().createReagentItem(tier);
+        player.getInventory().addItem(reagent);
+
+        Location effectLoc = nodeBlock.getLocation().add(0.5, 0.5, 0.5);
+        nodeBlock.getWorld().playSound(effectLoc, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.3f, 1.2f);
+        nodeBlock.getWorld().playSound(effectLoc, Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.3f);
+        nodeBlock.getWorld().spawnParticle(Particle.WITCH, effectLoc, 24, 0.3, 0.4, 0.3, 0.05);
+        nodeBlock.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 15, 0.3, 0.3, 0.3, 0.05);
+
+        String ab = ColorUtil.color(
+                "&aСобран: " + plugin.getBrushLootManager().getReagentDisplayName(tier)
+                        + " &8(&fСдайте Алхимику у котла!&8)"
+        );
+        try {
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(ab));
+        } catch (Throwable ignored) {
+        }
+
+        LivingEntity alch = plugin.getRiftManager().getExcavationVillagerEntity();
+        if (alch != null) {
+            plugin.getRiftManager().updateAlchemistNameAndBar(alch);
+        }
+        plugin.getTopRightHudManager().updateTopRightHud();
     }
 
     @SuppressWarnings("deprecation")
@@ -326,7 +419,7 @@ public class RiftEventListener implements Listener {
         } else {
             blockExcavationStep.remove(blockKey);
 
-            // Выдаём лут из таблицы данной кисточки БЕЗ сообщения в чат «Вы раскопал...»
+            // Выдаём лут из таблицы данной кисточки БЕЗ сообщения в чат «Вы раскопали...»
             ItemStack reward = plugin.getBrushLootManager().rollLootForBrush(tier);
             Map<Integer, ItemStack> leftovers = player.getInventory().addItem(reward);
             if (!leftovers.isEmpty()) {
@@ -439,7 +532,7 @@ public class RiftEventListener implements Listener {
         Entity victim = event.getEntity();
         Entity damager = event.getDamager();
 
-        // Если игрок нажал ЛКМ по 2-метровому Жителю — тоже выдаём кисточку!
+        // Если игрок нажал ЛКМ по 2-метровому Жителю или Алхимику — обрабатываем взаимодействие!
         if (manager.isExcavationVillager(victim)) {
             event.setCancelled(true);
             if (damager instanceof Player player) {
@@ -553,8 +646,17 @@ public class RiftEventListener implements Listener {
             return;
         }
         Block block = event.getBlock();
+        if (plugin.getRiftManager().getActiveEventType() == EventType.ALCHEMIST_CAULDRON) {
+            Block nodeBlock = plugin.getAlchemistSchematicManager().resolveReagentNodeBlock(block);
+            if (nodeBlock != null) {
+                event.setCancelled(true);
+                tryHarvestAlchemistReagent(event.getPlayer(), nodeBlock);
+                return;
+            }
+        }
         if (plugin.getSchematicManager().isProtectedBlock(block.getLocation())
-                || plugin.getBeachSchematicManager().isProtectedArenaBlock(block)) {
+                || plugin.getBeachSchematicManager().isProtectedArenaBlock(block)
+                || plugin.getAlchemistSchematicManager().isProtectedArenaBlock(block)) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
         }
@@ -567,7 +669,8 @@ public class RiftEventListener implements Listener {
         }
         Block block = event.getBlock();
         if (plugin.getSchematicManager().isProtectedBlock(block.getLocation())
-                || plugin.getBeachSchematicManager().isProtectedArenaBlock(block)) {
+                || plugin.getBeachSchematicManager().isProtectedArenaBlock(block)
+                || plugin.getAlchemistSchematicManager().isProtectedArenaBlock(block)) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
         }
@@ -580,7 +683,8 @@ public class RiftEventListener implements Listener {
         }
         event.blockList().removeIf(Block::isLiquid);
         event.blockList().removeIf(b -> plugin.getSchematicManager().isProtectedBlock(b.getLocation())
-                || plugin.getBeachSchematicManager().isProtectedArenaBlock(b));
+                || plugin.getBeachSchematicManager().isProtectedArenaBlock(b)
+                || plugin.getAlchemistSchematicManager().isProtectedArenaBlock(b));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -589,7 +693,8 @@ public class RiftEventListener implements Listener {
             return;
         }
         event.blockList().removeIf(b -> plugin.getSchematicManager().isProtectedBlock(b.getLocation())
-                || plugin.getBeachSchematicManager().isProtectedArenaBlock(b));
+                || plugin.getBeachSchematicManager().isProtectedArenaBlock(b)
+                || plugin.getAlchemistSchematicManager().isProtectedArenaBlock(b));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -599,7 +704,8 @@ public class RiftEventListener implements Listener {
         }
         Block to = event.getToBlock();
         if (plugin.getSchematicManager().isProtectedBlock(to.getLocation())
-                || plugin.getBeachSchematicManager().isProtectedArenaBlock(to)) {
+                || plugin.getBeachSchematicManager().isProtectedArenaBlock(to)
+                || plugin.getAlchemistSchematicManager().isProtectedArenaBlock(to)) {
             event.setCancelled(true);
         }
     }

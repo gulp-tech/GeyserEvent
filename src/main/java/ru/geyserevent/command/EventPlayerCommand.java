@@ -51,9 +51,11 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
         switch (sub) {
             case "delay", "time", "info" -> {
                 if (manager.isActive() && manager.getRiftCenterLocation() != null) {
-                    List<String> lines = (manager.getActiveEventType() == EventType.BEACH_EXCAVATION)
-                            ? cfg.getExcavationDelayActiveLines()
-                            : cfg.getDelayActiveLines();
+                    List<String> lines = switch (manager.getActiveEventType()) {
+                        case BEACH_EXCAVATION -> cfg.getExcavationDelayActiveLines();
+                        case ALCHEMIST_CAULDRON -> cfg.getCauldronDelayActiveLines();
+                        default -> cfg.getDelayActiveLines();
+                    };
                     for (String line : lines) {
                         sender.sendMessage(manager.formatEventPlaceholders(line, manager.getRiftCenterLocation()));
                     }

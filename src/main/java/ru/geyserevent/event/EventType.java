@@ -6,11 +6,13 @@ import java.util.Locale;
  * Тип активного ивента:
  * 1) INFERNAL_RIFT — «Адский Разлом (Вторжение Босса)»
  * 2) BEACH_EXCAVATION — «Пляжные Раскопки (2-метровый Житель с кисточками)»
+ * 3) ALCHEMIST_CAULDRON — «Котёл Алхимика (Мистическое болото 31x31, сбор реагентов и варка в котле)»
  */
 public enum EventType {
 
     INFERNAL_RIFT("rift", "Адский Разлом"),
-    BEACH_EXCAVATION("excavation", "Пляжные Раскопки");
+    BEACH_EXCAVATION("excavation", "Пляжные Раскопки"),
+    ALCHEMIST_CAULDRON("cauldron", "Котёл Алхимика");
 
     private final String id;
     private final String displayName;
@@ -35,6 +37,7 @@ public enum EventType {
         return switch (raw.trim().toLowerCase(Locale.ROOT)) {
             case "rift", "boss", "адский", "разлом", "1" -> INFERNAL_RIFT;
             case "excavation", "beach", "пляж", "раскопки", "2" -> BEACH_EXCAVATION;
+            case "cauldron", "alchemist", "alchemy", "котел", "котёл", "алхимик", "болото", "3" -> ALCHEMIST_CAULDRON;
             default -> null;
         };
     }
