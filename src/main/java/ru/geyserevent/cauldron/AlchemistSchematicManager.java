@@ -24,15 +24,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Генератор и менеджер большой красивой схемы 31x31 для ивента «Котёл Алхимика»:
- * - Мистическое болото 31x31 (радиус 15) с двухслойным фундаментом из глубинного сланца
- * - Центральный готический Алтарь с бурлящими Котлами, арками, цепями и фонарями душ
+ * Генератор и менеджер улучшенной большой схемы 31x31 для ивента «Котёл Алхимика» (schema-version: 2):
+ * - Центральная Готическая Ротонда (высота 8 блоков) с куполом, арками, цепями и Гигантским Бурлящим Котлом
+ * - 4 Входных Готических Портала/Арки по сторонам света и декоративная ограда по границе зоны ивента (радиус 15)
+ * - 4 Алхимических Павильона (крытые лавки с книжными полками, зельеварками, бочками и кристаллами)
  * - 4 светящихся фиолетовых алхимических ручья с жабосветами под стеклом
- * - 4 алхимические лаборатории с зельеварками, бочками и друзами аметиста
- * - 4 гигантских светящихся волшебных гриба (багровых и искажённых)
- * - 4 древние плакучие болотные ивы из мангрового дерева с неопадающей листвой
- * - 16 алхимических пьедесталов из плачущего обсидиана, на которых вырастают Реагенты 3 редкостей
- * - Полный 100% откат ландшафта после завершения ивента.
+ * - 4 гигантских волшебных гриба и 4 плакучие мангровые ивы
+ * - 16 резных алхимических алтарей-пьедесталов, на которых вырастают Реагенты 3 редкостей
+ * - Оптимизированные частицы без лагов на слабых телефонах и полный 100% откат ландшафта.
  */
 public class AlchemistSchematicManager {
 
@@ -51,7 +50,7 @@ public class AlchemistSchematicManager {
     private final Set<BlockPosKey> activeArenaBlocks = new HashSet<>();
 
     /**
-     * Точки 16 алхимических грядок/пьедесталов (координата dy = 1 над плачущим обсидианом),
+     * Точки 16 алхимических пьедесталов (координата dy = 1 над плачущим обсидианом),
      * где во время ивента вырастают нестабильные реагенты.
      */
     private final List<Location> reagentPedestalLocations = new ArrayList<>();
@@ -69,9 +68,9 @@ public class AlchemistSchematicManager {
     private Location activeCenterOrigin;
 
     private static final int[][] PEDESTAL_OFFSETS = {
-            {-4, -4}, {4, -4}, {-4, 4}, {4, 4},
-            {-7, -3}, {7, -3}, {-7, 3}, {7, 3},
-            {-3, -7}, {3, -7}, {-3, 7}, {3, 7},
+            {-5, -5}, {5, -5}, {-5, 5}, {5, 5},
+            {-8, -3}, {8, -3}, {-8, 3}, {8, 3},
+            {-3, -8}, {3, -8}, {-3, 8}, {3, 8},
             {-11, -2}, {11, -2}, {-2, -11}, {2, 11}
     };
 
@@ -90,18 +89,18 @@ public class AlchemistSchematicManager {
         File file = new File(schemDir, "alchemist_cauldron.schem.yml");
         if (file.exists()) {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-            if (yaml.getInt("schema-version", 1) >= 1) {
+            if (yaml.getInt("schema-version", 1) >= 2) {
                 parseYamlSchematic(yaml);
             }
         }
 
-        if (entries.size() < 400) {
+        if (entries.size() < 600) {
             entries.clear();
             buildLarge31x31AlchemistSwampSchematic();
             saveGeneratedSchematicToFile(file);
         }
 
-        plugin.getLogger().info("Загружена большая схема Котла Алхимика 31x31 (" + entries.size() + " блоков).");
+        plugin.getLogger().info("Загружена улучшенная схема Котла Алхимика 31x31 (" + entries.size() + " блоков).");
     }
 
     private void parseYamlSchematic(YamlConfiguration yaml) {
@@ -123,12 +122,13 @@ public class AlchemistSchematicManager {
     }
 
     /**
-     * Генерирует большую детализированную схему 31x31 «Котёл Алхимика»:
-     * - Центральный готический алтарь с 4 котлами и 4 башнями-арками
+     * Генерирует улучшенную архитектурную схему 31x31 «Котёл Алхимика» (schema-version: 2):
+     * - Центральная Готическая Ротонда с купольным шпилем и бурлящим котлом
+     * - 4 крытых Алхимических Павильона с книжными шкафами, кафедрами, бочками и зельеварками
+     * - 4 Входные Готические Арки на границе зоны (N, S, E, W) + ограда по периметру
      * - 4 диагональных магических ручья из пурпурного стекла с жабосветами внутри
-     * - 4 алхимические лаборатории по сторонам света
      * - 4 гигантских светящихся гриба и 4 плакучие мангровые ивы
-     * - 16 пьедесталов из плачущего обсидиана для роста реагентов
+     * - 16 пьедесталов из плачущего обсидиана и золочёного чернита для роста реагентов
      */
     private void buildLarge31x31AlchemistSwampSchematic() {
         Map<String, SchematicEntry> map = new LinkedHashMap<>();
@@ -140,9 +140,13 @@ public class AlchemistSchematicManager {
         Material deepslateBricks = resolveMaterial("DEEPSLATE_BRICKS", Material.NETHER_BRICKS);
         Material deepslateTiles = resolveMaterial("DEEPSLATE_TILES", Material.POLISHED_BLACKSTONE_BRICKS);
         Material chiseledDeepslate = resolveMaterial("CHISELED_DEEPSLATE", Material.CHISELED_POLISHED_BLACKSTONE);
+        Material deepslateTileSlab = resolveMaterial("DEEPSLATE_TILE_SLAB", Material.POLISHED_BLACKSTONE_BRICK_SLAB);
+        Material deepslateBrickWall = resolveMaterial("DEEPSLATE_BRICK_WALL", Material.POLISHED_BLACKSTONE_WALL);
         Material verdantFroglight = resolveMaterial("VERDANT_FROGLIGHT", Material.SEA_LANTERN);
         Material pearlescentFroglight = resolveMaterial("PEARLESCENT_FROGLIGHT", Material.SHROOMLIGHT);
         Material ochreFroglight = resolveMaterial("OCHRE_FROGLIGHT", Material.GLOWSTONE);
+        Material amethystCluster = resolveMaterial("AMETHYST_CLUSTER", Material.SEA_LANTERN);
+        Material buddingAmethyst = resolveMaterial("BUDDING_AMETHYST", Material.PURPUR_BLOCK);
 
         // 1. Основное плато мистического болота 31x31 (радиус 15, y = 0)
         for (int dx = -15; dx <= 15; dx++) {
@@ -157,15 +161,16 @@ public class AlchemistSchematicManager {
                 Material floorMat;
 
                 if (dx == 0 && dz == 0) {
+                    floorMat = pearlescentFroglight;
+                } else if (absX <= 1 && absZ <= 1) {
+                    // Светящееся варево внутри центрального котла под стеклом
                     floorMat = Material.CRYING_OBSIDIAN;
-                } else if (absX <= 2 && absZ <= 2) {
-                    // Основание центрального Алтаря Котла
+                } else if (absX <= 3 && absZ <= 3 && distSq <= 14) {
+                    // Основание Центральной Ротонды
                     floorMat = ((absX + absZ) % 2 == 0)
                             ? Material.POLISHED_BLACKSTONE_BRICKS
                             : Material.GILDED_BLACKSTONE;
-                } else if (absX <= 3 && absZ <= 3 && distSq <= 14) {
-                    floorMat = deepslateTiles;
-                } else if ((absX <= 1 && absZ <= 13) || (absZ <= 1 && absX <= 13)) {
+                } else if ((absX <= 1 && absZ <= 14) || (absZ <= 1 && absX <= 14)) {
                     // 4 главные мощёные дорожки к центру
                     if ((absX == 0 || absZ == 0) && (absX + absZ) % 3 == 0) {
                         floorMat = chiseledDeepslate;
@@ -174,14 +179,14 @@ public class AlchemistSchematicManager {
                     } else {
                         floorMat = ((absX + absZ) % 2 == 0) ? deepslateBricks : mudBricks;
                     }
-                } else if (Math.abs(absX - absZ) <= 1 && absX >= 3 && absX <= 10) {
+                } else if (Math.abs(absX - absZ) <= 1 && absX >= 3 && absX <= 11) {
                     // 4 диагональных светящихся алхимических ручья
                     floorMat = ((absX + absZ) % 2 == 0)
                             ? Material.PURPLE_STAINED_GLASS
                             : Material.MAGENTA_STAINED_GLASS;
                 } else if (distSq >= 190) {
-                    // Внешнее готическое кольцо болота
-                    floorMat = ((absX + absZ) % 3 == 0) ? deepslateBricks : Material.MOSSY_STONE_BRICKS;
+                    // Внешнее готическое кольцо болота (чёткая граница зоны ивента!)
+                    floorMat = ((absX + absZ) % 2 == 0) ? deepslateTiles : Material.MOSSY_STONE_BRICKS;
                 } else {
                     // Живописная болотная почва (мох, мицелий, подзол, грязь)
                     int hash = (absX * 7 + absZ * 13) % 5;
@@ -198,24 +203,24 @@ public class AlchemistSchematicManager {
             }
         }
 
-        // 2. Центральный Алтарь Котла Алхимика (y = 1..5)
-        // Центральный пьедестал для 2-метрового Алхимика (0, 1, 0)
-        putBlock(map, 0, 1, 0, Material.CRYING_OBSIDIAN);
+        // 2. Центральная Готическая Ротонда и Гигантский Бурлящий Котёл (y = 1..8)
+        // Центральный пьедестал для 2-метрового Алхимика (0, 1, 0) в самом сердце котла
+        putBlock(map, 0, 1, 0, Material.CHISELED_POLISHED_BLACKSTONE);
 
-        // 4 бурлящих Котла вокруг Алхимика
+        // Фиолетовое «кипящее зелье» по углам вокруг Алхимика
+        int[][] innerBrew = {{-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
+        for (int[] ib : innerBrew) {
+            putBlock(map, ib[0], 1, ib[1], Material.CHISELED_POLISHED_BLACKSTONE);
+            putBlock(map, ib[0], 2, ib[1], Material.BREWING_STAND);
+        }
+
+        // 4 интерактивных Котла вокруг Алхимика по сторонам света
         putBlock(map, -1, 1, 0, Material.CAULDRON);
         putBlock(map, 1, 1, 0, Material.CAULDRON);
         putBlock(map, 0, 1, -1, Material.CAULDRON);
         putBlock(map, 0, 1, 1, Material.CAULDRON);
 
-        // Диагональные углы центрального помоста (с зельеварками)
-        int[][] innerCorners = {{-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
-        for (int[] ic : innerCorners) {
-            putBlock(map, ic[0], 1, ic[1], Material.CHISELED_POLISHED_BLACKSTONE);
-            putBlock(map, ic[0], 2, ic[1], Material.BREWING_STAND);
-        }
-
-        // Ступени из полированного чернита со всех сторон центрального помоста (чтобы удобно заходить без прыжка)
+        // Пологие ступени из полированного чернита со всех сторон центрального помоста
         for (int i = -1; i <= 1; i++) {
             putBlock(map, -2, 1, i, Material.POLISHED_BLACKSTONE_BRICK_SLAB);
             putBlock(map, 2, 1, i, Material.POLISHED_BLACKSTONE_BRICK_SLAB);
@@ -223,91 +228,169 @@ public class AlchemistSchematicManager {
             putBlock(map, i, 1, 2, Material.POLISHED_BLACKSTONE_BRICK_SLAB);
         }
 
-        // 4 готические колонны вокруг центрального котла (на радиусе 3) с фонарями душ и кристаллами аметиста
-        Material amethystCluster = resolveMaterial("AMETHYST_CLUSTER", Material.SEA_LANTERN);
-        int[][] altarPillars = {{-3, -3}, {3, -3}, {-3, 3}, {3, 3}};
-        for (int[] p : altarPillars) {
-            putBlock(map, p[0], 0, p[1], Material.CRYING_OBSIDIAN);
-            putBlock(map, p[0], 1, p[1], deepslateTiles);
-            putBlock(map, p[0], 2, p[1], chiseledDeepslate);
-            putBlock(map, p[0], 3, p[1], Material.POLISHED_BLACKSTONE_WALL);
-            putBlock(map, p[0], 4, p[1], deepslateTiles);
-            putBlock(map, p[0], 5, p[1], amethystCluster);
-            // Боковые подвесные фонари душ к центру
-            int stepX = p[0] > 0 ? -1 : 1;
-            putBlock(map, p[0] + stepX, 4, p[1], Material.NETHER_BRICK_FENCE);
-            putBlock(map, p[0] + stepX, 3, p[1], Material.SOUL_LANTERN);
+        // 4 угловые колонны Готической Ротонды (на координатах +-3, +-3) и купольный свод над Алхимиком
+        int[][] rotundaPillars = {{-3, -3}, {3, -3}, {-3, 3}, {3, 3}};
+        for (int[] p : rotundaPillars) {
+            int px = p[0];
+            int pz = p[1];
+            putBlock(map, px, 0, pz, Material.GILDED_BLACKSTONE);
+            putBlock(map, px, 1, pz, chiseledDeepslate);
+            putBlock(map, px, 2, pz, deepslateTiles);
+            putBlock(map, px, 3, pz, Material.POLISHED_BLACKSTONE_WALL);
+            putBlock(map, px, 4, pz, Material.POLISHED_BLACKSTONE_WALL);
+            putBlock(map, px, 5, pz, chiseledDeepslate);
+            putBlock(map, px, 6, pz, deepslateTileSlab);
+
+            // Диагональные своды крыши ротонды к центру (на высоте y = 6)
+            int stepX = px > 0 ? -1 : 1;
+            int stepZ = pz > 0 ? -1 : 1;
+            putBlock(map, px + stepX, 5, pz, Material.NETHER_BRICK_FENCE);
+            putBlock(map, px, 5, pz + stepZ, Material.NETHER_BRICK_FENCE);
+            putBlock(map, px + stepX, 4, pz, Material.SOUL_LANTERN);
+            putBlock(map, px + stepX, 6, pz + stepZ, deepslateTiles);
         }
 
-        // 3. 16 алхимических пьедесталов для роста нестабильных Реагентов
+        // Высокий готический купол и шпиль над центром ротонды (y = 6..8) — не мешает 2-метровому Алхимику (y = 2..4)
+        for (int ox = -1; ox <= 1; ox++) {
+            for (int oz = -1; oz <= 1; oz++) {
+                if (ox == 0 && oz == 0) {
+                    putBlock(map, 0, 6, 0, pearlescentFroglight);
+                    putBlock(map, 0, 7, 0, chiseledDeepslate);
+                    putBlock(map, 0, 8, 0, amethystCluster);
+                } else if (ox == 0 || oz == 0) {
+                    putBlock(map, ox, 6, oz, deepslateTiles);
+                    putBlock(map, ox, 7, oz, deepslateTileSlab);
+                } else {
+                    putBlock(map, ox, 6, oz, deepslateTileSlab);
+                }
+            }
+        }
+
+        // 3. 16 резных алхимических пьедесталов для роста нестабильных Реагентов
         for (int[] ped : PEDESTAL_OFFSETS) {
             int px = ped[0];
             int pz = ped[1];
             putBlock(map, px, 0, pz, Material.CRYING_OBSIDIAN);
-            // Обрамление мхом вокруг пьедестала
             int[][] adj = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
             for (int[] a : adj) {
                 int ax = px + a[0];
                 int az = pz + a[1];
                 String key = ax + ":0:" + az;
                 SchematicEntry existing = map.get(key);
-                if (existing != null && existing.material() != Material.POLISHED_BLACKSTONE_BRICKS
+                if (existing != null
+                        && existing.material() != Material.POLISHED_BLACKSTONE_BRICKS
                         && existing.material() != chiseledDeepslate
                         && existing.material() != Material.PURPLE_STAINED_GLASS
                         && existing.material() != Material.MAGENTA_STAINED_GLASS) {
-                    putBlock(map, ax, 0, az, mossBlock);
+                    putBlock(map, ax, 0, az, Material.GILDED_BLACKSTONE);
                 }
             }
         }
 
-        // 4. Четыре алхимические лаборатории по сторонам света (x = +-8, z = +-8)
-        Material buddingAmethyst = resolveMaterial("BUDDING_AMETHYST", Material.PURPUR_BLOCK);
-        int[][] labs = {{-8, 0}, {8, 0}, {0, -8}, {0, 8}};
-        for (int[] lab : labs) {
-            int lx = lab[0];
-            int lz = lab[1];
-            if (lx != 0) {
-                putBlock(map, lx, 1, -2, Material.BARREL);
-                putBlock(map, lx, 2, -2, Material.SOUL_LANTERN);
-                putBlock(map, lx, 1, 2, buddingAmethyst);
-                putBlock(map, lx, 2, 2, amethystCluster);
-            } else {
-                putBlock(map, -2, 1, lz, Material.BARREL);
-                putBlock(map, -2, 2, lz, Material.SOUL_LANTERN);
-                putBlock(map, 2, 1, lz, buddingAmethyst);
-                putBlock(map, 2, 2, lz, amethystCluster);
-            }
+        // 4. Четыре крытых Алхимических Павильона / Лавки вдоль дорожек
+        buildAlchemicalPavilion(map, -6, -2, true, buddingAmethyst, amethystCluster, deepslateTileSlab);
+        buildAlchemicalPavilion(map, 6, 2, true, buddingAmethyst, amethystCluster, deepslateTileSlab);
+        buildAlchemicalPavilion(map, -2, 6, false, buddingAmethyst, amethystCluster, deepslateTileSlab);
+        buildAlchemicalPavilion(map, 2, -6, false, buddingAmethyst, amethystCluster, deepslateTileSlab);
+
+        // 5. Четыре Входные Готические Арки по краям зоны ивента (N, S, E, W на радиусе 14)
+        buildEntranceGateArch(map, 0, -14, true, deepslateTiles, chiseledDeepslate, deepslateBrickWall);
+        buildEntranceGateArch(map, 0, 14, true, deepslateTiles, chiseledDeepslate, deepslateBrickWall);
+        buildEntranceGateArch(map, -14, 0, false, deepslateTiles, chiseledDeepslate, deepslateBrickWall);
+        buildEntranceGateArch(map, 14, 0, false, deepslateTiles, chiseledDeepslate, deepslateBrickWall);
+
+        // Декоративные пограничные столбики по внешнему кольцу зоны ивента (радиус 13-14)
+        int[][] borderPosts = {
+                {-10, -10}, {10, -10}, {-10, 10}, {10, 10},
+                {-13, -6}, {13, -6}, {-13, 6}, {13, 6},
+                {-6, -13}, {6, -13}, {-6, 13}, {6, 13}
+        };
+        for (int[] bp : borderPosts) {
+            putBlock(map, bp[0], 0, bp[1], chiseledDeepslate);
+            putBlock(map, bp[0], 1, bp[1], deepslateBrickWall);
+            putBlock(map, bp[0], 2, bp[1], Material.SOUL_LANTERN);
         }
 
-        // 5. Четыре гигантских волшебных светящихся гриба
-        buildGiantMagicMushroom(map, -5, -9, 5, Material.NETHER_WART_BLOCK, pearlescentFroglight);
-        buildGiantMagicMushroom(map, 5, -9, 5, Material.WARPED_WART_BLOCK, verdantFroglight);
-        buildGiantMagicMushroom(map, -5, 9, 5, Material.WARPED_WART_BLOCK, verdantFroglight);
-        buildGiantMagicMushroom(map, 5, 9, 5, Material.NETHER_WART_BLOCK, ochreFroglight);
+        // 6. Четыре гигантских волшебных светящихся гриба
+        buildGiantMagicMushroom(map, -5, -10, 5, Material.NETHER_WART_BLOCK, pearlescentFroglight);
+        buildGiantMagicMushroom(map, 5, -10, 5, Material.WARPED_WART_BLOCK, verdantFroglight);
+        buildGiantMagicMushroom(map, -5, 10, 5, Material.WARPED_WART_BLOCK, verdantFroglight);
+        buildGiantMagicMushroom(map, 5, 10, 5, Material.NETHER_WART_BLOCK, ochreFroglight);
 
-        // 6. Четыре древние плакучие болотные ивы с корнями и светящимися плодами
+        // 7. Четыре древние плакучие болотные ивы с корнями и светящимися плодами
         buildSwampWillowTree(map, -10, -5, 6, 1, 1, verdantFroglight);
         buildSwampWillowTree(map, 10, -5, 6, -1, 1, ochreFroglight);
         buildSwampWillowTree(map, -10, 5, 6, 1, -1, ochreFroglight);
         buildSwampWillowTree(map, 10, 5, 6, -1, -1, verdantFroglight);
 
-        // 7. Восемь внешних готических фонарных столбов по периметру болота (радиус 13)
-        int[][] outerPillars = {
-                {-13, 0}, {13, 0}, {0, -13}, {0, 13},
-                {-9, -9}, {9, -9}, {-9, 9}, {9, 9}
-        };
-        for (int[] op : outerPillars) {
-            putBlock(map, op[0], 0, op[1], deepslateTiles);
-            putBlock(map, op[0], 1, op[1], chiseledDeepslate);
-            putBlock(map, op[0], 2, op[1], Material.POLISHED_BLACKSTONE_WALL);
-            putBlock(map, op[0], 3, op[1], Material.SOUL_LANTERN);
-        }
-
         entries.addAll(map.values());
     }
 
     /**
-     * Строит гигантский волшебный гриб с изогнутой ножкой и светящейся шляпкой.
+     * Строит компактную алхимическую лавку с книжным шкафом, бочкой, кристаллом аметиста и навесом.
+     */
+    private void buildAlchemicalPavilion(
+            Map<String, SchematicEntry> map,
+            int cx,
+            int cz,
+            boolean alongX,
+            Material buddingAmethyst,
+            Material amethystCluster,
+            Material roofSlab
+    ) {
+        int dx = alongX ? 0 : (cx > 0 ? 1 : -1);
+        int dz = alongX ? (cz > 0 ? 1 : -1) : 0;
+        int bx = cx + dx;
+        int bz = cz + dz;
+
+        putBlock(map, bx, 1, bz, Material.BOOKSHELF);
+        putBlock(map, bx, 2, bz, Material.BREWING_STAND);
+        putBlock(map, bx, 3, bz, roofSlab);
+
+        int sideX = alongX ? 1 : 0;
+        int sideZ = alongX ? 0 : 1;
+        putBlock(map, bx + sideX, 1, bz + sideZ, Material.BARREL);
+        putBlock(map, bx + sideX, 2, bz + sideZ, Material.SOUL_LANTERN);
+        putBlock(map, bx - sideX, 1, bz - sideZ, buddingAmethyst);
+        putBlock(map, bx - sideX, 2, bz - sideZ, amethystCluster);
+    }
+
+    /**
+     * Строит готическую входную арку на краю арены (N, S, E, W), чётко обозначающую границу зоны ивента.
+     */
+    private void buildEntranceGateArch(
+            Map<String, SchematicEntry> map,
+            int gx,
+            int gz,
+            boolean northSouth,
+            Material tileMat,
+            Material chiseledMat,
+            Material wallMat
+    ) {
+        int sx = northSouth ? 2 : 0;
+        int sz = northSouth ? 0 : 2;
+
+        int[][] posts = {{gx - sx, gz - sz}, {gx + sx, gz + sz}};
+        for (int[] p : posts) {
+            putBlock(map, p[0], 0, p[1], chiseledMat);
+            putBlock(map, p[0], 1, p[1], tileMat);
+            putBlock(map, p[0], 2, p[1], wallMat);
+            putBlock(map, p[0], 3, p[1], wallMat);
+            putBlock(map, p[0], 4, p[1], tileMat);
+        }
+
+        // Верхняя перекладина арки с подвесным фонарём душ
+        for (int i = -1; i <= 1; i++) {
+            int ax = gx + (northSouth ? i : 0);
+            int az = gz + (northSouth ? 0 : i);
+            putBlock(map, ax, 4, az, tileMat);
+        }
+        putBlock(map, gx, 5, gz, chiseledMat);
+        putBlock(map, gx, 3, gz, Material.SOUL_LANTERN);
+    }
+
+    /**
+     * Строит гигантский волшебный гриб со светящейся шляпкой.
      */
     private void buildGiantMagicMushroom(
             Map<String, SchematicEntry> map,
@@ -322,7 +405,6 @@ public class AlchemistSchematicManager {
             putBlock(map, baseX, y, baseZ, Material.MUSHROOM_STEM);
         }
 
-        // Нижняя часть шляпки (y = height) со светящимися спорами
         putBlock(map, baseX + 1, height, baseZ, glowMaterial);
         putBlock(map, baseX - 1, height, baseZ, glowMaterial);
         putBlock(map, baseX, height, baseZ + 1, glowMaterial);
@@ -339,7 +421,6 @@ public class AlchemistSchematicManager {
             }
         }
 
-        // Верхний купол шляпки (y = height + 1)
         int topY = height + 1;
         for (int ox = -1; ox <= 1; ox++) {
             for (int oz = -1; oz <= 1; oz++) {
@@ -381,7 +462,6 @@ public class AlchemistSchematicManager {
             putBlock(map, curX, y, curZ, trunkMat);
         }
 
-        // Пышная шапка кроны ивы
         int topY = height + 1;
         for (int ox = -2; ox <= 2; ox++) {
             for (int oz = -2; oz <= 2; oz++) {
@@ -394,11 +474,9 @@ public class AlchemistSchematicManager {
             }
         }
 
-        // Светящиеся болотные плоды под кроной
         putBlock(map, curX + 1, height - 1, curZ, glowFruit);
         putBlock(map, curX - 1, height - 1, curZ, glowFruit);
 
-        // Свисающие плакучие ветви по краям кроны
         int[][] vines = {{-2, 0}, {2, 0}, {0, -2}, {0, 2}, {-2, -1}, {2, 1}, {-1, 2}, {1, -2}};
         for (int[] v : vines) {
             putBlock(map, curX + v[0], height - 1, curZ + v[1], leafMat);
@@ -414,8 +492,8 @@ public class AlchemistSchematicManager {
 
     private void saveGeneratedSchematicToFile(File file) {
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("schema-version", 1);
-        yaml.set("name", "alchemist_cauldron_31x31");
+        yaml.set("schema-version", 2);
+        yaml.set("name", "alchemist_cauldron_31x31_v2");
         List<Map<String, Object>> blockList = new ArrayList<>();
         for (SchematicEntry entry : entries) {
             Map<String, Object> m = new LinkedHashMap<>();
@@ -507,7 +585,7 @@ public class AlchemistSchematicManager {
             }
         }
 
-        // 3. Строим основные блоки болота, алтаря, грибов и плакучих ив
+        // 3. Строим основные блоки болота, ротонды, павильонов, грибов и плакучих ив
         List<SchematicEntry> deferredDecorations = new ArrayList<>();
         for (SchematicEntry entry : entries) {
             Material mat = entry.material();
@@ -540,7 +618,7 @@ public class AlchemistSchematicManager {
             centralCauldronBlocks.add(new BlockPosKey(world.getName(), ox + c[0], oy + 1, oz + c[1]));
         }
 
-        // 5. Сразу выращиваем 4 стартовых реагента на болоте, чтобы игроки сразу видели цель!
+        // 5. Сразу выращиваем 4 стартовых реагента на болоте
         for (int i = 0; i < 4; i++) {
             BrushTier tier = plugin.getBrushLootManager().rollRandomBrushTier();
             spawnRandomReagentNode(tier);
@@ -583,8 +661,8 @@ public class AlchemistSchematicManager {
             activeReagentNodes.put(key, tier);
 
             Location effectLoc = loc.clone().add(0.5, 0.5, 0.5);
-            w.playSound(effectLoc, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.4f, 1.2f);
-            w.spawnParticle(Particle.WITCH, effectLoc, 22, 0.3, 0.4, 0.3, 0.05);
+            w.playSound(effectLoc, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.2f, 1.2f);
+            w.spawnParticle(Particle.WITCH, effectLoc, 6, 0.25, 0.3, 0.25, 0.03);
             return true;
         }
         return false;
@@ -602,7 +680,6 @@ public class AlchemistSchematicManager {
         if (activeReagentNodes.containsKey(directKey)) {
             return clickedBlock;
         }
-        // Если кликнули по самому пьедесталу (CRYING_OBSIDIAN) прямо под реагентом
         BlockPosKey aboveKey = new BlockPosKey(w.getName(), clickedBlock.getX(), clickedBlock.getY() + 1, clickedBlock.getZ());
         if (activeReagentNodes.containsKey(aboveKey)) {
             return w.getBlockAt(clickedBlock.getX(), clickedBlock.getY() + 1, clickedBlock.getZ());
@@ -662,7 +739,7 @@ public class AlchemistSchematicManager {
     }
 
     /**
-     * Спавнит красивые атмосферные частицы над центральным Котлом и над всеми активными реагентами на болоте.
+     * Спавнит лёгкие оптимизированные частицы над центральным Котлом и над активными реагентами (без лагов на телефонах).
      */
     public void spawnAmbientEffects() {
         if (activeCenterOrigin == null || activeCenterOrigin.getWorld() == null) {
@@ -670,28 +747,23 @@ public class AlchemistSchematicManager {
         }
         World w = activeCenterOrigin.getWorld();
 
-        // 1. Бурление 4 центральных котлов вокруг Алхимика
-        for (BlockPosKey cKey : centralCauldronBlocks) {
-            Location cLoc = new Location(w, cKey.x() + 0.5, cKey.y() + 0.9, cKey.z() + 0.5);
-            w.spawnParticle(Particle.WITCH, cLoc, 6, 0.25, 0.3, 0.25, 0.02);
-            w.spawnParticle(Particle.SOUL_FIRE_FLAME, cLoc, 2, 0.2, 0.2, 0.2, 0.01);
-        }
+        // 1. Лёгкое бурление над центром Котла (всего 4 частицы в секунду вместо 32)
+        Location centerCauldron = activeCenterOrigin.clone().add(0, 1.8, 0);
+        w.spawnParticle(Particle.WITCH, centerCauldron, 3, 0.5, 0.3, 0.5, 0.01);
+        w.spawnParticle(Particle.SOUL_FIRE_FLAME, centerCauldron, 1, 0.4, 0.2, 0.4, 0.01);
 
-        // 2. Яркая подсветка выросших реагентов на 16 пьедесталах по редкости
+        // 2. Аккуратная подсветка выросших реагентов (по 2-3 частицы на реагент — не нагружает FPS)
         for (Map.Entry<BlockPosKey, BrushTier> entry : activeReagentNodes.entrySet()) {
             BlockPosKey pos = entry.getKey();
             BrushTier tier = entry.getValue();
-            Location pLoc = new Location(w, pos.x() + 0.5, pos.y() + 0.6, pos.z() + 0.5);
+            Location pLoc = new Location(w, pos.x() + 0.5, pos.y() + 0.55, pos.z() + 0.5);
 
             switch (tier) {
-                case COMMON -> w.spawnParticle(Particle.HAPPY_VILLAGER, pLoc, 6, 0.25, 0.35, 0.25, 0.02);
-                case EPIC -> {
-                    w.spawnParticle(Particle.WITCH, pLoc, 10, 0.25, 0.4, 0.25, 0.03);
-                    w.spawnParticle(Particle.PORTAL, pLoc, 8, 0.2, 0.3, 0.2, 0.1);
-                }
+                case COMMON -> w.spawnParticle(Particle.HAPPY_VILLAGER, pLoc, 2, 0.2, 0.25, 0.2, 0.01);
+                case EPIC -> w.spawnParticle(Particle.WITCH, pLoc, 3, 0.2, 0.3, 0.2, 0.02);
                 case LEGENDARY -> {
-                    w.spawnParticle(Particle.SOUL_FIRE_FLAME, pLoc, 8, 0.25, 0.45, 0.25, 0.02);
-                    w.spawnParticle(Particle.END_ROD, pLoc, 4, 0.2, 0.4, 0.2, 0.01);
+                    w.spawnParticle(Particle.SOUL_FIRE_FLAME, pLoc, 2, 0.2, 0.3, 0.2, 0.01);
+                    w.spawnParticle(Particle.END_ROD, pLoc, 1, 0.15, 0.25, 0.15, 0.01);
                 }
             }
         }

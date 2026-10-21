@@ -40,11 +40,14 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.event.EventType;
@@ -76,11 +79,27 @@ public class RiftEventListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         plugin.getBrushLootManager().removeAllEventBrushes(player);
+        player.removePotionEffect(PotionEffectType.GLOWING);
         if (plugin.getRiftManager().isActive()) {
             Bukkit.getScheduler().runTaskLater(plugin, () ->
                     plugin.getTopRightHudManager().updateTopRightHud(), 10L
             );
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (to == null) {
+            return;
+        }
+        if (from.getBlockX() == to.getBlockX()
+                && from.getBlockY() == to.getBlockY()
+                && from.getBlockZ() == to.getBlockZ()) {
+            return;
+        }
+        plugin.getRiftManager().enforceBrushZoneForPlayer(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -90,8 +109,9 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleport(PlayerTeleportEvent event) {
+        Player player = event.getPlayer();
         Bukkit.getScheduler().runTaskLater(plugin, () ->
-                plugin.getRiftManager().enforceBrushZoneForPlayers(), 2L
+                plugin.getRiftManager().enforceBrushZoneForPlayer(player), 1L
         );
     }
 
@@ -99,6 +119,17 @@ public class RiftEventListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         plugin.getBrushLootManager().removeAllEventBrushes(player);
+        player.removePotionEffect(PotionEffectType.GLOWING);
+        plugin.getTopRightHudManager().removeHudFromPlayer(player);
+        brushStrokeCooldown.remove(player.getUniqueId());
+        villagerClickCooldown.remove(player.getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerKick(PlayerKickEvent event) {
+        Player player = event.getPlayer();
+        plugin.getBrushLootManager().removeAllEventBrushes(player);
+        player.removePotionEffect(PotionEffectType.GLOWING);
         plugin.getTopRightHudManager().removeHudFromPlayer(player);
         brushStrokeCooldown.remove(player.getUniqueId());
         villagerClickCooldown.remove(player.getUniqueId());
@@ -351,8 +382,8 @@ public class RiftEventListener implements Listener {
         Location effectLoc = nodeBlock.getLocation().add(0.5, 0.5, 0.5);
         nodeBlock.getWorld().playSound(effectLoc, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.3f, 1.2f);
         nodeBlock.getWorld().playSound(effectLoc, Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.3f);
-        nodeBlock.getWorld().spawnParticle(Particle.WITCH, effectLoc, 24, 0.3, 0.4, 0.3, 0.05);
-        nodeBlock.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 15, 0.3, 0.3, 0.3, 0.05);
+        nodeBlock.getWorld().spawnParticle(Particle.WITCH, effectLoc, 8, 0.25, 0.3, 0.25, 0.03);
+        nodeBlock.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 5, 0.25, 0.25, 0.25, 0.03);
 
         String ab = ColorUtil.color(
                 "&aСобран: " + plugin.getBrushLootManager().getReagentDisplayName(tier)
@@ -404,9 +435,9 @@ public class RiftEventListener implements Listener {
             block.getWorld().spawnParticle(
                     Particle.BLOCK,
                     effectLoc,
-                    18,
-                    0.25, 0.15, 0.25,
-                    0.05,
+                    8,
+                    0.2, 0.12, 0.2,
+                    0.04,
                     Material.SAND.createBlockData()
             );
 
@@ -433,7 +464,7 @@ public class RiftEventListener implements Listener {
 
             block.getWorld().playSound(effectLoc, Sound.BLOCK_SAND_BREAK, 1.2f, 1.1f);
             block.getWorld().playSound(effectLoc, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.3f);
-            block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 16, 0.3, 0.3, 0.3, 0.05);
+            block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 8, 0.25, 0.25, 0.25, 0.04);
             try {
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(""));
             } catch (Throwable ignored) {

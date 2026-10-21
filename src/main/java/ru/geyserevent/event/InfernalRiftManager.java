@@ -144,38 +144,59 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Проверяет всех игроков онлайн: если у игрока есть кисточка или реагент ивента, но он ушёл далеко от зоны
-     * (или соответствующий ивент не активен), кисточки/реагенты мгновенно удаляются.
+     * Проверяет одного игрока: если у него есть кисточка или реагент ивента, но он вышел за пределы
+     * схемы ивента (радиус 16.5 блоков от центра 31x31 схемы), предмет и свечение мгновенно удаляются.
      */
-    public void enforceBrushZoneForPlayers() {
-        double maxDist = Math.max(28.0, plugin.getPluginConfig().getExcavationBrushRemoveDistance());
-        double maxDistSq = maxDist * maxDist;
+    public void enforceBrushZoneForPlayer(Player player) {
+        if (player == null || !plugin.getBrushLootManager().hasAnyEventBrush(player)) {
+            return;
+        }
+        double zoneRadius = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
+        double zoneRadiusSq = zoneRadius * zoneRadius;
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!plugin.getBrushLootManager().hasAnyEventBrush(player)) {
-                continue;
-            }
-            boolean isItemEventActive = active
-                    && (activeEventType == EventType.BEACH_EXCAVATION || activeEventType == EventType.ALCHEMIST_CAULDRON);
-            boolean outside = !isItemEventActive
-                    || riftCenterLocation == null
-                    || riftCenterLocation.getWorld() == null
-                    || !player.getWorld().equals(riftCenterLocation.getWorld())
-                    || player.getLocation().distanceSquared(riftCenterLocation) > maxDistSq;
+        boolean isItemEventActive = active
+                && (activeEventType == EventType.BEACH_EXCAVATION || activeEventType == EventType.ALCHEMIST_CAULDRON);
 
-            if (outside) {
-                boolean hadReagent = plugin.getBrushLootManager().hasAnyReagent(player);
-                if (plugin.getBrushLootManager().removeAllEventBrushes(player)) {
-                    if (hadReagent) {
-                        player.sendMessage(ColorUtil.color("&e┠ &cВы ушли далеко от Котла Алхимика — нестабильные реагенты испарились."));
-                    } else {
-                        player.sendMessage(ColorUtil.color("&e┠ &cВы ушли далеко от пляжа раскопок — кисточки пропали."));
-                    }
-                }
+        boolean outside = !isItemEventActive
+                || riftCenterLocation == null
+                || riftCenterLocation.getWorld() == null
+                || !player.getWorld().equals(riftCenterLocation.getWorld());
+
+        if (!outside) {
+            Location pLoc = player.getLocation();
+            double dx = pLoc.getX() - riftCenterLocation.getX();
+            double dz = pLoc.getZ() - riftCenterLocation.getZ();
+            double dy = Math.abs(pLoc.getY() - riftCenterLocation.getY());
+            if ((dx * dx + dz * dz) > zoneRadiusSq || dy > 14.0) {
+                outside = true;
             }
         }
 
-        // Если кисточку или реагент выкинули за пределами зоны ивента — тоже удаляем предмет с земли
+        if (outside) {
+            boolean hadReagent = plugin.getBrushLootManager().hasAnyReagent(player);
+            if (plugin.getBrushLootManager().removeAllEventBrushes(player)) {
+                player.removePotionEffect(PotionEffectType.GLOWING);
+                if (hadReagent) {
+                    player.sendMessage(ColorUtil.color("&e┠ &cВы вышли из зоны ивента — реагенты пропали."));
+                } else {
+                    player.sendMessage(ColorUtil.color("&e┠ &cВы вышли из зоны ивента — кисточки пропали."));
+                }
+            }
+        }
+    }
+
+    /**
+     * Проверяет всех игроков онлайн и выброшенные предметы: если игрок или предмет находится
+     * за пределами зоны ивента, кисточки и реагенты сразу пропадают.
+     */
+    public void enforceBrushZoneForPlayers() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            enforceBrushZoneForPlayer(player);
+        }
+
+        double zoneRadius = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
+        double zoneRadiusSq = zoneRadius * zoneRadius;
+
         if (active
                 && (activeEventType == EventType.BEACH_EXCAVATION || activeEventType == EventType.ALCHEMIST_CAULDRON)
                 && riftCenterLocation != null
@@ -183,7 +204,10 @@ public class InfernalRiftManager {
             World w = riftCenterLocation.getWorld();
             for (Entity entity : w.getEntitiesByClass(Item.class)) {
                 if (entity instanceof Item itemEntity && plugin.getBrushLootManager().getBrushTier(itemEntity.getItemStack()) != null) {
-                    if (itemEntity.getLocation().distanceSquared(riftCenterLocation) > maxDistSq) {
+                    Location iLoc = itemEntity.getLocation();
+                    double dx = iLoc.getX() - riftCenterLocation.getX();
+                    double dz = iLoc.getZ() - riftCenterLocation.getZ();
+                    if ((dx * dx + dz * dz) > zoneRadiusSq) {
                         itemEntity.remove();
                     }
                 }
@@ -377,7 +401,7 @@ public class InfernalRiftManager {
 
         world.playSound(loc, Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 1.2f);
         world.playSound(loc, Sound.ENTITY_VILLAGER_CELEBRATE, 2.0f, 0.9f);
-        world.spawnParticle(Particle.HAPPY_VILLAGER, loc.clone().add(0, 1.2, 0), 45, 0.8, 1.0, 0.8, 0.05);
+        world.spawnParticle(Particle.HAPPY_VILLAGER, loc.clone().add(0, 1.2, 0), 15, 0.6, 0.8, 0.6, 0.03);
 
         return villager;
     }
@@ -418,8 +442,8 @@ public class InfernalRiftManager {
 
         world.playSound(loc, Sound.BLOCK_BREWING_STAND_BREW, 2.0f, 0.8f);
         world.playSound(loc, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 2.0f, 0.9f);
-        world.spawnParticle(Particle.WITCH, loc.clone().add(0, 1.2, 0), 65, 0.9, 1.1, 0.9, 0.06);
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.0, 0), 40, 0.8, 0.9, 0.8, 0.04);
+        world.spawnParticle(Particle.WITCH, loc.clone().add(0, 1.2, 0), 15, 0.6, 0.8, 0.6, 0.03);
+        world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.0, 0), 10, 0.5, 0.6, 0.5, 0.02);
 
         return alchemist;
     }
@@ -523,7 +547,7 @@ public class InfernalRiftManager {
                     bossHomeLocation.getWorld().spawnParticle(
                             Particle.HAPPY_VILLAGER,
                             bossHomeLocation.clone().add(0, 1.3, 0),
-                            20, 0.5, 0.6, 0.5, 0.05
+                            8, 0.4, 0.5, 0.4, 0.03
                     );
                 }
             }
@@ -582,7 +606,7 @@ public class InfernalRiftManager {
                     bossHomeLocation.getWorld().spawnParticle(
                             Particle.WITCH,
                             bossHomeLocation.clone().add(0, 1.3, 0),
-                            30, 0.5, 0.6, 0.5, 0.05
+                            8, 0.4, 0.5, 0.4, 0.03
                     );
                 }
             }
@@ -591,7 +615,7 @@ public class InfernalRiftManager {
         // 5. Подсветка (Glowing) для курьеров, несущих реагент по болоту к котлу
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (plugin.getBrushLootManager().hasAnyReagent(p)) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 45, 0, false, false));
+                p.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 35, 0, false, false));
             }
         }
 
@@ -707,7 +731,7 @@ public class InfernalRiftManager {
                 bossHomeLocation.getWorld().spawnParticle(
                         Particle.WITCH,
                         bossHomeLocation.clone().add(0, 1.2, 0),
-                        30, 0.5, 0.6, 0.5, 0.05
+                        8, 0.4, 0.5, 0.4, 0.03
                 );
             }
 
@@ -746,6 +770,9 @@ public class InfernalRiftManager {
         if (tier == null) {
             return false;
         }
+        if (!plugin.getBrushLootManager().hasAnyReagent(player)) {
+            player.removePotionEffect(PotionEffectType.GLOWING);
+        }
 
         ItemStack reward = plugin.getBrushLootManager().rollLootForBrush(tier);
         Map<Integer, ItemStack> leftovers = player.getInventory().addItem(reward);
@@ -760,9 +787,8 @@ public class InfernalRiftManager {
         if (w != null) {
             w.playSound(effectLoc, Sound.BLOCK_BREWING_STAND_BREW, 1.6f, 1.15f);
             w.playSound(effectLoc, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.2f, 1.3f);
-            w.spawnParticle(Particle.WITCH, effectLoc, 35, 0.6, 0.7, 0.6, 0.08);
-            w.spawnParticle(Particle.SOUL_FIRE_FLAME, effectLoc, 25, 0.5, 0.6, 0.5, 0.05);
-            w.spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 20, 0.6, 0.6, 0.6, 0.05);
+            w.spawnParticle(Particle.WITCH, effectLoc, 10, 0.4, 0.5, 0.4, 0.04);
+            w.spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 6, 0.4, 0.4, 0.4, 0.03);
         }
 
         try {
@@ -786,7 +812,7 @@ public class InfernalRiftManager {
             bossHomeLocation.getWorld().spawnParticle(
                     Particle.HAPPY_VILLAGER,
                     bossHomeLocation.clone().add(0, 1.2, 0),
-                    25, 0.5, 0.6, 0.5, 0.05
+                    8, 0.4, 0.5, 0.4, 0.03
             );
         }
 
@@ -833,11 +859,11 @@ public class InfernalRiftManager {
             }
         }
 
-        // Фоновые частицы врат Разлома
+        // Фоновые частицы врат Разлома (оптимизировано против лагов)
         if (riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
             World w = riftCenterLocation.getWorld();
-            w.spawnParticle(Particle.PORTAL, riftCenterLocation.clone().add(0, 3.5, -2.0), 18, 1.2, 1.5, 0.3, 0.25);
-            w.spawnParticle(Particle.SOUL_FIRE_FLAME, riftCenterLocation.clone().add(0, 1.2, 0), 6, 2.5, 0.3, 2.5, 0.01);
+            w.spawnParticle(Particle.PORTAL, riftCenterLocation.clone().add(0, 3.5, -2.0), 6, 1.0, 1.2, 0.3, 0.2);
+            w.spawnParticle(Particle.SOUL_FIRE_FLAME, riftCenterLocation.clone().add(0, 1.2, 0), 3, 2.0, 0.3, 2.0, 0.01);
         }
 
         // Способности босса в радиусе 15 блоков

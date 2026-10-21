@@ -82,7 +82,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.7.0 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.7.1 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
         getLogger().info(" Меню настройки лута: /rift menu");
         getLogger().info(" Команды игроков: /event delay, /event gps");

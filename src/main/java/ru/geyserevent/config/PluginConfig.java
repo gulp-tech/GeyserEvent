@@ -263,7 +263,13 @@ public class PluginConfig {
         this.excavationVillagerScale = Math.max(0.8, cfg.getDouble("excavation.villager-scale", 1.10));
         this.excavationBrushIntervalSeconds = Math.max(5, cfg.getInt("excavation.brush-interval-seconds", 30));
         this.excavationBrushHandoutRadius = Math.max(3.0, cfg.getDouble("excavation.brush-handout-radius", 14.0));
-        this.excavationBrushRemoveDistance = Math.max(25.0, cfg.getDouble("excavation.brush-remove-distance", 30.0));
+        double rawRemoveDist = cfg.getDouble("excavation.brush-remove-distance", 16.5);
+        if (Math.abs(rawRemoveDist - 22.0) < 0.01 || Math.abs(rawRemoveDist - 30.0) < 0.01) {
+            rawRemoveDist = 16.5;
+            cfg.set("excavation.brush-remove-distance", 16.5);
+            plugin.saveConfig();
+        }
+        this.excavationBrushRemoveDistance = Math.max(15.5, rawRemoveDist);
 
         // Messages
         this.prefix = ColorUtil.color(cfg.getString("messages.prefix", "&e┠ &r"));
