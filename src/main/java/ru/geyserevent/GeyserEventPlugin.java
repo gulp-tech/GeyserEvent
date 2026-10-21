@@ -18,6 +18,10 @@ import ru.geyserevent.hud.TopRightHudManager;
 import ru.geyserevent.listener.RiftEventListener;
 import ru.geyserevent.schematic.RiftSchematicManager;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+
 /**
  * Главный класс плагина GeyserEvent v1.7.0 — три анархических ивента:
  * 1) «Адский Разлом (Вторжение Босса)»
@@ -81,12 +85,34 @@ public final class GeyserEventPlugin extends JavaPlugin {
             riftCmd.setTabCompleter(adminExecutor);
         }
 
+        // 8. Экспорт готового меню для DeluxeMenus (deluxemenus/events.yml -> команда /events)
+        exportDeluxeMenusConfig();
+
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.7.1 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.7.2 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
+        getLogger().info(" Меню DeluxeMenus (/events): plugins/GeyserEvent/deluxemenus/events.yml");
         getLogger().info(" Меню настройки лута: /rift menu");
         getLogger().info(" Команды игроков: /event delay, /event gps");
         getLogger().info("==================================================");
+    }
+
+    private void exportDeluxeMenusConfig() {
+        try {
+            saveResource("deluxemenus/events.yml", true);
+            File exported = new File(getDataFolder(), "deluxemenus/events.yml");
+            File pluginsDir = getDataFolder().getParentFile();
+            if (pluginsDir != null && exported.exists()) {
+                File dmGuiDir = new File(new File(pluginsDir, "DeluxeMenus"), "gui_menus");
+                if (dmGuiDir.exists()) {
+                    File target = new File(dmGuiDir, "events.yml");
+                    if (!target.exists()) {
+                        Files.copy(exported.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     @Override

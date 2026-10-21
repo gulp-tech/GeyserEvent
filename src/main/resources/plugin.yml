@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.7.1'
+version: '1.7.2'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
@@ -8,11 +8,12 @@ softdepend:
   - Geyser-Spigot
   - floodgate
   - PlayerPoints
+  - DeluxeMenus
 
 commands:
   event:
     description: Команды ивента для игроков (/event delay, /event gps)
-    aliases: [events, ivent]
+    aliases: [ivent]
     usage: /<command> <delay|gps>
   rift:
     description: Админ-команды управления ивентами и GUI-меню лута
