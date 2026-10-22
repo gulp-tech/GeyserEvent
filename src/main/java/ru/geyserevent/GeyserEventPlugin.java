@@ -89,7 +89,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         exportDeluxeMenusConfig();
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.7.2 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.7.3 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
         getLogger().info(" Меню DeluxeMenus (/events): plugins/GeyserEvent/deluxemenus/events.yml");
         getLogger().info(" Меню настройки лута: /rift menu");

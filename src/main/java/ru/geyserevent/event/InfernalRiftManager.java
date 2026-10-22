@@ -589,7 +589,7 @@ public class InfernalRiftManager {
             reagentSproutCooldownSeconds--;
         }
         if (reagentSproutCooldownSeconds <= 0) {
-            BrushTier tier = plugin.getBrushLootManager().rollRandomBrushTier();
+            BrushTier tier = plugin.getBrushLootManager().rollRandomReagentTier();
             plugin.getAlchemistSchematicManager().spawnRandomReagentNode(tier);
             reagentSproutCooldownSeconds = getDynamicReagentSproutIntervalSeconds();
         }
@@ -721,7 +721,7 @@ public class InfernalRiftManager {
             brushReadyToClaim = false;
             brushCountdownSeconds = getDynamicBrushIntervalSeconds();
 
-            BrushTier tier = plugin.getBrushLootManager().rollRandomBrushTier();
+            BrushTier tier = plugin.getBrushLootManager().rollRandomReagentTier();
             ItemStack reagent = plugin.getBrushLootManager().createReagentItem(tier);
             player.getInventory().addItem(reagent);
 
@@ -774,7 +774,7 @@ public class InfernalRiftManager {
             player.removePotionEffect(PotionEffectType.GLOWING);
         }
 
-        ItemStack reward = plugin.getBrushLootManager().rollLootForBrush(tier);
+        ItemStack reward = plugin.getBrushLootManager().rollLootForCauldron(tier);
         Map<Integer, ItemStack> leftovers = player.getInventory().addItem(reward);
         if (!leftovers.isEmpty()) {
             for (ItemStack drop : leftovers.values()) {

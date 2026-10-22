@@ -63,9 +63,20 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args.length >= 2) {
+                    if (args[1].equalsIgnoreCase("cauldron") || args[1].equalsIgnoreCase("котел") || args[1].equalsIgnoreCase("котёл")) {
+                        if (args.length >= 3) {
+                            BrushTier tier = BrushTier.fromString(args[2]);
+                            if (tier != null) {
+                                plugin.getBrushLootGuiManager().openTierMenu(player, tier, true);
+                                return true;
+                            }
+                        }
+                        plugin.getBrushLootGuiManager().openMainMenu(player);
+                        return true;
+                    }
                     BrushTier tier = BrushTier.fromString(args[1]);
                     if (tier != null) {
-                        plugin.getBrushLootGuiManager().openTierMenu(player, tier);
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, false);
                         return true;
                     }
                 }
@@ -127,11 +138,27 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length == 2 && sender instanceof Player player) {
                     BrushTier tier = BrushTier.fromString(args[1]);
                     if (tier != null) {
-                        plugin.getBrushLootGuiManager().openTierMenu(player, tier);
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, false);
                         return true;
                     }
                 }
-                handleBrushLootSubcommand(sender, label, args);
+                handleBrushLootSubcommand(sender, label, args, false);
+                return true;
+            }
+
+            case "cauldronloot", "reagentloot", "alchemistloot" -> {
+                if (args.length == 1 && sender instanceof Player player) {
+                    plugin.getBrushLootGuiManager().openMainMenu(player);
+                    return true;
+                }
+                if (args.length == 2 && sender instanceof Player player) {
+                    BrushTier tier = BrushTier.fromString(args[1]);
+                    if (tier != null) {
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, true);
+                        return true;
+                    }
+                }
+                handleBrushLootSubcommand(sender, label, args, true);
                 return true;
             }
 
@@ -253,25 +280,28 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     }
 
     @SuppressWarnings("deprecation")
-    private void handleBrushLootSubcommand(CommandSender sender, String label, String[] args) {
+    private void handleBrushLootSubcommand(CommandSender sender, String label, String[] args, boolean cauldron) {
+        String subCmd = cauldron ? "cauldronloot" : "brushloot";
+        String eventTitle = cauldron ? "«Котёл Алхимика»" : "«Пляжные Раскопки»";
         if (args.length < 3) {
-            sender.sendMessage(ColorUtil.color("&e┠ &fНастройка лута кисточек («Пляжные Раскопки»):"));
+            sender.sendMessage(ColorUtil.color("&e┠ &fНастройка лута (" + eventTitle + "):"));
             sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fоткрыть удобное GUI-меню настройки лута и шансов"));
-            sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot add <обычная|эпическая|легендарная> [шанс] &8— &fдобавить предмет из руки"));
-            sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot list <обычная|эпическая|легендарная> &8— &fсписок предметов"));
-            sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot remove <обычная|эпическая|легендарная> <номер> &8— &fудалить предмет"));
-            sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot clear <обычная|эпическая|легендарная> &8— &fочистить лут"));
+            sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " " + subCmd + " add <обычная|эпическая|легендарная> [шанс] &8— &fдобавить предмет из руки"));
+            sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " " + subCmd + " list <обычная|эпическая|легендарная> &8— &fсписок предметов"));
+            sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " " + subCmd + " remove <обычная|эпическая|легендарная> <номер> &8— &fудалить предмет"));
+            sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " " + subCmd + " clear <обычная|эпическая|легендарная> &8— &fочистить лут"));
             return;
         }
 
         String action = args[1].toLowerCase(Locale.ROOT);
         BrushTier tier = BrushTier.fromString(args[2]);
         if (tier == null) {
-            sender.sendMessage(ColorUtil.color("&e┠ &cУкажите редкость кисточки: &#E0C912обычная &8(common)&c, &#E0C912эпическая &8(epic) &cили &#E0C912легендарная &8(legendary)&c."));
+            sender.sendMessage(ColorUtil.color("&e┠ &cУкажите редкость: &#E0C912обычная &8(common)&c, &#E0C912эпическая &8(epic) &cили &#E0C912легендарная &8(legendary)&c."));
             return;
         }
 
         BrushLootManager lootManager = plugin.getBrushLootManager();
+        String tierTitle = cauldron ? lootManager.getReagentDisplayName(tier) : tier.getItemTitle();
 
         switch (action) {
             case "add", "добавить" -> {
@@ -293,16 +323,16 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                         return;
                     }
                 }
-                lootManager.addLootItem(tier, inHand, chance);
+                lootManager.addLootItem(tier, inHand, chance, cauldron);
                 sender.sendMessage(ColorUtil.color(String.format(
-                        "&e┠ &#34D711Предмет &f%s x%d &#34D711добавлен в лут кисточки %s &8(Шанс: &#E0C912%.1f%%&8).",
-                        inHand.getType().name(), inHand.getAmount(), tier.getItemTitle(), chance
+                        "&e┠ &#34D711Предмет &f%s x%d &#34D711добавлен в лут (%s&r&#34D711, шанс: &#E0C912%.1f%%&#34D711).",
+                        inHand.getType().name(), inHand.getAmount(), tierTitle, chance
                 )));
             }
 
             case "list", "список" -> {
-                List<BrushLootManager.BrushLootEntry> entries = lootManager.getLootEntries(tier);
-                sender.sendMessage(ColorUtil.color("&e┠ &fЛут кисточки " + tier.getItemTitle() + " &8(&f" + entries.size() + " шт.&8):"));
+                List<BrushLootManager.BrushLootEntry> entries = lootManager.getLootEntries(tier, cauldron);
+                sender.sendMessage(ColorUtil.color("&e┠ &fЛут " + tierTitle + " &8(&f" + entries.size() + " шт.&8):"));
                 if (entries.isEmpty()) {
                     sender.sendMessage(ColorUtil.color("&e┠ &7Список пуст."));
                     return;
@@ -322,29 +352,29 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
 
             case "remove", "del", "delete", "удалить" -> {
                 if (args.length < 4) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " brushloot remove " + tier.getConfigKey() + " <номер>"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " " + subCmd + " remove " + tier.getConfigKey() + " <номер>"));
                     return;
                 }
                 int idx;
                 try {
                     idx = Integer.parseInt(args[3]);
                 } catch (NumberFormatException ex) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cУкажите корректный номер предмета из /" + label + " brushloot list " + tier.getConfigKey()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &cУкажите корректный номер предмета из /" + label + " " + subCmd + " list " + tier.getConfigKey()));
                     return;
                 }
-                if (lootManager.removeLootItem(tier, idx)) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &#34D711Предмет #" + idx + " удалён из лута кисточки " + tier.getItemTitle() + "&f."));
+                if (lootManager.removeLootItem(tier, idx, cauldron)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &#34D711Предмет #" + idx + " удалён из лута " + tierTitle + "&f."));
                 } else {
                     sender.sendMessage(ColorUtil.color("&e┠ &cПредмет с номером #" + idx + " не найден."));
                 }
             }
 
             case "clear", "очистить" -> {
-                lootManager.clearLoot(tier);
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Лут кисточки " + tier.getItemTitle() + " &#34D711полностью очищен."));
+                lootManager.clearLoot(tier, cauldron);
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Лут " + tierTitle + " &#34D711полностью очищен."));
             }
 
-            default -> sender.sendMessage(ColorUtil.color("&e┠ &cИспользуйте: &#E0C912/" + label + " menu &cили &#E0C912/" + label + " brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
+            default -> sender.sendMessage(ColorUtil.color("&e┠ &cИспользуйте: &#E0C912/" + label + " menu &cили &#E0C912/" + label + " " + subCmd + " <add|list|remove|clear> <обычная|эпическая|легендарная>"));
         }
     }
 
@@ -386,11 +416,12 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendAdminHelp(CommandSender sender, String label, PluginConfig cfg) {
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fОткрыть GUI-меню настройки лута и шансов"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fОткрыть GUI-меню настройки лута Раскопок и Котла Алхимика"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation|cauldron] &8— &fЗапустить ивент в " + cfg.getWorldName()));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation|cauldron] &8— &fЗапустить на вашей позиции"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить ивент"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " cauldronloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " givebrush <обычная|эпическая|легендарная> [игрок]"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " givereagent <обычная|эпическая|легендарная> [игрок]"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " ability <pull|push|gather|minions>"));
@@ -405,8 +436,8 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return filterPrefix(Arrays.asList(
-                    "menu", "gui", "start", "start-here", "stop", "brushloot", "givebrush", "givereagent",
-                    "ability", "setworld", "saveschem", "status", "top", "reload"
+                    "menu", "gui", "start", "start-here", "stop", "brushloot", "cauldronloot",
+                    "givebrush", "givereagent", "ability", "setworld", "saveschem", "status", "top", "reload"
             ), args[0]);
         }
         if (args.length == 2) {
@@ -416,9 +447,10 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             }
             if (sub.equals("menu") || sub.equals("gui") || sub.equals("givebrush") || sub.equals("brush")
                     || sub.equals("givereagent") || sub.equals("reagent")) {
-                return filterPrefix(Arrays.asList("common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
+                return filterPrefix(Arrays.asList("cauldron", "common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
             }
-            if (sub.equals("brushloot") || sub.equals("loot")) {
+            if (sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
+                    || sub.equals("reagentloot") || sub.equals("alchemistloot")) {
                 return filterPrefix(Arrays.asList("add", "list", "remove", "clear", "обычная", "эпическая", "легендарная"), args[1]);
             }
             if (sub.equals("ability") || sub.equals("cast")) {

@@ -620,7 +620,7 @@ public class AlchemistSchematicManager {
 
         // 5. Сразу выращиваем 4 стартовых реагента на болоте
         for (int i = 0; i < 4; i++) {
-            BrushTier tier = plugin.getBrushLootManager().rollRandomBrushTier();
+            BrushTier tier = plugin.getBrushLootManager().rollRandomReagentTier();
             spawnRandomReagentNode(tier);
         }
 

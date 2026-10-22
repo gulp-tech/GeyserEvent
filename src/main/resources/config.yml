@@ -368,6 +368,84 @@ excavation:
           amount: 1
           chance: 10.0
 
+# ============================================================================
+# Ивент 3: «Котёл Алхимика» (отдельные таблицы лута реагентов)
+# Настраиваются в игре через /rift menu (нижний ряд) или /rift cauldronloot
+# ============================================================================
+cauldron:
+  reagents:
+    common:
+      chance: 35.0
+      loot:
+        - material: "GOLD_INGOT"
+          amount: 4
+          chance: 45.0
+        - material: "IRON_INGOT"
+          amount: 6
+          chance: 50.0
+        - material: "EMERALD"
+          amount: 3
+          chance: 40.0
+        - material: "DIAMOND"
+          amount: 2
+          chance: 25.0
+        - material: "GOLDEN_APPLE"
+          amount: 1
+          chance: 20.0
+        - material: "EXPERIENCE_BOTTLE"
+          amount: 8
+          chance: 35.0
+
+    epic:
+      chance: 40.0
+      loot:
+        - material: "DIAMOND"
+          amount: 5
+          chance: 45.0
+        - material: "GOLD_BLOCK"
+          amount: 2
+          chance: 40.0
+        - material: "GOLDEN_APPLE"
+          amount: 3
+          chance: 35.0
+        - material: "EMERALD_BLOCK"
+          amount: 2
+          chance: 30.0
+        - material: "NETHERITE_SCRAP"
+          amount: 1
+          chance: 18.0
+        - material: "TOTEM_OF_UNDYING"
+          amount: 1
+          chance: 15.0
+        - material: "EXPERIENCE_BOTTLE"
+          amount: 16
+          chance: 35.0
+
+    legendary:
+      chance: 25.0
+      loot:
+        - material: "NETHERITE_INGOT"
+          amount: 1
+          chance: 25.0
+        - material: "ANCIENT_DEBRIS"
+          amount: 2
+          chance: 35.0
+        - material: "DIAMOND_BLOCK"
+          amount: 2
+          chance: 40.0
+        - material: "ENCHANTED_GOLDEN_APPLE"
+          amount: 1
+          chance: 15.0
+        - material: "TOTEM_OF_UNDYING"
+          amount: 1
+          chance: 30.0
+        - material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+          amount: 1
+          chance: 25.0
+        - material: "NETHERITE_PICKAXE"
+          amount: 1
+          chance: 10.0
+
 messages:
   prefix: "&e┠ &r"
   only-bedrock: "&e┠ &cДоступно только для игроков с Bedrock Edition (GeyserMC)."

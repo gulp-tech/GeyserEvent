@@ -28,9 +28,10 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Менеджер предметов ивентов (Кисточки «Пляжных Раскопок» и Реагенты «Котла Алхимика»)
- * и их общих таблиц лута 3 уровней редкости (Обычная, Эпическая, Легендарная).
- * Позволяет настраивать лут и шансы через GUI-меню (/rift menu), команды (/rift brushloot) и config.yml.
+ * Менеджер предметов и независимых таблиц лута для двух ивентов:
+ * 1) Кисточки «Пляжных Раскопок» (excavation.brushes.<tier>)
+ * 2) Реагенты «Котла Алхимика» (cauldron.reagents.<tier>)
+ * Полностью настраивается через GUI-меню (/rift menu), команды и config.yml.
  */
 public class BrushLootManager {
 
@@ -42,9 +43,14 @@ public class BrushLootManager {
     private final NamespacedKey usesKey;
     private final NamespacedKey reagentKey;
 
+    // 1. Таблицы лута и шансов для «Пляжных Раскопок» (Кисточки)
     private final Map<BrushTier, List<BrushLootEntry>> lootByTier = new EnumMap<>(BrushTier.class);
     private final Map<BrushTier, Double> brushWeights = new EnumMap<>(BrushTier.class);
     private final Map<BrushTier, Integer> brushUses = new EnumMap<>(BrushTier.class);
+
+    // 2. Отдельные таблицы лута и шансов для «Котла Алхимика» (Реагенты)
+    private final Map<BrushTier, List<BrushLootEntry>> cauldronLootByTier = new EnumMap<>(BrushTier.class);
+    private final Map<BrushTier, Double> reagentWeights = new EnumMap<>(BrushTier.class);
 
     public BrushLootManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -57,8 +63,9 @@ public class BrushLootManager {
     public final void reload() {
         FileConfiguration cfg = plugin.getConfig();
         lootByTier.clear();
+        cauldronLootByTier.clear();
 
-        // Авто-обновление старых шансов (65/25/10 -> 35/40/25), чтобы редкие кисточки и реагенты выпадали значительно чаще
+        // Авто-обновление старых шансов (65/25/10 -> 35/40/25)
         double cChance = cfg.getDouble("excavation.brushes.common.chance", 35.0);
         double eChance = cfg.getDouble("excavation.brushes.epic.chance", 40.0);
         double lChance = cfg.getDouble("excavation.brushes.legendary.chance", 25.0);
@@ -70,37 +77,53 @@ public class BrushLootManager {
         }
 
         for (BrushTier tier : BrushTier.values()) {
-            String basePath = "excavation.brushes." + tier.getConfigKey();
             double defaultWeight = switch (tier) {
                 case COMMON -> 35.0;
                 case EPIC -> 40.0;
                 case LEGENDARY -> 25.0;
             };
-            brushWeights.put(tier, Math.max(1.0, cfg.getDouble(basePath + ".chance", defaultWeight)));
-            brushUses.put(tier, Math.max(1, cfg.getInt(basePath + ".uses", tier.getDefaultUses())));
 
-            List<BrushLootEntry> entries = new ArrayList<>();
-            List<Map<?, ?>> rawList = cfg.getMapList(basePath + ".loot");
-            for (Map<?, ?> map : rawList) {
-                double chance = toDouble(map.get("chance"), 25.0);
-                Object serializedStack = map.get("item");
-                if (serializedStack instanceof ItemStack stack && !stack.getType().isAir()) {
-                    entries.add(new BrushLootEntry(stack.clone(), chance));
-                    continue;
-                }
-                String matName = String.valueOf(map.get("material"));
-                Material mat = Material.matchMaterial(matName);
-                if (mat != null && !mat.isAir()) {
-                    int amount = Math.max(1, toInt(map.get("amount"), 1));
-                    entries.add(new BrushLootEntry(new ItemStack(mat, amount), chance));
-                }
-            }
+            // 1. Загрузка лута Кисточек («Пляжные Раскопки»)
+            String brushBasePath = "excavation.brushes." + tier.getConfigKey();
+            brushWeights.put(tier, Math.max(1.0, cfg.getDouble(brushBasePath + ".chance", defaultWeight)));
+            brushUses.put(tier, Math.max(1, cfg.getInt(brushBasePath + ".uses", tier.getDefaultUses())));
 
-            if (entries.isEmpty()) {
-                entries.addAll(getDefaultLootForTier(tier));
+            List<BrushLootEntry> brushEntries = loadLootListFromConfig(cfg, brushBasePath + ".loot");
+            if (brushEntries.isEmpty()) {
+                brushEntries.addAll(getDefaultLootForTier(tier));
             }
-            lootByTier.put(tier, entries);
+            lootByTier.put(tier, brushEntries);
+
+            // 2. Загрузка отдельного лута Реагентов («Котёл Алхимика»)
+            String reagentBasePath = "cauldron.reagents." + tier.getConfigKey();
+            reagentWeights.put(tier, Math.max(1.0, cfg.getDouble(reagentBasePath + ".chance", defaultWeight)));
+
+            List<BrushLootEntry> cauldronEntries = loadLootListFromConfig(cfg, reagentBasePath + ".loot");
+            if (cauldronEntries.isEmpty()) {
+                cauldronEntries.addAll(getDefaultLootForTier(tier));
+            }
+            cauldronLootByTier.put(tier, cauldronEntries);
         }
+    }
+
+    private List<BrushLootEntry> loadLootListFromConfig(FileConfiguration cfg, String path) {
+        List<BrushLootEntry> entries = new ArrayList<>();
+        List<Map<?, ?>> rawList = cfg.getMapList(path);
+        for (Map<?, ?> map : rawList) {
+            double chance = toDouble(map.get("chance"), 25.0);
+            Object serializedStack = map.get("item");
+            if (serializedStack instanceof ItemStack stack && !stack.getType().isAir()) {
+                entries.add(new BrushLootEntry(stack.clone(), chance));
+                continue;
+            }
+            String matName = String.valueOf(map.get("material"));
+            Material mat = Material.matchMaterial(matName);
+            if (mat != null && !mat.isAir()) {
+                int amount = Math.max(1, toInt(map.get("amount"), 1));
+                entries.add(new BrushLootEntry(new ItemStack(mat, amount), chance));
+            }
+        }
+        return entries;
     }
 
     private List<BrushLootEntry> getDefaultLootForTier(BrushTier tier) {
@@ -137,12 +160,23 @@ public class BrushLootManager {
     }
 
     /**
-     * Выбирает случайную редкость (Обычная, Эпическая, Легендарная) с повышенным шансом на редкие.
+     * Выбирает случайную редкость кисточки («Пляжные Раскопки»).
      */
     public BrushTier rollRandomBrushTier() {
-        double wCommon = brushWeights.getOrDefault(BrushTier.COMMON, 35.0);
-        double wEpic = brushWeights.getOrDefault(BrushTier.EPIC, 40.0);
-        double wLeg = brushWeights.getOrDefault(BrushTier.LEGENDARY, 25.0);
+        return rollRandomTierFromMap(brushWeights);
+    }
+
+    /**
+     * Выбирает случайную редкость реагента («Котёл Алхимика»).
+     */
+    public BrushTier rollRandomReagentTier() {
+        return rollRandomTierFromMap(reagentWeights);
+    }
+
+    private BrushTier rollRandomTierFromMap(Map<BrushTier, Double> weights) {
+        double wCommon = weights.getOrDefault(BrushTier.COMMON, 35.0);
+        double wEpic = weights.getOrDefault(BrushTier.EPIC, 40.0);
+        double wLeg = weights.getOrDefault(BrushTier.LEGENDARY, 25.0);
         double total = wCommon + wEpic + wLeg;
 
         double roll = ThreadLocalRandom.current().nextDouble(0.0, total);
@@ -156,13 +190,26 @@ public class BrushLootManager {
     }
 
     public double getBrushWeight(BrushTier tier) {
-        return brushWeights.getOrDefault(tier, 35.0);
+        return getTierWeight(tier, false);
+    }
+
+    public double getTierWeight(BrushTier tier, boolean cauldron) {
+        return (cauldron ? reagentWeights : brushWeights).getOrDefault(tier, 35.0);
     }
 
     public void setBrushWeight(BrushTier tier, double weight) {
+        setTierWeight(tier, weight, false);
+    }
+
+    public void setTierWeight(BrushTier tier, double weight, boolean cauldron) {
         double clamped = Math.max(1.0, Math.min(500.0, Math.round(weight * 10.0) / 10.0));
-        brushWeights.put(tier, clamped);
-        plugin.getConfig().set("excavation.brushes." + tier.getConfigKey() + ".chance", clamped);
+        if (cauldron) {
+            reagentWeights.put(tier, clamped);
+            plugin.getConfig().set("cauldron.reagents." + tier.getConfigKey() + ".chance", clamped);
+        } else {
+            brushWeights.put(tier, clamped);
+            plugin.getConfig().set("excavation.brushes." + tier.getConfigKey() + ".chance", clamped);
+        }
         plugin.saveConfig();
     }
 
@@ -290,7 +337,6 @@ public class BrushLootManager {
         }
         PlayerInventory inv = player.getInventory();
 
-        // 1. Проверяем основную руку
         ItemStack main = inv.getItemInMainHand();
         if (isReagentItem(main)) {
             BrushTier tier = getBrushTier(main);
@@ -298,7 +344,6 @@ public class BrushLootManager {
             return tier;
         }
 
-        // 2. Проверяем вторую руку
         ItemStack off = inv.getItemInOffHand();
         if (isReagentItem(off)) {
             BrushTier tier = getBrushTier(off);
@@ -306,7 +351,6 @@ public class BrushLootManager {
             return tier;
         }
 
-        // 3. Ищем в инвентаре (сначала Легендарный -> Эпический -> Обычный)
         BrushTier[] priority = {BrushTier.LEGENDARY, BrushTier.EPIC, BrushTier.COMMON};
         ItemStack[] contents = inv.getStorageContents();
         for (BrushTier targetTier : priority) {
@@ -372,16 +416,10 @@ public class BrushLootManager {
         return count;
     }
 
-    /**
-     * Проверяет, есть ли у игрока хотя бы одна кисточка или реагент ивента.
-     */
     public boolean hasAnyEventBrush(Player player) {
         return countPlayerBrushes(player) > 0;
     }
 
-    /**
-     * Удаляет все кисточки и реагенты ивента у игрока (при уходе далеко от зоны ивента, выходе с сервера или окончании ивента).
-     */
     public boolean removeAllEventBrushes(Player player) {
         if (player == null) {
             return false;
@@ -406,9 +444,6 @@ public class BrushLootManager {
         return removed;
     }
 
-    /**
-     * Удаляет кисточки и реагенты ивента у всех игроков онлайн и лежащие на земле.
-     */
     public void removeAllEventBrushesFromOnlinePlayers() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             removeAllEventBrushes(player);
@@ -422,9 +457,6 @@ public class BrushLootManager {
         }
     }
 
-    /**
-     * Тратит 1 заряд кисточки при успешной раскопке.
-     */
     @SuppressWarnings("deprecation")
     public void consumeBrushUse(Player player, ItemStack brush) {
         if (brush == null || !brush.hasItemMeta()) {
@@ -455,10 +487,20 @@ public class BrushLootManager {
     }
 
     /**
-     * Выбирает случайный предмет из таблицы лута указанной редкости.
+     * Выбирает случайный предмет из таблицы лута Кисточки («Пляжные Раскопки»).
      */
     public ItemStack rollLootForBrush(BrushTier tier) {
-        List<BrushLootEntry> list = lootByTier.get(tier);
+        return rollLootFromList(lootByTier.get(tier));
+    }
+
+    /**
+     * Выбирает случайный предмет из отдельной таблицы лута Котла Алхимика («Котёл Алхимика»).
+     */
+    public ItemStack rollLootForCauldron(BrushTier tier) {
+        return rollLootFromList(cauldronLootByTier.get(tier));
+    }
+
+    private ItemStack rollLootFromList(List<BrushLootEntry> list) {
         if (list == null || list.isEmpty()) {
             return new ItemStack(Material.GOLD_INGOT, 2);
         }
@@ -479,56 +521,68 @@ public class BrushLootManager {
         return list.get(0).item().clone();
     }
 
-    /**
-     * Добавляет предмет в таблицу лута указанной редкости и сохраняет в config.yml.
-     */
     public void addLootItem(BrushTier tier, ItemStack item, double chance) {
-        List<BrushLootEntry> list = lootByTier.computeIfAbsent(tier, k -> new ArrayList<>());
-        list.add(new BrushLootEntry(item.clone(), Math.max(0.5, chance)));
-        saveTierLootToConfig(tier, list);
+        addLootItem(tier, item, chance, false);
     }
 
-    /**
-     * Изменяет шанс выпадения предмета в таблице лута (для GUI-меню).
-     */
+    public void addLootItem(BrushTier tier, ItemStack item, double chance, boolean cauldron) {
+        Map<BrushTier, List<BrushLootEntry>> map = cauldron ? cauldronLootByTier : lootByTier;
+        List<BrushLootEntry> list = map.computeIfAbsent(tier, k -> new ArrayList<>());
+        list.add(new BrushLootEntry(item.clone(), Math.max(0.5, chance)));
+        saveTierLootToConfig(tier, list, cauldron);
+    }
+
     public void updateLootEntryChance(BrushTier tier, int index0Based, double newChance) {
-        List<BrushLootEntry> list = lootByTier.get(tier);
+        updateLootEntryChance(tier, index0Based, newChance, false);
+    }
+
+    public void updateLootEntryChance(BrushTier tier, int index0Based, double newChance, boolean cauldron) {
+        Map<BrushTier, List<BrushLootEntry>> map = cauldron ? cauldronLootByTier : lootByTier;
+        List<BrushLootEntry> list = map.get(tier);
         if (list == null || index0Based < 0 || index0Based >= list.size()) {
             return;
         }
         double clamped = Math.max(0.5, Math.min(100.0, Math.round(newChance * 10.0) / 10.0));
         BrushLootEntry old = list.get(index0Based);
         list.set(index0Based, new BrushLootEntry(old.item(), clamped));
-        saveTierLootToConfig(tier, list);
+        saveTierLootToConfig(tier, list, cauldron);
     }
 
-    /**
-     * Удаляет предмет по номеру (начиная с 1) из таблицы лута указанной редкости.
-     */
     public boolean removeLootItem(BrushTier tier, int index1Based) {
-        List<BrushLootEntry> list = lootByTier.get(tier);
+        return removeLootItem(tier, index1Based, false);
+    }
+
+    public boolean removeLootItem(BrushTier tier, int index1Based, boolean cauldron) {
+        Map<BrushTier, List<BrushLootEntry>> map = cauldron ? cauldronLootByTier : lootByTier;
+        List<BrushLootEntry> list = map.get(tier);
         if (list == null || index1Based < 1 || index1Based > list.size()) {
             return false;
         }
         list.remove(index1Based - 1);
-        saveTierLootToConfig(tier, list);
+        saveTierLootToConfig(tier, list, cauldron);
         return true;
     }
 
-    /**
-     * Очищает все предметы из таблицы лута указанной редкости.
-     */
     public void clearLoot(BrushTier tier) {
-        List<BrushLootEntry> list = lootByTier.computeIfAbsent(tier, k -> new ArrayList<>());
+        clearLoot(tier, false);
+    }
+
+    public void clearLoot(BrushTier tier, boolean cauldron) {
+        Map<BrushTier, List<BrushLootEntry>> map = cauldron ? cauldronLootByTier : lootByTier;
+        List<BrushLootEntry> list = map.computeIfAbsent(tier, k -> new ArrayList<>());
         list.clear();
-        saveTierLootToConfig(tier, list);
+        saveTierLootToConfig(tier, list, cauldron);
     }
 
     public List<BrushLootEntry> getLootEntries(BrushTier tier) {
-        return lootByTier.getOrDefault(tier, List.of());
+        return getLootEntries(tier, false);
     }
 
-    private void saveTierLootToConfig(BrushTier tier, List<BrushLootEntry> entries) {
+    public List<BrushLootEntry> getLootEntries(BrushTier tier, boolean cauldron) {
+        return (cauldron ? cauldronLootByTier : lootByTier).getOrDefault(tier, List.of());
+    }
+
+    private void saveTierLootToConfig(BrushTier tier, List<BrushLootEntry> entries, boolean cauldron) {
         List<Map<String, Object>> serialized = new ArrayList<>();
         for (BrushLootEntry e : entries) {
             Map<String, Object> map = new LinkedHashMap<>();
@@ -541,7 +595,8 @@ public class BrushLootManager {
             }
             serialized.add(map);
         }
-        String path = "excavation.brushes." + tier.getConfigKey() + ".loot";
+        String prefix = cauldron ? "cauldron.reagents." : "excavation.brushes.";
+        String path = prefix + tier.getConfigKey() + ".loot";
         plugin.getConfig().set(path, serialized);
         plugin.saveConfig();
     }
