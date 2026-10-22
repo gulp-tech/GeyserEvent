@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.7.3'
+version: '1.7.4'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
@@ -18,7 +18,12 @@ commands:
   rift:
     description: Админ-команды управления ивентами и GUI-меню лута
     aliases: [geyserevent, razlom, infernalrift]
-    usage: /<command> <menu|start|start-here|stop|brushloot|givebrush|givereagent|ability|setworld|saveschem|reload|status|top>
+    usage: /<command> <menu|cauldronmenu|excavationmenu|start|start-here|stop|brushloot|cauldronloot|givebrush|givereagent|ability|setworld|saveschem|reload|status|top>
+    permission: geyserevent.admin
+  cauldronmenu:
+    description: Отдельное GUI-меню настройки лута «Котла Алхимика»
+    aliases: [alchemistmenu, cmenu]
+    usage: /<command> [обычная|эпическая|легендарная]
     permission: geyserevent.admin
 
 permissions:

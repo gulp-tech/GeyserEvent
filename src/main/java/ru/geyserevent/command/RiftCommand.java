@@ -49,6 +49,24 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         PluginConfig cfg = plugin.getPluginConfig();
         InfernalRiftManager manager = plugin.getRiftManager();
 
+        String cmdName = command.getName().toLowerCase(Locale.ROOT);
+        if (cmdName.equals("cauldronmenu") || label.equalsIgnoreCase("cauldronmenu")
+                || label.equalsIgnoreCase("alchemistmenu") || label.equalsIgnoreCase("cmenu")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(ColorUtil.color("&e┠ &cМеню доступно только в игре!"));
+                return true;
+            }
+            if (args.length >= 1) {
+                BrushTier tier = BrushTier.fromString(args[0]);
+                if (tier != null) {
+                    plugin.getBrushLootGuiManager().openTierMenu(player, tier, true);
+                    return true;
+                }
+            }
+            plugin.getBrushLootGuiManager().openCauldronMenu(player);
+            return true;
+        }
+
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
             sendAdminHelp(sender, label, cfg);
             return true;
@@ -63,7 +81,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args.length >= 2) {
-                    if (args[1].equalsIgnoreCase("cauldron") || args[1].equalsIgnoreCase("котел") || args[1].equalsIgnoreCase("котёл")) {
+                    if (args[1].equalsIgnoreCase("cauldron") || args[1].equalsIgnoreCase("котел")
+                            || args[1].equalsIgnoreCase("котёл") || args[1].equalsIgnoreCase("alchemist")
+                            || args[1].equalsIgnoreCase("алхимик")) {
                         if (args.length >= 3) {
                             BrushTier tier = BrushTier.fromString(args[2]);
                             if (tier != null) {
@@ -71,7 +91,19 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                                 return true;
                             }
                         }
-                        plugin.getBrushLootGuiManager().openMainMenu(player);
+                        plugin.getBrushLootGuiManager().openCauldronMenu(player);
+                        return true;
+                    }
+                    if (args[1].equalsIgnoreCase("excavation") || args[1].equalsIgnoreCase("раскопки")
+                            || args[1].equalsIgnoreCase("beach") || args[1].equalsIgnoreCase("пляж")) {
+                        if (args.length >= 3) {
+                            BrushTier tier = BrushTier.fromString(args[2]);
+                            if (tier != null) {
+                                plugin.getBrushLootGuiManager().openTierMenu(player, tier, false);
+                                return true;
+                            }
+                        }
+                        plugin.getBrushLootGuiManager().openExcavationMenu(player);
                         return true;
                     }
                     BrushTier tier = BrushTier.fromString(args[1]);
@@ -81,6 +113,38 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     }
                 }
                 plugin.getBrushLootGuiManager().openMainMenu(player);
+                return true;
+            }
+
+            case "cauldronmenu", "cmenu", "alchemistmenu", "cauldron" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cМеню доступно только в игре!"));
+                    return true;
+                }
+                if (args.length >= 2) {
+                    BrushTier tier = BrushTier.fromString(args[1]);
+                    if (tier != null) {
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, true);
+                        return true;
+                    }
+                }
+                plugin.getBrushLootGuiManager().openCauldronMenu(player);
+                return true;
+            }
+
+            case "excavationmenu", "beachmenu", "bmenu" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cМеню доступно только в игре!"));
+                    return true;
+                }
+                if (args.length >= 2) {
+                    BrushTier tier = BrushTier.fromString(args[1]);
+                    if (tier != null) {
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, false);
+                        return true;
+                    }
+                }
+                plugin.getBrushLootGuiManager().openExcavationMenu(player);
                 return true;
             }
 
@@ -132,7 +196,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
 
             case "brushloot", "loot" -> {
                 if (args.length == 1 && sender instanceof Player player) {
-                    plugin.getBrushLootGuiManager().openMainMenu(player);
+                    plugin.getBrushLootGuiManager().openExcavationMenu(player);
                     return true;
                 }
                 if (args.length == 2 && sender instanceof Player player) {
@@ -148,7 +212,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
 
             case "cauldronloot", "reagentloot", "alchemistloot" -> {
                 if (args.length == 1 && sender instanceof Player player) {
-                    plugin.getBrushLootGuiManager().openMainMenu(player);
+                    plugin.getBrushLootGuiManager().openCauldronMenu(player);
                     return true;
                 }
                 if (args.length == 2 && sender instanceof Player player) {
@@ -416,7 +480,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendAdminHelp(CommandSender sender, String label, PluginConfig cfg) {
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fОткрыть GUI-меню настройки лута Раскопок и Котла Алхимика"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fОбщее GUI-меню настройки лута всех ивентов"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " cauldronmenu &8(&#E0C912/cauldronmenu&8) — &fGUI-меню лута «Котла Алхимика»"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " excavationmenu &8— &fGUI-меню лута «Пляжных Раскопок»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation|cauldron] &8— &fЗапустить ивент в " + cfg.getWorldName()));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation|cauldron] &8— &fЗапустить на вашей позиции"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить ивент"));
@@ -434,10 +500,17 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("geyserevent.admin")) {
             return Collections.emptyList();
         }
+        String cmdName = command.getName().toLowerCase(Locale.ROOT);
+        if (cmdName.equals("cauldronmenu")) {
+            if (args.length == 1) {
+                return filterPrefix(Arrays.asList("обычная", "эпическая", "легендарная", "common", "epic", "legendary"), args[0]);
+            }
+            return Collections.emptyList();
+        }
         if (args.length == 1) {
             return filterPrefix(Arrays.asList(
-                    "menu", "gui", "start", "start-here", "stop", "brushloot", "cauldronloot",
-                    "givebrush", "givereagent", "ability", "setworld", "saveschem", "status", "top", "reload"
+                    "menu", "cauldronmenu", "excavationmenu", "gui", "start", "start-here", "stop",
+                    "brushloot", "cauldronloot", "givebrush", "givereagent", "ability", "setworld", "saveschem", "status", "top", "reload"
             ), args[0]);
         }
         if (args.length == 2) {
@@ -445,9 +518,10 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             if (sub.equals("start") || sub.equals("start-here") || sub.equals("starthere")) {
                 return filterPrefix(Arrays.asList("rift", "excavation", "cauldron"), args[1]);
             }
-            if (sub.equals("menu") || sub.equals("gui") || sub.equals("givebrush") || sub.equals("brush")
+            if (sub.equals("menu") || sub.equals("gui") || sub.equals("cauldronmenu") || sub.equals("cmenu")
+                    || sub.equals("excavationmenu") || sub.equals("givebrush") || sub.equals("brush")
                     || sub.equals("givereagent") || sub.equals("reagent")) {
-                return filterPrefix(Arrays.asList("cauldron", "common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
+                return filterPrefix(Arrays.asList("cauldron", "excavation", "common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
             }
             if (sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
                     || sub.equals("reagentloot") || sub.equals("alchemistloot")) {
@@ -469,13 +543,15 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 3) {
             String sub = args[0].toLowerCase(Locale.ROOT);
-            if (sub.equals("brushloot") || sub.equals("loot")) {
+            if (sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
+                    || sub.equals("reagentloot") || sub.equals("alchemistloot") || sub.equals("menu")) {
                 return filterPrefix(Arrays.asList("common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[2]);
             }
         }
         if (args.length == 4) {
             String sub = args[0].toLowerCase(Locale.ROOT);
-            if ((sub.equals("brushloot") || sub.equals("loot")) && args[1].equalsIgnoreCase("add")) {
+            if ((sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
+                    || sub.equals("reagentloot") || sub.equals("alchemistloot")) && args[1].equalsIgnoreCase("add")) {
                 return filterPrefix(Arrays.asList("10", "25", "50", "100"), args[3]);
             }
         }

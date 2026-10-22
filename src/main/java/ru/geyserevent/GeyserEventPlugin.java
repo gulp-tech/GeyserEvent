@@ -77,22 +77,27 @@ public final class GeyserEventPlugin extends JavaPlugin {
             eventCmd.setTabCompleter(playerExecutor);
         }
 
-        // 7. Регистрация админ-команд (/rift)
+        // 7. Регистрация админ-команд (/rift и /cauldronmenu)
+        RiftCommand adminExecutor = new RiftCommand(this);
         PluginCommand riftCmd = getCommand("rift");
         if (riftCmd != null) {
-            RiftCommand adminExecutor = new RiftCommand(this);
             riftCmd.setExecutor(adminExecutor);
             riftCmd.setTabCompleter(adminExecutor);
+        }
+        PluginCommand cauldronMenuCmd = getCommand("cauldronmenu");
+        if (cauldronMenuCmd != null) {
+            cauldronMenuCmd.setExecutor(adminExecutor);
+            cauldronMenuCmd.setTabCompleter(adminExecutor);
         }
 
         // 8. Экспорт готового меню для DeluxeMenus (deluxemenus/events.yml -> команда /events)
         exportDeluxeMenusConfig();
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.7.3 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.7.4 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
         getLogger().info(" Меню DeluxeMenus (/events): plugins/GeyserEvent/deluxemenus/events.yml");
-        getLogger().info(" Меню настройки лута: /rift menu");
+        getLogger().info(" Меню настройки лута: /rift menu, /cauldronmenu");
         getLogger().info(" Команды игроков: /event delay, /event gps");
         getLogger().info("==================================================");
     }
