@@ -103,8 +103,9 @@ public final class GeyserEventPlugin extends JavaPlugin {
             mineMenuCmd.setTabCompleter(adminExecutor);
         }
 
-        // 8. Экспорт готового меню для DeluxeMenus (deluxemenus/events.yml -> команда /events)
+        // 8. Экспорт и автоматическая перезапись меню DeluxeMenus (events.yml) и текстурпака (GeyserEvent-Pack.mcpack)
         exportDeluxeMenusConfig();
+        exportResourcePackAndOverwriteGeyser();
 
         // 9. Автоматический запуск постоянного ивента «Шахта Древних (Жила Жеод)» 45x45 на 0 ~ 0
         Bukkit.getScheduler().runTaskLater(this, () -> {
@@ -114,12 +115,11 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.8.1 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.8.2 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Временные ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
-        getLogger().info(" Постоянный ивент: Шахта Древних 45x45 + 3D-Рюкзак на 0 ~ 0");
+        getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v4) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info(" Меню DeluxeMenus (/events): plugins/GeyserEvent/deluxemenus/events.yml");
-        getLogger().info(" Меню настройки лута: /rift menu, /cauldronmenu, /minemenu");
-        getLogger().info(" Команды игроков: /event delay, /event gps, /event mine, /event backpack");
+        getLogger().info(" Текстурпак (авто-обновлён): plugins/GeyserEvent/GeyserEvent-Pack.mcpack");
         getLogger().info("==================================================");
     }
 
@@ -133,6 +133,34 @@ public final class GeyserEventPlugin extends JavaPlugin {
                 if (dmGuiDir.exists()) {
                     File target = new File(dmGuiDir, "events.yml");
                     Files.copy(exported.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void exportResourcePackAndOverwriteGeyser() {
+        try {
+            saveResource("resourcepack/GeyserEvent-Pack.mcpack", true);
+            File exported = new File(getDataFolder(), "resourcepack/GeyserEvent-Pack.mcpack");
+            if (exported.exists()) {
+                File rootCopy = new File(getDataFolder(), "GeyserEvent-Pack.mcpack");
+                Files.copy(exported.toPath(), rootCopy.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                File pluginsDir = getDataFolder().getParentFile();
+                if (pluginsDir != null) {
+                    for (String geyserFolder : new String[]{"Geyser-Spigot", "Geyser-Paper", "Geyser-Purpur", "Geyser"}) {
+                        File geyserDir = new File(pluginsDir, geyserFolder);
+                        if (geyserDir.exists()) {
+                            File packsDir = new File(geyserDir, "packs");
+                            if (!packsDir.exists()) {
+                                packsDir.mkdirs();
+                            }
+                            File targetPack = new File(packsDir, "GeyserEvent-Pack.mcpack");
+                            Files.copy(exported.toPath(), targetPack.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            getLogger().info("Текстурпак GeyserEvent-Pack.mcpack автоматически перезаписан в " + targetPack.getPath());
+                        }
+                    }
                 }
             }
         } catch (Exception ignored) {

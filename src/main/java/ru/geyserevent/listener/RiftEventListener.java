@@ -95,6 +95,9 @@ public class RiftEventListener implements Listener {
         if (to == null) {
             return;
         }
+        if (plugin.getMinerBackpackManager() != null) {
+            plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(event.getPlayer());
+        }
         if (from.getBlockX() == to.getBlockX()
                 && from.getBlockY() == to.getBlockY()
                 && from.getBlockZ() == to.getBlockZ()) {
@@ -105,15 +108,21 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+        if (plugin.getMinerBackpackManager() != null) {
+            plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(event.getPlayer());
+        }
         plugin.getRiftManager().handlePlayerChangedWorld(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(plugin, () ->
-                plugin.getRiftManager().enforceBrushZoneForPlayer(player), 1L
-        );
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (plugin.getMinerBackpackManager() != null) {
+                plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(player);
+            }
+            plugin.getRiftManager().enforceBrushZoneForPlayer(player);
+        }, 1L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
