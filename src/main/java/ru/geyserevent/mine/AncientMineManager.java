@@ -536,11 +536,25 @@ public class AncientMineManager {
         if (!mineActive || block == null) {
             return false;
         }
-        return anvilStations.contains(BlockKey.of(block));
+        if (anvilStations.contains(BlockKey.of(block))) {
+            return true;
+        }
+        Material m = block.getType();
+        if (m == Material.ANVIL || m == Material.CHIPPED_ANVIL || m == Material.DAMAGED_ANVIL
+                || m == Material.BLAST_FURNACE || m == Material.SMITHING_TABLE) {
+            return isInsideMineProtection(block.getLocation());
+        }
+        return false;
     }
 
     public boolean isBlacksmithNpc(Entity entity) {
-        return entity != null && blacksmithUuid != null && blacksmithUuid.equals(entity.getUniqueId());
+        if (!(entity instanceof Villager)) {
+            return false;
+        }
+        if (blacksmithUuid != null && blacksmithUuid.equals(entity.getUniqueId())) {
+            return true;
+        }
+        return isInsideMineProtection(entity.getLocation());
     }
 
     public boolean isInsideMineProtection(Location loc) {
@@ -599,6 +613,7 @@ public class AncientMineManager {
             v.setProfession(Villager.Profession.WEAPONSMITH);
             v.setVillagerType(Villager.Type.TAIGA);
             v.setVillagerLevel(5);
+            v.setRecipes(java.util.Collections.emptyList());
             v.setAdult();
             v.setAI(false);
             v.setGravity(false);
@@ -618,7 +633,9 @@ public class AncientMineManager {
             if (existing.getLocation().distanceSquared(npcLoc) > 0.05) {
                 existing.teleport(npcLoc);
             }
-            BossAbilityController.applyEntityScale((Villager) existing, 1.38);
+            Villager ev = (Villager) existing;
+            ev.setRecipes(java.util.Collections.emptyList());
+            BossAbilityController.applyEntityScale(ev, 1.38);
         }
 
         // 3 строки голограммы над 2.5-метровым Кузнецом (на высоте npcLoc + 3.15, 2.82, 2.50)

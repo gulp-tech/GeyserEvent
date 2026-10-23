@@ -1,9 +1,9 @@
 name: GeyserEvent
-version: '1.8.3'
+version: '1.9.0'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
-description: Ивенты «Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика» и постоянный ивент «Шахта Древних 45x45 (0 ~ 0)» для Purpur 26.2 (GeyserMC)
+description: Ивенты «Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика» и постоянный ивент «Шахта Древних 45x45 (0 ~ 0)» для Purpur 26.2
 softdepend:
   - Geyser-Spigot
   - floodgate

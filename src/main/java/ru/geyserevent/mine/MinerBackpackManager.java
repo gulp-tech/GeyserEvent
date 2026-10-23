@@ -745,7 +745,7 @@ public class MinerBackpackManager {
             lore.add(ColorUtil.color("&6При переплавке вы получите:"));
             lore.add(ColorUtil.color("&e┠ &fВанильные слитки, алмазы, изумруды и незеритовый лом"));
             lore.add(ColorUtil.color("&e┠ &6+Очки кузни &fдля прокачки вместимости рюкзака"));
-            lore.add(ColorUtil.color("&e┠ &#34D711+Осколки (PlayerPoints) &fза каждую руду!"));
+            lore.add(ColorUtil.color("&e┠ &#34D711+Осколки &fза каждую переплавленную руду!"));
             lore.add("");
             lore.add(ColorUtil.color("&#34D711» Нажмите ЛКМ, чтобы переплавить всю руду!"));
             smeltMeta.setLore(lore);

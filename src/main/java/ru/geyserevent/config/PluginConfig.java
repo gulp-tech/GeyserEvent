@@ -274,7 +274,7 @@ public class PluginConfig {
         // Messages
         this.prefix = ColorUtil.color(cfg.getString("messages.prefix", "&e┠ &r"));
         this.msgOnlyBedrock = ColorUtil.color(cfg.getString("messages.only-bedrock",
-                "&e┠ &cДоступно только для игроков с Bedrock Edition (GeyserMC)."));
+                "&e┠ &cДоступно только для игроков с Bedrock Edition."));
         this.msgPortalNoTeleport = ColorUtil.color(cfg.getString("messages.portal-no-teleport",
                 "&e┠ &cТелепортация через этот портал отключена."));
         this.msgRegionProtected = ColorUtil.color(cfg.getString("messages.region-protected",

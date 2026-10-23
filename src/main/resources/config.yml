@@ -536,7 +536,7 @@ mine:
 
 messages:
   prefix: "&e┠ &r"
-  only-bedrock: "&e┠ &cДоступно только для игроков с Bedrock Edition (GeyserMC)."
+  only-bedrock: "&e┠ &cДоступно только для игроков с Bedrock Edition."
   portal-no-teleport: "&e┠ &cТелепортация через этот портал отключена."
   region-protected: "&e┠ &cЗдесь нельзя ломать или ставить блоки."
 

@@ -32,6 +32,7 @@ import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -310,7 +311,21 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInventoryOpen(InventoryOpenEvent event) {
+        if (!(event.getPlayer() instanceof Player player)) {
+            return;
+        }
+        InventoryType type = event.getInventory().getType();
+        if (type == InventoryType.MERCHANT
+                && plugin.getAncientMineManager() != null
+                && plugin.getAncientMineManager().isPlayerInsideMineZone(player.getLocation())) {
+            event.setCancelled(true);
+            triggerBlacksmithClickDebounced(player);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Entity clicked = event.getRightClicked();
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(clicked)) {
@@ -324,7 +339,7 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
         Entity clicked = event.getRightClicked();
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(clicked)) {
@@ -345,9 +360,11 @@ public class RiftEventListener implements Listener {
             return;
         }
         villagerClickCooldown.put(player.getUniqueId(), now);
-        if (plugin.getAncientMineManager() != null) {
-            plugin.getAncientMineManager().handleBlacksmithInteract(player);
-        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline() && plugin.getAncientMineManager() != null) {
+                plugin.getAncientMineManager().handleBlacksmithInteract(player);
+            }
+        });
     }
 
     private void triggerVillagerClickDebounced(Player player) {
