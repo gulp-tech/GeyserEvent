@@ -51,6 +51,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private InfernalRiftManager riftManager;
 
     @Override
+    public void onLoad() {
+        // Перезаписываем текстурпак в папке Geyser ещё на этапе onLoad (до того, как Geyser-Spigot просканирует packs/)
+        exportResourcePackAndOverwriteGeyser();
+    }
+
+    @Override
     public void onEnable() {
         // 1. Загрузка конфигурации config.yml
         this.pluginConfig = new PluginConfig(this);
@@ -115,7 +121,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.9.0 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.9.1 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Временные ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v5) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");
