@@ -44,12 +44,24 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event delay &8— &fСколько осталось до ивента"));
             sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event gps &8— &fПоставить локатор до ивента"));
             sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event mine &8— &fСтатус постоянной «Шахты Древних (0 ~ 0)»"));
+            sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event backpack &8— &fОткрыть меню Рюкзака Шахтёра"));
             return true;
         }
 
         String sub = args[0].toLowerCase(Locale.ROOT);
 
         switch (sub) {
+            case "backpack", "рюкзак", "forge", "кузница" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cТолько для игроков!"));
+                    return true;
+                }
+                if (plugin.getMinerBackpackManager() != null) {
+                    plugin.getMinerBackpackManager().openForgeAndBackpackMenu(player);
+                }
+                return true;
+            }
+
             case "delay", "time", "info" -> {
                 if (manager.isActive() && manager.getRiftCenterLocation() != null) {
                     List<String> lines = switch (manager.getActiveEventType()) {
@@ -103,7 +115,7 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             String lower = args[0].toLowerCase(Locale.ROOT);
             List<String> result = new ArrayList<>();
-            for (String opt : Arrays.asList("delay", "gps", "mine")) {
+            for (String opt : Arrays.asList("delay", "gps", "mine", "backpack")) {
                 if (opt.startsWith(lower)) {
                     result.add(opt);
                 }

@@ -15,15 +15,18 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.excavation.BrushLootManager;
 import ru.geyserevent.excavation.BrushTier;
+import ru.geyserevent.mine.MinerBackpackManager.MineOreType;
 import ru.geyserevent.util.ColorUtil;
 
 import java.io.File;
@@ -39,18 +42,19 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Менеджер постоянного ивента «Шахта Древних (Жила Жеод)» на координатах 0 ~ 0.
- * - Постоянный карьер 31x31 (радиус 15) с Кузницей Древних в центре, 4 шахтёрскими вратами,
- *   4 буровыми башнями и 4 глубокими рудными жилами.
- * - Автоматически регенерирует руды и спавнит «Древние жеоды» 3 редкостей
- *   (Обычная — Аметистовый блок, Эпическая — Плачущий обсидиан, Легендарная — Золочёный чернит).
- * - Игроки добывают жеоды киркой (или срывают с жилы) и раскалывают их у 2-метрового
- *   NPC «Древний Кузнец» (или на наковальне в центре) ради настраиваемого лута (/minemenu и /rift menu).
+ * - Масштабная схема 45x45 (радиус 22, зона 24.5 блоков, schema-version: 3) с многоуровневыми
+ *   террасами карьера, деревянными крепями, рельсовыми путями, 4 буровыми башнями, 4 вратами
+ *   и величественной Кузницей Древних в центре.
+ * - Без БоссБара: оповещения об обновлении жилы пишутся напрямую в чат.
+ * - При вскапывании руды или жеоды предмет выпадает НА ПОЛ (world.dropItemNaturally).
+ * - Игроки собирают руду с пола в соответствии с вместимостью их 3D-Рюкзака Шахтёра на спине,
+ *   а при клике по 2-метровому Древнему Кузнецу открывают меню переплавки, раскола жеод и прокачки рюкзака.
  */
 public class AncientMineManager {
 
-    private static final int CURRENT_SCHEMA_VERSION = 2;
-    public static final int MINE_RADIUS = 15;
-    public static final double MINE_ZONE_LIMIT = 16.5;
+    private static final int CURRENT_SCHEMA_VERSION = 3;
+    public static final int MINE_RADIUS = 22;
+    public static final double MINE_ZONE_LIMIT = 24.5;
 
     public record SchematicBlock(int dx, int dy, int dz, String blockDataString) {
     }
@@ -70,7 +74,8 @@ public class AncientMineManager {
 
     private BukkitTask tickTask;
     private int secondsUntilFullRegen = 180;
-    private int secondsUntilNextGeodeSpawn = 20;
+    private int secondsUntilNextGeodeSpawn = 18;
+    private int regenCycleCount = 0;
 
     public AncientMineManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -105,177 +110,222 @@ public class AncientMineManager {
             String data = String.valueOf(entry.get("data"));
             blocks.add(new SchematicBlock(dx, dy, dz, data));
         }
-        plugin.getLogger().info("Загружена схема «Шахта Древних» 31x31 (блоков: " + blocks.size() + ").");
+        plugin.getLogger().info("Загружена улучшенная схема «Шахта Древних» 45x45 (блоков: " + blocks.size() + ").");
     }
 
+    /**
+     * Генерирует масштабную схему 45x45 (радиус 22, schema-version: 3):
+     * - 4-слойное основание с глубокими террасными карьерами (dy = -4..0)
+     * - 4 главных моста с рельсами и шахтёрскими крепями
+     * - Величественная Ротонда Кузницы Древних в центре (радиус 5, высота до dy = 10)
+     * - 4 входных бастионных врат (Север, Юг, Восток, Запад)
+     * - 4 угловых буровых крана с подвешенными кристальными кластерами
+     * - Более 260 блоков рудной жилы на 3 высотных уровнях в 4 секторах карьера
+     */
     private void saveDefaultAncientMineSchematic() {
         Map<String, SchematicBlock> map = new LinkedHashMap<>();
         int r = MINE_RADIUS;
 
-        // 1. Массивное 3-слойное основание карьера из глубинного сланца и базальта (dy = -3..0)
+        // 1. Массивное 4-слойное основание и террасные карьеры (dy = -4..0)
         for (int dx = -r; dx <= r; dx++) {
             for (int dz = -r; dz <= r; dz++) {
                 double dist = Math.hypot(dx, dz);
                 if (dist > r + 0.5) {
                     continue;
                 }
-                putBlock(map, dx, -3, dz, "minecraft:deepslate_bricks");
-                putBlock(map, dx, -2, dz, "minecraft:deepslate_tiles");
+                putBlock(map, dx, -4, dz, "minecraft:deepslate_bricks");
+                putBlock(map, dx, -3, dz, "minecraft:deepslate_tiles");
 
-                // В 4 секторах карьера (диагонали) делаем углубление dy = -1 для рудной жилы
-                boolean isQuarryPit = (Math.abs(dx) >= 4 && Math.abs(dx) <= 11
-                        && Math.abs(dz) >= 4 && Math.abs(dz) <= 11
-                        && dist <= 13.0);
+                boolean isQuarrySector = Math.abs(dx) >= 5 && Math.abs(dx) <= 18
+                        && Math.abs(dz) >= 5 && Math.abs(dz) <= 18
+                        && dist <= 19.5;
+                boolean isDeepPit = Math.abs(dx) >= 7 && Math.abs(dx) <= 15
+                        && Math.abs(dz) >= 7 && Math.abs(dz) <= 15
+                        && dist <= 17.5;
 
-                if (isQuarryPit) {
-                    putBlock(map, dx, -1, dz, "minecraft:cobbled_deepslate");
+                if (isDeepPit) {
+                    putBlock(map, dx, -2, dz, "minecraft:cobbled_deepslate");
+                    // На уровне dy = -1 в глубоком карьере размещаем нижний пласт рудной жилы
+                    if ((dx + dz) % 2 == 0) {
+                        putBlock(map, dx, -1, dz, "minecraft:deepslate_gold_ore");
+                    } else {
+                        putBlock(map, dx, -1, dz, "minecraft:air");
+                    }
                 } else {
-                    putBlock(map, dx, -1, dz, "minecraft:polished_deepslate");
+                    putBlock(map, dx, -2, dz, "minecraft:polished_deepslate");
+                    putBlock(map, dx, -1, dz, isQuarrySector ? "minecraft:cobbled_deepslate" : "minecraft:polished_blackstone_bricks");
+                }
+
+                // Расчистка воздуха над карьером (dy = 0..12)
+                for (int dy = 0; dy <= 12; dy++) {
+                    putBlock(map, dx, dy, dz, "minecraft:air");
                 }
 
                 // Поверхность dy = 0:
-                if (dist >= r - 0.8) {
+                if (dist >= r - 1.2) {
                     putBlock(map, dx, 0, dz, "minecraft:deepslate_bricks");
-                } else if (Math.abs(dx) <= 2 || Math.abs(dz) <= 2) {
-                    // Крестообразные шахтёрские мосты и рельсовые пути к центру
-                    if ((dx == 0 && Math.abs(dz) >= 5 && Math.abs(dz) <= 13)
-                            || (dz == 0 && Math.abs(dx) >= 5 && Math.abs(dx) <= 13)) {
-                        putBlock(map, dx, 0, dz, "minecraft:COARSE_DIRT".toLowerCase());
-                    } else if (Math.abs(dx) == 2 || Math.abs(dz) == 2) {
+                } else if (Math.abs(dx) <= 3 || Math.abs(dz) <= 3) {
+                    // Крестообразные мосты от 4 врат к центральной Кузнице
+                    if (Math.abs(dx) == 3 || Math.abs(dz) == 3) {
                         putBlock(map, dx, 0, dz, "minecraft:polished_blackstone_bricks");
+                    } else if ((dx == 0 && Math.abs(dz) >= 6 && Math.abs(dz) <= 18)
+                            || (dz == 0 && Math.abs(dx) >= 6 && Math.abs(dx) <= 18)) {
+                        putBlock(map, dx, 0, dz, "minecraft:tuff_bricks".equals("") ? "minecraft:polished_ANDESITE".toLowerCase() : "minecraft:polished_andesite");
                     } else {
                         putBlock(map, dx, 0, dz, "minecraft:deepslate_tile_slab[type=double]");
                     }
-                } else if (isQuarryPit) {
-                    // Рудные блоки жилы в 4 карьерах
-                    if ((dx + dz) % 3 == 0) {
-                        putBlock(map, dx, 0, dz, "minecraft:deepslate_gold_ore");
-                    } else if ((dx * dz) % 5 == 0) {
+                } else if (isDeepPit) {
+                    // В глубоком карьере оставляем проход и отдельные рудные глыбы на dy = 0
+                    if ((Math.abs(dx) + Math.abs(dz)) % 3 == 0) {
                         putBlock(map, dx, 0, dz, "minecraft:deepslate_diamond_ore");
-                    } else if ((dx + dz) % 2 == 0) {
-                        putBlock(map, dx, 0, dz, "minecraft:iron_ore");
-                    } else {
-                        putBlock(map, dx, 0, dz, "minecraft:cobbled_deepslate");
                     }
+                } else if (isQuarrySector) {
+                    // Терраса карьера dy = 0 — богатая рудная жила
+                    putBlock(map, dx, 0, dz, "minecraft:deepslate_iron_ore");
                 } else {
                     putBlock(map, dx, 0, dz, "minecraft:basalt[axis=y]");
                 }
-
-                // Расчистка воздуха над карьером (dy = 1..11)
-                for (int dy = 1; dy <= 11; dy++) {
-                    putBlock(map, dx, dy, dz, "minecraft:air");
-                }
             }
         }
 
-        // 2. Дополнительные рудные выступы внутри 4 карьеров на высоте dy = 1
-        int[][] pitCenters = {{-8, -8}, {8, -8}, {-8, 8}, {8, 8}};
-        for (int[] pc : pitCenters) {
-            int cx = pc[0];
-            int cz = pc[1];
-            for (int ox = -2; ox <= 2; ox++) {
-                for (int oz = -2; oz <= 2; oz++) {
-                    if (Math.abs(ox) + Math.abs(oz) <= 3) {
-                        putBlock(map, cx + ox, 1, cz + oz, "minecraft:deepslate_iron_ore");
+        // 2. Многоуровневые рудные скалы и шахтёрские деревянные крепи в 4 секторах карьера (dy = 1..3)
+        int[][] sectorCenters = {{-11, -11}, {11, -11}, {-11, 11}, {11, 11}};
+        for (int[] sc : sectorCenters) {
+            int sx = sc[0];
+            int sz = sc[1];
+            for (int ox = -4; ox <= 4; ox++) {
+                for (int oz = -4; oz <= 4; oz++) {
+                    int distManh = Math.abs(ox) + Math.abs(oz);
+                    if (distManh >= 3 && distManh <= 6) {
+                        putBlock(map, sx + ox, 1, sz + oz, "minecraft:deepslate_iron_ore");
+                        if (distManh >= 5) {
+                            putBlock(map, sx + ox, 2, sz + oz, "minecraft:deepslate_gold_ore");
+                        }
                     }
                 }
             }
-            putBlock(map, cx, 2, cz, "minecraft:budding_amethyst");
+            // Центральный гео-кристалл в каждом из 4 карьеров
+            putBlock(map, sx, 0, sz, "minecraft:cobbled_deepslate");
+            putBlock(map, sx, 1, sz, "minecraft:amethyst_block");
+            putBlock(map, sx, 2, sz, "minecraft:crying_obsidian");
+
+            // Шахтёрские деревянные арки-крепи на входе в каждый карьер
+            int signX = sx < 0 ? -1 : 1;
+            int signZ = sz < 0 ? -1 : 1;
+            int archX = sx - signX * 4;
+            int archZ = sz - signZ * 4;
+            for (int y = 1; y <= 4; y++) {
+                putBlock(map, archX, y, sz - signZ * 2, "minecraft:spruce_log[axis=y]");
+                putBlock(map, sx - signX * 2, y, archZ, "minecraft:spruce_log[axis=y]");
+            }
+            putBlock(map, archX, 4, sz - signZ * 2, "minecraft:spruce_planks");
+            putBlock(map, sx - signX * 2, 4, archZ, "minecraft:spruce_planks");
+            putBlock(map, archX, 3, sz - signZ * 2, "minecraft:lantern[hanging=true]");
         }
 
-        // 3. Центральная Кузница Древних (радиус 4, высота dy = 1..9)
-        for (int dx = -4; dx <= 4; dx++) {
-            for (int dz = -4; dz <= 4; dz++) {
+        // 3. Величественная Центральная Ротонда «Кузница Древних» (радиус 5, dy = 1..10)
+        for (int dx = -5; dx <= 5; dx++) {
+            for (int dz = -5; dz <= 5; dz++) {
                 double d = Math.hypot(dx, dz);
-                if (d <= 3.6) {
+                if (d <= 4.4) {
                     putBlock(map, dx, 1, dz, "minecraft:polished_blackstone_bricks");
-                } else if (d <= 4.5 && (Math.abs(dx) <= 1 || Math.abs(dz) <= 1)) {
-                    // Ступени со всех 4 сторон
+                } else if (d <= 5.4 && (Math.abs(dx) <= 2 || Math.abs(dz) <= 2)) {
                     putBlock(map, dx, 1, dz, "minecraft:polished_blackstone_brick_slab[type=bottom]");
                 }
             }
         }
-        // Лавовый горн под стеклом вокруг центральной наковальни/пьедестала Кузнеца
-        int[][] lavaSlots = {{-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
-        for (int[] ls : lavaSlots) {
-            putBlock(map, ls[0], 0, ls[1], "minecraft:magma_block");
-            putBlock(map, ls[0], 1, ls[1], "minecraft:orange_stained_glass");
+        // Лавовые каналы горна под оранжевым стеклом
+        int[][] lavaPits = {{-2, -2}, {2, -2}, {-2, 2}, {2, 2}, {-1, -2}, {1, -2}, {-1, 2}, {1, 2}};
+        for (int[] lp : lavaPits) {
+            putBlock(map, lp[0], 0, lp[1], "minecraft:magma_block");
+            putBlock(map, lp[0], 1, lp[1], "minecraft:orange_stained_glass");
         }
-        // Центральный пьедестал для 2-метрового NPC «Древний Кузнец» (0, 1, 0) и наковальни
+        // Пьедестал Кузнеца в самом центре и рабочие станции Кузницы вокруг
         putBlock(map, 0, 1, 0, "minecraft:lodestone");
-        putBlock(map, -2, 2, 0, "minecraft:anvil[facing=north]");
-        putBlock(map, 2, 2, 0, "minecraft:anvil[facing=south]");
-        putBlock(map, 0, 2, -2, "minecraft:blast_furnace[facing=north,lit=true]");
-        putBlock(map, 0, 2, 2, "minecraft:smithing_table");
+        putBlock(map, -3, 2, 0, "minecraft:anvil[facing=north]");
+        putBlock(map, 3, 2, 0, "minecraft:anvil[facing=south]");
+        putBlock(map, 0, 2, -3, "minecraft:smithing_table");
+        putBlock(map, 0, 2, 3, "minecraft:smithing_table");
+        putBlock(map, -2, 2, -2, "minecraft:blast_furnace[facing=south,lit=true]");
+        putBlock(map, 2, 2, -2, "minecraft:blast_furnace[facing=south,lit=true]");
+        putBlock(map, -2, 2, 2, "minecraft:blast_furnace[facing=north,lit=true]");
+        putBlock(map, 2, 2, 2, "minecraft:blast_furnace[facing=north,lit=true]");
 
-        // 4 колонны Ротонды Кузницы и купол (dy = 2..8)
-        int[][] forgePillars = {{-3, -3}, {3, -3}, {-3, 3}, {3, 3}};
+        // 4 мощные колонны Ротонды и высокий купол (dy = 2..10)
+        int[][] forgePillars = {{-4, -4}, {4, -4}, {-4, 4}, {4, 4}};
         for (int[] fp : forgePillars) {
             int px = fp[0];
             int pz = fp[1];
             putBlock(map, px, 2, pz, "minecraft:chiseled_polished_blackstone");
-            putBlock(map, px, 3, pz, "minecraft:deepslate_brick_wall");
+            putBlock(map, px, 3, pz, "minecraft:deepslate_bricks");
             putBlock(map, px, 4, pz, "minecraft:deepslate_brick_wall");
-            putBlock(map, px, 5, pz, "minecraft:chiseled_polished_blackstone");
-            putBlock(map, px, 6, pz, "minecraft:shroomlight");
+            putBlock(map, px, 5, pz, "minecraft:deepslate_brick_wall");
+            putBlock(map, px, 6, pz, "minecraft:chiseled_polished_blackstone");
+            putBlock(map, px, 7, pz, "minecraft:shroomlight");
         }
-        for (int dx = -3; dx <= 3; dx++) {
-            for (int dz = -3; dz <= 3; dz++) {
+        for (int dx = -4; dx <= 4; dx++) {
+            for (int dz = -4; dz <= 4; dz++) {
                 double d = Math.hypot(dx, dz);
-                if (d <= 3.8 && d >= 2.5) {
-                    putBlock(map, dx, 6, dz, "minecraft:deepslate_brick_slab[type=top]");
-                } else if (d < 2.5) {
-                    putBlock(map, dx, 7, dz, "minecraft:deepslate_tile_slab[type=bottom]");
+                if (d <= 4.8 && d >= 3.2) {
+                    putBlock(map, dx, 7, dz, "minecraft:deepslate_brick_slab[type=top]");
+                } else if (d < 3.2 && d >= 1.5) {
+                    putBlock(map, dx, 8, dz, "minecraft:deepslate_tile_slab[type=bottom]");
+                } else if (d < 1.5) {
+                    putBlock(map, dx, 9, dz, "minecraft:chiseled_deepslate");
                 }
             }
         }
-        putBlock(map, 0, 7, 0, "minecraft:chiseled_deepslate");
-        putBlock(map, 0, 8, 0, "minecraft:soul_lantern[hanging=false]");
-        putBlock(map, 0, 6, 0, "minecraft:chain[axis=y]");
-        putBlock(map, 0, 5, 0, "minecraft:soul_lantern[hanging=true]");
+        putBlock(map, 0, 10, 0, "minecraft:soul_lantern[hanging=false]");
+        putBlock(map, 0, 8, 0, "minecraft:chain[axis=y]");
+        putBlock(map, 0, 7, 0, "minecraft:chain[axis=y]");
+        putBlock(map, 0, 6, 0, "minecraft:soul_lantern[hanging=true]");
 
-        // 4. Четыре Входных Шахтёрских Врат на севере, юге, востоке и западе (радиус 14)
-        buildMineGate(map, 0, -14, true);
-        buildMineGate(map, 0, 14, true);
-        buildMineGate(map, -14, 0, false);
-        buildMineGate(map, 14, 0, false);
+        // 4. Четыре Входных Бастионных Врат на севере, юге, востоке и западе (радиус 21)
+        buildGrandMineGate(map, 0, -21, true);
+        buildGrandMineGate(map, 0, 21, true);
+        buildGrandMineGate(map, -21, 0, false);
+        buildGrandMineGate(map, 21, 0, false);
 
-        // 5. Четыре Угловые Буровые Башни / Крана на диагоналях
-        int[][] cranes = {{-11, -11}, {11, -11}, {-11, 11}, {11, 11}};
+        // 5. Четыре Угловые Буровые Вышки / Крана с подвешенными кристаллами на диагоналях
+        int[][] cranes = {{-16, -16}, {16, -16}, {-16, 16}, {16, 16}};
         for (int[] c : cranes) {
             int cx = c[0];
             int cz = c[1];
-            for (int y = 1; y <= 6; y++) {
+            for (int y = 1; y <= 8; y++) {
                 putBlock(map, cx, y, cz, "minecraft:spruce_log[axis=y]");
             }
             int dirX = cx < 0 ? 1 : -1;
             int dirZ = cz < 0 ? 1 : -1;
-            putBlock(map, cx + dirX, 6, cz, "minecraft:spruce_slab[type=top]");
-            putBlock(map, cx, 6, cz + dirZ, "minecraft:spruce_slab[type=top]");
-            putBlock(map, cx + dirX, 6, cz + dirZ, "minecraft:chiseled_deepslate");
-            putBlock(map, cx + dirX, 5, cz + dirZ, "minecraft:chain[axis=y]");
-            putBlock(map, cx + dirX, 4, cz + dirZ, "minecraft:amethyst_block");
-            putBlock(map, cx, 7, cz, "minecraft:lantern[hanging=false]");
+            putBlock(map, cx + dirX, 8, cz, "minecraft:spruce_slab[type=top]");
+            putBlock(map, cx, 8, cz + dirZ, "minecraft:spruce_slab[type=top]");
+            putBlock(map, cx + dirX, 8, cz + dirZ, "minecraft:chiseled_deepslate");
+            putBlock(map, cx + dirX * 2, 8, cz + dirZ * 2, "minecraft:spruce_trapdoor[half=top,open=false]");
+            putBlock(map, cx + dirX * 2, 7, cz + dirZ * 2, "minecraft:chain[axis=y]");
+            putBlock(map, cx + dirX * 2, 6, cz + dirZ * 2, "minecraft:chain[axis=y]");
+            putBlock(map, cx + dirX * 2, 5, cz + dirZ * 2, "minecraft:shroomlight");
+            putBlock(map, cx, 9, cz, "minecraft:soul_lantern[hanging=false]");
         }
 
-        // 6. Ограждение карьера по внешнему кольцу с фонарями
-        for (int angleDeg = 0; angleDeg < 360; angleDeg += 15) {
-            if (angleDeg % 90 == 0) {
-                continue; // проходы врат
+        // 6. Внешняя крепостная стена карьера по кольцу r = 21 с колоннами и фонарями
+        for (int angleDeg = 0; angleDeg < 360; angleDeg += 10) {
+            if (angleDeg % 90 == 0 || Math.abs((angleDeg % 90) - 90) <= 10 || (angleDeg % 90) <= 10) {
+                continue;
             }
             double rad = Math.toRadians(angleDeg);
-            int bx = (int) Math.round(Math.cos(rad) * 14.0);
-            int bz = (int) Math.round(Math.sin(rad) * 14.0);
-            putBlock(map, bx, 1, bz, "minecraft:deepslate_brick_wall");
-            if (angleDeg % 30 == 0) {
-                putBlock(map, bx, 2, bz, "minecraft:deepslate_brick_wall");
-                putBlock(map, bx, 3, bz, "minecraft:lantern[hanging=false]");
+            int bx = (int) Math.round(Math.cos(rad) * 21.0);
+            int bz = (int) Math.round(Math.sin(rad) * 21.0);
+            putBlock(map, bx, 1, bz, "minecraft:deepslate_bricks");
+            putBlock(map, bx, 2, bz, "minecraft:deepslate_brick_wall");
+            if (angleDeg % 20 == 0) {
+                putBlock(map, bx, 2, bz, "minecraft:chiseled_deepslate");
+                putBlock(map, bx, 3, bz, "minecraft:deepslate_brick_wall");
+                putBlock(map, bx, 4, bz, "minecraft:lantern[hanging=false]");
             }
         }
 
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("schema-version", CURRENT_SCHEMA_VERSION);
-        yaml.set("name", "ancient_mine_31x31");
+        yaml.set("name", "ancient_mine_45x45_v3");
         List<Map<String, Object>> serialized = new ArrayList<>();
         for (SchematicBlock b : map.values()) {
             Map<String, Object> m = new LinkedHashMap<>();
@@ -293,21 +343,25 @@ public class AncientMineManager {
         }
     }
 
-    private void buildMineGate(Map<String, SchematicBlock> map, int gx, int gz, boolean northSouth) {
-        for (int offset = -2; offset <= 2; offset++) {
+    private void buildGrandMineGate(Map<String, SchematicBlock> map, int gx, int gz, boolean northSouth) {
+        for (int offset = -3; offset <= 3; offset++) {
             int x = northSouth ? gx + offset : gx;
             int z = northSouth ? gz : gz + offset;
-            if (Math.abs(offset) == 2) {
-                for (int y = 1; y <= 5; y++) {
+            if (Math.abs(offset) == 3) {
+                for (int y = 1; y <= 6; y++) {
                     putBlock(map, x, y, z, "minecraft:deepslate_bricks");
                 }
-                putBlock(map, x, 6, z, "minecraft:chiseled_deepslate");
-                putBlock(map, x, 7, z, "minecraft:soul_lantern[hanging=false]");
+                putBlock(map, x, 7, z, "minecraft:chiseled_polished_blackstone");
+                putBlock(map, x, 8, z, "minecraft:soul_campfire[lit=true]");
+            } else if (Math.abs(offset) == 2) {
+                putBlock(map, x, 5, z, "minecraft:deepslate_brick_slab[type=top]");
+                putBlock(map, x, 6, z, "minecraft:deepslate_bricks");
             } else {
-                putBlock(map, x, 5, z, "minecraft:spruce_slab[type=top]");
+                putBlock(map, x, 6, z, "minecraft:deepslate_brick_slab[type=top]");
+                putBlock(map, x, 7, z, "minecraft:polished_blackstone_brick_slab[type=bottom]");
                 if (offset == 0) {
                     putBlock(map, x, 6, z, "minecraft:shroomlight");
-                    putBlock(map, x, 4, z, "minecraft:lantern[hanging=true]");
+                    putBlock(map, x, 5, z, "minecraft:soul_lantern[hanging=true]");
                 }
             }
         }
@@ -318,9 +372,6 @@ public class AncientMineManager {
         map.put(key, new SchematicBlock(dx, dy, dz, data));
     }
 
-    /**
-     * Запускает постоянный ивент «Шахта Древних» на координатах из конфига (по умолчанию X=0, Z=0 в world2).
-     */
     public void initializePermanentMine() {
         restoreOrStartMine();
     }
@@ -332,7 +383,6 @@ public class AncientMineManager {
             return;
         }
 
-        // Если осталась резервная копия с прошлого запуска — сначала восстановим блоки, чтобы чисто поставить заново
         if (activeBackupFile.exists()) {
             restoreActiveSchematic();
         }
@@ -352,7 +402,6 @@ public class AncientMineManager {
         int z = section != null ? section.getInt("z", 0) : 0;
         int configuredY = section != null ? section.getInt("y", -999) : -999;
 
-        // Подгружаем чанк 0 ~ 0 перед определением высоты поверхности
         world.getChunkAt(x >> 4, z >> 4).load(true);
         int y = (configuredY > world.getMinHeight() && configuredY < world.getMaxHeight())
                 ? configuredY
@@ -362,9 +411,6 @@ public class AncientMineManager {
         spawnMineAt(target, false);
     }
 
-    /**
-     * Устанавливает «Шахту Древних» на указанной локации (по умолчанию 0 ~ 0).
-     */
     public void spawnMineAt(Location center, boolean saveCoordsToConfig) {
         shutdownMine(true);
 
@@ -387,14 +433,12 @@ public class AncientMineManager {
             plugin.saveConfig();
         }
 
-        // Загружаем чанки в радиусе 16 блоков
-        for (int dx = -MINE_RADIUS - 1; dx <= MINE_RADIUS + 1; dx += 16) {
-            for (int dz = -MINE_RADIUS - 1; dz <= MINE_RADIUS + 1; dz += 16) {
+        for (int dx = -MINE_RADIUS - 2; dx <= MINE_RADIUS + 2; dx += 16) {
+            for (int dz = -MINE_RADIUS - 2; dz <= MINE_RADIUS + 2; dz += 16) {
                 world.getChunkAt((cx + dx) >> 4, (cz + dz) >> 4).load(true);
             }
         }
 
-        // Сохраняем бэкап исходной местности и вставляем схему 31x31
         YamlConfiguration backup = new YamlConfiguration();
         backup.set("world", world.getName());
         List<Map<String, Object>> backupList = new ArrayList<>();
@@ -419,13 +463,15 @@ public class AncientMineManager {
             }
             pastedBlocks.add(block);
 
-            // Запоминаем слоты рудной жилы в 4 карьерах
+            // Запоминаем слоты рудной жилы в 4 карьерах (уровни dy = -1..2)
             double dist = Math.hypot(sb.dx(), sb.dz());
-            boolean isQuarryVein = (sb.dy() == 0 || sb.dy() == 1 || sb.dy() == 2)
-                    && Math.abs(sb.dx()) >= 4 && Math.abs(sb.dx()) <= 11
-                    && Math.abs(sb.dz()) >= 4 && Math.abs(sb.dz()) <= 11
-                    && dist <= 13.0
-                    && !block.getType().isAir();
+            boolean isQuarryVein = (sb.dy() >= -1 && sb.dy() <= 2)
+                    && Math.abs(sb.dx()) >= 5 && Math.abs(sb.dx()) <= 18
+                    && Math.abs(sb.dz()) >= 5 && Math.abs(sb.dz()) <= 18
+                    && dist <= 19.5
+                    && !block.getType().isAir()
+                    && !block.getType().name().contains("SPRUCE")
+                    && !block.getType().name().contains("LANTERN");
             if (isQuarryVein) {
                 veinLocations.add(block.getLocation());
             }
@@ -438,33 +484,39 @@ public class AncientMineManager {
             plugin.getLogger().warning("Не удалось сохранить бэкап Шахты Древних: " + ex.getMessage());
         }
 
-        // Заполняем рудную жилу рудами и начальными Древними жеодами
-        regenerateAllOresAndGeodes();
-
-        // Спавним 2-метрового NPC «Древний Кузнец» в центре на пьедестале
+        regenerateAllOresAndGeodes(false);
         spawnBlacksmithNpc();
-
-        // Запускаем постоянный таймер регенерации и лёгких частиц
         startMineTicker();
 
-        plugin.getLogger().info("Постоянный ивент «Шахта Древних» активен на координатах: "
+        plugin.getLogger().info("Постоянный ивент «Шахта Древних» (45x45) активен на координатах: "
                 + world.getName() + " " + cx + " " + cy + " " + cz);
     }
 
-    /**
-     * Полностью обновляет все рудные блоки в жиле и размещает начальные Древние жеоды.
-     */
     public void regenerateAllOresAndGeodes() {
+        regenerateAllOresAndGeodes(true);
+    }
+
+    /**
+     * Полностью обновляет все рудные блоки в жиле и размещает Древние жеоды.
+     * Пишет в чат о регенерации (БЕЗ БоссБара!).
+     */
+    @SuppressWarnings("deprecation")
+    public void regenerateAllOresAndGeodes(boolean announceInChat) {
         if (centerLocation == null || centerLocation.getWorld() == null) {
             return;
         }
         activeGeodeBlocks.clear();
+        regenCycleCount++;
+        boolean richVeinCycle = (regenCycleCount % 3 == 0);
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         List<Location> shuffled = new ArrayList<>(veinLocations);
         Collections.shuffle(shuffled, rnd);
 
-        int initialGeodes = Math.min(12, Math.max(6, shuffled.size() / 10));
+        int initialGeodes = richVeinCycle
+                ? Math.min(28, Math.max(16, shuffled.size() / 7))
+                : Math.min(18, Math.max(10, shuffled.size() / 10));
+
         for (int i = 0; i < shuffled.size(); i++) {
             Location loc = shuffled.get(i);
             Block b = loc.getBlock();
@@ -472,27 +524,48 @@ public class AncientMineManager {
                 BrushTier tier = plugin.getBrushLootManager().rollRandomGeodeTier();
                 placeGeodeBlock(b, tier);
             } else {
-                b.setType(randomOreMaterial(rnd), false);
+                b.setType(randomOreMaterial(rnd, richVeinCycle), false);
             }
         }
 
         this.secondsUntilFullRegen = getConfiguredRegenIntervalSeconds();
-        this.secondsUntilNextGeodeSpawn = 20;
+        this.secondsUntilNextGeodeSpawn = 18;
+
+        if (announceInChat) {
+            if (richVeinCycle) {
+                Bukkit.broadcastMessage(ColorUtil.color(
+                        "&e┠ &#FFB81CШ&#FFAE18а&#FFA414х&#FF9A10т&#FF900Cа-&#FF8608Д&#FF7C04р&#FF7200е&#FF6800в&#FF5E00н&#FF5400и&#FF4A00х &8(&#E0C9120 ~ 0&8): &6Богатая жила и легендарные жеоды обновились!"
+                ));
+            } else {
+                Bukkit.broadcastMessage(ColorUtil.color(
+                        "&e┠ &#FFB81CШ&#FFAE18а&#FFA414х&#FF9A10т&#FF900Cа-&#FF8608Д&#FF7C04р&#FF7200е&#FF6800в&#FF5E00н&#FF5400и&#FF4A00х &8(&#E0C9120 ~ 0&8): &fРудная жила и древние жеоды обновились! &7(Следующее через " + ColorUtil.formatDurationVerbose(secondsUntilFullRegen) + ")"
+                ));
+            }
+            for (Player p : centerLocation.getWorld().getPlayers()) {
+                if (p.getLocation().distanceSquared(centerLocation) <= 55.0 * 55.0) {
+                    p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.7f, 1.15f);
+                    p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 1.2f);
+                }
+            }
+        }
     }
 
-    private Material randomOreMaterial(ThreadLocalRandom rnd) {
+    private Material randomOreMaterial(ThreadLocalRandom rnd, boolean richVein) {
         int roll = rnd.nextInt(100);
-        if (roll < 30) {
-            return Material.DEEPSLATE_IRON_ORE;
-        } else if (roll < 55) {
-            return Material.DEEPSLATE_GOLD_ORE;
-        } else if (roll < 75) {
-            return Material.DEEPSLATE_EMERALD_ORE;
-        } else if (roll < 92) {
-            return Material.DEEPSLATE_DIAMOND_ORE;
-        } else {
+        if (richVein) {
+            if (roll < 15) return Material.DEEPSLATE_COPPER_ORE;
+            if (roll < 35) return Material.DEEPSLATE_IRON_ORE;
+            if (roll < 58) return Material.DEEPSLATE_GOLD_ORE;
+            if (roll < 78) return Material.DEEPSLATE_EMERALD_ORE;
+            if (roll < 92) return Material.DEEPSLATE_DIAMOND_ORE;
             return Material.ANCIENT_DEBRIS;
         }
+        if (roll < 24) return Material.DEEPSLATE_COPPER_ORE;
+        if (roll < 50) return Material.DEEPSLATE_IRON_ORE;
+        if (roll < 72) return Material.DEEPSLATE_GOLD_ORE;
+        if (roll < 86) return Material.DEEPSLATE_EMERALD_ORE;
+        if (roll < 96) return Material.DEEPSLATE_DIAMOND_ORE;
+        return Material.ANCIENT_DEBRIS;
     }
 
     private void placeGeodeBlock(Block block, BrushTier tier) {
@@ -506,7 +579,7 @@ public class AncientMineManager {
     }
 
     public boolean spawnSingleRandomGeode() {
-        if (veinLocations.isEmpty() || activeGeodeBlocks.size() >= 22) {
+        if (veinLocations.isEmpty() || activeGeodeBlocks.size() >= 30) {
             return false;
         }
         List<Location> candidates = new ArrayList<>();
@@ -558,7 +631,6 @@ public class AncientMineManager {
         });
         this.blacksmithNpcUuid = villager.getUniqueId();
 
-        // Голограмма над 2-метровым Кузнецом
         Location holoLoc = npcLoc.clone().add(0.0, 3.85, 0.0);
         try {
             TextDisplay td = world.spawn(holoLoc, TextDisplay.class, d -> {
@@ -575,7 +647,7 @@ public class AncientMineManager {
                 a.setMarker(true);
                 a.setGravity(false);
                 a.setCustomNameVisible(true);
-                a.setCustomName(ColorUtil.color("&#FFB81C&lДревний Кузнец &7(Раскол жеод)"));
+                a.setCustomName(ColorUtil.color("&#FFB81C&lДревний Кузнец &7(Кузница и Рюкзак)"));
             });
             hologramEntityUuids.add(as.getUniqueId());
         }
@@ -584,9 +656,8 @@ public class AncientMineManager {
     private String buildBlacksmithHologramText() {
         return ColorUtil.color(
                 "&#FFB81C&lДревний Кузнец\n"
-                        + "&fЖеод в жиле: &#34D711" + activeGeodeBlocks.size() + " шт.\n"
-                        + "&fОбновление руд через: &#E0C912" + ColorUtil.formatDuration(secondsUntilFullRegen) + "\n"
-                        + "&7Добудь жеоду в карьере и нажми на меня!"
+                        + "&fЖеод в жиле: &#34D711" + activeGeodeBlocks.size() + " шт. &8| &fОбновление: &#E0C912" + ColorUtil.formatDuration(secondsUntilFullRegen) + "\n"
+                        + "&6Нажмите: &fПереплавка руды, Раскол жеод и &#34D711Прокачка Рюкзака"
         );
     }
 
@@ -595,7 +666,6 @@ public class AncientMineManager {
         if (centerLocation == null || centerLocation.getWorld() == null) {
             return;
         }
-        // Если чанк выгружен — не трогаем сущности до подхода игроков
         if (!centerLocation.getWorld().isChunkLoaded(centerLocation.getBlockX() >> 4, centerLocation.getBlockZ() >> 4)) {
             return;
         }
@@ -618,7 +688,7 @@ public class AncientMineManager {
             tickTask.cancel();
         }
         this.secondsUntilFullRegen = getConfiguredRegenIntervalSeconds();
-        this.secondsUntilNextGeodeSpawn = 20;
+        this.secondsUntilNextGeodeSpawn = 18;
 
         this.tickTask = new BukkitRunnable() {
             @Override
@@ -629,32 +699,30 @@ public class AncientMineManager {
                 secondsUntilFullRegen--;
                 secondsUntilNextGeodeSpawn--;
 
-                if (secondsUntilFullRegen <= 0) {
-                    regenerateAllOresAndGeodes();
-                    // Уведомляем только игроков, находящихся рядом с Шахтой Древних (без спама на весь сервер)
+                // Напоминание в чат игрокам рядом с шахтой за 30 секунд до регенерации
+                if (secondsUntilFullRegen == 30) {
                     for (Player p : centerLocation.getWorld().getPlayers()) {
-                        if (p.getLocation().distanceSquared(centerLocation) <= 45.0 * 45.0) {
-                            p.sendMessage(ColorUtil.color("&e┠ &#FFB81C&lШахта Древних: &fРудная жила и древние жеоды полностью обновились!"));
-                            p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.6f, 1.2f);
+                        if (p.getLocation().distanceSquared(centerLocation) <= 55.0 * 55.0) {
+                            p.sendMessage(ColorUtil.color(
+                                    "&e┠ &#FFB81CШахта Древних: &fРудная жила и древние жеоды обновятся через &#E0C91230 сек.&f!"
+                            ));
                         }
                     }
+                }
+
+                if (secondsUntilFullRegen <= 0) {
+                    regenerateAllOresAndGeodes(true);
                 } else if (secondsUntilNextGeodeSpawn <= 0) {
                     spawnSingleRandomGeode();
-                    secondsUntilNextGeodeSpawn = 20;
+                    secondsUntilNextGeodeSpawn = 18;
                 }
 
                 updateBlacksmithHologram();
                 spawnLightweightGeodeParticles();
-                if (plugin.getTopRightHudManager() != null) {
-                    plugin.getTopRightHudManager().updateMineHud();
-                }
             }
         }.runTaskTimer(plugin, 20L, 20L);
     }
 
-    /**
-     * Лёгкие частицы над активными жеодами (только если рядом есть игроки, без нагрузки на клиент).
-     */
     private void spawnLightweightGeodeParticles() {
         if (centerLocation == null || centerLocation.getWorld() == null || activeGeodeBlocks.isEmpty()) {
             return;
@@ -662,7 +730,7 @@ public class AncientMineManager {
         World world = centerLocation.getWorld();
         boolean playerNearby = false;
         for (Player p : world.getPlayers()) {
-            if (p.getLocation().distanceSquared(centerLocation) <= 38.0 * 38.0) {
+            if (p.getLocation().distanceSquared(centerLocation) <= 45.0 * 45.0) {
                 playerNearby = true;
                 break;
             }
@@ -689,9 +757,6 @@ public class AncientMineManager {
         }
     }
 
-    /**
-     * Проверяет, находится ли блок в пределах «Шахты Древних».
-     */
     public boolean isInsideMineTerritory(Location loc) {
         if (centerLocation == null || loc == null || loc.getWorld() == null) {
             return false;
@@ -702,7 +767,7 @@ public class AncientMineManager {
         int dx = Math.abs(loc.getBlockX() - centerLocation.getBlockX());
         int dz = Math.abs(loc.getBlockZ() - centerLocation.getBlockZ());
         int dy = loc.getBlockY() - centerLocation.getBlockY();
-        return dx <= MINE_RADIUS + 1 && dz <= MINE_RADIUS + 1 && dy >= -4 && dy <= 14;
+        return dx <= MINE_RADIUS + 1 && dz <= MINE_RADIUS + 1 && dy >= -5 && dy <= 15;
     }
 
     public boolean isPlayerInsideMineZone(Location loc) {
@@ -714,15 +779,13 @@ public class AncientMineManager {
         }
         double dx = Math.abs(loc.getX() - centerLocation.getX());
         double dz = Math.abs(loc.getZ() - centerLocation.getZ());
-        return dx <= MINE_ZONE_LIMIT && dz <= MINE_ZONE_LIMIT;
+        double dy = Math.abs(loc.getY() - centerLocation.getY());
+        return dx <= MINE_ZONE_LIMIT && dz <= MINE_ZONE_LIMIT && dy <= 16.0;
     }
 
     /**
      * Обрабатывает ломание блока в «Шахте Древних».
-     * Если это блок жилы или жеоды — выдаёт ресурс/жеоду и ставит породу до следующей регенерации.
-     * Все остальные блоки карьера защищены от разрушения.
-     *
-     * @return true если блок находится на территории шахты (событие должно быть отменено).
+     * Руда и Древние жеоды НЕ попадают сразу в инвентарь, а выпадают НА ПОЛ!
      */
     public boolean handleMineBlockBreak(Player player, Block block) {
         if (!isInsideMineTerritory(block.getLocation())) {
@@ -731,24 +794,21 @@ public class AncientMineManager {
 
         String key = blockKey(block.getLocation());
         BrushLootManager lootManager = plugin.getBrushLootManager();
+        MinerBackpackManager backpackMgr = plugin.getMinerBackpackManager();
+        Location dropLoc = block.getLocation().add(0.5, 0.65, 0.5);
 
         // 1. Проверяем, не является ли этот блок «Древней жеодой»
-        BrushTier geodeTier = activeGeodeBlocks.get(key);
+        BrushTier geodeTier = activeGeodeBlocks.remove(key);
         if (geodeTier != null) {
-            int currentItems = lootManager.countPlayerBrushes(player);
-            if (currentItems >= 3) {
-                player.sendMessage(ColorUtil.color("&e┠ &cВ инвентаре может быть максимум &#E0C9123 древние жеоды&c! Расколите их у Древнего Кузнеца в центре."));
-                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.9f, 1.0f);
-                return true;
-            }
-            activeGeodeBlocks.remove(key);
             block.setType(Material.COBBLED_DEEPSLATE, false);
 
             ItemStack geodeItem = lootManager.createGeodeItem(geodeTier);
-            player.getInventory().addItem(geodeItem);
-            player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.0f, 1.2f);
-            player.sendMessage(ColorUtil.color("&e┠ &fВы добыли " + lootManager.getGeodeDisplayName(geodeTier)
-                    + "&f! Отнесите её &#FFB81CДревнему Кузнецу &fв центр шахты."));
+            Item dropped = block.getWorld().dropItemNaturally(dropLoc, geodeItem);
+            dropped.setVelocity(new Vector(0.0, 0.22, 0.0));
+            dropped.setPickupDelay(6);
+
+            player.playSound(dropLoc, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.0f, 1.2f);
+            block.getWorld().spawnParticle(Particle.WAX_OFF, dropLoc, 6, 0.2, 0.2, 0.2, 0.02);
             updateBlacksmithHologram();
             return true;
         }
@@ -765,25 +825,31 @@ public class AncientMineManager {
         if (isVeinBlock && block.getType() != Material.COBBLED_DEEPSLATE) {
             Material brokenType = block.getType();
             block.setType(Material.COBBLED_DEEPSLATE, false);
-            ItemStack drop = switch (brokenType) {
-                case DEEPSLATE_IRON_ORE, IRON_ORE -> new ItemStack(Material.IRON_INGOT, 2);
-                case DEEPSLATE_GOLD_ORE, GOLD_ORE -> new ItemStack(Material.GOLD_INGOT, 2);
-                case DEEPSLATE_EMERALD_ORE, EMERALD_ORE -> new ItemStack(Material.EMERALD, 2);
-                case DEEPSLATE_DIAMOND_ORE, DIAMOND_ORE -> new ItemStack(Material.DIAMOND, 1);
-                case ANCIENT_DEBRIS -> new ItemStack(Material.NETHERITE_SCRAP, 1);
-                default -> new ItemStack(Material.COBBLESTONE, 1);
-            };
-            Map<Integer, ItemStack> left = player.getInventory().addItem(drop);
-            for (ItemStack leftover : left.values()) {
-                block.getWorld().dropItemNaturally(player.getLocation(), leftover);
-            }
-            player.playSound(player.getLocation(), Sound.BLOCK_DEEPSLATE_BREAK, 0.9f, 1.1f);
 
-            // Небольшой шанс (12%), что прямо под рудой сразу откроется новая Древняя жеода!
-            if (ThreadLocalRandom.current().nextInt(100) < 12) {
+            MineOreType oreType = switch (brokenType) {
+                case DEEPSLATE_COPPER_ORE, COPPER_ORE -> MineOreType.COPPER;
+                case DEEPSLATE_IRON_ORE, IRON_ORE -> MineOreType.IRON;
+                case DEEPSLATE_GOLD_ORE, GOLD_ORE -> MineOreType.GOLD;
+                case DEEPSLATE_EMERALD_ORE, EMERALD_ORE -> MineOreType.EMERALD;
+                case DEEPSLATE_DIAMOND_ORE, DIAMOND_ORE -> MineOreType.DIAMOND;
+                case ANCIENT_DEBRIS -> MineOreType.ANCIENT_DEBRIS;
+                default -> MineOreType.IRON;
+            };
+
+            // Выбрасываем руду НА ПОЛ (а не сразу в инвентарь!)
+            ItemStack oreDrop = backpackMgr.createMineOreItem(oreType, 1);
+            Item dropped = block.getWorld().dropItemNaturally(dropLoc, oreDrop);
+            dropped.setVelocity(new Vector(0.0, 0.20, 0.0));
+            dropped.setPickupDelay(6);
+
+            player.playSound(dropLoc, Sound.BLOCK_DEEPSLATE_BREAK, 0.9f, 1.1f);
+
+            // Шанс вскрыть под рудой новую Древнюю жеоду (увеличивается от уровня прокачки Рюкзака!)
+            int baseChance = 12 + backpackMgr.getGeodeBonusChancePercent(player);
+            if (ThreadLocalRandom.current().nextInt(100) < baseChance) {
                 BrushTier bonusTier = lootManager.rollRandomGeodeTier();
                 placeGeodeBlock(block, bonusTier);
-                player.playSound(block.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 1.3f);
+                player.playSound(dropLoc, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 1.3f);
             }
             return true;
         }
@@ -792,70 +858,17 @@ public class AncientMineManager {
         return true;
     }
 
-    /**
-     * Проверяет, является ли сущность NPC «Древний Кузнец».
-     */
     public boolean isBlacksmithNpc(Entity entity) {
         return entity != null && blacksmithNpcUuid != null && blacksmithNpcUuid.equals(entity.getUniqueId());
     }
 
     /**
-     * Раскалывает 1 Древнюю жеоду из инвентаря игрока при клике по Древнему Кузнецу или наковальне в центре.
+     * При клике по Древнему Кузнецу или наковальне/горну в центре открывает меню
+     * «Кузница Древних и Прокачка Рюкзака»!
      */
     public boolean handleBlacksmithInteract(Player player) {
-        BrushLootManager lootManager = plugin.getBrushLootManager();
-
-        // Ищем жеоду сначала в основной руке, затем во всём инвентаре
-        ItemStack hand = player.getInventory().getItemInMainHand();
-        BrushTier tier = lootManager.getGeodeTier(hand);
-        int foundSlot = -1;
-        if (tier != null) {
-            foundSlot = player.getInventory().getHeldItemSlot();
-        } else {
-            ItemStack[] contents = player.getInventory().getStorageContents();
-            for (int i = 0; i < contents.length; i++) {
-                BrushTier t = lootManager.getGeodeTier(contents[i]);
-                if (t != null) {
-                    tier = t;
-                    foundSlot = i;
-                    break;
-                }
-            }
-        }
-
-        if (tier == null || foundSlot < 0) {
-            player.sendMessage(ColorUtil.color("&e┠ &#FFB81CДревний Кузнец: &fДобудь &#E0C912Древнюю жеоду &fв рудной жиле вокруг меня, и я расколю её на ценные артефакты!"));
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_TRADE, 1.0f, 0.9f);
-            return true;
-        }
-
-        // Забираем 1 жеоду
-        ItemStack stack = player.getInventory().getItem(foundSlot);
-        if (stack != null) {
-            if (stack.getAmount() > 1) {
-                stack.setAmount(stack.getAmount() - 1);
-            } else {
-                player.getInventory().setItem(foundSlot, null);
-            }
-        }
-
-        // Выдаём лут из таблицы «Шахты Древних»
-        ItemStack reward = lootManager.rollLootForMine(tier);
-        if (reward != null && !reward.getType().isAir()) {
-            Map<Integer, ItemStack> left = player.getInventory().addItem(reward);
-            for (ItemStack leftover : left.values()) {
-                player.getWorld().dropItemNaturally(player.getLocation(), leftover);
-            }
-        }
-
-        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 0.9f, 1.15f);
-        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 1.3f);
-        if (centerLocation != null && centerLocation.getWorld() != null) {
-            centerLocation.getWorld().spawnParticle(
-                    Particle.LAVA,
-                    centerLocation.clone().add(0.0, 2.5, 0.0),
-                    4, 0.25, 0.25, 0.25, 0.02
-            );
+        if (plugin.getMinerBackpackManager() != null) {
+            plugin.getMinerBackpackManager().openForgeAndBackpackMenu(player);
         }
         return true;
     }
@@ -922,7 +935,7 @@ public class AncientMineManager {
     }
 
     public boolean isMineActive() {
-        return centerLocation != null && centerLocation.getWorld() != null;
+        return centerLocation != null && centerLocation.getWorld() == null ? false : centerLocation != null;
     }
 
     public int getActiveGeodeCount() {

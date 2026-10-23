@@ -1,9 +1,9 @@
 name: GeyserEvent
-version: '1.8.0'
+version: '1.8.1'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
-description: Ивенты «Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика» и постоянный ивент «Шахта Древних (0 ~ 0)» для Purpur 26.2 (GeyserMC)
+description: Ивенты «Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика» и постоянный ивент «Шахта Древних 45x45 (0 ~ 0)» для Purpur 26.2 (GeyserMC)
 softdepend:
   - Geyser-Spigot
   - floodgate
@@ -12,9 +12,9 @@ softdepend:
 
 commands:
   event:
-    description: Команды ивентов для игроков (/event delay, /event gps, /event mine)
+    description: Команды ивентов для игроков (/event delay, /event gps, /event mine, /event backpack)
     aliases: [ivent]
-    usage: /<command> <delay|gps|mine>
+    usage: /<command> <delay|gps|mine|backpack>
   rift:
     description: Админ-команды управления ивентами и GUI-меню лута
     aliases: [geyserevent, razlom, infernalrift]

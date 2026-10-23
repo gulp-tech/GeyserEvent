@@ -18,6 +18,7 @@ import ru.geyserevent.hook.PlayerPointsHook;
 import ru.geyserevent.hud.TopRightHudManager;
 import ru.geyserevent.listener.RiftEventListener;
 import ru.geyserevent.mine.AncientMineManager;
+import ru.geyserevent.mine.MinerBackpackManager;
 import ru.geyserevent.schematic.RiftSchematicManager;
 
 import java.io.File;
@@ -25,11 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Главный класс плагина GeyserEvent v1.8.0 — четыре анархических ивента:
+ * Главный класс плагина GeyserEvent v1.8.1 — четыре анархических ивента:
  * 1) «Адский Разлом (Вторжение Босса)»
  * 2) «Пляжные Раскопки (Большая схема 31x31, 2-метровый Житель с кисточками по клику)»
  * 3) «Котёл Алхимика (Мистическое болото 31x31, сбор реагентов и варка в котле)»
- * 4) Постоянный ивент «Шахта Древних (Жила Жеод)» на координатах 0 ~ 0
+ * 4) Постоянный ивент «Шахта Древних (Жила Жеод, 45x45, 3D-Рюкзак на спине)» на координатах 0 ~ 0
  * Специально для Purpur 26.2 с поддержкой игроков Bedrock Edition (GeyserMC).
  */
 public final class GeyserEventPlugin extends JavaPlugin {
@@ -41,6 +42,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private BeachSchematicManager beachSchematicManager;
     private AlchemistSchematicManager alchemistSchematicManager;
     private AncientMineManager ancientMineManager;
+    private MinerBackpackManager minerBackpackManager;
     private BrushLootManager brushLootManager;
     private BrushLootGuiManager brushLootGuiManager;
     private TopRightHudManager topRightHudManager;
@@ -57,12 +59,13 @@ public final class GeyserEventPlugin extends JavaPlugin {
         this.bedrockService = new BedrockService(this);
         this.playerPointsHook = new PlayerPointsHook(this);
 
-        // 3. Менеджеры схем, лута, GUI-меню и HUD
+        // 3. Менеджеры схем, лута, 3D-рюкзака, GUI-меню и HUD
         this.schematicManager = new RiftSchematicManager(this);
         this.beachSchematicManager = new BeachSchematicManager(this);
         this.alchemistSchematicManager = new AlchemistSchematicManager(this);
         this.brushLootManager = new BrushLootManager(this);
         this.brushLootGuiManager = new BrushLootGuiManager(this);
+        this.minerBackpackManager = new MinerBackpackManager(this);
         this.ancientMineManager = new AncientMineManager(this);
         this.topRightHudManager = new TopRightHudManager(this);
         this.minionLootManager = new MinionLootManager(this);
@@ -74,7 +77,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         // 5. Регистрация слушателей событий
         getServer().getPluginManager().registerEvents(new RiftEventListener(this), this);
 
-        // 6. Регистрация команд для игроков (/event delay, /event gps, /event mine)
+        // 6. Регистрация команд для игроков (/event delay, /event gps, /event mine, /event backpack)
         PluginCommand eventCmd = getCommand("event");
         if (eventCmd != null) {
             EventPlayerCommand playerExecutor = new EventPlayerCommand(this);
@@ -103,7 +106,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         // 8. Экспорт готового меню для DeluxeMenus (deluxemenus/events.yml -> команда /events)
         exportDeluxeMenusConfig();
 
-        // 9. Автоматический запуск постоянного ивента «Шахта Древних (Жила Жеод)» на 0 ~ 0
+        // 9. Автоматический запуск постоянного ивента «Шахта Древних (Жила Жеод)» 45x45 на 0 ~ 0
         Bukkit.getScheduler().runTaskLater(this, () -> {
             if (this.ancientMineManager != null) {
                 this.ancientMineManager.initializePermanentMine();
@@ -111,12 +114,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.8.0 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.8.1 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Временные ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
-        getLogger().info(" Постоянный ивент: Шахта Древних (Жила Жеод) на 0 ~ 0");
+        getLogger().info(" Постоянный ивент: Шахта Древних 45x45 + 3D-Рюкзак на 0 ~ 0");
         getLogger().info(" Меню DeluxeMenus (/events): plugins/GeyserEvent/deluxemenus/events.yml");
         getLogger().info(" Меню настройки лута: /rift menu, /cauldronmenu, /minemenu");
-        getLogger().info(" Команды игроков: /event delay, /event gps, /event mine");
+        getLogger().info(" Команды игроков: /event delay, /event gps, /event mine, /event backpack");
         getLogger().info("==================================================");
     }
 
@@ -138,6 +141,10 @@ public final class GeyserEventPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (this.minerBackpackManager != null) {
+            this.minerBackpackManager.saveData();
+            this.minerBackpackManager.clearAllVisualBackpacks();
+        }
         if (this.ancientMineManager != null) {
             this.ancientMineManager.shutdownMine(true);
         }
@@ -187,6 +194,10 @@ public final class GeyserEventPlugin extends JavaPlugin {
 
     public AncientMineManager getAncientMineManager() {
         return ancientMineManager;
+    }
+
+    public MinerBackpackManager getMinerBackpackManager() {
+        return minerBackpackManager;
     }
 
     public BrushLootManager getBrushLootManager() {

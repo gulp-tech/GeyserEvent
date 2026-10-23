@@ -33,6 +33,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerFishEvent;
@@ -119,6 +120,10 @@ public class RiftEventListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         plugin.getBrushLootManager().removeAllEventBrushes(player);
+        if (plugin.getMinerBackpackManager() != null) {
+            plugin.getMinerBackpackManager().removeAllMineOresAndGeodes(player);
+            plugin.getMinerBackpackManager().removeVisualBackpack(player);
+        }
         player.removePotionEffect(PotionEffectType.GLOWING);
         plugin.getTopRightHudManager().removeHudFromPlayer(player);
         brushStrokeCooldown.remove(player.getUniqueId());
@@ -129,6 +134,10 @@ public class RiftEventListener implements Listener {
     public void onPlayerKick(PlayerKickEvent event) {
         Player player = event.getPlayer();
         plugin.getBrushLootManager().removeAllEventBrushes(player);
+        if (plugin.getMinerBackpackManager() != null) {
+            plugin.getMinerBackpackManager().removeAllMineOresAndGeodes(player);
+            plugin.getMinerBackpackManager().removeVisualBackpack(player);
+        }
         player.removePotionEffect(PotionEffectType.GLOWING);
         plugin.getTopRightHudManager().removeHudFromPlayer(player);
         brushStrokeCooldown.remove(player.getUniqueId());
@@ -137,36 +146,65 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        event.getDrops().removeIf(item -> plugin.getBrushLootManager().getBrushTier(item) != null);
+        Player player = event.getEntity();
+        if (plugin.getMinerBackpackManager() != null) {
+            plugin.getMinerBackpackManager().removeVisualBackpack(player);
+        }
+        // Кисточки и реагенты временных ивентов удаляются при смерти,
+        // НО руды и жеоды из «Шахты Древних» ВЫПАДАЮТ НА ПОЛ!
+        event.getDrops().removeIf(item -> plugin.getBrushLootManager().isTemporaryEventItem(item));
+        if (plugin.getMinerBackpackManager() != null) {
+            plugin.getMinerBackpackManager().dropAllMineItemsOnDeath(player, event.getDrops());
+        }
     }
 
     /**
-     * Кисточки и реагенты можно выкидывать на землю, но поднимать можно только если в инвентаре меньше 3 штук!
+     * Подбор предметов с пола:
+     * 1) Руды и жеоды из «Шахты Древних» проверяются по вместимости Шахтёрского Рюкзака (15..160 ед.).
+     * 2) Кисточки и реагенты временных ивентов можно поднимать максимум до 3 штук.
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPickupItem(EntityPickupItemEvent event) {
         ItemStack stack = event.getItem().getItemStack();
-        if (plugin.getBrushLootManager().getBrushTier(stack) == null) {
+        var backpackMgr = plugin.getMinerBackpackManager();
+
+        if (backpackMgr != null && backpackMgr.isMineOreOrGeode(stack)) {
+            if (!(event.getEntity() instanceof Player player)) {
+                event.setCancelled(true);
+                return;
+            }
+            if (!backpackMgr.canPickupMineItem(player, stack)) {
+                event.setCancelled(true);
+                return;
+            }
+            backpackMgr.notifyMineItemPickedUp(player, stack.getAmount());
             return;
         }
-        if (!(event.getEntity() instanceof Player player)) {
-            event.setCancelled(true);
-            return;
-        }
-        int currentBrushes = plugin.getBrushLootManager().countPlayerBrushes(player);
-        if (currentBrushes >= 3) {
-            event.setCancelled(true);
+
+        if (plugin.getBrushLootManager().isTemporaryEventItem(stack)) {
+            if (!(event.getEntity() instanceof Player player)) {
+                event.setCancelled(true);
+                return;
+            }
+            int currentBrushes = plugin.getBrushLootManager().countPlayerBrushes(player);
+            if (currentBrushes >= 3) {
+                event.setCancelled(true);
+            }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
-        // 1. Обработка кликов в GUI-меню настройки лута и шансов (/rift menu)
+        // 1. Обработка кликов в GUI-меню настройки лута (/rift menu) и в меню «Кузница и Рюкзак»
         if (plugin.getBrushLootGuiManager().handleInventoryClick(event)) {
             return;
         }
+        if (plugin.getMinerBackpackManager() != null
+                && plugin.getMinerBackpackManager().handleForgeMenuClick(event)) {
+            return;
+        }
 
-        // 2. Запрет перекладывания кисточек и реагентов в сундуки / эндер-сундук / бочки / шалкеры
+        // 2. Запрет перекладывания ивентовых предметов и непереплавленной руды в сундуки / эндер-сундук / шалкеры
         if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
             return;
         }
@@ -175,9 +213,15 @@ public class RiftEventListener implements Listener {
         ItemStack hotbar = (event.getHotbarButton() >= 0 && event.getWhoClicked() instanceof Player p)
                 ? p.getInventory().getItem(event.getHotbarButton())
                 : null;
-        if (plugin.getBrushLootManager().getBrushTier(current) != null
+        boolean restricted = plugin.getBrushLootManager().getBrushTier(current) != null
                 || plugin.getBrushLootManager().getBrushTier(cursor) != null
-                || plugin.getBrushLootManager().getBrushTier(hotbar) != null) {
+                || plugin.getBrushLootManager().getBrushTier(hotbar) != null
+                || (plugin.getMinerBackpackManager() != null && (
+                        plugin.getMinerBackpackManager().isMineOreOrGeode(current)
+                        || plugin.getMinerBackpackManager().isMineOreOrGeode(cursor)
+                        || plugin.getMinerBackpackManager().isMineOreOrGeode(hotbar)
+                ));
+        if (restricted) {
             event.setCancelled(true);
         }
     }
@@ -187,16 +231,22 @@ public class RiftEventListener implements Listener {
         if (plugin.getBrushLootGuiManager().handleInventoryDrag(event)) {
             return;
         }
+        if (plugin.getMinerBackpackManager() != null
+                && plugin.getMinerBackpackManager().handleForgeMenuDrag(event)) {
+            return;
+        }
         if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
             return;
         }
-        if (plugin.getBrushLootManager().getBrushTier(event.getOldCursor()) != null) {
+        ItemStack oldCursor = event.getOldCursor();
+        if (plugin.getBrushLootManager().getBrushTier(oldCursor) != null
+                || (plugin.getMinerBackpackManager() != null && plugin.getMinerBackpackManager().isMineOreOrGeode(oldCursor))) {
             event.setCancelled(true);
         }
     }
 
     /**
-     * Запрет команд /ah sell и /ah sellinv, когда кисточка или реагент в руке (или в инвентаре).
+     * Запрет команд /ah sell и /ah sellinv, когда кисточка, реагент, жеода или руда в инвентаре.
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
@@ -205,7 +255,9 @@ public class RiftEventListener implements Listener {
         ItemStack offHand = player.getInventory().getItemInOffHand();
         boolean holdingEventItem = plugin.getBrushLootManager().getBrushTier(mainHand) != null
                 || plugin.getBrushLootManager().getBrushTier(offHand) != null
-                || plugin.getBrushLootManager().hasAnyEventBrush(player);
+                || plugin.getBrushLootManager().hasAnyEventBrush(player)
+                || (plugin.getMinerBackpackManager() != null
+                && plugin.getMinerBackpackManager().countCarriedMineItems(player) > 0);
 
         if (!holdingEventItem) {
             return;
@@ -242,6 +294,13 @@ public class RiftEventListener implements Listener {
     /**
      * Клик по 2-метровому Жителю-Археологу, Магистру Алхимику или Древнему Кузнецу (ПКМ / ЛКМ).
      */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
+        if (!event.getRightClicked().isVisible() || event.getRightClicked().isMarker()) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Entity clicked = event.getRightClicked();

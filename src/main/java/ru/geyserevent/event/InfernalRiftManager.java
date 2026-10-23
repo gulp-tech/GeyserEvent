@@ -147,33 +147,31 @@ public class InfernalRiftManager {
      * Проверяет одного игрока:
      * 1) Если у него есть кисточка или реагент временного ивента, но он вышел за пределы
      *    схемы ивента (16.5 блоков), они мгновенно удаляются.
-     * 2) Если у него есть Древняя жеода «Шахты Древних» (0 ~ 0), но он вышел за пределы
-     *    зоны шахты (16.5 блоков от центра 0 ~ 0), жеоды мгновенно удаляются.
+     * 2) Если у него есть руда или жеода «Шахты Древних» (0 ~ 0), но он вышел за пределы
+     *    увеличенной зоны шахты (24.5 блоков от центра 0 ~ 0), руды и жеоды мгновенно удаляются.
      */
     public void enforceBrushZoneForPlayer(Player player) {
-        if (player == null || !plugin.getBrushLootManager().hasAnyEventBrush(player)) {
+        if (player == null) {
             return;
         }
+        boolean hasBrushOrReagent = plugin.getBrushLootManager().hasAnyEventBrush(player);
+        boolean hasMineItems = plugin.getMinerBackpackManager() != null
+                && plugin.getMinerBackpackManager().countCarriedMineItems(player) > 0;
+        if (!hasBrushOrReagent && !hasMineItems) {
+            return;
+        }
+
         double zoneRadius = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
         double zoneRadiusSq = zoneRadius * zoneRadius;
 
-        // 1. Проверка зоны постоянного ивента «Шахта Древних» (0 ~ 0) для Древних жеод
+        // 1. Проверка увеличенной зоны постоянного ивента «Шахта Древних» (0 ~ 0, радиус 24.5)
         var mineMgr = plugin.getAncientMineManager();
-        Location mineCenter = (mineMgr != null && mineMgr.isMineActive()) ? mineMgr.getCenterLocation() : null;
-        boolean outsideMine = mineCenter == null
-                || mineCenter.getWorld() == null
-                || !player.getWorld().equals(mineCenter.getWorld());
-        if (!outsideMine) {
-            Location pLoc = player.getLocation();
-            double dx = pLoc.getX() - mineCenter.getX();
-            double dz = pLoc.getZ() - mineCenter.getZ();
-            double dy = Math.abs(pLoc.getY() - mineCenter.getY());
-            if ((dx * dx + dz * dz) > zoneRadiusSq || dy > 15.0) {
-                outsideMine = true;
-            }
-        }
-        if (outsideMine && plugin.getBrushLootManager().removeAllPlayerGeodes(player)) {
-            player.sendMessage(ColorUtil.color("&e┠ &cВы вышли из зоны Шахты Древних — древние жеоды рассыпались."));
+        boolean outsideMine = mineMgr == null
+                || !mineMgr.isMineActive()
+                || !mineMgr.isPlayerInsideMineZone(player.getLocation());
+        if (outsideMine && plugin.getMinerBackpackManager() != null
+                && plugin.getMinerBackpackManager().removeAllMineOresAndGeodes(player)) {
+            player.sendMessage(ColorUtil.color("&e┠ &cВы вышли за пределы Шахты Древних — непереплавленная руда и жеоды рассыпались."));
         }
 
         // 2. Проверка зоны временного ивента («Пляжные Раскопки» / «Котёл Алхимика»)
@@ -210,7 +208,7 @@ public class InfernalRiftManager {
 
     /**
      * Проверяет всех игроков онлайн и выброшенные предметы: если игрок или предмет находится
-     * за пределами соответствующей зоны ивента, кисточки, реагенты и жеоды сразу пропадают.
+     * за пределами соответствующей зоны ивента, кисточки, реагенты и руды сразу пропадают.
      */
     public void enforceBrushZoneForPlayers() {
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -221,7 +219,7 @@ public class InfernalRiftManager {
         double zoneRadiusSq = zoneRadius * zoneRadius;
 
         var mineMgr = plugin.getAncientMineManager();
-        Location mineCenter = (mineMgr != null && mineMgr.isMineActive()) ? mineMgr.getCenterLocation() : null;
+        var backpackMgr = plugin.getMinerBackpackManager();
 
         for (World w : Bukkit.getWorlds()) {
             for (Entity entity : w.getEntitiesByClass(Item.class)) {
@@ -229,19 +227,15 @@ public class InfernalRiftManager {
                     continue;
                 }
                 ItemStack stack = itemEntity.getItemStack();
-                if (plugin.getBrushLootManager().getBrushTier(stack) == null) {
+                boolean isMineItem = backpackMgr != null && backpackMgr.isMineOreOrGeode(stack);
+                boolean isTempItem = plugin.getBrushLootManager().isTemporaryEventItem(stack);
+                if (!isMineItem && !isTempItem) {
                     continue;
                 }
                 Location iLoc = itemEntity.getLocation();
-                if (plugin.getBrushLootManager().isGeodeItem(stack)) {
-                    if (mineCenter == null || !w.equals(mineCenter.getWorld())) {
+                if (isMineItem) {
+                    if (mineMgr == null || !mineMgr.isMineActive() || !mineMgr.isPlayerInsideMineZone(iLoc)) {
                         itemEntity.remove();
-                    } else {
-                        double dx = iLoc.getX() - mineCenter.getX();
-                        double dz = iLoc.getZ() - mineCenter.getZ();
-                        if ((dx * dx + dz * dz) > zoneRadiusSq) {
-                            itemEntity.remove();
-                        }
                     }
                 } else {
                     if (!active || riftCenterLocation == null || !w.equals(riftCenterLocation.getWorld())) {
