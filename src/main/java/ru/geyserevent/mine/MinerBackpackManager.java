@@ -275,11 +275,16 @@ public class MinerBackpackManager {
             var entry = it.next();
             if (!activeInside.contains(entry.getKey())) {
                 ArmorStand stand = entry.getValue();
-                if (stand != null && stand.isValid()) {
-                    stand.remove();
+                Player p = Bukkit.getPlayer(entry.getKey());
+                if (stand != null) {
+                    if (p != null) {
+                        p.removePassenger(stand);
+                    }
+                    if (stand.isValid()) {
+                        stand.remove();
+                    }
                 }
                 it.remove();
-                Player p = Bukkit.getPlayer(entry.getKey());
                 if (p != null && p.isOnline()) {
                     p.sendMessage(ColorUtil.color("&e┠ &7Рюкзак шахтёра снят со спины (вы покинули Шахту Древних)."));
                 }
@@ -314,31 +319,17 @@ public class MinerBackpackManager {
             return;
         }
 
-        // Используем реальный yaw направления игрока, чтобы рюкзак ВСЕГДА был строго за спиной
         float yaw = pLoc.getYaw();
-        double rad = Math.toRadians(yaw);
-        double forwardX = -Math.sin(rad);
-        double forwardZ = Math.cos(rad);
-
-        // Модель рюкзака центрирована в (0, 0) по X/Z и находится на высоте 12..25 пикселей (торс),
-        // поэтому точка спавна ArmorStand на +0.16 выше стоп игрока ставит рюкзак ровно на спину!
-        double yOffset = pLoc.getY() + (player.isSneaking() ? -0.08 : 0.16);
-        Location targetLoc = new Location(
-                pLoc.getWorld(),
-                pLoc.getX() - forwardX * 0.28,
-                yOffset,
-                pLoc.getZ() - forwardZ * 0.28,
-                yaw,
-                0.0f
-        );
-
         ArmorStand stand = visualBackpackStands.get(uuid);
         if (stand == null || !stand.isValid() || !stand.getWorld().equals(pLoc.getWorld())) {
             if (stand != null) {
+                player.removePassenger(stand);
                 stand.remove();
             }
             ItemStack backpackModelItem = createVisualBackpackModelItem(getBackpackLevel(uuid));
-            stand = pLoc.getWorld().spawn(targetLoc, ArmorStand.class, s -> {
+            Location spawnLoc = pLoc.clone();
+            spawnLoc.setPitch(0.0f);
+            stand = pLoc.getWorld().spawn(spawnLoc, ArmorStand.class, s -> {
                 s.setVisible(false);
                 s.setGravity(false);
                 s.setMarker(true);
@@ -358,6 +349,9 @@ public class MinerBackpackManager {
                     equip.setHelmet(backpackModelItem);
                 }
             });
+            // Прикрепляем стойку прямо к игроку (passenger), чтобы рюкзак двигался с игроком как единое целое без отставания!
+            player.addPassenger(stand);
+            stand.setRotation(yaw, 0.0f);
             visualBackpackStands.put(uuid, stand);
 
             int lvl = getBackpackLevel(uuid);
@@ -367,7 +361,9 @@ public class MinerBackpackManager {
                     "&e┠ &63D-Рюкзак шахтёра &8(&eУр. " + lvl + " &7| &a" + carried + "&7/&a" + cap + " руды&8) &fнадет на спину!"
             ));
         } else {
-            stand.teleport(targetLoc);
+            if (!player.getPassengers().contains(stand)) {
+                player.addPassenger(stand);
+            }
             stand.setRotation(yaw, 0.0f);
             stand.setHeadPose(EulerAngle.ZERO);
         }
@@ -457,8 +453,11 @@ public class MinerBackpackManager {
             return;
         }
         ArmorStand stand = visualBackpackStands.remove(player.getUniqueId());
-        if (stand != null && stand.isValid()) {
-            stand.remove();
+        if (stand != null) {
+            player.removePassenger(stand);
+            if (stand.isValid()) {
+                stand.remove();
+            }
         }
     }
 
