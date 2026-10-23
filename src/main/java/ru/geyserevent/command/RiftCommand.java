@@ -17,7 +17,9 @@ import ru.geyserevent.event.DamageLeaderboard;
 import ru.geyserevent.event.EventType;
 import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.excavation.BrushLootManager;
+import ru.geyserevent.excavation.BrushLootManager.LootCategory;
 import ru.geyserevent.excavation.BrushTier;
+import ru.geyserevent.mine.AncientMineManager;
 import ru.geyserevent.util.ColorUtil;
 
 import java.io.IOException;
@@ -28,8 +30,11 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Админ-команды управления ивентами «Адский Разлом» и «Пляжные Раскопки» (/rift),
- * а также открытие GUI-меню настройки лута и шансов кисточек (/rift menu).
+ * Админ-команды /rift, /cauldronmenu и /minemenu для управления ивентами:
+ * 1) «Адский Разлом»
+ * 2) «Пляжные Раскопки»
+ * 3) «Котёл Алхимика»
+ * 4) Постоянный ивент «Шахта Древних (Жила Жеод)» на 0 ~ 0
  */
 public class RiftCommand implements CommandExecutor, TabCompleter {
 
@@ -59,11 +64,28 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             if (args.length >= 1) {
                 BrushTier tier = BrushTier.fromString(args[0]);
                 if (tier != null) {
-                    plugin.getBrushLootGuiManager().openTierMenu(player, tier, true);
+                    plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.CAULDRON);
                     return true;
                 }
             }
             plugin.getBrushLootGuiManager().openCauldronMenu(player);
+            return true;
+        }
+
+        if (cmdName.equals("minemenu") || label.equalsIgnoreCase("minemenu")
+                || label.equalsIgnoreCase("geodemenu") || label.equalsIgnoreCase("mmenu")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(ColorUtil.color("&e┠ &cМеню доступно только в игре!"));
+                return true;
+            }
+            if (args.length >= 1) {
+                BrushTier tier = BrushTier.fromString(args[0]);
+                if (tier != null) {
+                    plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.MINE);
+                    return true;
+                }
+            }
+            plugin.getBrushLootGuiManager().openMineMenu(player);
             return true;
         }
 
@@ -87,11 +109,23 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                         if (args.length >= 3) {
                             BrushTier tier = BrushTier.fromString(args[2]);
                             if (tier != null) {
-                                plugin.getBrushLootGuiManager().openTierMenu(player, tier, true);
+                                plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.CAULDRON);
                                 return true;
                             }
                         }
                         plugin.getBrushLootGuiManager().openCauldronMenu(player);
+                        return true;
+                    }
+                    if (args[1].equalsIgnoreCase("mine") || args[1].equalsIgnoreCase("шахта")
+                            || args[1].equalsIgnoreCase("geode") || args[1].equalsIgnoreCase("жеоды")) {
+                        if (args.length >= 3) {
+                            BrushTier tier = BrushTier.fromString(args[2]);
+                            if (tier != null) {
+                                plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.MINE);
+                                return true;
+                            }
+                        }
+                        plugin.getBrushLootGuiManager().openMineMenu(player);
                         return true;
                     }
                     if (args[1].equalsIgnoreCase("excavation") || args[1].equalsIgnoreCase("раскопки")
@@ -99,7 +133,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                         if (args.length >= 3) {
                             BrushTier tier = BrushTier.fromString(args[2]);
                             if (tier != null) {
-                                plugin.getBrushLootGuiManager().openTierMenu(player, tier, false);
+                                plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.EXCAVATION);
                                 return true;
                             }
                         }
@@ -108,7 +142,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     }
                     BrushTier tier = BrushTier.fromString(args[1]);
                     if (tier != null) {
-                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, false);
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.EXCAVATION);
                         return true;
                     }
                 }
@@ -124,11 +158,27 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     BrushTier tier = BrushTier.fromString(args[1]);
                     if (tier != null) {
-                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, true);
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.CAULDRON);
                         return true;
                     }
                 }
                 plugin.getBrushLootGuiManager().openCauldronMenu(player);
+                return true;
+            }
+
+            case "minemenu", "mmenu", "geodemenu" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cМеню доступно только в игре!"));
+                    return true;
+                }
+                if (args.length >= 2) {
+                    BrushTier tier = BrushTier.fromString(args[1]);
+                    if (tier != null) {
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.MINE);
+                        return true;
+                    }
+                }
+                plugin.getBrushLootGuiManager().openMineMenu(player);
                 return true;
             }
 
@@ -140,11 +190,16 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     BrushTier tier = BrushTier.fromString(args[1]);
                     if (tier != null) {
-                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, false);
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.EXCAVATION);
                         return true;
                     }
                 }
                 plugin.getBrushLootGuiManager().openExcavationMenu(player);
+                return true;
+            }
+
+            case "mine", "шахта" -> {
+                handleMineSubcommand(sender, label, args);
                 return true;
             }
 
@@ -202,11 +257,11 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length == 2 && sender instanceof Player player) {
                     BrushTier tier = BrushTier.fromString(args[1]);
                     if (tier != null) {
-                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, false);
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.EXCAVATION);
                         return true;
                     }
                 }
-                handleBrushLootSubcommand(sender, label, args, false);
+                handleBrushLootSubcommand(sender, label, args, LootCategory.EXCAVATION);
                 return true;
             }
 
@@ -218,21 +273,42 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length == 2 && sender instanceof Player player) {
                     BrushTier tier = BrushTier.fromString(args[1]);
                     if (tier != null) {
-                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, true);
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.CAULDRON);
                         return true;
                     }
                 }
-                handleBrushLootSubcommand(sender, label, args, true);
+                handleBrushLootSubcommand(sender, label, args, LootCategory.CAULDRON);
+                return true;
+            }
+
+            case "mineloot", "geodeloot" -> {
+                if (args.length == 1 && sender instanceof Player player) {
+                    plugin.getBrushLootGuiManager().openMineMenu(player);
+                    return true;
+                }
+                if (args.length == 2 && sender instanceof Player player) {
+                    BrushTier tier = BrushTier.fromString(args[1]);
+                    if (tier != null) {
+                        plugin.getBrushLootGuiManager().openTierMenu(player, tier, LootCategory.MINE);
+                        return true;
+                    }
+                }
+                handleBrushLootSubcommand(sender, label, args, LootCategory.MINE);
                 return true;
             }
 
             case "givebrush", "brush" -> {
-                handleGiveBrushSubcommand(sender, label, args, false);
+                handleGiveItemSubcommand(sender, label, args, LootCategory.EXCAVATION);
                 return true;
             }
 
             case "givereagent", "reagent" -> {
-                handleGiveBrushSubcommand(sender, label, args, true);
+                handleGiveItemSubcommand(sender, label, args, LootCategory.CAULDRON);
+                return true;
+            }
+
+            case "givegeode", "geode" -> {
+                handleGiveItemSubcommand(sender, label, args, LootCategory.MINE);
                 return true;
             }
 
@@ -294,17 +370,24 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             }
 
             case "status", "info" -> {
+                AncientMineManager mineMgr = plugin.getAncientMineManager();
+                if (mineMgr != null && mineMgr.isMineActive()) {
+                    Location mLoc = mineMgr.getCenterLocation();
+                    sender.sendMessage(ColorUtil.color("&e┠ &fПостоянный ивент: &#FFB81CШахта Древних &8(&f"
+                            + mLoc.getBlockX() + " " + mLoc.getBlockY() + " " + mLoc.getBlockZ()
+                            + ", жеод: &a" + mineMgr.getActiveGeodeCount() + " шт.&8)"));
+                }
                 if (manager.isActive() && manager.getRiftCenterLocation() != null) {
                     Location loc = manager.getRiftCenterLocation();
                     sender.sendMessage(ColorUtil.color("&e┠ &fАктивный ивент: &#34D711" + manager.getActiveEventType().getDisplayName()));
                     if (manager.getActiveEventType() == EventType.INFERNAL_RIFT) {
                         sender.sendMessage(ColorUtil.color("&e┠ &fЗдоровье: &c" + (int) Math.ceil(manager.getBossCurrentHealth()) + "/" + (int) Math.ceil(manager.getBossMaxHealth()) + " ❤"));
                     } else {
-                        sender.sendMessage(ColorUtil.color("&e┠ &fДо следующей кисточки: &#E0C912" + manager.getSecondsUntilNextBrush() + " сек."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &fДо следующего предмета: &#E0C912" + manager.getSecondsUntilNextBrush() + " сек."));
                     }
                     sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912" + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()));
                 } else {
-                    sender.sendMessage(ColorUtil.color("&e┠ &fДо появления ивента: &#E0C912" + ColorUtil.formatDurationVerbose(manager.getSecondsUntilNextStart())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fДо появления временного ивента: &#E0C912" + ColorUtil.formatDurationVerbose(manager.getSecondsUntilNextStart())));
                 }
                 return true;
             }
@@ -327,12 +410,15 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 plugin.getSchematicManager().loadSchematicFile();
                 plugin.getBeachSchematicManager().loadSchematic();
                 plugin.getAlchemistSchematicManager().loadSchematic();
+                if (plugin.getAncientMineManager() != null) {
+                    plugin.getAncientMineManager().loadSchematic();
+                }
                 plugin.getBrushLootManager().reload();
                 plugin.getBedrockService().detectHooks();
                 plugin.getPlayerPointsHook().setupHook();
                 plugin.getTopRightHudManager().exportAndInstallResourcePack();
                 manager.startAutoScheduler();
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Конфиг, схемы и таблицы лута перезагружены."));
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Конфиг, схемы и таблицы лута всех ивентов перезагружены."));
                 return true;
             }
 
@@ -343,10 +429,65 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleMineSubcommand(CommandSender sender, String label, String[] args) {
+        AncientMineManager mineMgr = plugin.getAncientMineManager();
+        if (mineMgr == null) {
+            return;
+        }
+        String action = args.length >= 2 ? args[1].toLowerCase(Locale.ROOT) : "status";
+        switch (action) {
+            case "regen", "обновить" -> {
+                mineMgr.regenerateAllOresAndGeodes();
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Рудная жила и жеоды в «Шахте Древних» полностью обновлены!"));
+            }
+            case "spawn", "0" -> {
+                mineMgr.initializePermanentMine();
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Постоянная «Шахта Древних» установлена на координатах 0 ~ 0!"));
+            }
+            case "set-here", "sethere" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cТолько для игроков."));
+                    return;
+                }
+                mineMgr.spawnMineAt(player.getLocation(), true);
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Постоянная «Шахта Древних» установлена на вашей позиции!"));
+            }
+            case "remove", "stop" -> {
+                mineMgr.shutdownMine(true);
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711«Шахта Древних» убрана, ландшафт восстановлен."));
+            }
+            case "menu", "gui" -> {
+                if (sender instanceof Player player) {
+                    plugin.getBrushLootGuiManager().openMineMenu(player);
+                }
+            }
+            default -> {
+                if (mineMgr.isMineActive()) {
+                    Location loc = mineMgr.getCenterLocation();
+                    sender.sendMessage(ColorUtil.color("&e┠ &#FFB81CШахта Древних (Постоянный ивент):"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912" + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " &8(" + loc.getWorld().getName() + ")"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fАктивных жеод в жиле: &#34D711" + mineMgr.getActiveGeodeCount() + " шт."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fДо регенерации руд: &#E0C912" + ColorUtil.formatDuration(mineMgr.getSecondsUntilFullRegen())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fУправление: &#E0C912/" + label + " mine <regen|spawn|set-here|remove|menu>"));
+                } else {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cШахта Древних сейчас отключена. Запустить на 0 ~ 0: &#E0C912/" + label + " mine spawn"));
+                }
+            }
+        }
+    }
+
     @SuppressWarnings("deprecation")
-    private void handleBrushLootSubcommand(CommandSender sender, String label, String[] args, boolean cauldron) {
-        String subCmd = cauldron ? "cauldronloot" : "brushloot";
-        String eventTitle = cauldron ? "«Котёл Алхимика»" : "«Пляжные Раскопки»";
+    private void handleBrushLootSubcommand(CommandSender sender, String label, String[] args, LootCategory category) {
+        String subCmd = switch (category) {
+            case EXCAVATION -> "brushloot";
+            case CAULDRON -> "cauldronloot";
+            case MINE -> "mineloot";
+        };
+        String eventTitle = switch (category) {
+            case EXCAVATION -> "«Пляжные Раскопки»";
+            case CAULDRON -> "«Котёл Алхимика»";
+            case MINE -> "«Шахта Древних»";
+        };
         if (args.length < 3) {
             sender.sendMessage(ColorUtil.color("&e┠ &fНастройка лута (" + eventTitle + "):"));
             sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fоткрыть удобное GUI-меню настройки лута и шансов"));
@@ -365,7 +506,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
 
         BrushLootManager lootManager = plugin.getBrushLootManager();
-        String tierTitle = cauldron ? lootManager.getReagentDisplayName(tier) : tier.getItemTitle();
+        String tierTitle = lootManager.getCategoryItemTitle(tier, category);
 
         switch (action) {
             case "add", "добавить" -> {
@@ -387,7 +528,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                         return;
                     }
                 }
-                lootManager.addLootItem(tier, inHand, chance, cauldron);
+                lootManager.addLootItem(tier, inHand, chance, category);
                 sender.sendMessage(ColorUtil.color(String.format(
                         "&e┠ &#34D711Предмет &f%s x%d &#34D711добавлен в лут (%s&r&#34D711, шанс: &#E0C912%.1f%%&#34D711).",
                         inHand.getType().name(), inHand.getAmount(), tierTitle, chance
@@ -395,7 +536,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             }
 
             case "list", "список" -> {
-                List<BrushLootManager.BrushLootEntry> entries = lootManager.getLootEntries(tier, cauldron);
+                List<BrushLootManager.BrushLootEntry> entries = lootManager.getLootEntries(tier, category);
                 sender.sendMessage(ColorUtil.color("&e┠ &fЛут " + tierTitle + " &8(&f" + entries.size() + " шт.&8):"));
                 if (entries.isEmpty()) {
                     sender.sendMessage(ColorUtil.color("&e┠ &7Список пуст."));
@@ -426,7 +567,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(ColorUtil.color("&e┠ &cУкажите корректный номер предмета из /" + label + " " + subCmd + " list " + tier.getConfigKey()));
                     return;
                 }
-                if (lootManager.removeLootItem(tier, idx, cauldron)) {
+                if (lootManager.removeLootItem(tier, idx, category)) {
                     sender.sendMessage(ColorUtil.color("&e┠ &#34D711Предмет #" + idx + " удалён из лута " + tierTitle + "&f."));
                 } else {
                     sender.sendMessage(ColorUtil.color("&e┠ &cПредмет с номером #" + idx + " не найден."));
@@ -434,7 +575,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             }
 
             case "clear", "очистить" -> {
-                lootManager.clearLoot(tier, cauldron);
+                lootManager.clearLoot(tier, category);
                 sender.sendMessage(ColorUtil.color("&e┠ &#34D711Лут " + tierTitle + " &#34D711полностью очищен."));
             }
 
@@ -442,9 +583,13 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    private void handleGiveBrushSubcommand(CommandSender sender, String label, String[] args, boolean isReagent) {
+    private void handleGiveItemSubcommand(CommandSender sender, String label, String[] args, LootCategory category) {
         if (args.length < 2) {
-            String cmdName = isReagent ? "givereagent" : "givebrush";
+            String cmdName = switch (category) {
+                case EXCAVATION -> "givebrush";
+                case CAULDRON -> "givereagent";
+                case MINE -> "givegeode";
+            };
             sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " " + cmdName + " <обычная|эпическая|легендарная> [игрок]"));
             return;
         }
@@ -468,30 +613,28 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (isReagent) {
-            ItemStack reagent = plugin.getBrushLootManager().createReagentItem(tier);
-            target.getInventory().addItem(reagent);
-            sender.sendMessage(ColorUtil.color("&e┠ &fВыдан " + plugin.getBrushLootManager().getReagentDisplayName(tier) + " &fигроку &#E0C912" + target.getName() + "&f."));
-        } else {
-            ItemStack brush = plugin.getBrushLootManager().createBrushItem(tier);
-            target.getInventory().addItem(brush);
-            sender.sendMessage(ColorUtil.color("&e┠ &fВыдана " + tier.getItemTitle() + " &fигроку &#E0C912" + target.getName() + "&f."));
-        }
+        BrushLootManager mgr = plugin.getBrushLootManager();
+        ItemStack stack = switch (category) {
+            case EXCAVATION -> mgr.createBrushItem(tier);
+            case CAULDRON -> mgr.createReagentItem(tier);
+            case MINE -> mgr.createGeodeItem(tier);
+        };
+        target.getInventory().addItem(stack);
+        sender.sendMessage(ColorUtil.color("&e┠ &fВыдан " + mgr.getCategoryItemTitle(tier, category) + " &fигроку &#E0C912" + target.getName() + "&f."));
     }
 
     private void sendAdminHelp(CommandSender sender, String label, PluginConfig cfg) {
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fОбщее GUI-меню настройки лута всех ивентов"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " cauldronmenu &8(&#E0C912/cauldronmenu&8) — &fGUI-меню лута «Котла Алхимика»"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " excavationmenu &8— &fGUI-меню лута «Пляжных Раскопок»"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/minemenu &8(&#E0C912/" + label + " minemenu&8) — &fGUI-меню лута «Шахты Древних (0 ~ 0)»"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/cauldronmenu &8(&#E0C912/" + label + " cauldronmenu&8) — &fGUI-меню лута «Котла Алхимика»"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mine <regen|spawn|set-here|remove> &8— &fУправление «Шахтой Древних»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation|cauldron] &8— &fЗапустить ивент в " + cfg.getWorldName()));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation|cauldron] &8— &fЗапустить на вашей позиции"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить ивент"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить временный ивент"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mineloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " cauldronloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " givebrush <обычная|эпическая|легендарная> [игрок]"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " givereagent <обычная|эпическая|легендарная> [игрок]"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " ability <pull|push|gather|minions>"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " setworld <мир>"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " givegeode / givereagent / givebrush <обычная|эпическая|легендарная> [игрок]"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " reload"));
     }
 
@@ -501,7 +644,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             return Collections.emptyList();
         }
         String cmdName = command.getName().toLowerCase(Locale.ROOT);
-        if (cmdName.equals("cauldronmenu")) {
+        if (cmdName.equals("cauldronmenu") || cmdName.equals("minemenu")) {
             if (args.length == 1) {
                 return filterPrefix(Arrays.asList("обычная", "эпическая", "легендарная", "common", "epic", "legendary"), args[0]);
             }
@@ -509,22 +652,29 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return filterPrefix(Arrays.asList(
-                    "menu", "cauldronmenu", "excavationmenu", "gui", "start", "start-here", "stop",
-                    "brushloot", "cauldronloot", "givebrush", "givereagent", "ability", "setworld", "saveschem", "status", "top", "reload"
+                    "menu", "minemenu", "cauldronmenu", "excavationmenu", "mine", "gui",
+                    "start", "start-here", "stop", "mineloot", "cauldronloot", "brushloot",
+                    "givegeode", "givereagent", "givebrush", "ability", "setworld", "saveschem", "status", "top", "reload"
             ), args[0]);
         }
         if (args.length == 2) {
             String sub = args[0].toLowerCase(Locale.ROOT);
+            if (sub.equals("mine") || sub.equals("шахта")) {
+                return filterPrefix(Arrays.asList("regen", "spawn", "set-here", "remove", "menu", "status"), args[1]);
+            }
             if (sub.equals("start") || sub.equals("start-here") || sub.equals("starthere")) {
                 return filterPrefix(Arrays.asList("rift", "excavation", "cauldron"), args[1]);
             }
             if (sub.equals("menu") || sub.equals("gui") || sub.equals("cauldronmenu") || sub.equals("cmenu")
-                    || sub.equals("excavationmenu") || sub.equals("givebrush") || sub.equals("brush")
-                    || sub.equals("givereagent") || sub.equals("reagent")) {
-                return filterPrefix(Arrays.asList("cauldron", "excavation", "common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
+                    || sub.equals("minemenu") || sub.equals("mmenu") || sub.equals("excavationmenu")
+                    || sub.equals("givebrush") || sub.equals("brush")
+                    || sub.equals("givereagent") || sub.equals("reagent")
+                    || sub.equals("givegeode") || sub.equals("geode")) {
+                return filterPrefix(Arrays.asList("mine", "cauldron", "excavation", "common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
             }
             if (sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
-                    || sub.equals("reagentloot") || sub.equals("alchemistloot")) {
+                    || sub.equals("reagentloot") || sub.equals("alchemistloot")
+                    || sub.equals("mineloot") || sub.equals("geodeloot")) {
                 return filterPrefix(Arrays.asList("add", "list", "remove", "clear", "обычная", "эпическая", "легендарная"), args[1]);
             }
             if (sub.equals("ability") || sub.equals("cast")) {
@@ -544,14 +694,16 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         if (args.length == 3) {
             String sub = args[0].toLowerCase(Locale.ROOT);
             if (sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
-                    || sub.equals("reagentloot") || sub.equals("alchemistloot") || sub.equals("menu")) {
+                    || sub.equals("reagentloot") || sub.equals("alchemistloot")
+                    || sub.equals("mineloot") || sub.equals("geodeloot") || sub.equals("menu")) {
                 return filterPrefix(Arrays.asList("common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[2]);
             }
         }
         if (args.length == 4) {
             String sub = args[0].toLowerCase(Locale.ROOT);
             if ((sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
-                    || sub.equals("reagentloot") || sub.equals("alchemistloot")) && args[1].equalsIgnoreCase("add")) {
+                    || sub.equals("reagentloot") || sub.equals("alchemistloot")
+                    || sub.equals("mineloot") || sub.equals("geodeloot")) && args[1].equalsIgnoreCase("add")) {
                 return filterPrefix(Arrays.asList("10", "25", "50", "100"), args[3]);
             }
         }

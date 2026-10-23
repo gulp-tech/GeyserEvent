@@ -27,6 +27,7 @@ public class TopRightHudManager {
 
     private final GeyserEventPlugin plugin;
     private BossBar infoBossBar;
+    private BossBar mineBossBar;
 
     public TopRightHudManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -144,9 +145,59 @@ public class TopRightHudManager {
         }
     }
 
+    public void updateMineHud() {
+        PluginConfig cfg = plugin.getPluginConfig();
+        var mineMgr = plugin.getAncientMineManager();
+        if (!cfg.isTopRightHudEnabled() || mineMgr == null || !mineMgr.isMineActive()) {
+            if (mineBossBar != null) {
+                mineBossBar.removeAll();
+                mineBossBar = null;
+            }
+            return;
+        }
+
+        Location loc = mineMgr.getCenterLocation();
+        int geodes = mineMgr.getActiveGeodeCount();
+        int regenSec = mineMgr.getSecondsUntilFullRegen();
+        String title = ColorUtil.color(String.format(
+                "&#FFB81C&lШахта Древних &8| &fЖеоды: &a%d шт. &8| &fОбновление: &#E0C912%s &8| &fКоординаты: &#E0C912%d %d %d",
+                geodes,
+                ColorUtil.formatDuration(regenSec),
+                loc.getBlockX(),
+                loc.getBlockY(),
+                loc.getBlockZ()
+        ));
+
+        if (mineBossBar == null) {
+            mineBossBar = Bukkit.createBossBar(title, BarColor.YELLOW, BarStyle.SOLID);
+        } else {
+            mineBossBar.setTitle(title);
+        }
+        double maxSec = Math.max(30.0, plugin.getConfig().getInt("mine.regen-interval-seconds", 180));
+        mineBossBar.setProgress(Math.max(0.0, Math.min(1.0, regenSec / maxSec)));
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            boolean nearMine = player.getWorld().equals(loc.getWorld())
+                    && player.getLocation().distanceSquared(loc) <= 45.0 * 45.0
+                    && plugin.getBedrockService().canParticipate(player);
+            if (nearMine) {
+                if (!mineBossBar.getPlayers().contains(player)) {
+                    mineBossBar.addPlayer(player);
+                }
+            } else {
+                mineBossBar.removePlayer(player);
+            }
+        }
+    }
+
     public void removeHudFromPlayer(Player player) {
-        if (player != null && infoBossBar != null) {
-            infoBossBar.removePlayer(player);
+        if (player != null) {
+            if (infoBossBar != null) {
+                infoBossBar.removePlayer(player);
+            }
+            if (mineBossBar != null) {
+                mineBossBar.removePlayer(player);
+            }
         }
     }
 
@@ -154,6 +205,10 @@ public class TopRightHudManager {
         if (infoBossBar != null) {
             infoBossBar.removeAll();
             infoBossBar = null;
+        }
+        if (mineBossBar != null) {
+            mineBossBar.removeAll();
+            mineBossBar = null;
         }
     }
 }

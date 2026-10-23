@@ -240,11 +240,16 @@ public class RiftEventListener implements Listener {
     }
 
     /**
-     * Клик по 2-метровому Жителю-Археологу или Магистру Алхимику (ПКМ / ЛКМ).
+     * Клик по 2-метровому Жителю-Археологу, Магистру Алхимику или Древнему Кузнецу (ПКМ / ЛКМ).
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Entity clicked = event.getRightClicked();
+        if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(clicked)) {
+            event.setCancelled(true);
+            triggerBlacksmithClickDebounced(event.getPlayer());
+            return;
+        }
         if (plugin.getRiftManager().isExcavationVillager(clicked)) {
             event.setCancelled(true);
             triggerVillagerClickDebounced(event.getPlayer());
@@ -254,9 +259,26 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
         Entity clicked = event.getRightClicked();
+        if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(clicked)) {
+            event.setCancelled(true);
+            triggerBlacksmithClickDebounced(event.getPlayer());
+            return;
+        }
         if (plugin.getRiftManager().isExcavationVillager(clicked)) {
             event.setCancelled(true);
             triggerVillagerClickDebounced(event.getPlayer());
+        }
+    }
+
+    private void triggerBlacksmithClickDebounced(Player player) {
+        long now = System.currentTimeMillis();
+        long last = villagerClickCooldown.getOrDefault(player.getUniqueId(), 0L);
+        if (now - last < 250L) {
+            return;
+        }
+        villagerClickCooldown.put(player.getUniqueId(), now);
+        if (plugin.getAncientMineManager() != null) {
+            plugin.getAncientMineManager().handleBlacksmithInteract(player);
         }
     }
 
@@ -271,20 +293,32 @@ public class RiftEventListener implements Listener {
     }
 
     /**
-     * Обработка кликов по блокам в ивентах «Пляжные Раскопки» и «Котёл Алхимика».
+     * Обработка кликов по блокам в ивентах «Шахта Древних», «Пляжные Раскопки» и «Котёл Алхимика».
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteractBlock(PlayerInteractEvent event) {
-        InfernalRiftManager manager = plugin.getRiftManager();
-        if (!manager.isActive()) {
-            return;
-        }
         Action action = event.getAction();
         if (action != Action.RIGHT_CLICK_BLOCK && action != Action.LEFT_CLICK_BLOCK) {
             return;
         }
         Block block = event.getClickedBlock();
         if (block == null) {
+            return;
+        }
+
+        // Постоянный ивент «Шахта Древних» (0 ~ 0): клик по наковальне/кузнице в центре раскалывает жеоду
+        if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isInsideMineTerritory(block.getLocation())) {
+            Material m = block.getType();
+            if (m == Material.ANVIL || m == Material.CHIPPED_ANVIL || m == Material.DAMAGED_ANVIL
+                    || m == Material.SMITHING_TABLE || m == Material.BLAST_FURNACE) {
+                event.setCancelled(true);
+                triggerBlacksmithClickDebounced(event.getPlayer());
+                return;
+            }
+        }
+
+        InfernalRiftManager manager = plugin.getRiftManager();
+        if (!manager.isActive()) {
             return;
         }
 
@@ -563,7 +597,14 @@ public class RiftEventListener implements Listener {
         Entity victim = event.getEntity();
         Entity damager = event.getDamager();
 
-        // Если игрок нажал ЛКМ по 2-метровому Жителю или Алхимику — обрабатываем взаимодействие!
+        // Если игрок нажал ЛКМ по 2-метровому Жителю, Алхимику или Древнему Кузнецу — обрабатываем взаимодействие!
+        if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(victim)) {
+            event.setCancelled(true);
+            if (damager instanceof Player player) {
+                triggerBlacksmithClickDebounced(player);
+            }
+            return;
+        }
         if (manager.isExcavationVillager(victim)) {
             event.setCancelled(true);
             if (damager instanceof Player player) {
@@ -631,7 +672,8 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBossEnvironmentalDamage(EntityDamageEvent event) {
         Entity entity = event.getEntity();
-        if (plugin.getRiftManager().isExcavationVillager(entity)) {
+        if (plugin.getRiftManager().isExcavationVillager(entity)
+                || (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(entity))) {
             event.setCancelled(true);
             return;
         }
@@ -673,10 +715,18 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+
+        // 1. Постоянный ивент «Шахта Древних» (0 ~ 0): добыча руд и Древних жеод в жиле
+        if (plugin.getAncientMineManager() != null
+                && plugin.getAncientMineManager().handleMineBlockBreak(event.getPlayer(), block)) {
+            event.setCancelled(true);
+            return;
+        }
+
         if (!plugin.getRiftManager().isActive()) {
             return;
         }
-        Block block = event.getBlock();
         if (plugin.getRiftManager().getActiveEventType() == EventType.ALCHEMIST_CAULDRON) {
             Block nodeBlock = plugin.getAlchemistSchematicManager().resolveReagentNodeBlock(block);
             if (nodeBlock != null) {
@@ -695,10 +745,15 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isInsideMineTerritory(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
         if (!plugin.getRiftManager().isActive()) {
             return;
         }
-        Block block = event.getBlock();
         if (plugin.getSchematicManager().isProtectedBlock(block.getLocation())
                 || plugin.getBeachSchematicManager().isProtectedArenaBlock(block)
                 || plugin.getAlchemistSchematicManager().isProtectedArenaBlock(block)) {
@@ -709,6 +764,8 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
+        event.blockList().removeIf(b -> plugin.getAncientMineManager() != null
+                && plugin.getAncientMineManager().isInsideMineTerritory(b.getLocation()));
         if (!plugin.getRiftManager().isActive()) {
             return;
         }
@@ -720,6 +777,8 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent event) {
+        event.blockList().removeIf(b -> plugin.getAncientMineManager() != null
+                && plugin.getAncientMineManager().isInsideMineTerritory(b.getLocation()));
         if (!plugin.getRiftManager().isActive()) {
             return;
         }

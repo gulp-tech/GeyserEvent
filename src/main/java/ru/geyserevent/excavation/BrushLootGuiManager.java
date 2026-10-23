@@ -13,6 +13,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import ru.geyserevent.GeyserEventPlugin;
+import ru.geyserevent.excavation.BrushLootManager.LootCategory;
 import ru.geyserevent.util.ColorUtil;
 
 import java.util.ArrayList;
@@ -22,11 +23,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Удобное GUI-меню настройки лута и шансов:
- * - Главное меню (/rift menu): оба ивента («Пляжные Раскопки» и «Котёл Алхимика»)
- * - Отдельное меню «Котла Алхимика» (/rift cauldronmenu, /cauldronmenu, /rift menu cauldron)
- * - Отдельное меню «Пляжных Раскопок» (/rift menu excavation)
- * Полностью адаптировано как под телефоны (Bedrock GeyserMC), так и под Bedrock ПК / Java.
+ * Удобное GUI-меню настройки лута и шансов для всех трёх ивентов с лутом:
+ * - Главное меню (/rift menu, 45 слотов):
+ *   1-й ряд: «Пляжные Раскопки» (Кисточки)
+ *   2-й ряд: «Котёл Алхимика» (Реагенты)
+ *   3-й ряд: «Шахта Древних (0 ~ 0)» (Древние жеоды)
+ * - Отдельное меню «Шахты Древних» (/minemenu, /rift minemenu, /rift menu mine)
+ * - Отдельное меню «Котла Алхимика» (/cauldronmenu, /rift cauldronmenu, /rift menu cauldron)
+ * - Отдельное меню «Пляжных Раскопок» (/rift excavationmenu, /rift menu excavation)
  */
 public class BrushLootGuiManager {
 
@@ -61,14 +65,14 @@ public class BrushLootGuiManager {
     }
 
     public static class EventMenuHolder implements InventoryHolder {
-        private final boolean cauldron;
+        private final LootCategory category;
 
-        public EventMenuHolder(boolean cauldron) {
-            this.cauldron = cauldron;
+        public EventMenuHolder(LootCategory category) {
+            this.category = category;
         }
 
-        public boolean isCauldron() {
-            return cauldron;
+        public LootCategory getCategory() {
+            return category;
         }
 
         @Override
@@ -79,19 +83,19 @@ public class BrushLootGuiManager {
 
     public static class TierMenuHolder implements InventoryHolder {
         private final BrushTier tier;
-        private final boolean cauldron;
+        private final LootCategory category;
 
-        public TierMenuHolder(BrushTier tier, boolean cauldron) {
+        public TierMenuHolder(BrushTier tier, LootCategory category) {
             this.tier = tier;
-            this.cauldron = cauldron;
+            this.category = category;
         }
 
         public BrushTier getTier() {
             return tier;
         }
 
-        public boolean isCauldron() {
-            return cauldron;
+        public LootCategory getCategory() {
+            return category;
         }
 
         @Override
@@ -108,24 +112,25 @@ public class BrushLootGuiManager {
     }
 
     /**
-     * Открывает главное меню выбора ивента и редкости (36 слотов):
+     * Открывает главное меню выбора ивента и редкости (45 слотов):
      * - Слоты 11, 13, 15: Кисточки «Пляжных Раскопок»
      * - Слоты 20, 22, 24: Реагенты «Котла Алхимика»
+     * - Слоты 29, 31, 33: Жеоды «Шахты Древних (0 ~ 0)»
      */
     @SuppressWarnings("deprecation")
     public void openMainMenu(Player player) {
         Inventory inv = Bukkit.createInventory(
                 new MainMenuHolder(),
-                36,
+                45,
                 ColorUtil.color("&8Настройка лута ивентов")
         );
 
         ItemStack filler = createButton(Material.GRAY_STAINED_GLASS_PANE, "&7", List.of());
-        for (int i = 0; i < 36; i++) {
+        for (int i = 0; i < 45; i++) {
             inv.setItem(i, filler);
         }
 
-        // Иконка-заголовок ряда «Пляжные Раскопки» (слот 9)
+        // Ряд 1: «Пляжные Раскопки» (9, 11, 13, 15)
         inv.setItem(9, createButton(
                 Material.SAND,
                 "&#FFD614&lПляжные Раскопки",
@@ -136,13 +141,11 @@ public class BrushLootGuiManager {
                         "&eНажмите, чтобы открыть отдельное меню"
                 )
         ));
+        inv.setItem(11, createTierSelectIcon(BrushTier.COMMON, LootCategory.EXCAVATION));
+        inv.setItem(13, createTierSelectIcon(BrushTier.EPIC, LootCategory.EXCAVATION));
+        inv.setItem(15, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.EXCAVATION));
 
-        // Ряд 1: Кисточки «Пляжных Раскопок» (11, 13, 15)
-        inv.setItem(11, createTierSelectIcon(BrushTier.COMMON, false));
-        inv.setItem(13, createTierSelectIcon(BrushTier.EPIC, false));
-        inv.setItem(15, createTierSelectIcon(BrushTier.LEGENDARY, false));
-
-        // Иконка-заголовок ряда «Котёл Алхимика» (слот 18)
+        // Ряд 2: «Котёл Алхимика» (18, 20, 22, 24)
         inv.setItem(18, createButton(
                 Material.BREWING_STAND,
                 "&#C850FF&lКотёл Алхимика",
@@ -153,14 +156,78 @@ public class BrushLootGuiManager {
                         "&eНажмите, чтобы открыть отдельное меню"
                 )
         ));
+        inv.setItem(20, createTierSelectIcon(BrushTier.COMMON, LootCategory.CAULDRON));
+        inv.setItem(22, createTierSelectIcon(BrushTier.EPIC, LootCategory.CAULDRON));
+        inv.setItem(24, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.CAULDRON));
 
-        // Ряд 2: Реагенты «Котла Алхимика» (20, 22, 24)
-        inv.setItem(20, createTierSelectIcon(BrushTier.COMMON, true));
-        inv.setItem(22, createTierSelectIcon(BrushTier.EPIC, true));
-        inv.setItem(24, createTierSelectIcon(BrushTier.LEGENDARY, true));
+        // Ряд 3: «Шахта Древних (Постоянный, 0 ~ 0)» (27, 29, 31, 33)
+        inv.setItem(27, createButton(
+                Material.ANVIL,
+                "&#FFB81C&lШахта Древних (0 ~ 0)",
+                List.of(
+                        "&7Постоянный ивент в центре мира!",
+                        "&7Выберите древнюю жеоду справа",
+                        "&7для настройки наград у Кузнеца.",
+                        "",
+                        "&eНажмите, чтобы открыть отдельное меню"
+                )
+        ));
+        inv.setItem(29, createTierSelectIcon(BrushTier.COMMON, LootCategory.MINE));
+        inv.setItem(31, createTierSelectIcon(BrushTier.EPIC, LootCategory.MINE));
+        inv.setItem(33, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.MINE));
 
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
+    }
+
+    /**
+     * Открывает отдельное 27-слотовое GUI-меню настройки лута постоянного ивента «Шахта Древних»
+     * (команды: /minemenu, /geodemenu, /rift minemenu, /rift menu mine).
+     */
+    @SuppressWarnings("deprecation")
+    public void openMineMenu(Player player) {
+        Inventory inv = Bukkit.createInventory(
+                new EventMenuHolder(LootCategory.MINE),
+                27,
+                ColorUtil.color("&8Лут: Шахта Древних")
+        );
+
+        ItemStack border = createButton(Material.ORANGE_STAINED_GLASS_PANE, "&6", List.of());
+        ItemStack filler = createButton(Material.GRAY_STAINED_GLASS_PANE, "&7", List.of());
+        for (int i = 0; i < 27; i++) {
+            inv.setItem(i, (i < 9 || i >= 18) ? border : filler);
+        }
+
+        inv.setItem(4, createButton(
+                Material.ANVIL,
+                "&#FFB81C&lШахта Древних — Настройка лута",
+                List.of(
+                        "&7Постоянный ивент на координатах &f0 ~ 0&7.",
+                        "&7Здесь настраиваются награды, которые",
+                        "&7Древний Кузнец выдаёт за раскол жеод.",
+                        "",
+                        "&fВыберите редкость жеоды ниже!"
+                )
+        ));
+
+        inv.setItem(11, createTierSelectIcon(BrushTier.COMMON, LootCategory.MINE));
+        inv.setItem(13, createTierSelectIcon(BrushTier.EPIC, LootCategory.MINE));
+        inv.setItem(15, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.MINE));
+
+        inv.setItem(18, createButton(
+                Material.ARROW,
+                "&e« Все ивенты (/rift menu)",
+                List.of("&7Перейти в общее меню всех ивентов")
+        ));
+
+        inv.setItem(26, createButton(
+                Material.BREWING_STAND,
+                "&#C850FFПерейти к «Котлу Алхимика» »",
+                List.of("&7Открыть меню настройки лута реагентов")
+        ));
+
+        player.openInventory(inv);
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_PLACE, 0.7f, 1.2f);
     }
 
     /**
@@ -170,7 +237,7 @@ public class BrushLootGuiManager {
     @SuppressWarnings("deprecation")
     public void openCauldronMenu(Player player) {
         Inventory inv = Bukkit.createInventory(
-                new EventMenuHolder(true),
+                new EventMenuHolder(LootCategory.CAULDRON),
                 27,
                 ColorUtil.color("&8Лут: Котёл Алхимика")
         );
@@ -193,9 +260,9 @@ public class BrushLootGuiManager {
                 )
         ));
 
-        inv.setItem(11, createTierSelectIcon(BrushTier.COMMON, true));
-        inv.setItem(13, createTierSelectIcon(BrushTier.EPIC, true));
-        inv.setItem(15, createTierSelectIcon(BrushTier.LEGENDARY, true));
+        inv.setItem(11, createTierSelectIcon(BrushTier.COMMON, LootCategory.CAULDRON));
+        inv.setItem(13, createTierSelectIcon(BrushTier.EPIC, LootCategory.CAULDRON));
+        inv.setItem(15, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.CAULDRON));
 
         inv.setItem(18, createButton(
                 Material.ARROW,
@@ -204,9 +271,9 @@ public class BrushLootGuiManager {
         ));
 
         inv.setItem(26, createButton(
-                Material.SAND,
-                "&#FFD614Перейти к «Пляжным Раскопкам» »",
-                List.of("&7Открыть меню настройки лута кисточек")
+                Material.ANVIL,
+                "&#FFB81CПерейти к «Шахте Древних» »",
+                List.of("&7Открыть меню настройки лута жеод")
         ));
 
         player.openInventory(inv);
@@ -220,7 +287,7 @@ public class BrushLootGuiManager {
     @SuppressWarnings("deprecation")
     public void openExcavationMenu(Player player) {
         Inventory inv = Bukkit.createInventory(
-                new EventMenuHolder(false),
+                new EventMenuHolder(LootCategory.EXCAVATION),
                 27,
                 ColorUtil.color("&8Лут: Пляжные Раскопки")
         );
@@ -243,9 +310,9 @@ public class BrushLootGuiManager {
                 )
         ));
 
-        inv.setItem(11, createTierSelectIcon(BrushTier.COMMON, false));
-        inv.setItem(13, createTierSelectIcon(BrushTier.EPIC, false));
-        inv.setItem(15, createTierSelectIcon(BrushTier.LEGENDARY, false));
+        inv.setItem(11, createTierSelectIcon(BrushTier.COMMON, LootCategory.EXCAVATION));
+        inv.setItem(13, createTierSelectIcon(BrushTier.EPIC, LootCategory.EXCAVATION));
+        inv.setItem(15, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.EXCAVATION));
 
         inv.setItem(18, createButton(
                 Material.ARROW,
@@ -263,69 +330,97 @@ public class BrushLootGuiManager {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
     }
 
-    private ItemStack createTierSelectIcon(BrushTier tier, boolean cauldron) {
+    private ItemStack createTierSelectIcon(BrushTier tier, LootCategory category) {
         BrushLootManager mgr = plugin.getBrushLootManager();
-        double weight = mgr.getTierWeight(tier, cauldron);
-        int count = mgr.getLootEntries(tier, cauldron).size();
+        double weight = mgr.getTierWeight(tier, category);
+        int count = mgr.getLootEntries(tier, category).size();
 
-        if (cauldron) {
-            Material iconMat = switch (tier) {
-                case COMMON -> Material.SLIME_BALL;
-                case EPIC -> Material.AMETHYST_SHARD;
-                case LEGENDARY -> Material.BLAZE_POWDER;
-            };
-            return createButton(
-                    iconMat,
-                    mgr.getReagentDisplayName(tier),
-                    List.of(
-                            "&7Ивент: &dКотёл Алхимика",
-                            "&7Предметов в луте: &e" + count + " шт.",
-                            "&7Шанс появления реагента: &#34D711" + weight + "%",
-                            "",
-                            "&eНажмите, чтобы настроить лут Котла!"
-                    )
-            );
-        } else {
-            Material iconMat = Material.matchMaterial("BRUSH");
-            if (iconMat == null) {
-                iconMat = Material.FEATHER;
+        return switch (category) {
+            case CAULDRON -> {
+                Material iconMat = switch (tier) {
+                    case COMMON -> Material.SLIME_BALL;
+                    case EPIC -> Material.AMETHYST_SHARD;
+                    case LEGENDARY -> Material.BLAZE_POWDER;
+                };
+                yield createButton(
+                        iconMat,
+                        mgr.getReagentDisplayName(tier),
+                        List.of(
+                                "&7Ивент: &dКотёл Алхимика",
+                                "&7Предметов в луте: &e" + count + " шт.",
+                                "&7Шанс появления реагента: &#34D711" + weight + "%",
+                                "",
+                                "&eНажмите, чтобы настроить лут Котла!"
+                        )
+                );
             }
-            return createButton(
-                    iconMat,
-                    tier.getItemTitle(),
-                    List.of(
-                            "&7Ивент: &eПляжные Раскопки",
-                            "&7Предметов в луте: &e" + count + " шт.",
-                            "&7Шанс выпадения кисточки: &#34D711" + weight + "%",
-                            "&7Зарядов раскопок: &e" + tier.getDefaultUses(),
-                            "",
-                            "&eНажмите, чтобы настроить лут кисточки!"
-                    )
-            );
-        }
+            case MINE -> {
+                Material iconMat = switch (tier) {
+                    case COMMON -> Material.QUARTZ;
+                    case EPIC -> {
+                        Material echo = Material.matchMaterial("ECHO_SHARD");
+                        yield echo != null ? echo : Material.PRISMARINE_SHARD;
+                    }
+                    case LEGENDARY -> Material.MAGMA_CREAM;
+                };
+                yield createButton(
+                        iconMat,
+                        mgr.getGeodeDisplayName(tier),
+                        List.of(
+                                "&7Ивент: &#FFB81CШахта Древних (0 ~ 0)",
+                                "&7Предметов в луте: &e" + count + " шт.",
+                                "&7Шанс появления жеоды: &#34D711" + weight + "%",
+                                "",
+                                "&eНажмите, чтобы настроить лут Жеоды!"
+                        )
+                );
+            }
+            case EXCAVATION -> {
+                Material iconMat = Material.matchMaterial("BRUSH");
+                if (iconMat == null) {
+                    iconMat = Material.FEATHER;
+                }
+                yield createButton(
+                        iconMat,
+                        tier.getItemTitle(),
+                        List.of(
+                                "&7Ивент: &eПляжные Раскопки",
+                                "&7Предметов в луте: &e" + count + " шт.",
+                                "&7Шанс выпадения кисточки: &#34D711" + weight + "%",
+                                "&7Зарядов раскопок: &e" + tier.getDefaultUses(),
+                                "",
+                                "&eНажмите, чтобы настроить лут кисточки!"
+                        )
+                );
+            }
+        };
     }
 
     public void openTierMenu(Player player, BrushTier tier) {
-        openTierMenu(player, tier, false);
+        openTierMenu(player, tier, LootCategory.EXCAVATION);
+    }
+
+    public void openTierMenu(Player player, BrushTier tier, boolean cauldron) {
+        openTierMenu(player, tier, cauldron ? LootCategory.CAULDRON : LootCategory.EXCAVATION);
     }
 
     /**
-     * Открывает меню настройки лута и шансов конкретной кисточки или реагента (54 слота).
+     * Открывает меню настройки лута и шансов конкретной кисточки, реагента или древней жеоды (54 слота).
      */
     @SuppressWarnings("deprecation")
-    public void openTierMenu(Player player, BrushTier tier, boolean cauldron) {
+    public void openTierMenu(Player player, BrushTier tier, LootCategory category) {
         BrushLootManager mgr = plugin.getBrushLootManager();
-        String titleLabel = cauldron ? mgr.getReagentDisplayName(tier) : tier.getItemTitle();
+        String titleLabel = mgr.getCategoryItemTitle(tier, category);
 
         Inventory inv = Bukkit.createInventory(
-                new TierMenuHolder(tier, cauldron),
+                new TierMenuHolder(tier, category),
                 54,
                 ColorUtil.color("&8Лут: " + titleLabel)
         );
 
         EditClickMode mode = playerClickMode.getOrDefault(player.getUniqueId(), EditClickMode.PLUS_5);
 
-        List<BrushLootManager.BrushLootEntry> entries = mgr.getLootEntries(tier, cauldron);
+        List<BrushLootManager.BrushLootEntry> entries = mgr.getLootEntries(tier, category);
         int maxSlots = Math.min(36, entries.size());
         for (int i = 0; i < maxSlots; i++) {
             BrushLootManager.BrushLootEntry entry = entries.get(i);
@@ -352,19 +447,26 @@ public class BrushLootGuiManager {
             inv.setItem(i, sep);
         }
 
-        // Кнопка «Назад» (45)
+        String backTitle = switch (category) {
+            case EXCAVATION -> "Пляжных Раскопок";
+            case CAULDRON -> "Котла Алхимика";
+            case MINE -> "Шахты Древних";
+        };
         inv.setItem(45, createButton(
                 Material.ARROW,
-                "&e« Назад в меню " + (cauldron ? "Котла Алхимика" : "Пляжных Раскопок"),
+                "&e« Назад в меню " + backTitle,
                 List.of(
                         "&7ЛКМ — вернуться в меню ивента",
                         "&7ПКМ — открыть общее меню /rift menu"
                 )
         ));
 
-        // Управление шансом выпадения самой кисточки / реагента (47, 48, 49)
-        double weight = mgr.getTierWeight(tier, cauldron);
-        String itemKind = cauldron ? "реагента" : "кисточки";
+        double weight = mgr.getTierWeight(tier, category);
+        String itemKind = switch (category) {
+            case EXCAVATION -> "кисточки";
+            case CAULDRON -> "реагента";
+            case MINE -> "жеоды";
+        };
         inv.setItem(47, createButton(
                 Material.RED_STAINED_GLASS_PANE,
                 "&cУменьшить шанс " + itemKind + " (-5%)",
@@ -374,26 +476,34 @@ public class BrushLootGuiManager {
                 )
         ));
 
-        Material centerIconMat;
-        if (cauldron) {
-            centerIconMat = switch (tier) {
+        Material centerIconMat = switch (category) {
+            case CAULDRON -> switch (tier) {
                 case COMMON -> Material.SLIME_BALL;
                 case EPIC -> Material.AMETHYST_SHARD;
                 case LEGENDARY -> Material.BLAZE_POWDER;
             };
-        } else {
-            Material b = Material.matchMaterial("BRUSH");
-            centerIconMat = b != null ? b : Material.FEATHER;
-        }
+            case MINE -> switch (tier) {
+                case COMMON -> Material.QUARTZ;
+                case EPIC -> {
+                    Material echo = Material.matchMaterial("ECHO_SHARD");
+                    yield echo != null ? echo : Material.PRISMARINE_SHARD;
+                }
+                case LEGENDARY -> Material.MAGMA_CREAM;
+            };
+            case EXCAVATION -> {
+                Material b = Material.matchMaterial("BRUSH");
+                yield b != null ? b : Material.FEATHER;
+            }
+        };
 
         inv.setItem(48, createButton(
                 centerIconMat,
                 titleLabel,
                 List.of(
-                        "&7Вес появления этого " + itemKind + ": &#34D711" + weight + "%",
+                        "&7Вес появления: &#34D711" + weight + "%",
                         "",
                         "&7Используйте кнопки слева и справа",
-                        "&7для изменения шанса самого " + itemKind + "."
+                        "&7для изменения шанса " + itemKind + "."
                 )
         ));
 
@@ -406,7 +516,6 @@ public class BrushLootGuiManager {
                 )
         ));
 
-        // Кнопка очистки всего лута этой редкости (50)
         inv.setItem(50, createButton(
                 Material.RED_WOOL,
                 "&4Очистить весь лут этой редкости",
@@ -417,7 +526,6 @@ public class BrushLootGuiManager {
                 )
         ));
 
-        // Переключатель режима клика по предметам (51)
         inv.setItem(51, createButton(
                 Material.COMPARATOR,
                 "&6Режим клика: " + mode.getLabel(),
@@ -431,7 +539,6 @@ public class BrushLootGuiManager {
                 )
         ));
 
-        // Подсказка по добавлению предметов (53)
         inv.setItem(53, createButton(
                 Material.EMERALD,
                 "&aКак добавить свой предмет?",
@@ -461,13 +568,17 @@ public class BrushLootGuiManager {
             int slot = event.getSlot();
             switch (slot) {
                 case 9 -> openExcavationMenu(player);
-                case 11 -> openTierMenu(player, BrushTier.COMMON, false);
-                case 13 -> openTierMenu(player, BrushTier.EPIC, false);
-                case 15 -> openTierMenu(player, BrushTier.LEGENDARY, false);
+                case 11 -> openTierMenu(player, BrushTier.COMMON, LootCategory.EXCAVATION);
+                case 13 -> openTierMenu(player, BrushTier.EPIC, LootCategory.EXCAVATION);
+                case 15 -> openTierMenu(player, BrushTier.LEGENDARY, LootCategory.EXCAVATION);
                 case 18 -> openCauldronMenu(player);
-                case 20 -> openTierMenu(player, BrushTier.COMMON, true);
-                case 22 -> openTierMenu(player, BrushTier.EPIC, true);
-                case 24 -> openTierMenu(player, BrushTier.LEGENDARY, true);
+                case 20 -> openTierMenu(player, BrushTier.COMMON, LootCategory.CAULDRON);
+                case 22 -> openTierMenu(player, BrushTier.EPIC, LootCategory.CAULDRON);
+                case 24 -> openTierMenu(player, BrushTier.LEGENDARY, LootCategory.CAULDRON);
+                case 27 -> openMineMenu(player);
+                case 29 -> openTierMenu(player, BrushTier.COMMON, LootCategory.MINE);
+                case 31 -> openTierMenu(player, BrushTier.EPIC, LootCategory.MINE);
+                case 33 -> openTierMenu(player, BrushTier.LEGENDARY, LootCategory.MINE);
                 default -> {
                 }
             }
@@ -479,18 +590,18 @@ public class BrushLootGuiManager {
             if (event.getClickedInventory() != top) {
                 return true;
             }
-            boolean cauldron = eventHolder.isCauldron();
+            LootCategory category = eventHolder.getCategory();
             int slot = event.getSlot();
             switch (slot) {
-                case 11 -> openTierMenu(player, BrushTier.COMMON, cauldron);
-                case 13 -> openTierMenu(player, BrushTier.EPIC, cauldron);
-                case 15 -> openTierMenu(player, BrushTier.LEGENDARY, cauldron);
+                case 11 -> openTierMenu(player, BrushTier.COMMON, category);
+                case 13 -> openTierMenu(player, BrushTier.EPIC, category);
+                case 15 -> openTierMenu(player, BrushTier.LEGENDARY, category);
                 case 18 -> openMainMenu(player);
                 case 26 -> {
-                    if (cauldron) {
-                        openExcavationMenu(player);
-                    } else {
-                        openCauldronMenu(player);
+                    switch (category) {
+                        case EXCAVATION -> openCauldronMenu(player);
+                        case CAULDRON -> openMineMenu(player);
+                        case MINE -> openCauldronMenu(player);
                     }
                 }
                 default -> {
@@ -502,26 +613,25 @@ public class BrushLootGuiManager {
         if (holder instanceof TierMenuHolder tierHolder) {
             event.setCancelled(true);
             BrushTier tier = tierHolder.getTier();
-            boolean cauldron = tierHolder.isCauldron();
+            LootCategory category = tierHolder.getCategory();
             BrushLootManager mgr = plugin.getBrushLootManager();
 
-            // Если админ кликнул по предмету в СВОЁМ нижнем инвентаре — добавляем его в лут!
             if (event.getClickedInventory() == player.getInventory()) {
                 ItemStack clickedItem = event.getCurrentItem();
                 if (clickedItem == null || clickedItem.getType().isAir()) {
                     return true;
                 }
                 if (mgr.getBrushTier(clickedItem) != null) {
-                    player.sendMessage(ColorUtil.color("&e┠ &cСаму кисточку или реагент ивента нельзя добавить в лут."));
+                    player.sendMessage(ColorUtil.color("&e┠ &cСам предмет ивента (кисточку/реагент/жеоду) нельзя добавить в лут."));
                     return true;
                 }
-                if (mgr.getLootEntries(tier, cauldron).size() >= 36) {
+                if (mgr.getLootEntries(tier, category).size() >= 36) {
                     player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум 36 слотов)."));
                     return true;
                 }
-                mgr.addLootItem(tier, clickedItem.clone(), 25.0, cauldron);
+                mgr.addLootItem(tier, clickedItem.clone(), 25.0, category);
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.3f);
-                openTierMenu(player, tier, cauldron);
+                openTierMenu(player, tier, category);
                 return true;
             }
 
@@ -533,31 +643,33 @@ public class BrushLootGuiManager {
             if (slot == 45) {
                 if (event.getClick() == ClickType.RIGHT) {
                     openMainMenu(player);
-                } else if (cauldron) {
-                    openCauldronMenu(player);
                 } else {
-                    openExcavationMenu(player);
+                    switch (category) {
+                        case EXCAVATION -> openExcavationMenu(player);
+                        case CAULDRON -> openCauldronMenu(player);
+                        case MINE -> openMineMenu(player);
+                    }
                 }
                 return true;
             }
             if (slot == 47) {
-                mgr.setTierWeight(tier, mgr.getTierWeight(tier, cauldron) - 5.0, cauldron);
+                mgr.setTierWeight(tier, mgr.getTierWeight(tier, category) - 5.0, category);
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
-                openTierMenu(player, tier, cauldron);
+                openTierMenu(player, tier, category);
                 return true;
             }
             if (slot == 49) {
-                mgr.setTierWeight(tier, mgr.getTierWeight(tier, cauldron) + 5.0, cauldron);
+                mgr.setTierWeight(tier, mgr.getTierWeight(tier, category) + 5.0, category);
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.3f);
-                openTierMenu(player, tier, cauldron);
+                openTierMenu(player, tier, category);
                 return true;
             }
             if (slot == 50) {
                 ClickType click = event.getClick();
                 if (click.isShiftClick() || click == ClickType.DROP || click == ClickType.CONTROL_DROP || click == ClickType.MIDDLE) {
-                    mgr.clearLoot(tier, cauldron);
+                    mgr.clearLoot(tier, category);
                     player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 1.2f);
-                    openTierMenu(player, tier, cauldron);
+                    openTierMenu(player, tier, category);
                 } else {
                     player.sendMessage(ColorUtil.color("&e┠ &cНажмите &#E0C912Shift+ЛКМ &cили клавишу &#E0C912Q&c, чтобы подтвердить полную очистку лута."));
                 }
@@ -568,41 +680,40 @@ public class BrushLootGuiManager {
                 EditClickMode next = current.next();
                 playerClickMode.put(player.getUniqueId(), next);
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.4f);
-                openTierMenu(player, tier, cauldron);
+                openTierMenu(player, tier, category);
                 return true;
             }
 
-            // Клик по предмету лута в слотах 0..35
-            List<BrushLootManager.BrushLootEntry> entries = mgr.getLootEntries(tier, cauldron);
+            List<BrushLootManager.BrushLootEntry> entries = mgr.getLootEntries(tier, category);
             if (slot >= 0 && slot < entries.size()) {
                 BrushLootManager.BrushLootEntry entry = entries.get(slot);
                 ClickType click = event.getClick();
                 EditClickMode mode = playerClickMode.getOrDefault(player.getUniqueId(), EditClickMode.PLUS_5);
 
                 if (click == ClickType.DROP || click == ClickType.CONTROL_DROP || click == ClickType.MIDDLE || mode == EditClickMode.DELETE) {
-                    mgr.removeLootItem(tier, slot + 1, cauldron);
+                    mgr.removeLootItem(tier, slot + 1, category);
                     player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 1.2f);
                 } else if (click == ClickType.SHIFT_LEFT) {
-                    mgr.updateLootEntryChance(tier, slot, entry.chance() + 1.0, cauldron);
+                    mgr.updateLootEntryChance(tier, slot, entry.chance() + 1.0, category);
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.3f);
                 } else if (click == ClickType.SHIFT_RIGHT) {
-                    mgr.updateLootEntryChance(tier, slot, entry.chance() - 1.0, cauldron);
+                    mgr.updateLootEntryChance(tier, slot, entry.chance() - 1.0, category);
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
                 } else if (click == ClickType.RIGHT) {
-                    mgr.updateLootEntryChance(tier, slot, entry.chance() - 5.0, cauldron);
+                    mgr.updateLootEntryChance(tier, slot, entry.chance() - 5.0, category);
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
                 } else {
                     switch (mode) {
-                        case PLUS_5 -> mgr.updateLootEntryChance(tier, slot, entry.chance() + 5.0, cauldron);
-                        case MINUS_5 -> mgr.updateLootEntryChance(tier, slot, entry.chance() - 5.0, cauldron);
-                        case PLUS_1 -> mgr.updateLootEntryChance(tier, slot, entry.chance() + 1.0, cauldron);
-                        case MINUS_1 -> mgr.updateLootEntryChance(tier, slot, entry.chance() - 1.0, cauldron);
+                        case PLUS_5 -> mgr.updateLootEntryChance(tier, slot, entry.chance() + 5.0, category);
+                        case MINUS_5 -> mgr.updateLootEntryChance(tier, slot, entry.chance() - 5.0, category);
+                        case PLUS_1 -> mgr.updateLootEntryChance(tier, slot, entry.chance() + 1.0, category);
+                        case MINUS_1 -> mgr.updateLootEntryChance(tier, slot, entry.chance() - 1.0, category);
                         default -> {
                         }
                     }
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
                 }
-                openTierMenu(player, tier, cauldron);
+                openTierMenu(player, tier, category);
             }
             return true;
         }

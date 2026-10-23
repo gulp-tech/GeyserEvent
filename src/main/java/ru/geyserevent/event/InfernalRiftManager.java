@@ -144,8 +144,11 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Проверяет одного игрока: если у него есть кисточка или реагент ивента, но он вышел за пределы
-     * схемы ивента (радиус 16.5 блоков от центра 31x31 схемы), предмет и свечение мгновенно удаляются.
+     * Проверяет одного игрока:
+     * 1) Если у него есть кисточка или реагент временного ивента, но он вышел за пределы
+     *    схемы ивента (16.5 блоков), они мгновенно удаляются.
+     * 2) Если у него есть Древняя жеода «Шахты Древних» (0 ~ 0), но он вышел за пределы
+     *    зоны шахты (16.5 блоков от центра 0 ~ 0), жеоды мгновенно удаляются.
      */
     public void enforceBrushZoneForPlayer(Player player) {
         if (player == null || !plugin.getBrushLootManager().hasAnyEventBrush(player)) {
@@ -154,6 +157,26 @@ public class InfernalRiftManager {
         double zoneRadius = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
         double zoneRadiusSq = zoneRadius * zoneRadius;
 
+        // 1. Проверка зоны постоянного ивента «Шахта Древних» (0 ~ 0) для Древних жеод
+        var mineMgr = plugin.getAncientMineManager();
+        Location mineCenter = (mineMgr != null && mineMgr.isMineActive()) ? mineMgr.getCenterLocation() : null;
+        boolean outsideMine = mineCenter == null
+                || mineCenter.getWorld() == null
+                || !player.getWorld().equals(mineCenter.getWorld());
+        if (!outsideMine) {
+            Location pLoc = player.getLocation();
+            double dx = pLoc.getX() - mineCenter.getX();
+            double dz = pLoc.getZ() - mineCenter.getZ();
+            double dy = Math.abs(pLoc.getY() - mineCenter.getY());
+            if ((dx * dx + dz * dz) > zoneRadiusSq || dy > 15.0) {
+                outsideMine = true;
+            }
+        }
+        if (outsideMine && plugin.getBrushLootManager().removeAllPlayerGeodes(player)) {
+            player.sendMessage(ColorUtil.color("&e┠ &cВы вышли из зоны Шахты Древних — древние жеоды рассыпались."));
+        }
+
+        // 2. Проверка зоны временного ивента («Пляжные Раскопки» / «Котёл Алхимика»)
         boolean isItemEventActive = active
                 && (activeEventType == EventType.BEACH_EXCAVATION || activeEventType == EventType.ALCHEMIST_CAULDRON);
 
@@ -174,7 +197,7 @@ public class InfernalRiftManager {
 
         if (outside) {
             boolean hadReagent = plugin.getBrushLootManager().hasAnyReagent(player);
-            if (plugin.getBrushLootManager().removeAllEventBrushes(player)) {
+            if (plugin.getBrushLootManager().removeAllTemporaryEventItems(player)) {
                 player.removePotionEffect(PotionEffectType.GLOWING);
                 if (hadReagent) {
                     player.sendMessage(ColorUtil.color("&e┠ &cВы вышли из зоны ивента — реагенты пропали."));
@@ -187,7 +210,7 @@ public class InfernalRiftManager {
 
     /**
      * Проверяет всех игроков онлайн и выброшенные предметы: если игрок или предмет находится
-     * за пределами зоны ивента, кисточки и реагенты сразу пропадают.
+     * за пределами соответствующей зоны ивента, кисточки, реагенты и жеоды сразу пропадают.
      */
     public void enforceBrushZoneForPlayers() {
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -197,18 +220,38 @@ public class InfernalRiftManager {
         double zoneRadius = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
         double zoneRadiusSq = zoneRadius * zoneRadius;
 
-        if (active
-                && (activeEventType == EventType.BEACH_EXCAVATION || activeEventType == EventType.ALCHEMIST_CAULDRON)
-                && riftCenterLocation != null
-                && riftCenterLocation.getWorld() != null) {
-            World w = riftCenterLocation.getWorld();
+        var mineMgr = plugin.getAncientMineManager();
+        Location mineCenter = (mineMgr != null && mineMgr.isMineActive()) ? mineMgr.getCenterLocation() : null;
+
+        for (World w : Bukkit.getWorlds()) {
             for (Entity entity : w.getEntitiesByClass(Item.class)) {
-                if (entity instanceof Item itemEntity && plugin.getBrushLootManager().getBrushTier(itemEntity.getItemStack()) != null) {
-                    Location iLoc = itemEntity.getLocation();
-                    double dx = iLoc.getX() - riftCenterLocation.getX();
-                    double dz = iLoc.getZ() - riftCenterLocation.getZ();
-                    if ((dx * dx + dz * dz) > zoneRadiusSq) {
+                if (!(entity instanceof Item itemEntity)) {
+                    continue;
+                }
+                ItemStack stack = itemEntity.getItemStack();
+                if (plugin.getBrushLootManager().getBrushTier(stack) == null) {
+                    continue;
+                }
+                Location iLoc = itemEntity.getLocation();
+                if (plugin.getBrushLootManager().isGeodeItem(stack)) {
+                    if (mineCenter == null || !w.equals(mineCenter.getWorld())) {
                         itemEntity.remove();
+                    } else {
+                        double dx = iLoc.getX() - mineCenter.getX();
+                        double dz = iLoc.getZ() - mineCenter.getZ();
+                        if ((dx * dx + dz * dz) > zoneRadiusSq) {
+                            itemEntity.remove();
+                        }
+                    }
+                } else {
+                    if (!active || riftCenterLocation == null || !w.equals(riftCenterLocation.getWorld())) {
+                        itemEntity.remove();
+                    } else {
+                        double dx = iLoc.getX() - riftCenterLocation.getX();
+                        double dz = iLoc.getZ() - riftCenterLocation.getZ();
+                        if ((dx * dx + dz * dz) > zoneRadiusSq) {
+                            itemEntity.remove();
+                        }
                     }
                 }
             }
@@ -1195,19 +1238,26 @@ public class InfernalRiftManager {
 
     /**
      * Обновляет локатор (/event gps) каждые 5 тиков.
-     * Когда игрок подходит ближе чем на 10 блоков к ивенту — локатор молча пропадает (без сообщений в чат).
+     * Если идёт временный ивент — ведёт к нему, иначе ведёт к постоянной «Шахте Древних» (0 ~ 0).
+     * Когда игрок подходит ближе чем на 10 блоков к цели — локатор молча пропадает (без сообщений в чат).
      */
     @SuppressWarnings("deprecation")
     private void updateGpsTrackerForPlayers() {
-        if (!active || riftCenterLocation == null || riftCenterLocation.getWorld() == null) {
+        Location baseLoc = (active && riftCenterLocation != null && riftCenterLocation.getWorld() != null)
+                ? riftCenterLocation
+                : (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()
+                ? plugin.getAncientMineManager().getCenterLocation()
+                : null);
+
+        if (baseLoc == null || baseLoc.getWorld() == null) {
             return;
         }
         PluginConfig cfg = plugin.getPluginConfig();
-        World eventWorld = riftCenterLocation.getWorld();
+        World eventWorld = baseLoc.getWorld();
         double arrivalDist = cfg.getGpsArrivalDistance();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (bossBar != null && plugin.getBedrockService().canParticipate(player) && !bossBar.getPlayers().contains(player)) {
+            if (active && bossBar != null && plugin.getBedrockService().canParticipate(player) && !bossBar.getPlayers().contains(player)) {
                 bossBar.addPlayer(player);
             }
 
@@ -1221,15 +1271,15 @@ public class InfernalRiftManager {
                 if (personalBar != null) {
                     personalBar.setTitle(ColorUtil.color(
                             "&eЛокатор &8| &fПерейдите в мир &#E0C912" + eventWorld.getName()
-                                    + " &8(&#E0C912" + riftCenterLocation.getBlockX() + " " + riftCenterLocation.getBlockY() + " " + riftCenterLocation.getBlockZ() + "&8)"
+                                    + " &8(&#E0C912" + baseLoc.getBlockX() + " " + baseLoc.getBlockY() + " " + baseLoc.getBlockZ() + "&8)"
                     ));
                 }
                 continue;
             }
 
-            Location targetLoc = (activeEventType == EventType.INFERNAL_RIFT && getBossEntity() != null)
+            Location targetLoc = (active && activeEventType == EventType.INFERNAL_RIFT && getBossEntity() != null)
                     ? getBossEntity().getLocation()
-                    : riftCenterLocation;
+                    : baseLoc;
             double dist = player.getLocation().distance(targetLoc);
 
             if (dist > arrivalDist + 1.5) {
@@ -1249,9 +1299,9 @@ public class InfernalRiftManager {
                     "&eЛокатор: &#34D711%s %dм &8| &fКоординаты: &#E0C912%d %d %d",
                     arrow,
                     blocks,
-                    riftCenterLocation.getBlockX(),
-                    riftCenterLocation.getBlockY(),
-                    riftCenterLocation.getBlockZ()
+                    baseLoc.getBlockX(),
+                    baseLoc.getBlockY(),
+                    baseLoc.getBlockZ()
             ));
 
             BossBar personalBar = gpsBossBars.computeIfAbsent(uuid, k -> {
@@ -1347,9 +1397,15 @@ public class InfernalRiftManager {
 
         gpsTrackedPlayers.add(uuid);
 
-        if (active && riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
-            if (player.getWorld().equals(riftCenterLocation.getWorld())) {
-                double dist = player.getLocation().distance(riftCenterLocation);
+        Location baseLoc = (active && riftCenterLocation != null && riftCenterLocation.getWorld() != null)
+                ? riftCenterLocation
+                : (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()
+                ? plugin.getAncientMineManager().getCenterLocation()
+                : null);
+
+        if (baseLoc != null && baseLoc.getWorld() != null) {
+            if (player.getWorld().equals(baseLoc.getWorld())) {
+                double dist = player.getLocation().distance(baseLoc);
                 if (dist > plugin.getPluginConfig().getGpsArrivalDistance()) {
                     gpsWasOutsideRadius.add(uuid);
                 } else {

@@ -43,6 +43,7 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ColorUtil.color("&e┠ &fКоманды ивента:"));
             sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event delay &8— &fСколько осталось до ивента"));
             sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event gps &8— &fПоставить локатор до ивента"));
+            sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event mine &8— &fСтатус постоянной «Шахты Древних (0 ~ 0)»"));
             return true;
         }
 
@@ -63,6 +64,20 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
                     for (String line : cfg.getDelayWaitingLines()) {
                         sender.sendMessage(manager.formatEventPlaceholders(line, null));
                     }
+                }
+                return true;
+            }
+
+            case "mine", "шахта" -> {
+                var mineMgr = plugin.getAncientMineManager();
+                if (mineMgr != null && mineMgr.isMineActive()) {
+                    var loc = mineMgr.getCenterLocation();
+                    sender.sendMessage(ColorUtil.color("&e┠ &#FFB81CШахта Древних &8(&fПостоянный ивент&8)"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912" + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fЖеод в жиле: &#34D711" + mineMgr.getActiveGeodeCount()
+                            + " шт. &8| &fОбновление руд: &#E0C912" + ColorUtil.formatDuration(mineMgr.getSecondsUntilFullRegen())));
+                } else {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cШахта Древних сейчас недоступна."));
                 }
                 return true;
             }
@@ -88,7 +103,7 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             String lower = args[0].toLowerCase(Locale.ROOT);
             List<String> result = new ArrayList<>();
-            for (String opt : Arrays.asList("delay", "gps")) {
+            for (String opt : Arrays.asList("delay", "gps", "mine")) {
                 if (opt.startsWith(lower)) {
                     result.add(opt);
                 }

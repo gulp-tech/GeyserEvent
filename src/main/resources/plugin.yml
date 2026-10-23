@@ -1,9 +1,9 @@
 name: GeyserEvent
-version: '1.7.4'
+version: '1.8.0'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
-description: Ивенты «Адский Разлом», «Пляжные Раскопки» и «Котёл Алхимика» для Purpur 26.2 — для игроков Bedrock (GeyserMC)
+description: Ивенты «Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика» и постоянный ивент «Шахта Древних (0 ~ 0)» для Purpur 26.2 (GeyserMC)
 softdepend:
   - Geyser-Spigot
   - floodgate
@@ -12,26 +12,31 @@ softdepend:
 
 commands:
   event:
-    description: Команды ивента для игроков (/event delay, /event gps)
+    description: Команды ивентов для игроков (/event delay, /event gps, /event mine)
     aliases: [ivent]
-    usage: /<command> <delay|gps>
+    usage: /<command> <delay|gps|mine>
   rift:
     description: Админ-команды управления ивентами и GUI-меню лута
     aliases: [geyserevent, razlom, infernalrift]
-    usage: /<command> <menu|cauldronmenu|excavationmenu|start|start-here|stop|brushloot|cauldronloot|givebrush|givereagent|ability|setworld|saveschem|reload|status|top>
+    usage: /<command> <menu|minemenu|cauldronmenu|excavationmenu|mine|start|start-here|stop|mineloot|cauldronloot|brushloot|givegeode|givereagent|givebrush|ability|setworld|saveschem|reload|status|top>
     permission: geyserevent.admin
   cauldronmenu:
     description: Отдельное GUI-меню настройки лута «Котла Алхимика»
     aliases: [alchemistmenu, cmenu]
     usage: /<command> [обычная|эпическая|легендарная]
     permission: geyserevent.admin
+  minemenu:
+    description: Отдельное GUI-меню настройки лута постоянного ивента «Шахта Древних (0 ~ 0)»
+    aliases: [geodemenu, mmenu]
+    usage: /<command> [обычная|эпическая|легендарная]
+    permission: geyserevent.admin
 
 permissions:
   geyserevent.use:
-    description: Доступ к командам /event delay и /event gps (только для Bedrock игроков)
+    description: Доступ к командам /event delay, /event gps и /event mine
     default: true
   geyserevent.admin:
-    description: Полное управление ивентами Адский Разлом и Пляжные Раскопки (/rift)
+    description: Полное управление всеми ивентами и меню лута (/rift, /cauldronmenu, /minemenu)
     default: op
   geyserevent.bypass.bedrock:
     description: Позволяет администраторам с Java-клиента управлять ивентами и тестировать их
