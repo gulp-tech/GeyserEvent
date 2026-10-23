@@ -90,6 +90,10 @@ public final class ColorUtil {
         return String.format("%02d:%02d", minutes, seconds);
     }
 
+    public static String formatDuration(long totalSeconds) {
+        return formatTime(totalSeconds);
+    }
+
     /**
      * Форматирует секунды в читаемый вид для /event delay (например: "42 мин. 15 сек.").
      */
