@@ -48,6 +48,8 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
@@ -89,6 +91,23 @@ public class RiftEventListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntitiesLoad(EntitiesLoadEvent event) {
+        if (plugin.getAncientMineManager() != null) {
+            plugin.getAncientMineManager().onChunkEntitiesLoaded(event.getChunk(), event.getEntities());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onChunkLoad(ChunkLoadEvent event) {
+        if (plugin.getAncientMineManager() != null && event.getChunk().isEntitiesLoaded()) {
+            plugin.getAncientMineManager().onChunkEntitiesLoaded(
+                    event.getChunk(),
+                    java.util.Arrays.asList(event.getChunk().getEntities())
+            );
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
         Location from = event.getFrom();
@@ -96,13 +115,13 @@ public class RiftEventListener implements Listener {
         if (to == null) {
             return;
         }
-        if (plugin.getMinerBackpackManager() != null) {
-            plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(event.getPlayer());
-        }
         if (from.getBlockX() == to.getBlockX()
                 && from.getBlockY() == to.getBlockY()
                 && from.getBlockZ() == to.getBlockZ()) {
             return;
+        }
+        if (plugin.getMinerBackpackManager() != null) {
+            plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(event.getPlayer());
         }
         plugin.getRiftManager().enforceBrushZoneForPlayer(event.getPlayer());
     }
@@ -111,6 +130,9 @@ public class RiftEventListener implements Listener {
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
         if (plugin.getMinerBackpackManager() != null) {
             plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(event.getPlayer());
+        }
+        if (plugin.getAncientMineManager() != null) {
+            plugin.getAncientMineManager().spawnOrVerifyBlacksmith();
         }
         plugin.getRiftManager().handlePlayerChangedWorld(event.getPlayer());
     }
@@ -121,6 +143,9 @@ public class RiftEventListener implements Listener {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (plugin.getMinerBackpackManager() != null) {
                 plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(player);
+            }
+            if (plugin.getAncientMineManager() != null) {
+                plugin.getAncientMineManager().spawnOrVerifyBlacksmith();
             }
             plugin.getRiftManager().enforceBrushZoneForPlayer(player);
         }, 1L);

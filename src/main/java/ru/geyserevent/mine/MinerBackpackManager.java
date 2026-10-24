@@ -360,7 +360,7 @@ public class MinerBackpackManager {
                 player.addPassenger(stand);
             }
             Float prevYaw = lastSyncedYaw.get(uuid);
-            if (prevYaw == null || Math.abs( wrapAngleDelta(yaw - prevYaw)) >= 3.5f) {
+            if (prevYaw == null || Math.abs(wrapAngleDelta(yaw - prevYaw)) >= 6.0f) {
                 stand.setRotation(yaw, 0.0f);
                 lastSyncedYaw.put(uuid, yaw);
             }
@@ -414,6 +414,14 @@ public class MinerBackpackManager {
         }
     }
 
+    public boolean isActiveMountedBackpackStand(ArmorStand stand) {
+        if (stand == null || !stand.isValid() || !(stand.getVehicle() instanceof Player owner) || !owner.isOnline() || owner.isDead()) {
+            return false;
+        }
+        ArmorStand active = visualBackpackStands.get(owner.getUniqueId());
+        return active != null && active.getUniqueId().equals(stand.getUniqueId());
+    }
+
     public boolean isVisualBackpackEntity(Entity entity) {
         if (!(entity instanceof ArmorStand stand)) {
             return false;
@@ -431,10 +439,6 @@ public class MinerBackpackManager {
         if (meta != null) {
             meta.setDisplayName(ColorUtil.color("&6Рюкзак Шахтёра &7(Ур. " + level + ")"));
             meta.setCustomModelData(7100 + level);
-            if (level >= 4) {
-                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
-                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-            }
             item.setItemMeta(meta);
         }
         return item;
