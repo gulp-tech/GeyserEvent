@@ -59,7 +59,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class AncientMineManager {
 
-    private static final int CURRENT_MINE_SCHEMA_VERSION = 5;
+    private static final int CURRENT_MINE_SCHEMA_VERSION = 6;
     public static final int MINE_RADIUS = 22;
     public static final double MINE_ZONE_LIMIT = 24.5;
 
@@ -180,12 +180,34 @@ public class AncientMineManager {
     }
 
     private void purgeOldMineEntities(World world, int centerX, int centerY, int centerZ) {
+        Chunk centerChunk = world.getChunkAt(centerX >> 4, centerZ >> 4);
+        centerChunk.load(true);
+        centerChunk.setForceLoaded(true);
+
+        for (int cx = (centerX >> 4) - 3; cx <= (centerX >> 4) + 3; cx++) {
+            for (int cz = (centerZ >> 4) - 3; cz <= (centerZ >> 4) + 3; cz++) {
+                Chunk ch = world.getChunkAt(cx, cz);
+                if (!ch.isLoaded()) {
+                    ch.load(true);
+                }
+                for (Entity entity : ch.getEntities()) {
+                    if (entity instanceof Villager) {
+                        entity.remove();
+                    } else if (entity instanceof ArmorStand stand) {
+                        if (!stand.isInsideVehicle() && (!stand.isVisible() || stand.isMarker() || stand.isCustomNameVisible())) {
+                            stand.remove();
+                        }
+                    }
+                }
+            }
+        }
+
         Location center = new Location(world, centerX + 0.5, centerY, centerZ + 0.5);
-        for (Entity entity : world.getNearbyEntities(center, 55.0, 35.0, 55.0)) {
+        for (Entity entity : world.getNearbyEntities(center, 60.0, 40.0, 60.0)) {
             if (entity instanceof Villager) {
                 entity.remove();
             } else if (entity instanceof ArmorStand stand) {
-                if (!stand.isVisible() || stand.isMarker() || stand.isCustomNameVisible()) {
+                if (!stand.isInsideVehicle() && (!stand.isVisible() || stand.isMarker() || stand.isCustomNameVisible())) {
                     stand.remove();
                 }
             }
@@ -255,32 +277,6 @@ public class AncientMineManager {
                 }
             }
         }.runTaskTimer(plugin, 20L, 20L);
-
-        particleTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!mineActive || centerLocation == null || centerLocation.getWorld() == null) {
-                    return;
-                }
-                World w = centerLocation.getWorld();
-                boolean anyPlayerNear = false;
-                for (Player p : w.getPlayers()) {
-                    if (p.getLocation().distanceSquared(centerLocation) <= 42.0 * 42.0) {
-                        anyPlayerNear = true;
-                        break;
-                    }
-                }
-                if (!anyPlayerNear) {
-                    return;
-                }
-
-                for (BlockKey key : activeGeodeBlocks) {
-                    Location pLoc = new Location(w, key.x() + 0.5, key.y() + 1.05, key.z() + 0.5);
-                    w.spawnParticle(Particle.END_ROD, pLoc, 1, 0.18, 0.15, 0.18, 0.005);
-                    w.spawnParticle(Particle.WAX_ON, pLoc, 1, 0.22, 0.2, 0.22, 0.01);
-                }
-            }
-        }.runTaskTimer(plugin, 25L, 25L);
     }
 
     private void notifyNearbyMiners(String message) {
@@ -592,74 +588,61 @@ public class AncientMineManager {
             return;
         }
         World w = centerLocation.getWorld();
-        Entity existing = blacksmithUuid != null ? Bukkit.getEntity(blacksmithUuid) : null;
-        // Центральный блок подиума стоит на dy = +1 (от centerY + 1.0 до centerY + 2.0),
-        // поэтому ноги Древнего Кузнеца должны стоять ровно на centerY + 2.0!
         Location npcLoc = centerLocation.clone().add(0.0, 2.0, 0.0);
         npcLoc.setYaw(0.0f);
         npcLoc.setPitch(0.0f);
 
-        if (!(existing instanceof Villager) || !existing.isValid() || existing.isDead()) {
-            removeBlacksmithAndHologram();
-            for (Entity near : w.getNearbyEntities(npcLoc, 8.0, 8.0, 8.0)) {
-                if (near instanceof Villager) {
-                    near.remove();
-                } else if (near instanceof ArmorStand st && st.isCustomNameVisible()) {
-                    st.remove();
+        Chunk centerChunk = npcLoc.getChunk();
+        if (!centerChunk.isLoaded()) {
+            centerChunk.load(true);
+        }
+
+        // Очищаем любые старые голограммы (ArmorStand) и дублирующихся жителей в центральном чанке,
+        // из-за которых раньше накапливались десятки сущностей в одной точке (0 ~ 0) и падал FPS!
+        for (Entity entity : centerChunk.getEntities()) {
+            if (entity instanceof ArmorStand stand) {
+                if (!stand.isInsideVehicle() && (!stand.isVisible() || stand.isMarker() || stand.isCustomNameVisible())) {
+                    stand.remove();
+                }
+            } else if (entity instanceof Villager v) {
+                if (blacksmithUuid == null || !v.getUniqueId().equals(blacksmithUuid)) {
+                    v.remove();
                 }
             }
+        }
 
-            Villager v = (Villager) w.spawnEntity(npcLoc, EntityType.VILLAGER);
-            v.setProfession(Villager.Profession.WEAPONSMITH);
-            v.setVillagerType(Villager.Type.TAIGA);
-            v.setVillagerLevel(5);
-            v.setRecipes(java.util.Collections.emptyList());
-            v.setAdult();
-            v.setAI(false);
-            v.setGravity(false);
-            v.setCollidable(false);
-            v.setInvulnerable(true);
-            v.setSilent(true);
-            v.setRemoveWhenFarAway(false);
-            v.setPersistent(true);
-            v.setCustomNameVisible(false);
-
-            // Устанавливаем высокий рост (2.5 метра, scale = 1.38) через BossAbilityController!
-            BossAbilityController.applyEntityScale(v, 1.38);
-
-            v.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, false, false));
-            this.blacksmithUuid = v.getUniqueId();
-        } else {
+        Entity existing = blacksmithUuid != null ? Bukkit.getEntity(blacksmithUuid) : null;
+        if (existing instanceof Villager && existing.isValid() && !existing.isDead()) {
+            // Если Кузнец уже стоит на месте — НЕ отправляем лишние пакеты атрибутов/имени каждую секунду!
             if (existing.getLocation().distanceSquared(npcLoc) > 0.05) {
                 existing.teleport(npcLoc);
             }
-            Villager ev = (Villager) existing;
-            ev.setRecipes(java.util.Collections.emptyList());
-            BossAbilityController.applyEntityScale(ev, 1.38);
+            return;
         }
 
-        // 3 строки голограммы над 2.5-метровым Кузнецом (на высоте npcLoc + 3.15, 2.82, 2.50)
-        if (hologramUuids.size() != 3 || !areHologramsValid()) {
-            clearHologramsOnly();
-            for (Entity near : w.getNearbyEntities(npcLoc, 6.0, 6.0, 6.0)) {
-                if (near instanceof ArmorStand st && st.isCustomNameVisible()) {
-                    st.remove();
-                }
-            }
-            spawnHologramLine(npcLoc.clone().add(0, 3.15, 0),
-                    ColorUtil.color("&#FFB81C&lДревний Кузнец &8[&6Кузница и Рюкзак&8]"));
-            spawnHologramLine(npcLoc.clone().add(0, 2.82, 0),
-                    ColorUtil.color("&fЖеод в жиле: &a" + activeGeodeBlocks.size() + " шт. &8| &fПлавка руды и Прокачка"));
-            spawnHologramLine(npcLoc.clone().add(0, 2.50, 0),
-                    ColorUtil.color("&#34D711» Нажмите ПКМ / ЛКМ, чтобы открыть меню «"));
-        } else {
-            Entity line2 = Bukkit.getEntity(hologramUuids.get(1));
-            if (line2 != null) {
-                line2.setCustomName(ColorUtil.color(
-                        "&fЖеод в жиле: &a" + activeGeodeBlocks.size() + " шт. &8| &fПлавка руды и Прокачка"
-                ));
-            }
-        }
+        removeBlacksmithAndHologram();
+
+        Villager v = (Villager) w.spawnEntity(npcLoc, EntityType.VILLAGER);
+        v.setProfession(Villager.Profession.WEAPONSMITH);
+        v.setVillagerType(Villager.Type.TAIGA);
+        v.setVillagerLevel(5);
+        v.setRecipes(java.util.Collections.emptyList());
+        v.setAdult();
+        v.setAI(false);
+        v.setGravity(false);
+        v.setCollidable(false);
+        v.setInvulnerable(true);
+        v.setSilent(true);
+        v.setRemoveWhenFarAway(false);
+        // Не сохраняем НПС в файл чанка на диск, чтобы при перезагрузках не копились дубликаты!
+        v.setPersistent(false);
+        // Одно лёгкое имя прямо на самом НПС (0 дополнительных сущностей ArmorStand = 0 просадок FPS!)
+        v.setCustomName(ColorUtil.color("&#FFB81C&lДревний Кузнец &8[&aКузница и Рюкзак&8]"));
+        v.setCustomNameVisible(true);
+
+        BossAbilityController.applyEntityScale(v, 1.38);
+        v.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, false, false));
+        this.blacksmithUuid = v.getUniqueId();
     }
 
     private boolean areHologramsValid() {
@@ -1037,9 +1020,9 @@ public class AncientMineManager {
         for (int sx : new int[]{-1, 1}) {
             for (int sz : new int[]{-1, 1}) {
                 add(entries, sx * 4, 1, sz * 4, Material.ANVIL);
-                add(entries, sx * 5, 1, sz * 4, Material.BLAST_FURNACE);
+                add(entries, sx * 5, 1, sz * 4, Material.LODESTONE);
                 add(entries, sx * 4, 1, sz * 5, Material.SMITHING_TABLE);
-                add(entries, sx * 5, 1, sz * 5, Material.LAVA_CAULDRON);
+                add(entries, sx * 5, 1, sz * 5, Material.CHISELED_POLISHED_BLACKSTONE);
 
                 // Угловые несущие колонны ротонды на (±6, ±6), dy = 1..6
                 for (int y = 1; y <= 6; y++) {

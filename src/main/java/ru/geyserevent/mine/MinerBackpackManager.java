@@ -83,10 +83,10 @@ public class MinerBackpackManager {
     private final Map<UUID, Integer> playerForgePoints = new HashMap<>();
     private final Map<UUID, Integer> playerTotalMined = new HashMap<>();
     private final Map<UUID, ArmorStand> visualBackpackStands = new HashMap<>();
+    private final Map<UUID, Float> lastSyncedYaw = new HashMap<>();
     private final Map<UUID, Long> fullBackpackWarnCooldown = new HashMap<>();
 
     private BukkitTask backpackSyncTask;
-    private int orphanSweepTickCounter = 0;
 
     public enum MineOreType {
         COPPER("COPPER", "&6Древняя медная руда", Material.RAW_COPPER, Material.COPPER_INGOT, 2, 3, 1),
@@ -237,14 +237,8 @@ public class MinerBackpackManager {
         if (backpackSyncTask != null) {
             backpackSyncTask.cancel();
         }
-        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            syncVisualBackpacks();
-            orphanSweepTickCounter++;
-            if (orphanSweepTickCounter >= 20) {
-                orphanSweepTickCounter = 0;
-                purgeOrphanedBackpackStands();
-            }
-        }, 1L, 1L);
+        // Поскольку рюкзак прикреплён к игроку через addPassenger, проверка зоны раз в 5 тиков не создаёт нагрузки
+        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncVisualBackpacks, 5L, 5L);
     }
 
     /**
@@ -274,6 +268,7 @@ public class MinerBackpackManager {
         while (it.hasNext()) {
             var entry = it.next();
             if (!activeInside.contains(entry.getKey())) {
+                lastSyncedYaw.remove(entry.getKey());
                 ArmorStand stand = entry.getValue();
                 Player p = Bukkit.getPlayer(entry.getKey());
                 if (stand != null) {
@@ -349,10 +344,10 @@ public class MinerBackpackManager {
                     equip.setHelmet(backpackModelItem);
                 }
             });
-            // Прикрепляем стойку прямо к игроку (passenger), чтобы рюкзак двигался с игроком как единое целое без отставания!
             player.addPassenger(stand);
             stand.setRotation(yaw, 0.0f);
             visualBackpackStands.put(uuid, stand);
+            lastSyncedYaw.put(uuid, yaw);
 
             int lvl = getBackpackLevel(uuid);
             int cap = getBackpackCapacity(uuid);
@@ -364,9 +359,19 @@ public class MinerBackpackManager {
             if (!player.getPassengers().contains(stand)) {
                 player.addPassenger(stand);
             }
-            stand.setRotation(yaw, 0.0f);
-            stand.setHeadPose(EulerAngle.ZERO);
+            Float prevYaw = lastSyncedYaw.get(uuid);
+            if (prevYaw == null || Math.abs( wrapAngleDelta(yaw - prevYaw)) >= 3.5f) {
+                stand.setRotation(yaw, 0.0f);
+                lastSyncedYaw.put(uuid, yaw);
+            }
         }
+    }
+
+    private static float wrapAngleDelta(float delta) {
+        float d = delta % 360.0f;
+        if (d >= 180.0f) d -= 360.0f;
+        if (d < -180.0f) d += 360.0f;
+        return d;
     }
 
     /**
@@ -452,6 +457,7 @@ public class MinerBackpackManager {
         if (player == null) {
             return;
         }
+        lastSyncedYaw.remove(player.getUniqueId());
         ArmorStand stand = visualBackpackStands.remove(player.getUniqueId());
         if (stand != null) {
             player.removePassenger(stand);
@@ -472,6 +478,7 @@ public class MinerBackpackManager {
             }
         }
         visualBackpackStands.clear();
+        lastSyncedYaw.clear();
         purgeOrphanedBackpackStands();
     }
 
