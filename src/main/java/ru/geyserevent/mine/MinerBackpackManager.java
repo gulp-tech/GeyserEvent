@@ -237,8 +237,8 @@ public class MinerBackpackManager {
         if (backpackSyncTask != null) {
             backpackSyncTask.cancel();
         }
-        // Поскольку рюкзак прикреплён к игроку через addPassenger, проверка зоны раз в 5 тиков не создаёт нагрузки
-        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncVisualBackpacks, 5L, 5L);
+        // Поскольку рюкзак прикреплён к игроку через addPassenger, проверка зоны раз в 10 тиков не создаёт нагрузки
+        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncVisualBackpacks, 10L, 10L);
     }
 
     /**
@@ -332,6 +332,7 @@ public class MinerBackpackManager {
                 s.setBasePlate(false);
                 s.setArms(false);
                 s.setSilent(true);
+                s.setGlowing(false);
                 s.setInvulnerable(true);
                 s.setPersistent(false);
                 s.setCustomNameVisible(false);
@@ -360,7 +361,7 @@ public class MinerBackpackManager {
                 player.addPassenger(stand);
             }
             Float prevYaw = lastSyncedYaw.get(uuid);
-            if (prevYaw == null || Math.abs(wrapAngleDelta(yaw - prevYaw)) >= 6.0f) {
+            if (prevYaw == null || Math.abs(wrapAngleDelta(yaw - prevYaw)) >= 12.0f) {
                 stand.setRotation(yaw, 0.0f);
                 lastSyncedYaw.put(uuid, yaw);
             }

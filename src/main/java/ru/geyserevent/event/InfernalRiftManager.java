@@ -3,6 +3,7 @@ package ru.geyserevent.event;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -138,9 +139,11 @@ public class InfernalRiftManager {
             @Override
             public void run() {
                 enforceBrushZoneForPlayers();
-                updateGpsTrackerForPlayers();
+                if (!gpsTrackedPlayers.isEmpty()) {
+                    updateGpsTrackerForPlayers();
+                }
             }
-        }.runTaskTimer(plugin, 5L, 5L);
+        }.runTaskTimer(plugin, 10L, 10L);
     }
 
     /**
@@ -347,6 +350,9 @@ public class InfernalRiftManager {
         this.riftCenterLocation = targetCenter.getBlock().getLocation().add(0.5, 0, 0.5);
         this.eventEndEpochSeconds = (System.currentTimeMillis() / 1000L) + (cfg.getDurationMinutes() * 60L);
 
+        // Удерживаем чанки ивента загруженными на время проведения, чтобы Босс/НПС не выгружался и гарантированно удалялся в конце
+        setEventChunksForceLoaded(this.riftCenterLocation, true);
+
         if (this.activeEventType == EventType.BEACH_EXCAVATION) {
             // 1. Строим большую схему 31x31 «Пляжные Раскопки» и получаем точку спавна 2м Жителя на пьедестале
             this.bossHomeLocation = plugin.getBeachSchematicManager().pasteSchematic(this.riftCenterLocation);
@@ -412,15 +418,18 @@ public class InfernalRiftManager {
         villager.setAdult();
         villager.setProfession(Villager.Profession.CARTOGRAPHER);
         villager.setVillagerType(Villager.Type.DESERT);
+        villager.setRecipes(java.util.Collections.emptyList());
         villager.setAI(false);
+        villager.setAware(false);
         villager.setGravity(false);
         villager.setInvulnerable(true);
         villager.setCollidable(false);
         villager.setRemoveWhenFarAway(false);
-        villager.setPersistent(true);
+        villager.setPersistent(false);
         villager.setCanPickupItems(false);
         villager.setCustomNameVisible(true);
-        villager.setGlowing(true);
+        // Отключаем Glowing на НПС, т.к. шейдер контура свечения (entity_outline) сильно просаживает FPS при взгляде вблизи!
+        villager.setGlowing(false);
 
         // 2-метровый рост Жителя (~1.95 * 1.10 = 2.15м)
         BossAbilityController.applyEntityScale(villager, cfg.getExcavationVillagerScale());
@@ -438,7 +447,6 @@ public class InfernalRiftManager {
 
         world.playSound(loc, Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 1.2f);
         world.playSound(loc, Sound.ENTITY_VILLAGER_CELEBRATE, 2.0f, 0.9f);
-        world.spawnParticle(Particle.HAPPY_VILLAGER, loc.clone().add(0, 1.2, 0), 15, 0.6, 0.8, 0.6, 0.03);
 
         return villager;
     }
@@ -457,15 +465,17 @@ public class InfernalRiftManager {
         alchemist.setAdult();
         alchemist.setProfession(Villager.Profession.CLERIC);
         alchemist.setVillagerType(Villager.Type.SWAMP);
+        alchemist.setRecipes(java.util.Collections.emptyList());
         alchemist.setAI(false);
+        alchemist.setAware(false);
         alchemist.setGravity(false);
         alchemist.setInvulnerable(true);
         alchemist.setCollidable(false);
         alchemist.setRemoveWhenFarAway(false);
-        alchemist.setPersistent(true);
+        alchemist.setPersistent(false);
         alchemist.setCanPickupItems(false);
         alchemist.setCustomNameVisible(true);
-        alchemist.setGlowing(true);
+        alchemist.setGlowing(false);
 
         BossAbilityController.applyEntityScale(alchemist, cfg.getExcavationVillagerScale());
 
@@ -479,8 +489,6 @@ public class InfernalRiftManager {
 
         world.playSound(loc, Sound.BLOCK_BREWING_STAND_BREW, 2.0f, 0.8f);
         world.playSound(loc, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 2.0f, 0.9f);
-        world.spawnParticle(Particle.WITCH, loc.clone().add(0, 1.2, 0), 15, 0.6, 0.8, 0.6, 0.03);
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.0, 0), 10, 0.5, 0.6, 0.5, 0.02);
 
         return alchemist;
     }
@@ -496,10 +504,10 @@ public class InfernalRiftManager {
         boss.setImmuneToZombification(true);
         boss.setAdult();
         boss.setRemoveWhenFarAway(false);
-        boss.setPersistent(true);
+        boss.setPersistent(false);
         boss.setCanPickupItems(false);
         boss.setCustomNameVisible(true);
-        boss.setGlowing(true);
+        boss.setGlowing(false);
 
         BossAbilityController.applyEntityScale(boss, cfg.getBossScale());
         BossAbilityController.setEntityAttribute(boss, "MOVEMENT_SPEED", "generic.movement_speed", cfg.getBossMovementSpeed());
@@ -520,8 +528,6 @@ public class InfernalRiftManager {
 
         world.playSound(loc, Sound.ENTITY_WITHER_SPAWN, 2.0f, 0.7f);
         world.playSound(loc, Sound.ENTITY_PIGLIN_BRUTE_ANGRY, 2.5f, 0.5f);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, loc.clone().add(0, 1.0, 0), 2, 0.2, 0.2, 0.2, 0.0);
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.2, 0), 80, 0.8, 1.2, 0.8, 0.08);
 
         return boss;
     }
@@ -542,6 +548,11 @@ public class InfernalRiftManager {
                 secondsElapsed++;
                 PluginConfig cfg = plugin.getPluginConfig();
                 long now = System.currentTimeMillis() / 1000L;
+
+                // Каждые 5 минут (300 сек.) отправляем сообщение в чат о том, что идёт ивент!
+                if (secondsElapsed > 0 && secondsElapsed % 300 == 0 && getSecondsRemainingInEvent() >= 30) {
+                    broadcastOngoingEventReminder();
+                }
 
                 if (activeEventType == EventType.BEACH_EXCAVATION) {
                     tickBeachExcavation(cfg, now);
@@ -581,19 +592,11 @@ public class InfernalRiftManager {
                 brushReadyToClaim = true;
                 if (bossHomeLocation != null && bossHomeLocation.getWorld() != null) {
                     bossHomeLocation.getWorld().playSound(bossHomeLocation, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 1.2f);
-                    bossHomeLocation.getWorld().spawnParticle(
-                            Particle.HAPPY_VILLAGER,
-                            bossHomeLocation.clone().add(0, 1.3, 0),
-                            8, 0.4, 0.5, 0.4, 0.03
-                    );
                 }
             }
         }
 
-        if (villager != null) {
-            updateExcavationVillagerNameAndBar(villager);
-        }
-        plugin.getTopRightHudManager().updateTopRightHud();
+        updateExcavationVillagerNameAndBar(villager);
     }
 
     private void tickAlchemistCauldron(PluginConfig cfg, long now) {
@@ -613,15 +616,12 @@ public class InfernalRiftManager {
             }
         }
 
-        // 1. Красивые атмосферные частицы над 4 котлами и над всеми активными реагентами на 16 пьедесталах
-        plugin.getAlchemistSchematicManager().spawnAmbientEffects();
-
-        // 2. Периодический звук бурления центрального котла
-        if (secondsElapsed % 4 == 0 && bossHomeLocation != null && bossHomeLocation.getWorld() != null) {
-            bossHomeLocation.getWorld().playSound(bossHomeLocation, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1.4f, 0.9f);
+        // 1. Периодический звук бурления центрального котла
+        if (secondsElapsed % 5 == 0 && bossHomeLocation != null && bossHomeLocation.getWorld() != null) {
+            bossHomeLocation.getWorld().playSound(bossHomeLocation, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1.2f, 0.9f);
         }
 
-        // 3. Рост новых нестабильных Реагентов на 16 пьедесталах болота (ускоряется под конец ивента!)
+        // 2. Рост новых нестабильных Реагентов на 16 пьедесталах болота (ускоряется под конец ивента!)
         if (reagentSproutCooldownSeconds > 0) {
             reagentSproutCooldownSeconds--;
         }
@@ -631,7 +631,7 @@ public class InfernalRiftManager {
             reagentSproutCooldownSeconds = getDynamicReagentSproutIntervalSeconds();
         }
 
-        // 4. Таймер бонусного реагента у самого Алхимика (также без режима ожидания и с ускорением под конец!)
+        // 3. Таймер бонусного реагента у самого Алхимика (также без режима ожидания и с ускорением под конец!)
         if (!brushReadyToClaim) {
             if (brushCountdownSeconds > 0) {
                 brushCountdownSeconds--;
@@ -640,26 +640,11 @@ public class InfernalRiftManager {
                 brushReadyToClaim = true;
                 if (bossHomeLocation != null && bossHomeLocation.getWorld() != null) {
                     bossHomeLocation.getWorld().playSound(bossHomeLocation, Sound.BLOCK_BREWING_STAND_BREW, 1.5f, 1.2f);
-                    bossHomeLocation.getWorld().spawnParticle(
-                            Particle.WITCH,
-                            bossHomeLocation.clone().add(0, 1.3, 0),
-                            8, 0.4, 0.5, 0.4, 0.03
-                    );
                 }
             }
         }
 
-        // 5. Подсветка (Glowing) для курьеров, несущих реагент по болоту к котлу
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (plugin.getBrushLootManager().hasAnyReagent(p)) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 35, 0, false, false));
-            }
-        }
-
-        if (alchemist != null) {
-            updateAlchemistNameAndBar(alchemist);
-        }
-        plugin.getTopRightHudManager().updateTopRightHud();
+        updateAlchemistNameAndBar(alchemist);
     }
 
     /**
@@ -879,6 +864,8 @@ public class InfernalRiftManager {
 
         LivingEntity boss = getBossEntity();
         if (boss == null || boss.isDead() || !boss.isValid()) {
+            // Даже если чанк Босса временно без игроков, информационный БоссБар обязан обновляться!
+            updateEventBossBar();
             return;
         }
 
@@ -892,15 +879,7 @@ public class InfernalRiftManager {
             if (boss.getLocation().distanceSquared(bossHomeLocation) > maxDist * maxDist) {
                 boss.teleport(bossHomeLocation);
                 boss.getWorld().playSound(bossHomeLocation, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.6f);
-                boss.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, bossHomeLocation.clone().add(0, 1, 0), 40, 0.5, 0.8, 0.5, 0.05);
             }
-        }
-
-        // Фоновые частицы врат Разлома (оптимизировано против лагов)
-        if (riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
-            World w = riftCenterLocation.getWorld();
-            w.spawnParticle(Particle.PORTAL, riftCenterLocation.clone().add(0, 3.5, -2.0), 6, 1.0, 1.2, 0.3, 0.2);
-            w.spawnParticle(Particle.SOUL_FIRE_FLAME, riftCenterLocation.clone().add(0, 1.2, 0), 3, 2.0, 0.3, 2.0, 0.01);
         }
 
         // Способности босса в радиусе 15 блоков
@@ -921,7 +900,6 @@ public class InfernalRiftManager {
         }
 
         updateBossNameAndHealthBar(boss);
-        plugin.getTopRightHudManager().updateTopRightHud();
     }
 
     /**
@@ -942,7 +920,9 @@ public class InfernalRiftManager {
 
         if (this.bossCurrentHealth <= 0.0) {
             this.defeated = true;
-            boss.setHealth(0.0);
+            if (boss != null && boss.isValid()) {
+                boss.remove();
+            }
             handleBossDefeated();
             return true;
         } else {
@@ -966,7 +946,6 @@ public class InfernalRiftManager {
             World w = loc.getWorld();
             if (w != null) {
                 w.playSound(loc, Sound.ENTITY_WITHER_BREAK_BLOCK, 2.0f, 0.7f);
-                w.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.5, 0), 90, 1.0, 1.2, 1.0, 0.1);
             }
             boss.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 120, 0, false, false));
             plugin.getAbilityController().summonMinions(boss, false);
@@ -977,7 +956,6 @@ public class InfernalRiftManager {
             if (w != null) {
                 w.strikeLightningEffect(loc);
                 w.playSound(loc, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.5f, 0.6f);
-                w.spawnParticle(Particle.LAVA, loc.clone().add(0, 1.5, 0), 60, 1.0, 1.0, 1.0, 0.1);
             }
             boss.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 120, 1, false, false));
             plugin.getAbilityController().castGatherAllAbility(boss);
@@ -994,6 +972,8 @@ public class InfernalRiftManager {
             activeTickTask = null;
         }
 
+        // Немедленно удаляем Босса и всех Приспешников, чтобы Босс не оставался стоять бессмертным!
+        removeActiveEventEntities();
         plugin.getAbilityController().removeAllMinions();
         plugin.getTopRightHudManager().clearAllHud();
         clearAllGpsTrackers();
@@ -1002,7 +982,6 @@ public class InfernalRiftManager {
             World w = riftCenterLocation.getWorld();
             w.playSound(riftCenterLocation, Sound.UI_TOAST_CHALLENGE_COMPLETE, 2.0f, 0.9f);
             w.playSound(riftCenterLocation, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.7f);
-            w.spawnParticle(Particle.SOUL_FIRE_FLAME, riftCenterLocation.clone().add(0, 2, 0), 120, 2.0, 2.0, 2.0, 0.12);
         }
 
         distributeTopRewards();
@@ -1070,17 +1049,10 @@ public class InfernalRiftManager {
             distributeTopRewards();
         }
 
-        LivingEntity boss = getBossEntity();
-        if (boss != null && boss.isValid()) {
-            boss.remove();
+        removeActiveEventEntities();
+        if (riftCenterLocation != null) {
+            setEventChunksForceLoaded(riftCenterLocation, false);
         }
-        bossUuid = null;
-
-        LivingEntity villager = getExcavationVillagerEntity();
-        if (villager != null && villager.isValid()) {
-            villager.remove();
-        }
-        villagerUuid = null;
 
         plugin.getBrushLootManager().removeAllEventBrushesFromOnlinePlayers();
         plugin.getAbilityController().removeAllMinions();
@@ -1104,91 +1076,244 @@ public class InfernalRiftManager {
         resetNextAutoStartTimer();
     }
 
-    public void updateExcavationVillagerNameAndBar(LivingEntity villager) {
-        if (villager == null) {
+    /**
+     * Принудительно загружает чанки ивента и удаляет Босса Разлома, Археолога, Алхимика и любых оставшихся
+     * мобов с PDC-ключом ивента, чтобы Босс гарантированно пропадал после окончания ивента!
+     */
+    private void removeActiveEventEntities() {
+        if (riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
+            World w = riftCenterLocation.getWorld();
+            int baseCx = riftCenterLocation.getBlockX() >> 4;
+            int baseCz = riftCenterLocation.getBlockZ() >> 4;
+            for (int cx = baseCx - 2; cx <= baseCx + 2; cx++) {
+                for (int cz = baseCz - 2; cz <= baseCz + 2; cz++) {
+                    Chunk ch = w.getChunkAt(cx, cz);
+                    if (!ch.isLoaded()) {
+                        ch.load(true);
+                    }
+                    for (Entity ent : ch.getEntities()) {
+                        if (isBoss(ent) || isExcavationVillager(ent) || plugin.getAbilityController().isMinion(ent)) {
+                            ent.remove();
+                        }
+                    }
+                }
+            }
+            for (Entity ent : w.getEntities()) {
+                if (isBoss(ent) || isExcavationVillager(ent) || plugin.getAbilityController().isMinion(ent)) {
+                    ent.remove();
+                }
+            }
+        }
+
+        LivingEntity boss = getBossEntity();
+        if (boss != null) {
+            boss.remove();
+        }
+        bossUuid = null;
+
+        LivingEntity villager = getExcavationVillagerEntity();
+        if (villager != null) {
+            villager.remove();
+        }
+        villagerUuid = null;
+    }
+
+    private void setEventChunksForceLoaded(Location center, boolean forceLoaded) {
+        if (center == null || center.getWorld() == null) {
             return;
         }
-        String customName;
-        if (brushReadyToClaim || brushCountdownSeconds <= 0) {
-            customName = ColorUtil.color("&e&lАрхеолог &8[&aНажмите, чтобы забрать!&8]");
-        } else {
-            String raw = plugin.getPluginConfig().getExcavationVillagerName()
-                    .replace("%sec%", String.valueOf(brushCountdownSeconds));
-            customName = ColorUtil.color(raw);
-        }
-        villager.setCustomName(customName);
-
-        if (bossBar != null && riftCenterLocation != null) {
-            long remSec = getSecondsRemainingInEvent();
-            long totalSec = plugin.getPluginConfig().getDurationMinutes() * 60L;
-            double progress = totalSec > 0 ? Math.max(0.0, Math.min(1.0, (double) remSec / totalSec)) : 1.0;
-            bossBar.setProgress(progress);
-
-            String brushStatus = (brushReadyToClaim || brushCountdownSeconds <= 0)
-                    ? "&aГотова (Нажмите по Жителю!)"
-                    : "&#E0C912" + brushCountdownSeconds + "с";
-            String barTitle = String.format(
-                    "&e&lПЛЯЖНЫЕ РАСКОПКИ &8| &fКисточка: %s &8| &#E0C912%d %d %d",
-                    brushStatus,
-                    riftCenterLocation.getBlockX(),
-                    riftCenterLocation.getBlockY(),
-                    riftCenterLocation.getBlockZ()
-            );
-            bossBar.setTitle(ColorUtil.color(barTitle));
+        World w = center.getWorld();
+        int baseCx = center.getBlockX() >> 4;
+        int baseCz = center.getBlockZ() >> 4;
+        for (int cx = baseCx - 1; cx <= baseCx + 1; cx++) {
+            for (int cz = baseCz - 1; cz <= baseCz + 1; cz++) {
+                Chunk ch = w.getChunkAt(cx, cz);
+                if (forceLoaded && !ch.isLoaded()) {
+                    ch.load(true);
+                }
+                ch.setForceLoaded(forceLoaded);
+            }
         }
     }
 
-    public void updateAlchemistNameAndBar(LivingEntity alchemist) {
-        if (alchemist == null) {
+    /**
+     * Удаляет любых оставшихся с прошлых ивентов Боссов, Жителей или Приспешников при загрузке сущностей чанка.
+     */
+    public void purgeStaleEventEntities(List<Entity> entities) {
+        if (entities == null) {
             return;
         }
-        String customName;
-        if (brushReadyToClaim || brushCountdownSeconds <= 0) {
-            customName = ColorUtil.color("&d&lАлхимик &8[&aРеагент готов — Нажмите!&8]");
-        } else {
-            customName = ColorUtil.color("&d&lАлхимик &8[&fСдайте реагент &7| &#E0C912" + brushCountdownSeconds + "с&8]");
+        for (Entity ent : entities) {
+            if (ent == null) {
+                continue;
+            }
+            if (ent.getPersistentDataContainer().has(bossKey, PersistentDataType.BYTE)) {
+                if (!active || defeated || activeEventType != EventType.INFERNAL_RIFT
+                        || bossUuid == null || !bossUuid.equals(ent.getUniqueId())) {
+                    ent.remove();
+                }
+            } else if (ent.getPersistentDataContainer().has(villagerKey, PersistentDataType.BYTE)) {
+                if (!active || villagerUuid == null || !villagerUuid.equals(ent.getUniqueId())) {
+                    ent.remove();
+                }
+            } else if (plugin.getAbilityController().isMinion(ent) && (!active || defeated)) {
+                ent.remove();
+            }
         }
-        alchemist.setCustomName(customName);
+    }
 
-        if (bossBar != null && riftCenterLocation != null) {
-            long remSec = getSecondsRemainingInEvent();
-            long totalSec = plugin.getPluginConfig().getDurationMinutes() * 60L;
+    /**
+     * Отправляет раз в 5 минут сообщение в чат о том, что сейчас идёт ивент.
+     */
+    private void broadcastOngoingEventReminder() {
+        if (!active || defeated || riftCenterLocation == null) {
+            return;
+        }
+        int x = riftCenterLocation.getBlockX();
+        int y = riftCenterLocation.getBlockY();
+        int z = riftCenterLocation.getBlockZ();
+        long remMin = Math.max(1L, (getSecondsRemainingInEvent() + 59L) / 60L);
+
+        if (activeEventType == EventType.BEACH_EXCAVATION) {
+            Bukkit.broadcastMessage(ColorUtil.color(String.format(
+                    "&e┠ &#34D711П&#40CE10л&#4CC50Eя&#58BC0Dж&#64B30Bн&#70AA0Aы&#7CA109е-&#889807Р&#948F06а&#A08605с&#AC7D03к&#B87402о&#C46B01п&#CF7C00к&#DB8500и &fсейчас идут на координатах &#E0C912%d %d %d &8(&fОсталось: &#E0C912%d мин.&8)",
+                    x, y, z, remMin
+            )));
+        } else if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
+            Bukkit.broadcastMessage(ColorUtil.color(String.format(
+                    "&e┠ &#34D711К&#42CE0Fо&#50C50Eт&#5EBC0Cё&#6CB30Bл-&#7AAA09А&#88A108л&#969806х&#A48F05и&#B28603м&#C07D02и&#CE7400к&#DC6B00а &fсейчас идёт на координатах &#E0C912%d %d %d &8(&fОсталось: &#E0C912%d мин.&8)",
+                    x, y, z, remMin
+            )));
+        } else {
+            int curHp = (int) Math.ceil(bossCurrentHealth);
+            int maxHp = (int) Math.ceil(bossMaxHealth);
+            Bukkit.broadcastMessage(ColorUtil.color(String.format(
+                    "&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fсейчас идёт на координатах &#E0C912%d %d %d &8(&fЗдоровье Босса: &c❤ %d/%d &8| &fОсталось: &#E0C912%d мин.&8)",
+                    x, y, z, curHp, maxHp, remMin
+            )));
+        }
+    }
+
+    private String formatMinutesSeconds(long totalSeconds) {
+        long s = Math.max(0L, totalSeconds);
+        long min = s / 60L;
+        long sec = s % 60L;
+        return String.format("%02d:%02d", min, sec);
+    }
+
+    public void updateExcavationVillagerNameAndBar(LivingEntity villager) {
+        if (villager != null) {
+            String customName;
+            if (brushReadyToClaim || brushCountdownSeconds <= 0) {
+                customName = ColorUtil.color("&e&lАрхеолог &8[&aНажмите, чтобы забрать!&8]");
+            } else {
+                String raw = plugin.getPluginConfig().getExcavationVillagerName()
+                        .replace("%sec%", String.valueOf(brushCountdownSeconds));
+                customName = ColorUtil.color(raw);
+            }
+            if (!customName.equals(villager.getCustomName())) {
+                villager.setCustomName(customName);
+            }
+        }
+        updateEventBossBar();
+    }
+
+    public void updateAlchemistNameAndBar(LivingEntity alchemist) {
+        if (alchemist != null) {
+            String customName;
+            if (brushReadyToClaim || brushCountdownSeconds <= 0) {
+                customName = ColorUtil.color("&d&lАлхимик &8[&aРеагент готов — Нажмите!&8]");
+            } else {
+                customName = ColorUtil.color("&d&lАлхимик &8[&fСдайте реагент &7| &#E0C912" + brushCountdownSeconds + "с&8]");
+            }
+            if (!customName.equals(alchemist.getCustomName())) {
+                alchemist.setCustomName(customName);
+            }
+        }
+        updateEventBossBar();
+    }
+
+    public void updateBossNameAndHealthBar(LivingEntity boss) {
+        if (boss != null) {
+            int curHp = (int) Math.ceil(this.bossCurrentHealth);
+            int maxHp = (int) Math.ceil(this.bossMaxHealth);
+
+            String formattedName = ColorUtil.color(plugin.getPluginConfig().getBossName()
+                    .replace("%hp%", String.valueOf(curHp))
+                    .replace("%max_hp%", String.valueOf(maxHp)));
+            if (!formattedName.equals(boss.getCustomName())) {
+                boss.setCustomName(formattedName);
+            }
+        }
+        updateEventBossBar();
+    }
+
+    /**
+     * Гарантированно создаёт и обновляет информационный БоссБар активного ивента для ВСЕХ игроков на сервере.
+     */
+    public void updateEventBossBar() {
+        if (!active || defeated || riftCenterLocation == null) {
+            if (bossBar != null) {
+                bossBar.removeAll();
+                bossBar = null;
+            }
+            return;
+        }
+
+        if (bossBar == null) {
+            createAndShowBossBar();
+        }
+
+        long remSec = getSecondsRemainingInEvent();
+        long totalSec = plugin.getPluginConfig().getDurationMinutes() * 60L;
+        String timeStr = formatMinutesSeconds(remSec);
+        int x = riftCenterLocation.getBlockX();
+        int y = riftCenterLocation.getBlockY();
+        int z = riftCenterLocation.getBlockZ();
+
+        if (activeEventType == EventType.BEACH_EXCAVATION) {
             double progress = totalSec > 0 ? Math.max(0.0, Math.min(1.0, (double) remSec / totalSec)) : 1.0;
+            bossBar.setColor(BarColor.YELLOW);
+            bossBar.setProgress(progress);
+
+            String brushStatus = (brushReadyToClaim || brushCountdownSeconds <= 0)
+                    ? "&aГотова!"
+                    : "&#E0C912" + brushCountdownSeconds + "с";
+            String barTitle = String.format(
+                    "&e&lПЛЯЖНЫЕ РАСКОПКИ &8| &fКисточка: %s &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
+                    brushStatus, timeStr, x, y, z
+            );
+            bossBar.setTitle(ColorUtil.color(barTitle));
+        } else if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
+            double progress = totalSec > 0 ? Math.max(0.0, Math.min(1.0, (double) remSec / totalSec)) : 1.0;
+            bossBar.setColor(BarColor.PURPLE);
             bossBar.setProgress(progress);
 
             int activeNodes = plugin.getAlchemistSchematicManager().getActiveReagentCount();
             String barTitle = String.format(
-                    "&d&lКОТЁЛ АЛХИМИКА &8| &fРеагентов на болоте: &a%d шт. &8| &#E0C912%d %d %d",
-                    activeNodes,
-                    riftCenterLocation.getBlockX(),
-                    riftCenterLocation.getBlockY(),
-                    riftCenterLocation.getBlockZ()
+                    "&d&lКОТЁЛ АЛХИМИКА &8| &fРеагенты: &a%d шт. &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
+                    activeNodes, timeStr, x, y, z
             );
             bossBar.setTitle(ColorUtil.color(barTitle));
-        }
-    }
-
-    public void updateBossNameAndHealthBar(LivingEntity boss) {
-        if (boss == null) {
-            return;
-        }
-        int curHp = (int) Math.ceil(this.bossCurrentHealth);
-        int maxHp = (int) Math.ceil(this.bossMaxHealth);
-
-        String formattedName = plugin.getPluginConfig().getBossName()
-                .replace("%hp%", String.valueOf(curHp))
-                .replace("%max_hp%", String.valueOf(maxHp));
-        boss.setCustomName(ColorUtil.color(formattedName));
-
-        if (bossBar != null && !defeated) {
-            double progress = Math.max(0.0, Math.min(1.0, this.bossCurrentHealth / this.bossMaxHealth));
+        } else {
+            int curHp = (int) Math.ceil(this.bossCurrentHealth);
+            int maxHp = (int) Math.ceil(this.bossMaxHealth);
+            double progress = maxHp > 0 ? Math.max(0.0, Math.min(1.0, this.bossCurrentHealth / this.bossMaxHealth)) : 1.0;
+            bossBar.setColor(BarColor.RED);
             bossBar.setProgress(progress);
-            Location loc = boss.getLocation();
+
+            Location loc = (getBossEntity() != null) ? getBossEntity().getLocation() : riftCenterLocation;
             String barTitle = String.format(
-                    "&4&lАДСКИЙ РАЗЛОМ &8| &c❤ %d/%d &8| &#E0C912%d %d %d",
-                    curHp, maxHp, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()
+                    "&c&lАДСКИЙ РАЗЛОМ &8| &c❤ %d/%d &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
+                    curHp, maxHp, timeStr, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()
             );
             bossBar.setTitle(ColorUtil.color(barTitle));
+        }
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!bossBar.getPlayers().contains(player)) {
+                bossBar.addPlayer(player);
+            }
         }
     }
 
@@ -1196,31 +1321,18 @@ public class InfernalRiftManager {
         if (bossBar != null) {
             bossBar.removeAll();
         }
-        if (activeEventType == EventType.BEACH_EXCAVATION) {
-            bossBar = Bukkit.createBossBar(
-                    ColorUtil.color("&e&lПЛЯЖНЫЕ РАСКОПКИ &8| &fНажмите по Жителю за кисточкой"),
-                    BarColor.YELLOW,
-                    BarStyle.SEGMENTED_10
-            );
-        } else if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
-            bossBar = Bukkit.createBossBar(
-                    ColorUtil.color("&d&lКОТЁЛ АЛХИМИКА &8| &fСобирайте реагенты и сдавайте Алхимику"),
-                    BarColor.PURPLE,
-                    BarStyle.SEGMENTED_10
-            );
-        } else {
-            bossBar = Bukkit.createBossBar(
-                    ColorUtil.color("&4&lАДСКИЙ РАЗЛОМ &8| &c❤ " + (int) bossCurrentHealth + "/" + (int) bossMaxHealth),
-                    BarColor.RED,
-                    BarStyle.SEGMENTED_10
-            );
-        }
+        BarColor color = switch (activeEventType) {
+            case BEACH_EXCAVATION -> BarColor.YELLOW;
+            case ALCHEMIST_CAULDRON -> BarColor.PURPLE;
+            default -> BarColor.RED;
+        };
+        bossBar = Bukkit.createBossBar("", color, BarStyle.SEGMENTED_10);
+        bossBar.setVisible(true);
         bossBar.setProgress(1.0);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (plugin.getBedrockService().canParticipate(player)) {
-                bossBar.addPlayer(player);
-            }
+            bossBar.addPlayer(player);
         }
+        updateEventBossBar();
     }
 
     /**

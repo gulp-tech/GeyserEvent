@@ -722,6 +722,9 @@ public class AncientMineManager {
 
         if (validBlacksmith != null && validBlacksmith.isValid() && !validBlacksmith.isDead()) {
             // Если Кузнец уже стоит на месте — НЕ отправляем лишние пакеты атрибутов/имени каждую секунду!
+            if (validBlacksmith.isGlowing()) {
+                validBlacksmith.setGlowing(false);
+            }
             if (validBlacksmith.getLocation().distanceSquared(npcLoc) > 0.25) {
                 validBlacksmith.teleport(npcLoc);
             }
@@ -742,6 +745,7 @@ public class AncientMineManager {
         v.setCollidable(false);
         v.setInvulnerable(true);
         v.setSilent(true);
+        v.setGlowing(false);
         v.setRemoveWhenFarAway(false);
         v.setPersistent(false);
         v.setCustomName(ColorUtil.color("&#FFB81C&lДревний Кузнец &8[&aКузница и Рюкзак&8]"));
@@ -1231,7 +1235,9 @@ public class AncientMineManager {
             int y = oy + entry.dy();
             int z = oz + entry.dz();
             Block block = w.getBlockAt(x, y, z);
-            block.setBlockData(entry.blockData(), false);
+            if (!block.getBlockData().equals(entry.blockData())) {
+                block.setBlockData(entry.blockData(), false);
+            }
 
             BlockKey key = BlockKey.of(w, x, y, z);
             Material m = entry.blockData().getMaterial();
@@ -1250,6 +1256,10 @@ public class AncientMineManager {
 
     private void restoreOrCaptureTerrain(World world, int centerX, int centerZ, boolean forceRestoreOnly) {
         if (backupFile.exists()) {
+            if (!forceRestoreOnly) {
+                // Бэкап ландшафта уже сохранён на диске — пропускаем повторное чтение/запись 40,000 блоков при рестарте!
+                return;
+            }
             YamlConfiguration yml = YamlConfiguration.loadConfiguration(backupFile);
             ConfigurationSection sec = yml.getConfigurationSection("blocks");
             if (sec != null) {
@@ -1265,9 +1275,7 @@ public class AncientMineManager {
                     }
                 }
             }
-            if (forceRestoreOnly) {
-                return;
-            }
+            return;
         }
 
         if (forceRestoreOnly) {

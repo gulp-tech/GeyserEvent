@@ -69,78 +69,13 @@ public class TopRightHudManager {
     }
 
     /**
-     * Обновляет инфо-бар ивента (без использования Scoreboard).
+     * Обновляет главный информационный BossBar активного ивента (без использования Scoreboard и без дублирования полосок).
      */
     public void updateTopRightHud() {
-        PluginConfig cfg = plugin.getPluginConfig();
+        clearAllHud();
         InfernalRiftManager manager = plugin.getRiftManager();
-
-        if (!cfg.isTopRightHudEnabled() || !manager.isActive() || manager.getRiftCenterLocation() == null) {
-            clearAllHud();
-            return;
-        }
-
-        Location loc = manager.getRiftCenterLocation();
-        EventType type = manager.getActiveEventType();
-
-        String title;
-        BarColor color;
-        if (type == EventType.BEACH_EXCAVATION) {
-            String brushStatus = manager.isBrushReadyToClaim()
-                    ? "&aГотова!"
-                    : "&#E0C912" + manager.getSecondsUntilNextBrush() + "с";
-            title = ColorUtil.color(String.format(
-                    "%s &8| &fКисточка: %s &8| &fКоординаты: &#E0C912%d %d %d",
-                    cfg.getTopRightExcavationDisplayName(),
-                    brushStatus,
-                    loc.getBlockX(),
-                    loc.getBlockY(),
-                    loc.getBlockZ()
-            ));
-            color = BarColor.YELLOW;
-        } else if (type == EventType.ALCHEMIST_CAULDRON) {
-            int activeReagents = plugin.getAlchemistSchematicManager().getActiveReagentCount();
-            String status = manager.isBrushReadyToClaim()
-                    ? "&aГотов у Алхимика!"
-                    : "&#E0C912" + manager.getSecondsUntilNextBrush() + "с";
-            title = ColorUtil.color(String.format(
-                    "%s &8| &fРеагенты: &a%d шт. &7(%s&7) &8| &fКоординаты: &#E0C912%d %d %d",
-                    cfg.getTopRightCauldronDisplayName(),
-                    activeReagents,
-                    status,
-                    loc.getBlockX(),
-                    loc.getBlockY(),
-                    loc.getBlockZ()
-            ));
-            color = BarColor.PURPLE;
-        } else {
-            title = ColorUtil.color(String.format(
-                    "%s &8| &fРедкость: %s &8| &fКоординаты: &#E0C912%d %d %d",
-                    cfg.getTopRightEventDisplayName(),
-                    cfg.getTopRightRarityDisplay(),
-                    loc.getBlockX(),
-                    loc.getBlockY(),
-                    loc.getBlockZ()
-            ));
-            color = BarColor.PURPLE;
-        }
-
-        if (infoBossBar == null) {
-            infoBossBar = Bukkit.createBossBar(title, color, BarStyle.SOLID);
-            infoBossBar.setProgress(1.0);
-        } else {
-            infoBossBar.setColor(color);
-            infoBossBar.setTitle(title);
-        }
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!plugin.getBedrockService().canParticipate(player)) {
-                infoBossBar.removePlayer(player);
-                continue;
-            }
-            if (!infoBossBar.getPlayers().contains(player)) {
-                infoBossBar.addPlayer(player);
-            }
+        if (manager != null && manager.isActive()) {
+            manager.updateEventBossBar();
         }
     }
 

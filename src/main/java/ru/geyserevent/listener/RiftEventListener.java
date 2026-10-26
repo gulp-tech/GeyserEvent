@@ -86,7 +86,7 @@ public class RiftEventListener implements Listener {
         player.removePotionEffect(PotionEffectType.GLOWING);
         if (plugin.getRiftManager().isActive()) {
             Bukkit.getScheduler().runTaskLater(plugin, () ->
-                    plugin.getTopRightHudManager().updateTopRightHud(), 10L
+                    plugin.getRiftManager().updateEventBossBar(), 10L
             );
         }
     }
@@ -96,15 +96,21 @@ public class RiftEventListener implements Listener {
         if (plugin.getAncientMineManager() != null) {
             plugin.getAncientMineManager().onChunkEntitiesLoaded(event.getChunk(), event.getEntities());
         }
+        if (plugin.getRiftManager() != null) {
+            plugin.getRiftManager().purgeStaleEventEntities(event.getEntities());
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onChunkLoad(ChunkLoadEvent event) {
-        if (plugin.getAncientMineManager() != null && event.getChunk().isEntitiesLoaded()) {
-            plugin.getAncientMineManager().onChunkEntitiesLoaded(
-                    event.getChunk(),
-                    java.util.Arrays.asList(event.getChunk().getEntities())
-            );
+        if (event.getChunk().isEntitiesLoaded()) {
+            var entities = java.util.Arrays.asList(event.getChunk().getEntities());
+            if (plugin.getAncientMineManager() != null) {
+                plugin.getAncientMineManager().onChunkEntitiesLoaded(event.getChunk(), entities);
+            }
+            if (plugin.getRiftManager() != null) {
+                plugin.getRiftManager().purgeStaleEventEntities(entities);
+            }
         }
     }
 
@@ -732,6 +738,24 @@ public class RiftEventListener implements Listener {
         boolean damagerIsBoss = manager.isBoss(damager);
         boolean damagerIsMinion = plugin.getAbilityController().isMinion(damager);
 
+        // Если ивент Разлома уже закончился или Босс уже повержен, любые оставшиеся Боссы/Приспешники немедленно удаляются!
+        boolean riftActive = manager.isActive()
+                && !manager.isDefeated()
+                && manager.getActiveEventType() == EventType.INFERNAL_RIFT;
+
+        if (!riftActive) {
+            if (victimIsBoss || victimIsMinion) {
+                event.setCancelled(true);
+                victim.remove();
+                return;
+            }
+            if (damagerIsBoss || damagerIsMinion) {
+                event.setCancelled(true);
+                damager.remove();
+                return;
+            }
+        }
+
         if ((victimIsBoss || victimIsMinion) && (damagerIsBoss || damagerIsMinion)) {
             event.setCancelled(true);
             return;
@@ -768,7 +792,7 @@ public class RiftEventListener implements Listener {
             }
 
             if (victimIsBoss && victim instanceof LivingEntity boss) {
-                double finalDmg = Math.max(0.5, event.getFinalDamage());
+                double finalDmg = Math.max(1.0, Math.max(event.getDamage(), event.getFinalDamage()));
                 event.setDamage(0.0);
                 manager.handleBossDamaged(boss, attacker, finalDmg);
             } else if (victimIsMinion && victim instanceof LivingEntity minion) {
