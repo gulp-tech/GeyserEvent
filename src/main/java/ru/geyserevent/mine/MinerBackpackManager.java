@@ -500,7 +500,7 @@ public class MinerBackpackManager {
             lore.add("");
             lore.add(ColorUtil.color("&e┠ &fПереплавьте у &6Древнего Кузнеца &fна &e0 ~ 0&f:"));
             lore.add(ColorUtil.color("&e┠ &a+" + type.getForgePoints() + " очков кузни &7(для прокачки рюкзака)"));
-            lore.add(ColorUtil.color("&e┠ &e+" + type.getSmeltedAmount() + "x слитков/кристаллов &f+ &#34D711+" + type.getBonusShards() + " осколков"));
+            lore.add(ColorUtil.color("&e┠ &e+" + type.getSmeltedAmount() + "x слитков/кристаллов"));
             lore.add("");
             lore.add(ColorUtil.color("&cВыпадает на пол при смерти! Пропадает вне шахты."));
             meta.setLore(lore);
@@ -756,7 +756,6 @@ public class MinerBackpackManager {
             lore.add(ColorUtil.color("&6При переплавке вы получите:"));
             lore.add(ColorUtil.color("&e┠ &fВанильные слитки, алмазы, изумруды и незеритовый лом"));
             lore.add(ColorUtil.color("&e┠ &6+Очки кузни &fдля прокачки вместимости рюкзака"));
-            lore.add(ColorUtil.color("&e┠ &#34D711+Осколки &fза каждую переплавленную руду!"));
             lore.add("");
             lore.add(ColorUtil.color("&#34D711» Нажмите ЛКМ, чтобы переплавить всю руду!"));
             smeltMeta.setLore(lore);
@@ -859,12 +858,11 @@ public class MinerBackpackManager {
     }
 
     /**
-     * Переплавляет все кастомные руды из рюкзака игрока в слитки + очки кузни + осколки.
+     * Переплавляет все кастомные руды из рюкзака игрока в слитки + очки кузни (без выдачи осколков).
      */
     public void smeltAllPlayerOres(Player player) {
         int totalOres = 0;
         int totalPoints = 0;
-        int totalShards = 0;
 
         ItemStack[] contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length; i++) {
@@ -878,7 +876,6 @@ public class MinerBackpackManager {
 
             totalOres += amt;
             totalPoints += oreType.getForgePoints() * amt;
-            totalShards += oreType.getBonusShards() * amt;
 
             ItemStack reward = new ItemStack(oreType.getSmeltedMaterial(), oreType.getSmeltedAmount() * amt);
             Map<Integer, ItemStack> leftovers = player.getInventory().addItem(reward);
@@ -895,16 +892,13 @@ public class MinerBackpackManager {
 
         UUID uuid = player.getUniqueId();
         addForgePoints(uuid, totalPoints);
-        if (totalShards > 0) {
-            plugin.getPlayerPointsHook().giveShards(player.getUniqueId(), player.getName(), totalShards);
-        }
         saveData();
 
         player.playSound(player.getLocation(), Sound.BLOCK_BLASTFURNACE_FIRE_CRACKLE, 1.0f, 1.1f);
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.9f, 1.25f);
         player.sendMessage(ColorUtil.color(
                 "&e┠ &6Древний Кузнец &8» &fПереплавлено &a" + totalOres + " шт. руды&f! Получено: &6+"
-                        + totalPoints + " очков кузни &fи &#34D711+" + totalShards + " осколков&f!"
+                        + totalPoints + " очков кузни&f!"
         ));
     }
 

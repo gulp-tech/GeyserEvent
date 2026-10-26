@@ -1022,12 +1022,10 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Выдаёт награды за 1, 2 и 3 место через PlayerPoints без неизвестных символов.
+     * Выводит топ-3 игроков по нанесённому Боссу урону (без выдачи осколков).
      */
     private void distributeTopRewards() {
-        PluginConfig cfg = plugin.getPluginConfig();
         List<DamageLeaderboard.DamageEntry> top = leaderboard.getTop(3);
-        String currency = cfg.getCurrencyName();
 
         Bukkit.broadcastMessage(ColorUtil.color(
                 "&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fзавершён."
@@ -1038,23 +1036,18 @@ public class InfernalRiftManager {
             for (int i = 0; i < top.size(); i++) {
                 int place = i + 1;
                 DamageLeaderboard.DamageEntry entry = top.get(i);
-                int rewardShards = cfg.getRewardForPlace(place);
-
-                if (rewardShards > 0) {
-                    plugin.getPlayerPointsHook().giveShards(entry.uuid(), entry.playerName(), rewardShards);
-                }
 
                 int dealtDmg = (int) Math.round(entry.damage());
                 Bukkit.broadcastMessage(ColorUtil.color(String.format(
-                        "&e┠ %s: &#E0C912%s &8(&c%d ❤&8) &8— &#34D711+%d %s",
-                        placeLabels[i], entry.playerName(), dealtDmg, rewardShards, currency
+                        "&e┠ %s: &#E0C912%s &8(&c%d ❤&8)",
+                        placeLabels[i], entry.playerName(), dealtDmg
                 )));
 
                 Player onlineWinner = Bukkit.getPlayer(entry.uuid());
                 if (onlineWinner != null && onlineWinner.isOnline()) {
                     onlineWinner.sendTitle(
                             ColorUtil.color("&6&l" + place + " МЕСТО!"),
-                            ColorUtil.color("&a+" + rewardShards + " " + currency + " &7(Урон: " + dealtDmg + ")"),
+                            ColorUtil.color("&7Нанесено урона: &c" + dealtDmg + " ❤"),
                             10, 80, 20
                     );
                     onlineWinner.playSound(onlineWinner.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.5f, 0.8f);
