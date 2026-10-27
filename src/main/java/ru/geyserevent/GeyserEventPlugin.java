@@ -15,6 +15,7 @@ import ru.geyserevent.excavation.BrushLootGuiManager;
 import ru.geyserevent.excavation.BrushLootManager;
 import ru.geyserevent.hook.BedrockService;
 import ru.geyserevent.hook.PlayerPointsHook;
+import ru.geyserevent.hook.WorldGuardHook;
 import ru.geyserevent.hud.TopRightHudManager;
 import ru.geyserevent.listener.RiftEventListener;
 import ru.geyserevent.mine.AncientMineManager;
@@ -38,6 +39,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private PluginConfig pluginConfig;
     private BedrockService bedrockService;
     private PlayerPointsHook playerPointsHook;
+    private WorldGuardHook worldGuardHook;
     private RiftSchematicManager schematicManager;
     private BeachSchematicManager beachSchematicManager;
     private AlchemistSchematicManager alchemistSchematicManager;
@@ -61,9 +63,13 @@ public final class GeyserEventPlugin extends JavaPlugin {
         // 1. Загрузка конфигурации config.yml
         this.pluginConfig = new PluginConfig(this);
 
-        // 2. Инициализация интеграций GeyserMC/Floodgate и PlayerPoints
+        // 2. Инициализация интеграций GeyserMC/Floodgate, PlayerPoints и WorldGuard
         this.bedrockService = new BedrockService(this);
         this.playerPointsHook = new PlayerPointsHook(this);
+        this.worldGuardHook = new WorldGuardHook();
+        if (this.worldGuardHook.isAvailable()) {
+            getLogger().info("WorldGuard найден: регионы WorldGuard не будут мешать ломать руды «Шахты Древних».");
+        }
 
         // 3. Менеджеры схем, лута, 3D-рюкзака, GUI-меню и HUD
         this.schematicManager = new RiftSchematicManager(this);
@@ -121,7 +127,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.9.4 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.9.6 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Временные ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");
@@ -210,6 +216,10 @@ public final class GeyserEventPlugin extends JavaPlugin {
 
     public PlayerPointsHook getPlayerPointsHook() {
         return playerPointsHook;
+    }
+
+    public WorldGuardHook getWorldGuardHook() {
+        return worldGuardHook;
     }
 
     public RiftSchematicManager getSchematicManager() {

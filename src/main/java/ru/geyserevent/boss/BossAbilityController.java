@@ -419,6 +419,75 @@ public class BossAbilityController {
         return list;
     }
 
+    /**
+     * Невидимость НЕ работает на НПС «Адского Разлома».
+     *
+     * <p>Ванильный ИИ мобов физически не может навестись на игрока с зельем
+     * невидимости, поэтому цель Боссу и Приспешникам выставляется принудительно
+     * вручную — они всегда видят и атакуют ближайшего игрока.</p>
+     */
+    public void forceTargetPlayers(LivingEntity boss) {
+        if (!plugin.getPluginConfig().isNpcsIgnoreInvisibility()) {
+            return;
+        }
+        if (boss == null || boss.isDead() || !boss.isValid()) {
+            return;
+        }
+        PluginConfig cfg = plugin.getPluginConfig();
+
+        // Сам Босс тоже не должен становиться невидимым (сплэш/остаточные зелья)
+        boss.removePotionEffect(PotionEffectType.INVISIBILITY);
+
+        double bossRadius = Math.max(cfg.getAbilityRadius(), cfg.getMinionTriggerRadius());
+        List<Player> bossTargets = getTargetPlayersInRadius(boss.getLocation(), bossRadius);
+        if (!bossTargets.isEmpty()) {
+            ensureMobTarget(boss, bossTargets);
+        }
+
+        if (activeMinions.isEmpty()) {
+            return;
+        }
+        for (UUID uuid : activeMinions) {
+            Entity entity = Bukkit.getEntity(uuid);
+            if (!(entity instanceof LivingEntity minion) || minion.isDead() || !minion.isValid()) {
+                continue;
+            }
+            List<Player> minionTargets = getTargetPlayersInRadius(minion.getLocation(), cfg.getMinionTriggerRadius());
+            if (!minionTargets.isEmpty()) {
+                ensureMobTarget(minion, minionTargets);
+            }
+            minion.removePotionEffect(PotionEffectType.INVISIBILITY);
+        }
+    }
+
+    /**
+     * Выставляет мобу цель — ближайшего игрока (невидимого включительно).
+     * Если у моба уже есть живая цель-игрок, она не меняется.
+     */
+    private void ensureMobTarget(LivingEntity mob, List<Player> players) {
+        if (!(mob instanceof Mob bukkitMob)) {
+            return;
+        }
+        LivingEntity current = bukkitMob.getTarget();
+        if (current != null && current.isValid() && !current.isDead() && current instanceof Player) {
+            // У моба уже есть живая цель-игрок (даже если он невидим — бей его!)
+            return;
+        }
+        Player closest = null;
+        double closestDistanceSq = Double.MAX_VALUE;
+        Location mobLocation = mob.getLocation();
+        for (Player player : players) {
+            double distanceSq = player.getLocation().distanceSquared(mobLocation);
+            if (distanceSq < closestDistanceSq) {
+                closestDistanceSq = distanceSq;
+                closest = player;
+            }
+        }
+        if (closest != null && bukkitMob.getTarget() != closest) {
+            bukkitMob.setTarget(closest);
+        }
+    }
+
     private void drawParticleLine(Location start, Location end, Particle particle, double step) {
         World world = start.getWorld();
         if (world == null || !world.equals(end.getWorld())) {

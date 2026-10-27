@@ -28,6 +28,7 @@ import org.bukkit.scheduler.BukkitTask;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.excavation.BrushTier;
+import ru.geyserevent.hook.WorldGuardHook;
 import ru.geyserevent.mine.MinerBackpackManager.MineOreType;
 import ru.geyserevent.util.ColorUtil;
 
@@ -175,12 +176,50 @@ public class AncientMineManager {
         spawnOrVerifyBlacksmith();
         this.secondsUntilFullRegen = getRegenIntervalSeconds();
         regenerateVeinsAndGeodes(true, false);
+        syncWorldGuardMineRegion();
 
         this.mineActive = true;
         startTasks();
 
         plugin.getLogger().info("Постоянный ивент «Шахта Древних (45x45, v7)» активен на координатах "
                 + centerX + " " + centerY + " " + centerZ + " (" + world.getName() + ")!");
+    }
+
+    /**
+     * WorldGuard: вокруг «Шахты Древних» создаётся/обновляется собственный регион
+     * «geyserevent_mine» с высоким приоритетом и флагами build/interact = allow,
+     * поэтому регионы WorldGuard НЕ мешают ломать руды и Древние жеоды,
+     * а также открывать меню Древнего Кузнеца.
+     */
+    private void syncWorldGuardMineRegion() {
+        if (centerLocation == null || centerLocation.getWorld() == null) {
+            return;
+        }
+        if (!plugin.getPluginConfig().isWorldGuardSyncMineRegion()) {
+            return;
+        }
+        WorldGuardHook hook = plugin.getWorldGuardHook();
+        if (hook == null || !hook.isAvailable()) {
+            return;
+        }
+        try {
+            boolean applied = hook.syncMineRegion(
+                    centerLocation.getWorld(),
+                    centerLocation.getBlockX(),
+                    centerLocation.getBlockY(),
+                    centerLocation.getBlockZ(),
+                    MINE_RADIUS + 4,
+                    centerLocation.getBlockY() - 14,
+                    centerLocation.getBlockY() + 34
+            );
+            if (applied) {
+                plugin.getLogger().info("WorldGuard: регион " + WorldGuardHook.REGION_ID
+                        + " вокруг Шахты Древних обновлён (руды и жеоды ломаются без ограничений).");
+            }
+        } catch (Throwable throwable) {
+            plugin.getLogger().warning("Не удалось применить регион WorldGuard для Шахты Древних: "
+                    + throwable.getMessage());
+        }
     }
 
     private void purgeOldMineEntities(World world, int centerX, int centerY, int centerZ) {
@@ -725,6 +764,11 @@ public class AncientMineManager {
             if (validBlacksmith.isGlowing()) {
                 validBlacksmith.setGlowing(false);
             }
+            // Невидимость не работает на НПС: Кузнец ВСЕГДА виден игрокам,
+            // даже если по нему кинули сплэш/остаточное зелье невидимости.
+            if (validBlacksmith.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
+                validBlacksmith.removePotionEffect(PotionEffectType.INVISIBILITY);
+            }
             if (validBlacksmith.getLocation().distanceSquared(npcLoc) > 0.25) {
                 validBlacksmith.teleport(npcLoc);
             }
@@ -746,6 +790,8 @@ public class AncientMineManager {
         v.setInvulnerable(true);
         v.setSilent(true);
         v.setGlowing(false);
+        // Невидимость не работает на НПС: Древний Кузнец всегда виден игрокам
+        v.removePotionEffect(PotionEffectType.INVISIBILITY);
         v.setRemoveWhenFarAway(false);
         v.setPersistent(false);
         v.setCustomName(ColorUtil.color("&#FFB81C&lДревний Кузнец &8[&aКузница и Рюкзак&8]"));

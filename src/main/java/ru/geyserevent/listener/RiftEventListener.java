@@ -847,6 +847,28 @@ public class RiftEventListener implements Listener {
         }
     }
 
+    /**
+     * Ломание блоков «Шахты Древних» (0 ~ 0) обрабатывается ПЕРЕД всеми остальными
+     * плагинами (приоритет LOWEST), чтобы регионы WorldGuard и любые другие протекты
+     * НЕ мешали ломать руды и Древние жеоды.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onMineBlockBreakEarly(BlockBreakEvent event) {
+        var mineManager = plugin.getAncientMineManager();
+        if (mineManager == null || !mineManager.isMineActive()) {
+            return;
+        }
+        Block block = event.getBlock();
+        if (!mineManager.isInsideMineTerritory(block.getLocation())) {
+            return;
+        }
+        // handleMineBlockBreak сам выдаёт кастомные предметы НА ПОЛ (руда/жеода)
+        // и возвращает true для любой точки территории шахты (защита постройки).
+        if (mineManager.handleMineBlockBreak(event.getPlayer(), block)) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock();

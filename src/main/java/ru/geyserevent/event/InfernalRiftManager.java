@@ -4,6 +4,7 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -63,6 +64,11 @@ public class InfernalRiftManager {
     private final Set<UUID> gpsTrackedPlayers = new HashSet<>();
     private final Set<UUID> gpsWasOutsideRadius = new HashSet<>();
     private final Map<UUID, BossBar> gpsBossBars = new HashMap<>();
+
+    /**
+     * Время последнего предупреждения игроку о снятии зелья невидимости (защита от спама).
+     */
+    private final Map<UUID, Long> invisibilityWarnCooldown = new HashMap<>();
 
     private boolean active = false;
     private boolean defeated = false;
@@ -127,9 +133,10 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Быстрый цикл каждые 5 тиков (0.25 сек):
+     * Быстрый цикл каждые 10 тиков (0.5 сек):
      * 1) Проверяет и удаляет кисточки/реагенты у тех, кто ушёл далеко от ивента
      * 2) Обновляет локатор (/event gps)
+     * 3) Невидимость не работает на НПС: Босс и Приспешники всегда наводятся на игроков
      */
     private void startFastGpsLoop() {
         if (gpsFastTask != null) {
@@ -142,8 +149,98 @@ public class InfernalRiftManager {
                 if (!gpsTrackedPlayers.isEmpty()) {
                     updateGpsTrackerForPlayers();
                 }
+                enforceNpcInvisibilityRules();
             }
         }.runTaskTimer(plugin, 10L, 10L);
+    }
+
+    /**
+     * Невидимость НЕ работает на НПС ивентов:
+     * 1) Босс «Адского Разлома» и его Приспешники принудительно наводятся на
+     *    ближайшего игрока, даже если тот выпил зелье невидимости
+     *    (ванильный ИИ мобов не умеет брать в цель невидимых игроков).
+     * 2) Пока идёт временный ивент, зелье невидимости снимается с игроков
+     *    внутри зоны ивента — НПС ивента всегда замечают игрока.
+     */
+    private void enforceNpcInvisibilityRules() {
+        // 0. Невидимость не работает и на самих НПС: игроки не могут спрятать
+        //    Жителя/Алхимика (и любого НПС ивента) сплэш-зельем невидимости.
+        if (plugin.getPluginConfig().isNpcsIgnoreInvisibility() && active) {
+            LivingEntity npc = getExcavationVillagerEntity();
+            if (npc != null && npc.isValid() && !npc.isDead()) {
+                npc.removePotionEffect(PotionEffectType.INVISIBILITY);
+            }
+        }
+
+        // 1. Принудительное наведение Босса и Приспешников на игроков (в том числе невидимых)
+        if (active && !defeated && activeEventType == EventType.INFERNAL_RIFT
+                && plugin.getPluginConfig().isNpcsIgnoreInvisibility()) {
+            LivingEntity boss = getBossEntity();
+            if (boss != null && !boss.isDead() && boss.isValid()) {
+                plugin.getAbilityController().forceTargetPlayers(boss);
+            }
+        }
+
+        // 2. Снятие зелья невидимости внутри зон ивентов
+        boolean stripInEvents = plugin.getPluginConfig().isNpcsStripInvisibilityInEvents();
+        boolean stripInMine = plugin.getPluginConfig().isNpcsStripInvisibilityInMine();
+        if (!stripInEvents && !stripInMine) {
+            return;
+        }
+
+        invisibilityWarnCooldown.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+
+        var mineMgr = plugin.getAncientMineManager();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            GameMode gameMode = player.getGameMode();
+            if (gameMode == GameMode.CREATIVE || gameMode == GameMode.SPECTATOR) {
+                continue;
+            }
+            if (!player.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
+                continue;
+            }
+
+            Location loc = player.getLocation();
+            boolean insideEvent = false;
+            if (stripInEvents && active && riftCenterLocation != null
+                    && riftCenterLocation.getWorld() != null
+                    && loc.getWorld().equals(riftCenterLocation.getWorld())) {
+                double dx = loc.getX() - riftCenterLocation.getX();
+                double dz = loc.getZ() - riftCenterLocation.getZ();
+                double zoneRadius = getNpcInvisibilityZoneRadius();
+                insideEvent = (dx * dx + dz * dz) <= (zoneRadius * zoneRadius);
+            }
+
+            boolean insideMine = false;
+            if (!insideEvent && stripInMine && mineMgr != null
+                    && mineMgr.isMineActive() && mineMgr.isPlayerInsideMineZone(loc)) {
+                insideMine = true;
+            }
+
+            if (!insideEvent && !insideMine) {
+                continue;
+            }
+
+            player.removePotionEffect(PotionEffectType.INVISIBILITY);
+            long now = System.currentTimeMillis();
+            Long lastWarn = invisibilityWarnCooldown.get(player.getUniqueId());
+            if (lastWarn == null || now - lastWarn > 15000L) {
+                invisibilityWarnCooldown.put(player.getUniqueId(), now);
+                player.sendMessage(ColorUtil.color(
+                        "&e┠ &cНевидимость не работает на НПС ивентов — зелье снято."
+                ));
+            }
+        }
+    }
+
+    /**
+     * Радиус, внутри которого невидимость отключается во время временного ивента
+     * (зона ивента 16.5 блока + радиус способностей и призыва приспешников).
+     */
+    private double getNpcInvisibilityZoneRadius() {
+        PluginConfig cfg = plugin.getPluginConfig();
+        return Math.max(cfg.getExcavationBrushRemoveDistance(),
+                Math.max(cfg.getAbilityRadius(), cfg.getMinionTriggerRadius()));
     }
 
     /**
@@ -1053,6 +1150,7 @@ public class InfernalRiftManager {
         if (riftCenterLocation != null) {
             setEventChunksForceLoaded(riftCenterLocation, false);
         }
+        invisibilityWarnCooldown.clear();
 
         plugin.getBrushLootManager().removeAllEventBrushesFromOnlinePlayers();
         plugin.getAbilityController().removeAllMinions();

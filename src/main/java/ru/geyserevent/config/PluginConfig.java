@@ -134,6 +134,14 @@ public class PluginConfig {
     private double excavationBrushHandoutRadius;
     private double excavationBrushRemoveDistance;
 
+    // NPCs & Invisibility (невидимость НЕ работает на НПС ивентов)
+    private boolean npcsIgnoreInvisibility;
+    private boolean npcsStripInvisibilityInEvents;
+    private boolean npcsStripInvisibilityInMine;
+
+    // WorldGuard (регионы не должны мешать ломать руды «Шахты Древних»)
+    private boolean worldGuardSyncMineRegion;
+
     // Messages
     private String prefix;
     private String msgOnlyBedrock;
@@ -270,6 +278,14 @@ public class PluginConfig {
             plugin.saveConfig();
         }
         this.excavationBrushRemoveDistance = Math.max(15.5, rawRemoveDist);
+
+        // NPCs & Invisibility (невидимость НЕ работает на НПС ивентов)
+        this.npcsIgnoreInvisibility = cfg.getBoolean("npcs.ignore-invisibility", true);
+        this.npcsStripInvisibilityInEvents = cfg.getBoolean("npcs.strip-invisibility-in-events", true);
+        this.npcsStripInvisibilityInMine = cfg.getBoolean("npcs.strip-invisibility-in-mine", false);
+
+        // WorldGuard (регионы не должны мешать ломать руды «Шахты Древних»)
+        this.worldGuardSyncMineRegion = cfg.getBoolean("worldguard.sync-mine-region", true);
 
         // Messages
         this.prefix = ColorUtil.color(cfg.getString("messages.prefix", "&e┠ &r"));
@@ -483,6 +499,14 @@ public class PluginConfig {
     public int getExcavationBrushIntervalSeconds() { return excavationBrushIntervalSeconds; }
     public double getExcavationBrushHandoutRadius() { return excavationBrushHandoutRadius; }
     public double getExcavationBrushRemoveDistance() { return excavationBrushRemoveDistance; }
+
+    public boolean isNpcsIgnoreInvisibility() { return npcsIgnoreInvisibility; }
+
+    public boolean isNpcsStripInvisibilityInEvents() { return npcsStripInvisibilityInEvents; }
+
+    public boolean isNpcsStripInvisibilityInMine() { return npcsStripInvisibilityInMine; }
+
+    public boolean isWorldGuardSyncMineRegion() { return worldGuardSyncMineRegion; }
 
     public String getPrefix() { return prefix; }
     public String getMsgOnlyBedrock() { return msgOnlyBedrock; }
