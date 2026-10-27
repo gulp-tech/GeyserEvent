@@ -88,10 +88,17 @@ public class AncientMineManager {
     private boolean mineActive = false;
 
     /**
-     * Счётчик до очередной полной очистки территории шахты (раз в ~16 секунд),
-     * чтобы не перебирать все сущности 25 чанков каждую секунду.
+     * Время последней полной очистки территории шахты. Полная очистка (обход 25 чанков
+     * со всеми сущностями) делается не чаще раза в 15 секунд, поэтому на людном сервере
+     * телепорты игроков не могут вызвать серию сканов чанков.
      */
-    private int blacksmithCleanupCountdown = 0;
+    private long lastBlacksmithCleanupMillis = 0L;
+
+    /**
+     * Время последнего вызова проверки Кузнеца из события (телепорт/смена мира).
+     * Главный тик шахты и так проверяет Кузнеца раз в секунду.
+     */
+    private long lastBlacksmithEventCheckMillis = 0L;
 
     /**
      * Счётчик до очередной мягкой проверки региона WorldGuard (раз в 5 минут).
@@ -261,6 +268,20 @@ public class AncientMineManager {
         } catch (Throwable ignored) {
             // Любая ошибка WorldGuard не должна ломать ивент
         }
+    }
+
+    /**
+     * Проверка Кузнеца из игровых событий (телепортация, смена мира, загрузка чанков).
+     * Главный тик шахты проверяет Кузнеца раз в секунду, поэтому здесь стоит троттлинг:
+     * иначе каждый /warp и /home вызывал бы обход чанков карьера.
+     */
+    public void verifyBlacksmithFromEvent() {
+        long now = System.currentTimeMillis();
+        if (now - lastBlacksmithEventCheckMillis < 2_000L) {
+            return;
+        }
+        lastBlacksmithEventCheckMillis = now;
+        spawnOrVerifyBlacksmith();
     }
 
     private void purgeOldMineEntities(World world, int centerX, int centerY, int centerZ) {
@@ -777,15 +798,17 @@ public class AncientMineManager {
                 if (smith.getLocation().distanceSquared(npcLoc) > 0.25) {
                     smith.teleport(npcLoc);
                 }
-                if (blacksmithCleanupCountdown > 0) {
-                    blacksmithCleanupCountdown--;
+                // Полная очистка территории — не чаще раза в 15 секунд.
+                // Именно по счётчику вызовов раньше на busy-сервере (десятки телепортаций
+                // в секунду рядом с шахтой) сканы чанков повторялись слишком часто и лагали.
+                if (System.currentTimeMillis() - lastBlacksmithCleanupMillis < 15_000L) {
                     return;
                 }
             } else {
                 blacksmithUuid = null;
             }
         }
-        blacksmithCleanupCountdown = 16;
+        lastBlacksmithCleanupMillis = System.currentTimeMillis();
 
         // 3. Подиум Кузнеца на (0 ~ 0) стоит ровно на стыке 4 чанков: (-1,-1), (-1,0), (0,-1) и (0,0)!
         //    Проходим по всем загруженным чанкам вокруг 0 ~ 0 (-2..+2), удаляем ВСЕ старые ArmorStand

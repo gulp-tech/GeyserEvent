@@ -88,6 +88,11 @@ public class MinerBackpackManager {
 
     private BukkitTask backpackSyncTask;
 
+    /**
+     * Троттлинг синхронизации рюкзака из PlayerMoveEvent (мс -> время последней синхронизации).
+     */
+    private final Map<UUID, Long> moveSyncCooldown = new HashMap<>();
+
     public enum MineOreType {
         COPPER("COPPER", "&6Древняя медная руда", Material.RAW_COPPER, Material.COPPER_INGOT, 2, 3, 1),
         IRON("IRON", "&fДревняя железная руда", Material.RAW_IRON, Material.IRON_INGOT, 4, 2, 2),
@@ -252,6 +257,9 @@ public class MinerBackpackManager {
             return;
         }
 
+        // Чистим кулдауны ушедших игроков (маленькая карта, поэтому дешево)
+        moveSyncCooldown.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+
         Set<UUID> activeInside = new HashSet<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (!player.isOnline() || player.isDead() || player.getGameMode() == GameMode.SPECTATOR) {
@@ -294,14 +302,27 @@ public class MinerBackpackManager {
         if (player == null) {
             return;
         }
+        UUID uuid = player.getUniqueId();
+        boolean hasStand = visualBackpackStands.containsKey(uuid);
         AncientMineManager mineMgr = plugin.getAncientMineManager();
         if (mineMgr == null || !mineMgr.isMineActive() || player.isDead() || player.getGameMode() == GameMode.SPECTATOR) {
-            removeVisualBackpack(player);
+            // Оптимизация: раньше removeVisualBackpack вызывался на КАЖДОЕ движение игрока,
+            // даже когда снимать было нечего
+            if (hasStand) {
+                removeVisualBackpack(player);
+            }
             return;
         }
         if (mineMgr.isPlayerInsideMineZone(player.getLocation())) {
-            syncSinglePlayerBackpack(player);
-        } else if (visualBackpackStands.containsKey(player.getUniqueId())) {
+            // PlayerMoveEvent приходит ~20 раз в секунду, а синхронизация рюкзака и так
+            // идёт раз в 10 тиков — поэтому здесь троттлинг 200 мс (мгновенная реакция сохранена)
+            long now = System.currentTimeMillis();
+            Long lastSync = moveSyncCooldown.get(uuid);
+            if (lastSync == null || now - lastSync >= 200L) {
+                moveSyncCooldown.put(uuid, now);
+                syncSinglePlayerBackpack(player);
+            }
+        } else if (hasStand) {
             removeVisualBackpack(player);
             player.sendMessage(ColorUtil.color("&e┠ &7Рюкзак шахтёра снят со спины (вы покинули Шахту Древних)."));
         }
@@ -309,6 +330,18 @@ public class MinerBackpackManager {
 
     private void syncSinglePlayerBackpack(Player player) {
         UUID uuid = player.getUniqueId();
+
+        // Оптимизация FPS (v1.9.9): 3D-рюкзак — награда шахтёра. Раньше стойка с кастомной
+        // моделью создавалась КАЖДОМУ игроку в зоне шахты (на людном спавне это десятки
+        // дополнительных сущностей с 3D-моделями — прямое падение FPS у всех вокруг).
+        // Теперь рюкзак виден только тем, кто реально добыл руду или жеоду.
+        if (getTotalMined(uuid) <= 0) {
+            if (visualBackpackStands.containsKey(uuid)) {
+                removeVisualBackpack(player);
+            }
+            return;
+        }
+
         Location pLoc = player.getLocation();
         if (pLoc.getWorld() == null) {
             return;
@@ -357,7 +390,9 @@ public class MinerBackpackManager {
                     "&e┠ &63D-Рюкзак шахтёра &8(&eУр. " + lvl + " &7| &a" + carried + "&7/&a" + cap + " руды&8) &fнадет на спину!"
             ));
         } else {
-            if (!player.getPassengers().contains(stand)) {
+            // Оптимизация: player.getPassengers() создаёт новый список на каждый вызов,
+            // а stand.getVehicle() — бесплатная проверка
+            if (stand.getVehicle() != player) {
                 player.addPassenger(stand);
             }
             Float prevYaw = lastSyncedYaw.get(uuid);

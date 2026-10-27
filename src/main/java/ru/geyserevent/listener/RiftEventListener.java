@@ -154,7 +154,7 @@ public class RiftEventListener implements Listener {
             plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(event.getPlayer());
         }
         if (plugin.getAncientMineManager() != null) {
-            plugin.getAncientMineManager().spawnOrVerifyBlacksmith();
+            plugin.getAncientMineManager().verifyBlacksmithFromEvent();
         }
         plugin.getRiftManager().handlePlayerChangedWorld(event.getPlayer());
     }
@@ -167,7 +167,7 @@ public class RiftEventListener implements Listener {
                 plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(player);
             }
             if (plugin.getAncientMineManager() != null) {
-                plugin.getAncientMineManager().spawnOrVerifyBlacksmith();
+                plugin.getAncientMineManager().verifyBlacksmithFromEvent();
             }
             plugin.getRiftManager().enforceBrushZoneForPlayer(player);
         }, 1L);

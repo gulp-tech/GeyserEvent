@@ -1372,11 +1372,21 @@ public class InfernalRiftManager {
      * Удаляет любых оставшихся с прошлых ивентов Боссов, Жителей или Приспешников при загрузке сущностей чанка.
      */
     public void purgeStaleEventEntities(List<Entity> entities) {
-        if (entities == null) {
+        if (entities == null || entities.isEmpty()) {
             return;
         }
+        // Оптимизация (v1.9.9): EntitiesLoadEvent срабатывает при КАЖДОЙ загрузке чанков,
+        // то есть при любом /warp, /home, жемчуре и т.п. Раньше мы лезли в PDC КАЖДОЙ
+        // загруженной сущности (предметы, мобы, стойки других плагинов) — на людных варпах
+        // это тысячи проверок за раз и фриз. Теперь PDC трогаем только для тех типов,
+        // которые вообще могут быть нашими: Босс (Piglin Brute), Приспешник, НПС-Житель.
+        EntityType minionType = plugin.getPluginConfig().getMinionEntityType();
         for (Entity ent : entities) {
             if (ent == null) {
+                continue;
+            }
+            EntityType type = ent.getType();
+            if (type != EntityType.VILLAGER && type != EntityType.PIGLIN_BRUTE && type != minionType) {
                 continue;
             }
             if (ent.getPersistentDataContainer().has(bossKey, PersistentDataType.BYTE)) {
