@@ -550,8 +550,9 @@ public class RiftEventListener implements Listener {
         Location effectLoc = nodeBlock.getLocation().add(0.5, 0.5, 0.5);
         nodeBlock.getWorld().playSound(effectLoc, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.3f, 1.2f);
         nodeBlock.getWorld().playSound(effectLoc, Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.3f);
-        nodeBlock.getWorld().spawnParticle(Particle.WITCH, effectLoc, 8, 0.25, 0.3, 0.25, 0.03);
-        nodeBlock.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 5, 0.25, 0.25, 0.25, 0.03);
+        // Оптимизация FPS: частицы сбора видит только сам игрок
+        player.spawnParticle(Particle.WITCH, effectLoc, 8, 0.25, 0.3, 0.25, 0.03);
+        player.spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 5, 0.25, 0.25, 0.25, 0.03);
 
         String ab = ColorUtil.color(
                 "&aСобран: " + plugin.getBrushLootManager().getReagentDisplayName(tier)
@@ -600,7 +601,8 @@ public class RiftEventListener implements Listener {
         if (step < 3) {
             blockExcavationStep.put(blockKey, step);
             block.getWorld().playSound(effectLoc, Sound.BLOCK_SAND_HIT, 1.2f, 0.9f + (step * 0.15f));
-            block.getWorld().spawnParticle(
+            // Оптимизация FPS: частицы раскопки видит только сам игрок (на пляже может быть много копающих)
+            player.spawnParticle(
                     Particle.BLOCK,
                     effectLoc,
                     8,
@@ -632,7 +634,8 @@ public class RiftEventListener implements Listener {
 
             block.getWorld().playSound(effectLoc, Sound.BLOCK_SAND_BREAK, 1.2f, 1.1f);
             block.getWorld().playSound(effectLoc, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.3f);
-            block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 8, 0.25, 0.25, 0.25, 0.04);
+            // Оптимизация FPS: частицы награды видит только сам игрок
+            player.spawnParticle(Particle.HAPPY_VILLAGER, effectLoc, 8, 0.25, 0.25, 0.25, 0.04);
             try {
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(""));
             } catch (Throwable ignored) {

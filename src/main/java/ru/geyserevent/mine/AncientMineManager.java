@@ -594,7 +594,9 @@ public class AncientMineManager {
         World w = geodeBlock.getWorld();
         w.playSound(dropLoc, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.0f, 1.15f);
         w.playSound(dropLoc, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.3f);
-        w.spawnParticle(Particle.WAX_OFF, dropLoc, 10, 0.25, 0.25, 0.25, 0.03);
+        // Оптимизация FPS (v1.9.8): эффект добычи видит ТОЛЬКО сам игрок,
+        // поэтому при 20 шахтёрах в карьере частиц на клиентах в 20 раз меньше
+        player.spawnParticle(Particle.WAX_OFF, dropLoc, 10, 0.25, 0.25, 0.25, 0.03);
 
         String tierLabel = switch (tier) {
             case COMMON -> "&aКварцевая жеода";
@@ -624,7 +626,8 @@ public class AncientMineManager {
 
         World w = oreBlock.getWorld();
         w.playSound(dropLoc, Sound.BLOCK_DEEPSLATE_BREAK, 1.0f, 1.1f);
-        w.spawnParticle(Particle.CRIT, dropLoc, 8, 0.22, 0.22, 0.22, 0.04);
+        // Оптимизация FPS: частицы добычи только для самого игрока
+        player.spawnParticle(Particle.CRIT, dropLoc, 8, 0.22, 0.22, 0.22, 0.04);
 
         int carried = plugin.getMinerBackpackManager().countCarriedMineItems(player);
         int maxCap = plugin.getMinerBackpackManager().getBackpackCapacity(player.getUniqueId());

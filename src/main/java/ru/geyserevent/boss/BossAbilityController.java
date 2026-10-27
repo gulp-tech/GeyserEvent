@@ -108,7 +108,9 @@ public class BossAbilityController {
         boss.swingMainHand();
         world.playSound(bossLoc, Sound.ENTITY_PIGLIN_BRUTE_ANGRY, 2.0f, 0.6f);
         world.playSound(bossLoc, Sound.BLOCK_CHAIN_BREAK, 2.0f, 0.5f);
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, bossLoc.clone().add(0, 1.2, 0), 45, 0.8, 0.8, 0.8, 0.08);
+        // Оптимизация FPS (v1.9.8): 45 -> 22 частицы (на Bedrock-телефонах большое количество
+        // частиц в одной точке — самая частая причина просадок FPS)
+        world.spawnParticle(Particle.SOUL_FIRE_FLAME, bossLoc.clone().add(0, 1.2, 0), 22, 0.8, 0.8, 0.8, 0.08);
 
         double horizStrength = cfg.getPullHorizontalStrength();
         double vertBoost = cfg.getPullVerticalBoost();
@@ -117,7 +119,7 @@ public class BossAbilityController {
 
         for (Player target : targets) {
             Location playerLoc = target.getLocation();
-            drawParticleLine(bossLoc.clone().add(0, 1.3, 0), playerLoc.clone().add(0, 1.0, 0), Particle.SOUL_FIRE_FLAME, 0.45);
+            drawParticleLineForPlayer(target, bossLoc.clone().add(0, 1.3, 0), playerLoc.clone().add(0, 1.0, 0), Particle.SOUL_FIRE_FLAME, 0.7);
 
             Vector toBoss = bossLoc.toVector().subtract(playerLoc.toVector());
             toBoss.setY(0);
@@ -226,15 +228,15 @@ public class BossAbilityController {
 
         world.playSound(gatherPoint, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 2.0f, 0.5f);
         world.playSound(gatherPoint, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.6f);
-        world.spawnParticle(Particle.PORTAL, gatherPoint.clone().add(0, 1.0, 0), 90, 0.6, 0.8, 0.6, 0.35);
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, gatherPoint.clone().add(0, 0.5, 0), 45, 0.4, 0.4, 0.4, 0.04);
+        world.spawnParticle(Particle.PORTAL, gatherPoint.clone().add(0, 1.0, 0), 40, 0.6, 0.8, 0.6, 0.35);
+        world.spawnParticle(Particle.SOUL_FIRE_FLAME, gatherPoint.clone().add(0, 0.5, 0), 20, 0.4, 0.4, 0.4, 0.04);
 
         double damage = cfg.getGatherDamage();
         int slowTicks = cfg.getGatherSlownessTicks();
 
         for (Player target : targets) {
             Location oldLoc = target.getLocation();
-            drawParticleLine(oldLoc.clone().add(0, 1.0, 0), gatherPoint.clone().add(0, 1.0, 0), Particle.PORTAL, 0.5);
+            drawParticleLineForPlayer(target, oldLoc.clone().add(0, 1.0, 0), gatherPoint.clone().add(0, 1.0, 0), Particle.PORTAL, 0.7);
 
             Location destination = gatherPoint.clone();
             destination.setYaw(oldLoc.getYaw());
@@ -303,8 +305,8 @@ public class BossAbilityController {
             if (entity instanceof LivingEntity minion) {
                 configureMinion(minion, playersWithin20);
                 activeMinions.add(minion.getUniqueId());
-                world.spawnParticle(Particle.FLAME, spawnLoc.clone().add(0, 1.0, 0), 25, 0.3, 0.5, 0.3, 0.05);
-                world.spawnParticle(Particle.LARGE_SMOKE, spawnLoc.clone().add(0, 1.0, 0), 15, 0.3, 0.5, 0.3, 0.02);
+                world.spawnParticle(Particle.FLAME, spawnLoc.clone().add(0, 1.0, 0), 12, 0.3, 0.5, 0.3, 0.05);
+                world.spawnParticle(Particle.LARGE_SMOKE, spawnLoc.clone().add(0, 1.0, 0), 8, 0.3, 0.5, 0.3, 0.02);
                 spawned++;
             }
         }
@@ -513,6 +515,7 @@ public class BossAbilityController {
     }
 
     private void drawParticleLine(Location start, Location end, Particle particle, double step) {
+        // step уже подобран вызывающим кодом (0.7 — оптимально по FPS для Bedrock)
         World world = start.getWorld();
         if (world == null || !world.equals(end.getWorld())) {
             return;
@@ -523,9 +526,31 @@ public class BossAbilityController {
         }
         Vector dir = end.toVector().subtract(start.toVector()).normalize().multiply(step);
         Location cur = start.clone();
-        int steps = (int) Math.min(60, distance / step);
+        int steps = (int) Math.min(40, distance / step);
         for (int i = 0; i < steps; i++) {
             world.spawnParticle(particle, cur, 1, 0.02, 0.02, 0.02, 0.0);
+            cur.add(dir);
+        }
+    }
+
+    /**
+     * Оптимизация FPS (v1.9.8): линия частиц рисуется ТОЛЬКО для конкретного игрока.
+     * При 10 игроках под боссом раньше все 10 линий видели все окружающие — теперь каждый
+     * видит только свою, поэтому частиц на клиентах становится в разы меньше.
+     */
+    private void drawParticleLineForPlayer(Player viewer, Location start, Location end, Particle particle, double step) {
+        if (viewer == null || start.getWorld() == null || !start.getWorld().equals(end.getWorld())) {
+            return;
+        }
+        double distance = start.distance(end);
+        if (distance <= 0.1) {
+            return;
+        }
+        Vector dir = end.toVector().subtract(start.toVector()).normalize().multiply(step);
+        Location cur = start.clone();
+        int steps = (int) Math.min(40, distance / step);
+        for (int i = 0; i < steps; i++) {
+            viewer.spawnParticle(particle, cur, 1, 0.02, 0.02, 0.02, 0.0);
             cur.add(dir);
         }
     }
@@ -535,9 +560,10 @@ public class BossAbilityController {
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.EXPLOSION, center, 4, 0.5, 0.2, 0.5, 0.02);
-        for (double r = 2.0; r <= maxRadius; r += 3.0) {
-            int points = (int) (r * 6);
+        world.spawnParticle(Particle.EXPLOSION, center, 3, 0.5, 0.2, 0.5, 0.02);
+        // Оптимизация FPS: кольца реже (шаг 4.0) и точек на кольцо в 2 раза меньше
+        for (double r = 2.0; r <= maxRadius; r += 4.0) {
+            int points = (int) (r * 3);
             for (int i = 0; i < points; i++) {
                 double angle = 2 * Math.PI * i / points;
                 double x = center.getX() + Math.cos(angle) * r;
