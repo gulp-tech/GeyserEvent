@@ -433,30 +433,35 @@ public class BossAbilityController {
         if (boss == null || boss.isDead() || !boss.isValid()) {
             return;
         }
-        PluginConfig cfg = plugin.getPluginConfig();
 
         // Сам Босс тоже не должен становиться невидимым (сплэш/остаточные зелья)
         boss.removePotionEffect(PotionEffectType.INVISIBILITY);
 
-        double bossRadius = Math.max(cfg.getAbilityRadius(), cfg.getMinionTriggerRadius());
-        List<Player> bossTargets = getTargetPlayersInRadius(boss.getLocation(), bossRadius);
-        if (!bossTargets.isEmpty()) {
-            ensureMobTarget(boss, bossTargets);
-        }
-
         if (activeMinions.isEmpty()) {
+            ensureMobTarget(boss, boss.getLocation(), Math.max(
+                    plugin.getPluginConfig().getAbilityRadius(),
+                    plugin.getPluginConfig().getMinionTriggerRadius()));
             return;
         }
+
+        // Оптимизация: список кандидатов собираем ОДИН раз на все мобы (босс + приспешники),
+        // вместо того чтобы перебирать игроков мира заново для каждого моба.
+        PluginConfig cfg = plugin.getPluginConfig();
+        double bossRadius = Math.max(cfg.getAbilityRadius(), cfg.getMinionTriggerRadius());
+        List<Player> candidates = getTargetPlayersInRadius(boss.getLocation(), bossRadius);
+        if (!candidates.isEmpty()) {
+            ensureMobTarget(boss, candidates);
+        }
+
         for (UUID uuid : activeMinions) {
             Entity entity = Bukkit.getEntity(uuid);
             if (!(entity instanceof LivingEntity minion) || minion.isDead() || !minion.isValid()) {
                 continue;
             }
-            List<Player> minionTargets = getTargetPlayersInRadius(minion.getLocation(), cfg.getMinionTriggerRadius());
-            if (!minionTargets.isEmpty()) {
-                ensureMobTarget(minion, minionTargets);
-            }
             minion.removePotionEffect(PotionEffectType.INVISIBILITY);
+            if (!candidates.isEmpty()) {
+                ensureMobTarget(minion, candidates);
+            }
         }
     }
 
@@ -486,6 +491,25 @@ public class BossAbilityController {
         if (closest != null && bukkitMob.getTarget() != closest) {
             bukkitMob.setTarget(closest);
         }
+    }
+
+    /**
+     * Быстрый вариант для случая «приспешников нет»: ищет ближайшего игрока без
+     * создания промежуточных списков.
+     */
+    private void ensureMobTarget(LivingEntity mob, Location center, double radius) {
+        if (!(mob instanceof Mob bukkitMob)) {
+            return;
+        }
+        LivingEntity current = bukkitMob.getTarget();
+        if (current != null && current.isValid() && !current.isDead() && current instanceof Player) {
+            return;
+        }
+        List<Player> players = getTargetPlayersInRadius(center, radius);
+        if (players.isEmpty()) {
+            return;
+        }
+        ensureMobTarget(mob, players);
     }
 
     private void drawParticleLine(Location start, Location end, Particle particle, double step) {

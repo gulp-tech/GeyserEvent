@@ -87,6 +87,17 @@ public class AncientMineManager {
     private boolean richVeinActive = false;
     private boolean mineActive = false;
 
+    /**
+     * Счётчик до очередной полной очистки территории шахты (раз в ~16 секунд),
+     * чтобы не перебирать все сущности 25 чанков каждую секунду.
+     */
+    private int blacksmithCleanupCountdown = 0;
+
+    /**
+     * Счётчик до очередной мягкой проверки региона WorldGuard (раз в 5 минут).
+     */
+    private int worldGuardCheckCountdown = 300;
+
     public record BlockEntry(int dx, int dy, int dz, BlockData blockData, boolean geodeSpot) {
     }
 
@@ -219,6 +230,36 @@ public class AncientMineManager {
         } catch (Throwable throwable) {
             plugin.getLogger().warning("Не удалось применить регион WorldGuard для Шахты Древних: "
                     + throwable.getMessage());
+        }
+    }
+
+    /**
+     * Мягкая самопроверка раз в 5 минут: если админ или другой плагин удалил/изменил регион
+     * {@value WorldGuardHook#REGION_ID}, он будет пересоздан. Если регион на месте — не делает ничего.
+     */
+    private void verifyWorldGuardMineRegion() {
+        if (centerLocation == null || centerLocation.getWorld() == null) {
+            return;
+        }
+        if (!plugin.getPluginConfig().isWorldGuardSyncMineRegion()) {
+            return;
+        }
+        WorldGuardHook hook = plugin.getWorldGuardHook();
+        if (hook == null || !hook.isAvailable()) {
+            return;
+        }
+        try {
+            hook.ensureMineRegion(
+                    centerLocation.getWorld(),
+                    centerLocation.getBlockX(),
+                    centerLocation.getBlockY(),
+                    centerLocation.getBlockZ(),
+                    MINE_RADIUS + 4,
+                    centerLocation.getBlockY() - 14,
+                    centerLocation.getBlockY() + 34
+            );
+        } catch (Throwable ignored) {
+            // Любая ошибка WorldGuard не должна ломать ивент
         }
     }
 
@@ -373,6 +414,13 @@ public class AncientMineManager {
                     } catch (Throwable t) {
                         plugin.getLogger().warning("Ошибка при обновлении жил Шахты Древних: " + t.getMessage());
                     }
+                }
+
+                // Раз в 5 минут мягко проверяем регион WorldGuard (не создаёт нагрузки:
+                // кэшированная рефлексия + один поиск региона по имени)
+                if (--worldGuardCheckCountdown <= 0) {
+                    worldGuardCheckCountdown = 300;
+                    verifyWorldGuardMineRegion();
                 }
             }
         }.runTaskTimer(plugin, 20L, 20L);
@@ -710,7 +758,33 @@ public class AncientMineManager {
             return;
         }
 
-        // 2. Подиум Кузнеца на (0 ~ 0) стоит ровно на стыке 4 чанков: (-1,-1), (-1,0), (0,-1) и (0,0)!
+        // 2. БЫСТРЫЙ ПУТЬ (оптимизация v1.9.7): если Кузнец уже существует, стоит на месте,
+        //    светится и виден — НЕ сканируем 25 чанков со всеми сущностями каждую секунду!
+        //    Полный обход территории выполняется лишь раз в 16 секунд (редкая очистка).
+        if (blacksmithUuid != null) {
+            Entity existing = Bukkit.getEntity(blacksmithUuid);
+            if (existing instanceof Villager smith && smith.isValid() && !smith.isDead()
+                    && smith.getWorld().equals(w)) {
+                if (smith.isGlowing()) {
+                    smith.setGlowing(false);
+                }
+                if (smith.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
+                    smith.removePotionEffect(PotionEffectType.INVISIBILITY);
+                }
+                if (smith.getLocation().distanceSquared(npcLoc) > 0.25) {
+                    smith.teleport(npcLoc);
+                }
+                if (blacksmithCleanupCountdown > 0) {
+                    blacksmithCleanupCountdown--;
+                    return;
+                }
+            } else {
+                blacksmithUuid = null;
+            }
+        }
+        blacksmithCleanupCountdown = 16;
+
+        // 3. Подиум Кузнеца на (0 ~ 0) стоит ровно на стыке 4 чанков: (-1,-1), (-1,0), (0,-1) и (0,0)!
         //    Проходим по всем загруженным чанкам вокруг 0 ~ 0 (-2..+2), удаляем ВСЕ старые ArmorStand
         //    и оставляем ровно ОДНОГО жителя!
         int baseCx = centerLocation.getBlockX() >> 4;

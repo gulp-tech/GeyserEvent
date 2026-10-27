@@ -621,16 +621,18 @@ public class BrushLootManager {
         return removed;
     }
 
+    /**
+     * Удаляет кисточки и реагенты из инвентарей всех игроков онлайн.
+     *
+     * <p><b>Оптимизация (v1.9.7):</b> раньше здесь дополнительно перебирались ВСЕ предметы
+     * ВО ВСЕХ мирах сервера (с копией ItemMeta на каждый — большая просадка при окончании ивента).
+     * Предметы на земле теперь чистятся через реестр отслеживаемых ивентовых предметов
+     * ({@code InfernalRiftManager#purgeTrackedEventItems(boolean)}), а инвентарь игрока
+     * и так проверяется каждые полсекунды.</p>
+     */
     public void removeAllEventBrushesFromOnlinePlayers() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             removeAllTemporaryEventItems(player);
-        }
-        for (World world : Bukkit.getWorlds()) {
-            for (Entity entity : world.getEntitiesByClass(Item.class)) {
-                if (entity instanceof Item itemEntity && isTemporaryEventItem(itemEntity.getItemStack())) {
-                    itemEntity.remove();
-                }
-            }
         }
     }
 

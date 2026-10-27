@@ -9,6 +9,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -29,6 +30,7 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -73,6 +75,12 @@ public class RiftEventListener implements Listener {
     private final Map<UUID, Long> portalMessageCooldown = new HashMap<>();
     private final Map<UUID, Long> brushStrokeCooldown = new HashMap<>();
     private final Map<UUID, Long> villagerClickCooldown = new HashMap<>();
+
+    /**
+     * Кулдаун проверки зоны ивента из PlayerMoveEvent (событие приходит ~20 раз в секунду,
+     * поэтому проверку инвентаря делаем не чаще 4 раз в секунду).
+     */
+    private final Map<UUID, Long> zoneCheckCooldown = new HashMap<>();
     private final Map<String, Integer> blockExcavationStep = new HashMap<>();
 
     public RiftEventListener(GeyserEventPlugin plugin) {
@@ -129,7 +137,15 @@ public class RiftEventListener implements Listener {
         if (plugin.getMinerBackpackManager() != null) {
             plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(event.getPlayer());
         }
-        plugin.getRiftManager().enforceBrushZoneForPlayer(event.getPlayer());
+        // Оптимизация: PlayerMoveEvent срабатывает ~20 раз в секунду на игрока, поэтому
+        // проверку зоны (обход инвентаря) делаем не чаще 4 раз в секунду.
+        Player player = event.getPlayer();
+        long now = System.currentTimeMillis();
+        Long lastZoneCheck = zoneCheckCooldown.get(player.getUniqueId());
+        if (lastZoneCheck == null || now - lastZoneCheck >= 250L) {
+            zoneCheckCooldown.put(player.getUniqueId(), now);
+            plugin.getRiftManager().enforceBrushZoneForPlayer(player);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -169,6 +185,7 @@ public class RiftEventListener implements Listener {
         plugin.getTopRightHudManager().removeHudFromPlayer(player);
         brushStrokeCooldown.remove(player.getUniqueId());
         villagerClickCooldown.remove(player.getUniqueId());
+        zoneCheckCooldown.remove(player.getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -183,6 +200,7 @@ public class RiftEventListener implements Listener {
         plugin.getTopRightHudManager().removeHudFromPlayer(player);
         brushStrokeCooldown.remove(player.getUniqueId());
         villagerClickCooldown.remove(player.getUniqueId());
+        zoneCheckCooldown.remove(player.getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -845,6 +863,24 @@ public class RiftEventListener implements Listener {
         } else if (plugin.getAbilityController().isMinion(entity)) {
             plugin.getMinionLootManager().handleMinionDeath(event);
         }
+    }
+
+    /**
+     * Оптимизация: ивентовые предметы (руда, жеода, кисточка, реагент) регистрируются
+     * в момент появления на полу. Благодаря этому плагину НЕ нужно перебирать все
+     * предметы сервера каждый тик, чтобы убрать их за пределами зоны ивента.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventItemSpawn(ItemSpawnEvent event) {
+        Item item = event.getEntity();
+        if (item == null || !item.isValid()) {
+            return;
+        }
+        if (!item.getItemStack().hasItemMeta()) {
+            // У обычных предметов нет меты — они точно не ивентовые, проверка не нужна
+            return;
+        }
+        plugin.getRiftManager().trackEventItemIfNeeded(item);
     }
 
     /**

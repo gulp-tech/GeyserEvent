@@ -38,6 +38,7 @@ import ru.geyserevent.excavation.BrushTier;
 import ru.geyserevent.util.ColorUtil;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +70,35 @@ public class InfernalRiftManager {
      * Время последнего предупреждения игроку о снятии зелья невидимости (защита от спама).
      */
     private final Map<UUID, Long> invisibilityWarnCooldown = new HashMap<>();
+
+    /**
+     * Реестр выброшенных ивентовых предметов (руда/жеода/кисточка/реагент), которые нужно
+     * проверять на выход за зону: UUID предмета → время первой регистрации.
+     * Ведётся через ItemSpawnEvent, поэтому не требует перебора всех предметов сервера.
+     * Время нужно, чтобы не копить «мёртвые» записи, если чанк предмета выгружен.
+     */
+    private final Map<UUID, Long> trackedEventItems = new HashMap<>();
+
+    /**
+     * Кэш игроков, которым уже показан личный BossBar локатора (чтобы не вызывать
+     * аллоцирующий список {@code bossBar.getPlayers()} на каждого игрока).
+     */
+    private final Set<Player> shownOnPersonalBar = new HashSet<>();
+
+    /**
+     * Максимальный возраст записи в реестре (предметы и так исчезают сами через 5 минут).
+     */
+    private static final long TRACKED_ITEM_MAX_AGE_MILLIS = 360_000L;
+
+    /**
+     * Счётчик до очередной чистки мёртвых записей кулдауна невидимости.
+     */
+    private int invisibilityCleanupCountdown = 0;
+
+    /**
+     * Закэшированный радиус зоны, в которой отключается невидимость (в блоках).
+     */
+    private double npcInvisibilityZoneRadiusSq = 400.0;
 
     private boolean active = false;
     private boolean defeated = false;
@@ -163,9 +193,13 @@ public class InfernalRiftManager {
      *    внутри зоны ивента — НПС ивента всегда замечают игрока.
      */
     private void enforceNpcInvisibilityRules() {
+        // Оптимизация: настройки читаем один раз за проход, а не по 4 обращения за вызов
+        PluginConfig cfg = plugin.getPluginConfig();
+        boolean npcsIgnoreInvisibility = cfg.isNpcsIgnoreInvisibility();
+
         // 0. Невидимость не работает и на самих НПС: игроки не могут спрятать
         //    Жителя/Алхимика (и любого НПС ивента) сплэш-зельем невидимости.
-        if (plugin.getPluginConfig().isNpcsIgnoreInvisibility() && active) {
+        if (npcsIgnoreInvisibility && active) {
             LivingEntity npc = getExcavationVillagerEntity();
             if (npc != null && npc.isValid() && !npc.isDead()) {
                 npc.removePotionEffect(PotionEffectType.INVISIBILITY);
@@ -173,8 +207,7 @@ public class InfernalRiftManager {
         }
 
         // 1. Принудительное наведение Босса и Приспешников на игроков (в том числе невидимых)
-        if (active && !defeated && activeEventType == EventType.INFERNAL_RIFT
-                && plugin.getPluginConfig().isNpcsIgnoreInvisibility()) {
+        if (npcsIgnoreInvisibility && active && !defeated && activeEventType == EventType.INFERNAL_RIFT) {
             LivingEntity boss = getBossEntity();
             if (boss != null && !boss.isDead() && boss.isValid()) {
                 plugin.getAbilityController().forceTargetPlayers(boss);
@@ -182,14 +215,21 @@ public class InfernalRiftManager {
         }
 
         // 2. Снятие зелья невидимости внутри зон ивентов
-        boolean stripInEvents = plugin.getPluginConfig().isNpcsStripInvisibilityInEvents();
-        boolean stripInMine = plugin.getPluginConfig().isNpcsStripInvisibilityInMine();
+        boolean stripInEvents = cfg.isNpcsStripInvisibilityInEvents();
+        boolean stripInMine = cfg.isNpcsStripInvisibilityInMine();
         if (!stripInEvents && !stripInMine) {
             return;
         }
 
-        invisibilityWarnCooldown.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+        // Чистим мёртвые записи кулдауна не чаще раза в 10 секунд (это редкая операция)
+        if (invisibilityCleanupCountdown > 0) {
+            invisibilityCleanupCountdown--;
+        } else {
+            invisibilityCleanupCountdown = 20;
+            invisibilityWarnCooldown.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+        }
 
+        double zoneRadiusSq = npcInvisibilityZoneRadiusSq;
         var mineMgr = plugin.getAncientMineManager();
         for (Player player : Bukkit.getOnlinePlayers()) {
             GameMode gameMode = player.getGameMode();
@@ -207,8 +247,7 @@ public class InfernalRiftManager {
                     && loc.getWorld().equals(riftCenterLocation.getWorld())) {
                 double dx = loc.getX() - riftCenterLocation.getX();
                 double dz = loc.getZ() - riftCenterLocation.getZ();
-                double zoneRadius = getNpcInvisibilityZoneRadius();
-                insideEvent = (dx * dx + dz * dz) <= (zoneRadius * zoneRadius);
+                insideEvent = (dx * dx + dz * dz) <= zoneRadiusSq;
             }
 
             boolean insideMine = false;
@@ -234,13 +273,15 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Радиус, внутри которого невидимость отключается во время временного ивента
-     * (зона ивента 16.5 блока + радиус способностей и призыва приспешников).
+     * Пересчитывает и кэширует радиус, внутри которого невидимость отключается во время
+     * временного ивента (зона ивента 16.5 блока + радиус способностей и призыва приспешников).
+     * Вызывается при старте ивента, чтобы в быстром цикле не трогать конфиг.
      */
-    private double getNpcInvisibilityZoneRadius() {
+    private void refreshNpcInvisibilityZoneRadius() {
         PluginConfig cfg = plugin.getPluginConfig();
-        return Math.max(cfg.getExcavationBrushRemoveDistance(),
+        double radius = Math.max(cfg.getExcavationBrushRemoveDistance(),
                 Math.max(cfg.getAbilityRadius(), cfg.getMinionTriggerRadius()));
+        this.npcInvisibilityZoneRadiusSq = radius * radius;
     }
 
     /**
@@ -309,45 +350,130 @@ public class InfernalRiftManager {
     /**
      * Проверяет всех игроков онлайн и выброшенные предметы: если игрок или предмет находится
      * за пределами соответствующей зоны ивента, кисточки, реагенты и руды сразу пропадают.
+     *
+     * <p><b>Оптимизация (v1.9.7):</b> раньше здесь каждый тик перебирались ВСЕ предметы ВО ВСЕХ мирах
+     * (на анархии это десятки тысяч предметов, у каждого ещё и копия ItemMeta — серьёзные просадки TPS).
+     * Теперь ивентовые предметы регистрируются в момент спавна ({@link #trackEventItemIfNeeded(Item)}),
+     * а проверяются только они — обычно их меньше двух десятков.</p>
      */
     public void enforceBrushZoneForPlayers() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             enforceBrushZoneForPlayer(player);
         }
 
-        double zoneRadius = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
-        double zoneRadiusSq = zoneRadius * zoneRadius;
+        if (trackedEventItems.isEmpty()) {
+            return;
+        }
 
         var mineMgr = plugin.getAncientMineManager();
         var backpackMgr = plugin.getMinerBackpackManager();
 
-        for (World w : Bukkit.getWorlds()) {
-            for (Entity entity : w.getEntitiesByClass(Item.class)) {
-                if (!(entity instanceof Item itemEntity)) {
-                    continue;
+        double zoneRadius = plugin.getPluginConfig().getExcavationBrushRemoveDistance();
+        double zoneRadiusSq = zoneRadius * zoneRadius;
+        long now = System.currentTimeMillis();
+
+        Iterator<Map.Entry<UUID, Long>> iterator = trackedEventItems.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, Long> entry = iterator.next();
+            UUID itemUuid = entry.getKey();
+            Entity entity = Bukkit.getEntity(itemUuid);
+            if (entity == null) {
+                // Чанк предмета выгружен — не снимаем трекинг, но и не копим запись вечно
+                if (now - entry.getValue() > TRACKED_ITEM_MAX_AGE_MILLIS) {
+                    iterator.remove();
                 }
-                ItemStack stack = itemEntity.getItemStack();
-                boolean isMineItem = backpackMgr != null && backpackMgr.isMineOreOrGeode(stack);
-                boolean isTempItem = plugin.getBrushLootManager().isTemporaryEventItem(stack);
-                if (!isMineItem && !isTempItem) {
-                    continue;
+                continue;
+            }
+            if (!(entity instanceof Item itemEntity) || !entity.isValid()) {
+                iterator.remove();
+                continue;
+            }
+
+            ItemStack stack = itemEntity.getItemStack();
+            boolean isMineItem = backpackMgr != null && backpackMgr.isMineOreOrGeode(stack);
+            boolean isTempItem = !isMineItem && plugin.getBrushLootManager().isTemporaryEventItem(stack);
+            if (!isMineItem && !isTempItem) {
+                // Предмет перестал быть ивентовым (например, его подобрали и переименовали) — снимаем трекинг
+                iterator.remove();
+                continue;
+            }
+
+            Location iLoc = itemEntity.getLocation();
+            if (isMineItem) {
+                if (mineMgr == null || !mineMgr.isMineActive() || !mineMgr.isPlayerInsideMineZone(iLoc)) {
+                    itemEntity.remove();
+                    iterator.remove();
                 }
-                Location iLoc = itemEntity.getLocation();
-                if (isMineItem) {
-                    if (mineMgr == null || !mineMgr.isMineActive() || !mineMgr.isPlayerInsideMineZone(iLoc)) {
-                        itemEntity.remove();
-                    }
-                } else {
-                    if (!active || riftCenterLocation == null || !w.equals(riftCenterLocation.getWorld())) {
-                        itemEntity.remove();
-                    } else {
-                        double dx = iLoc.getX() - riftCenterLocation.getX();
-                        double dz = iLoc.getZ() - riftCenterLocation.getZ();
-                        if ((dx * dx + dz * dz) > zoneRadiusSq) {
-                            itemEntity.remove();
-                        }
-                    }
+            } else {
+                boolean outside = !active
+                        || riftCenterLocation == null
+                        || riftCenterLocation.getWorld() == null
+                        || !iLoc.getWorld().equals(riftCenterLocation.getWorld());
+                if (!outside) {
+                    double dx = iLoc.getX() - riftCenterLocation.getX();
+                    double dz = iLoc.getZ() - riftCenterLocation.getZ();
+                    outside = (dx * dx + dz * dz) > zoneRadiusSq;
                 }
+                if (outside) {
+                    itemEntity.remove();
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    /**
+     * Регистрирует выброшенный предмет как «ивентовый», если это руда, жеода, кисточка или реагент.
+     * Вызывается из {@code ItemSpawnEvent} — только для предметов с метаданными, поэтому почти бесплатно.
+     */
+    public void trackEventItemIfNeeded(Item itemEntity) {
+        if (itemEntity == null || trackedEventItems.size() > 512) {
+            return;
+        }
+        ItemStack stack = itemEntity.getItemStack();
+        if (!stack.hasItemMeta()) {
+            return;
+        }
+        if (plugin.getMinerBackpackManager() != null && plugin.getMinerBackpackManager().isMineOreOrGeode(stack)) {
+            trackedEventItems.putIfAbsent(itemEntity.getUniqueId(), System.currentTimeMillis());
+            return;
+        }
+        if (plugin.getBrushLootManager().isTemporaryEventItem(stack)) {
+            trackedEventItems.putIfAbsent(itemEntity.getUniqueId(), System.currentTimeMillis());
+        }
+    }
+
+    /**
+     * Полностью очищает реестр отслеживаемых ивентовых предметов (при выключении плагина).
+     */
+    public void clearTrackedEventItems() {
+        trackedEventItems.clear();
+    }
+
+    /**
+     * Удаляет с земли все отслеживаемые ивентовые предметы (используется при окончании ивента).
+     * Работает по реестру, поэтому не перебирает все предметы сервера.
+     *
+     * @param mineItemsToo удалять ли также руды и жеоды «Шахты Древних»
+     */
+    public void purgeTrackedEventItems(boolean mineItemsToo) {
+        if (trackedEventItems.isEmpty()) {
+            return;
+        }
+        var backpackMgr = plugin.getMinerBackpackManager();
+        Iterator<Map.Entry<UUID, Long>> iterator = trackedEventItems.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, Long> entry = iterator.next();
+            Entity entity = Bukkit.getEntity(entry.getKey());
+            iterator.remove();
+            if (!(entity instanceof Item itemEntity) || !entity.isValid()) {
+                continue;
+            }
+            ItemStack stack = itemEntity.getItemStack();
+            boolean isMineItem = backpackMgr != null && backpackMgr.isMineOreOrGeode(stack);
+            boolean isTempItem = !isMineItem && plugin.getBrushLootManager().isTemporaryEventItem(stack);
+            if (isTempItem || (mineItemsToo && isMineItem)) {
+                itemEntity.remove();
             }
         }
     }
@@ -445,6 +571,7 @@ public class InfernalRiftManager {
         this.minionCooldownSeconds = 0;
         this.leaderboard.clear();
         this.riftCenterLocation = targetCenter.getBlock().getLocation().add(0.5, 0, 0.5);
+        refreshNpcInvisibilityZoneRadius();
         this.eventEndEpochSeconds = (System.currentTimeMillis() / 1000L) + (cfg.getDurationMinutes() * 60L);
 
         // Удерживаем чанки ивента загруженными на время проведения, чтобы Босс/НПС не выгружался и гарантированно удалялся в конце
@@ -1151,8 +1278,10 @@ public class InfernalRiftManager {
             setEventChunksForceLoaded(riftCenterLocation, false);
         }
         invisibilityWarnCooldown.clear();
+        trackedEventItems.clear();
 
         plugin.getBrushLootManager().removeAllEventBrushesFromOnlinePlayers();
+        purgeTrackedEventItems(false);
         plugin.getAbilityController().removeAllMinions();
         plugin.getSchematicManager().restoreSchematic();
         plugin.getBeachSchematicManager().restoreActiveSchematic();
@@ -1196,7 +1325,12 @@ public class InfernalRiftManager {
                     }
                 }
             }
+            // Оптимизация: игроков и предметы (самые многочисленные сущности) пропускаем сразу,
+            // не делая поиск по PDC для каждой из них
             for (Entity ent : w.getEntities()) {
+                if (ent instanceof Player || ent instanceof Item) {
+                    continue;
+                }
                 if (isBoss(ent) || isExcavationVillager(ent) || plugin.getAbilityController().isMinion(ent)) {
                     ent.remove();
                 }
@@ -1408,8 +1542,10 @@ public class InfernalRiftManager {
             bossBar.setTitle(ColorUtil.color(barTitle));
         }
 
+        // Оптимизация: получаем список один раз, а не на каждого игрока (getPlayers() аллоцирует список)
+        List<Player> alreadyShown = bossBar.getPlayers();
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!bossBar.getPlayers().contains(player)) {
+            if (!alreadyShown.contains(player)) {
                 bossBar.addPlayer(player);
             }
         }
@@ -1440,6 +1576,13 @@ public class InfernalRiftManager {
      */
     @SuppressWarnings("deprecation")
     private void updateGpsTrackerForPlayers() {
+        // Оптимизация: кэш «кому уже показан личный локатор» — чтобы не аллоцировать
+        // список bossBar.getPlayers() на каждого игрока каждые 10 тиков
+        shownOnPersonalBar.clear();
+        for (BossBar bar : gpsBossBars.values()) {
+            shownOnPersonalBar.addAll(bar.getPlayers());
+        }
+
         Location baseLoc = (active && riftCenterLocation != null && riftCenterLocation.getWorld() != null)
                 ? riftCenterLocation
                 : (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()
@@ -1508,8 +1651,9 @@ public class InfernalRiftManager {
             });
             personalBar.setTitle(locatorLine);
             personalBar.setProgress(Math.max(0.05, Math.min(1.0, 1.0 - (dist / 500.0))));
-            if (!personalBar.getPlayers().contains(player)) {
+            if (!shownOnPersonalBar.contains(player)) {
                 personalBar.addPlayer(player);
+                shownOnPersonalBar.add(player);
             }
 
             try {
