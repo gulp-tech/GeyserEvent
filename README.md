@@ -1,4 +1,4 @@
-# 🔥 GeyserEvent v1.9.12 — 4 анархических ивента для Purpur 26.2
+# 🔥 GeyserEvent v1.9.13 — 4 анархических ивента для Purpur 26.2
 
 Плагин с **тремя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»)
 и **постоянным ивентом** «Шахта Древних (Жила Жеод)» на координатах **`0 ~ 0`** мира `world2`.
@@ -14,10 +14,10 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.12)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.5.2)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.13)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.5.3)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/deluxemenus/events.yml |
-| **Релиз v1.9.12** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.12 |
+| **Релиз v1.9.13** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.13 |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
 при запуске сервера (в `onLoad()`), поэтому старый тектурпак/модель рюкзака заменяются сами.
@@ -65,6 +65,31 @@
   даёт слитки/кристаллы и очки кузницы — **без осколков**.
 
 ---
+
+## 🧩 Куда плагин кладёт ресурспак (любой способ запуска Bedrock-движка)
+
+Панель в углу и 3D-рюкзак работают только если Bedrock-игроки получают ресурспак
+`GeyserEvent-Pack.mcpack`. Плагин при каждом запуске сам ищет папку packs и копирует пак
+**во все найденные** места, в таком порядке:
+
+1. `resourcepack.geyser-packs-dir` из конфига — если путь указан явно, используется только он;
+2. **`<папка сервера>/bedrock/packs`** — Bedrock-движок, встроенный в ядро (Purpurbedrock и сборки с встроенным Geyser);
+3. `-Dpurpurbedrock.dataDir=<...>/packs` — если движку задан свой каталог данных;
+4. `plugins/Geyser-Spigot/packs` — плагин Geyser-Spigot на этом же сервере;
+5. `plugins/Geyser/packs` и `<папка сервера>/geyser/packs`.
+
+Если ничего не найдено — плагин создаёт `<папка сервера>/bedrock/packs` и кладёт пак туда,
+а в консоль пишет крупную подсказку, куда скопировать файл вручную.
+
+Узнать точную рабочую папку сервера на Linux:
+
+```bash
+PID=$(pgrep -f 'purpurbedrock-26.2.jar' | head -1)
+readlink -f "/proc/$PID/cwd"      # к результату добавить /bedrock/packs
+```
+
+**Важно:** движок читает папку packs при старте. Если пак скопирован плагином уже после
+старта движка — **перезапустите сервер ещё раз** и перезайдите в игру Bedrock-клиентом.
 
 ## 🧩 Если Geyser стоит отдельным прокси (Purpur + Geyser Standalone/BungeeCord/Velocity)
 

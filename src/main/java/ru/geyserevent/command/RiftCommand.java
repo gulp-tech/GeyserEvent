@@ -438,13 +438,26 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 }
                 sender.sendMessage(ColorUtil.color("&e┠ &fAPI Bedrock: " + (bedrockApi ? "&aподключено" : "&cне найдено")
                         + " &7(Geyser / Floodgate)"));
+                String packsDir = plugin.getPluginConfig().getGeyserPacksDir();
+                if (packsDir != null && !packsDir.isBlank()) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &fПапка packs (из конфига): &f" + packsDir));
+                } else {
+                    sender.sendMessage(ColorUtil.color("&e┠ &fПапки packs (проверяются по порядку):"));
+                    for (String cand : plugin.getTopRightHudManager().getGeyserPacksDirCandidates()) {
+                        sender.sendMessage(ColorUtil.color("&e┠ &8  • &f" + cand));
+                    }
+                }
+                sender.sendMessage(ColorUtil.color("&e┠ &fУстановка пака: &f"
+                        + plugin.getTopRightHudManager().getPackInstallResult()));
                 File pack = plugin.getTopRightHudManager().getInstalledPackFile();
                 if (pack != null && pack.exists()) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &fРесурспак: &a" + pack.getPath()
-                            + " &7(" + pack.length() + " байт)"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fРесурспак в packs: &aесть &7(" + pack.length() + " байт)"));
                 } else {
-                    sender.sendMessage(ColorUtil.color("&e┠ &fРесурспак: &cне найден в plugins/Geyser-Spigot/packs/ "
-                            + "&7(плагин ставит его сам при запуске, нужен Geyser-Spigot)"));
+                    File exported = plugin.getTopRightHudManager().getExportedPackFile();
+                    sender.sendMessage(ColorUtil.color("&e┠ &fРесурспак в packs: &cНЕТ &7— скопируйте вручную:"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &f   "
+                            + (exported != null ? exported.getPath() : "plugins/GeyserEvent/resourcepack/GeyserEvent-Pack.mcpack")));
+                    sender.sendMessage(ColorUtil.color("&e┠ &f   → в папку &epacks &fBedrock-движка, затем перезапустите сервер."));
                 }
                 sender.sendMessage(ColorUtil.color("&e┠ &fИвент сейчас: "
                         + (manager.isActive() ? "&aидёт «" + manager.getActiveEventType().getDisplayName() + "»" : "&7не идёт")));

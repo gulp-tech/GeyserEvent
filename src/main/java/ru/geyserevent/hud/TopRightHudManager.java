@@ -14,6 +14,8 @@ import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.util.ColorUtil;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -73,7 +75,6 @@ public class TopRightHudManager {
             plugin.saveResource("resourcepack/GeyserEvent-Pack.mcpack", true);
         } catch (Exception ignored) {
         }
-        packInstallResult = "экспортирован: " + exportedMcpack.getPath();
 
         if (!plugin.getPluginConfig().isAutoInstallResourcePackToGeyser()) {
             packInstallResult = "авто-установка выключена (auto-install-to-geyser: false)";
@@ -84,60 +85,114 @@ public class TopRightHudManager {
             return;
         }
 
-        File packsDir = resolveGeyserPacksDir();
-        if (packsDir == null) {
-            packInstallResult = "не скопирован: папка packs Geyser не найдена";
-            plugin.getLogger().warning("==================================================");
-            plugin.getLogger().warning(" Ресурспак GeyserEvent-Pack.mcpack НЕ скопирован в Geyser.");
-            plugin.getLogger().warning(" Без него Bedrock-игроки не увидят панель ивента в углу экрана");
-            plugin.getLogger().warning(" и 3D-рюкзак шахтёра.");
-            plugin.getLogger().warning(" Скопируйте вручную этот файл:");
-            plugin.getLogger().warning("   " + exportedMcpack.getPath());
-            plugin.getLogger().warning(" в папку packs вашего Geyser (прокси), например:");
-            plugin.getLogger().warning("   /путь/к/geyser/packs/");
-            plugin.getLogger().warning(" Либо укажите путь в конфиге:");
-            plugin.getLogger().warning("   resourcepack.geyser-packs-dir: \"/путь/к/geyser/packs\"");
-            plugin.getLogger().warning("==================================================");
+        List<File> targets = resolveGeyserPacksDirs();
+        if (targets.isEmpty()) {
+            packInstallResult = "не скопирован: папка packs Bedrock-движка не найдена";
+            logPackHelp(exportedMcpack);
             return;
         }
 
-        if (!packsDir.exists() && !packsDir.mkdirs()) {
-            packInstallResult = "не скопирован: не удалось создать " + packsDir.getPath();
+        List<String> copied = new ArrayList<>();
+        for (File packsDir : targets) {
+            if (!packsDir.exists() && !packsDir.mkdirs()) {
+                continue;
+            }
+            File targetFile = new File(packsDir, "GeyserEvent-Pack.mcpack");
+            try {
+                Files.copy(exportedMcpack.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                copied.add(targetFile.getPath());
+            } catch (IOException ignored) {
+            }
+        }
+
+        if (copied.isEmpty()) {
+            packInstallResult = "не скопирован: нет доступа к папкам packs";
+            logPackHelp(exportedMcpack);
             return;
         }
-        File targetFile = new File(packsDir, "GeyserEvent-Pack.mcpack");
-        try {
-            Files.copy(exportedMcpack.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            packInstallResult = "скопирован в " + targetFile.getPath();
-            plugin.getLogger().info("Ресурспак ивентов скопирован в " + targetFile.getPath()
-                    + " (Bedrock-игроки получат его автоматически).");
-        } catch (IOException e) {
-            packInstallResult = "не скопирован: " + e.getMessage();
-        }
+
+        packInstallResult = "скопирован в " + String.join(", ", copied);
+        plugin.getLogger().info("Ресурспак ивентов скопирован: " + String.join(", ", copied));
+        plugin.getLogger().info("Bedrock-игроки получат его при подключении. Если пак не применился —");
+        plugin.getLogger().info("перезапустите сервер ещё раз (движок читает папку packs при старте).");
+    }
+
+    /** Крупная подсказка в консоль, если пак не удалось положить в packs автоматически. */
+    private void logPackHelp(File exportedMcpack) {
+        plugin.getLogger().warning("==================================================");
+        plugin.getLogger().warning(" Ресурспак GeyserEvent-Pack.mcpack НЕ скопирован в папку packs.");
+        plugin.getLogger().warning(" Без него Bedrock-игроки не увидят панель ивента в углу экрана");
+        plugin.getLogger().warning(" и 3D-рюкзак шахтёра.");
+        plugin.getLogger().warning(" Скопируйте вручную этот файл:");
+        plugin.getLogger().warning("   " + exportedMcpack.getPath());
+        plugin.getLogger().warning(" в папку packs вашего Bedrock-движка, например:");
+        plugin.getLogger().warning("   <папка сервера>/bedrock/packs");
+        plugin.getLogger().warning(" Либо укажите путь явно в конфиге:");
+        plugin.getLogger().warning("   resourcepack.geyser-packs-dir: \"<папка сервера>/bedrock/packs\"");
+        plugin.getLogger().warning(" После копирования перезапустите сервер и перезайдите в игру.");
+        plugin.getLogger().warning("==================================================");
     }
 
     /**
-     * Находит папку packs Geyser: сначала из конфига, потом plugins/Geyser-Spigot/packs.
-     * Возвращает null, если папку найти/создать не удалось.
+     * Находит все папки packs Bedrock-движка, куда нужно положить ресурспак:
+     *  1) resourcepack.geyser-packs-dir из конфига (если указан — только он);
+     *  2) <папка сервера>/bedrock/packs — встроенный движок Purpurbedrock;
+     *  3) -Dpurpurbedrock.dataDir=<...>/packs — если движку задан свой каталог;
+     *  4) plugins/Geyser-Spigot/packs и plugins/Geyser/packs — плагин Geyser;
+     *  5) <папка сервера>/geyser/packs.
+     * Если ничего не найдено — используется <папка сервера>/bedrock/packs.
      */
-    private File resolveGeyserPacksDir() {
+    private List<File> resolveGeyserPacksDirs() {
+        List<File> dirs = new ArrayList<>();
+
         String configured = plugin.getPluginConfig().getGeyserPacksDir();
         if (configured != null && !configured.isBlank()) {
             File dir = new File(configured);
             if (dir.isDirectory() || (dir.getParentFile() != null && dir.getParentFile().isDirectory())) {
-                return dir;
+                dirs.add(dir);
             }
-            return null;
+            return dirs;
         }
+
+        // <папка сервера> = родитель папки plugins, в которой лежит этот плагин
+        File serverRoot = null;
         File pluginsDir = plugin.getDataFolder().getParentFile();
-        if (pluginsDir == null) {
-            return null;
+        if (pluginsDir != null) {
+            serverRoot = pluginsDir.getParentFile();
         }
-        File geyserDir = new File(pluginsDir, "Geyser-Spigot");
-        if (!geyserDir.isDirectory()) {
-            return null;
+        if (serverRoot == null) {
+            serverRoot = new File(".");
         }
-        return new File(geyserDir, "packs");
+
+        addCandidate(dirs, serverRoot, "bedrock" + File.separator + "packs");
+
+        String dataDirProp = System.getProperty("purpurbedrock.dataDir");
+        if (dataDirProp != null && !dataDirProp.isBlank()) {
+            addCandidate(dirs, new File(dataDirProp), "packs");
+        }
+
+        addCandidate(dirs, serverRoot, "plugins" + File.separator + "Geyser-Spigot" + File.separator + "packs");
+        addCandidate(dirs, serverRoot, "plugins" + File.separator + "Geyser" + File.separator + "packs");
+        addCandidate(dirs, serverRoot, "geyser" + File.separator + "packs");
+
+        if (dirs.isEmpty()) {
+            // движок Purpurbedrock: паки кладём в <папка сервера>/bedrock/packs
+            dirs.add(new File(serverRoot, "bedrock" + File.separator + "packs"));
+        }
+        return dirs;
+    }
+
+    /** Добавляет кандидата, если папка уже есть или её можно создать. */
+    private void addCandidate(List<File> dirs, File base, String relative) {
+        if (base == null) {
+            return;
+        }
+        File dir = new File(base, relative);
+        if (dir.isDirectory() || (dir.getParentFile() != null && dir.getParentFile().isDirectory())) {
+            if (!dirs.contains(dir)) {
+                dirs.add(dir);
+            }
+        }
     }
 
     /**
@@ -240,14 +295,24 @@ public class TopRightHudManager {
         }.runTaskTimer(plugin, 0L, 10L);
     }
 
-    /** Файл ресурспака в папке packs Geyser (если он там есть). */
+    /** Файл ресурспака в папке packs Bedrock-движка (если он там есть). */
     public File getInstalledPackFile() {
-        File packsDir = resolveGeyserPacksDir();
-        if (packsDir == null) {
-            return null;
+        for (File packsDir : resolveGeyserPacksDirs()) {
+            File target = new File(packsDir, "GeyserEvent-Pack.mcpack");
+            if (target.exists()) {
+                return target;
+            }
         }
-        File target = new File(packsDir, "GeyserEvent-Pack.mcpack");
-        return target.exists() ? target : null;
+        return null;
+    }
+
+    /** Список проверяемых папок packs (для диагностики). */
+    public List<String> getGeyserPacksDirCandidates() {
+        List<String> out = new ArrayList<>();
+        for (File dir : resolveGeyserPacksDirs()) {
+            out.add(dir.getPath());
+        }
+        return out;
     }
 
     /** Результат копирования ресурспака в Geyser (для диагностики). */
