@@ -1,4 +1,4 @@
-# 🔥 GeyserEvent v1.9.11 — 4 анархических ивента для Purpur 26.2
+# 🔥 GeyserEvent v1.9.12 — 4 анархических ивента для Purpur 26.2
 
 Плагин с **тремя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»)
 и **постоянным ивентом** «Шахта Древних (Жила Жеод)» на координатах **`0 ~ 0`** мира `world2`.
@@ -14,10 +14,10 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.11)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.5.1)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.12)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.5.2)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/deluxemenus/events.yml |
-| **Релиз v1.9.11** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.11 |
+| **Релиз v1.9.12** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.12 |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
 при запуске сервера (в `onLoad()`), поэтому старый тектурпак/модель рюкзака заменяются сами.
@@ -65,6 +65,28 @@
   даёт слитки/кристаллы и очки кузницы — **без осколков**.
 
 ---
+
+## 🧩 Если Geyser стоит отдельным прокси (Purpur + Geyser Standalone/BungeeCord/Velocity)
+
+Панель в углу и 3D-рюкзак работают только если Bedrock-игроки получают ресурспак
+`GeyserEvent-Pack.mcpack`. Плагин сам кладёт его в папку **packs** вашего Geyser:
+
+- Geyser-Spigot плагином на этом же сервере → папка находится сама (`plugins/Geyser-Spigot/packs`);
+- Geyser отдельным прокси → укажите путь к его папке packs в конфиге:
+
+```yaml
+resourcepack:
+  auto-install-to-geyser: true
+  geyser-packs-dir: "/home/geyser/packs"   # путь к packs вашего Geyser
+```
+
+Если путь недоступен с сервера (Geyser на другой машине), плагин при запуске напишет в консоль
+точный файл и куда его скопировать вручную:
+`plugins/GeyserEvent/resourcepack/GeyserEvent-Pack.mcpack` → `<папка packs Geyser>/`.
+После копирования **перезапустите Geyser** и перезайдите в игру.
+
+Проверить всё это можно командой **`/rift hudinfo`** — она показывает путь до пака,
+результат копирования, ваш клиент (Bedrock/Java) и идёт ли ивент.
 
 ## 🔍 Проверка панели в углу (если не появилась)
 

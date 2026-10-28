@@ -45,14 +45,22 @@ public class TopRightHudManager {
     /** Показана ли сейчас панель ивента в углу (нужно, чтобы не слать лишние пакеты). */
     private boolean cornerHudActive = false;
 
+    /** Результат последней попытки скопировать ресурспак в Geyser (для /rift hudinfo). */
+    private String packInstallResult = "ещё не выполнялась";
+
     public TopRightHudManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
         exportAndInstallResourcePack();
     }
 
     /**
-     * Экспортирует встроенный ресурспак GeyserEvent-Pack.mcpack
-     * и автоматически копирует его в plugins/Geyser-Spigot/packs/.
+     * Экспортирует встроенный ресурспак GeyserEvent-Pack.mcpack в plugins/GeyserEvent/resourcepack/
+     * и копирует его в папку packs вашего Geyser, чтобы Bedrock-игроки получили пак автоматически.
+     *
+     * Папка packs определяется так:
+     *  1) resourcepack.geyser-packs-dir в конфиге (если указан) — так находят прокси-Geyрер
+     *     (BungeeCord / Velocity / Standalone), у которого папка packs лежит вне сервера;
+     *  2) иначе plugins/Geyser-Spigot/packs (плагин Geyser-Spigot прямо на сервере).
      */
     public final void exportAndInstallResourcePack() {
         File packDir = new File(plugin.getDataFolder(), "resourcepack");
@@ -65,24 +73,71 @@ public class TopRightHudManager {
             plugin.saveResource("resourcepack/GeyserEvent-Pack.mcpack", true);
         } catch (Exception ignored) {
         }
+        packInstallResult = "экспортирован: " + exportedMcpack.getPath();
 
-        if (plugin.getPluginConfig().isAutoInstallResourcePackToGeyser() && exportedMcpack.exists()) {
-            File pluginsDir = plugin.getDataFolder().getParentFile();
-            if (pluginsDir != null) {
-                File geyserDir = new File(pluginsDir, "Geyser-Spigot");
-                File geyserPacksDir = new File(geyserDir, "packs");
-                if (geyserDir.exists()) {
-                    if (!geyserPacksDir.exists()) {
-                        geyserPacksDir.mkdirs();
-                    }
-                    File targetFile = new File(geyserPacksDir, "GeyserEvent-Pack.mcpack");
-                    try {
-                        Files.copy(exportedMcpack.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    } catch (IOException ignored) {
-                    }
-                }
-            }
+        if (!plugin.getPluginConfig().isAutoInstallResourcePackToGeyser()) {
+            packInstallResult = "авто-установка выключена (auto-install-to-geyser: false)";
+            return;
         }
+        if (!exportedMcpack.exists()) {
+            packInstallResult = "не удалось экспортировать ресурспак";
+            return;
+        }
+
+        File packsDir = resolveGeyserPacksDir();
+        if (packsDir == null) {
+            packInstallResult = "не скопирован: папка packs Geyser не найдена";
+            plugin.getLogger().warning("==================================================");
+            plugin.getLogger().warning(" Ресурспак GeyserEvent-Pack.mcpack НЕ скопирован в Geyser.");
+            plugin.getLogger().warning(" Без него Bedrock-игроки не увидят панель ивента в углу экрана");
+            plugin.getLogger().warning(" и 3D-рюкзак шахтёра.");
+            plugin.getLogger().warning(" Скопируйте вручную этот файл:");
+            plugin.getLogger().warning("   " + exportedMcpack.getPath());
+            plugin.getLogger().warning(" в папку packs вашего Geyser (прокси), например:");
+            plugin.getLogger().warning("   /путь/к/geyser/packs/");
+            plugin.getLogger().warning(" Либо укажите путь в конфиге:");
+            plugin.getLogger().warning("   resourcepack.geyser-packs-dir: \"/путь/к/geyser/packs\"");
+            plugin.getLogger().warning("==================================================");
+            return;
+        }
+
+        if (!packsDir.exists() && !packsDir.mkdirs()) {
+            packInstallResult = "не скопирован: не удалось создать " + packsDir.getPath();
+            return;
+        }
+        File targetFile = new File(packsDir, "GeyserEvent-Pack.mcpack");
+        try {
+            Files.copy(exportedMcpack.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            packInstallResult = "скопирован в " + targetFile.getPath();
+            plugin.getLogger().info("Ресурспак ивентов скопирован в " + targetFile.getPath()
+                    + " (Bedrock-игроки получат его автоматически).");
+        } catch (IOException e) {
+            packInstallResult = "не скопирован: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Находит папку packs Geyser: сначала из конфига, потом plugins/Geyser-Spigot/packs.
+     * Возвращает null, если папку найти/создать не удалось.
+     */
+    private File resolveGeyserPacksDir() {
+        String configured = plugin.getPluginConfig().getGeyserPacksDir();
+        if (configured != null && !configured.isBlank()) {
+            File dir = new File(configured);
+            if (dir.isDirectory() || (dir.getParentFile() != null && dir.getParentFile().isDirectory())) {
+                return dir;
+            }
+            return null;
+        }
+        File pluginsDir = plugin.getDataFolder().getParentFile();
+        if (pluginsDir == null) {
+            return null;
+        }
+        File geyserDir = new File(pluginsDir, "Geyser-Spigot");
+        if (!geyserDir.isDirectory()) {
+            return null;
+        }
+        return new File(geyserDir, "packs");
     }
 
     /**
@@ -185,13 +240,24 @@ public class TopRightHudManager {
         }.runTaskTimer(plugin, 0L, 10L);
     }
 
-    /** Путь до установленного ресурспака (для диагностики). */
+    /** Файл ресурспака в папке packs Geyser (если он там есть). */
     public File getInstalledPackFile() {
-        File pluginsDir = plugin.getDataFolder().getParentFile();
-        if (pluginsDir == null) {
+        File packsDir = resolveGeyserPacksDir();
+        if (packsDir == null) {
             return null;
         }
-        return new File(new File(pluginsDir, "Geyser-Spigot" + File.separator + "packs"), "GeyserEvent-Pack.mcpack");
+        File target = new File(packsDir, "GeyserEvent-Pack.mcpack");
+        return target.exists() ? target : null;
+    }
+
+    /** Результат копирования ресурспака в Geyser (для диагностики). */
+    public String getPackInstallResult() {
+        return packInstallResult;
+    }
+
+    /** Экспортированный ресурспак (отсюда его можно скопировать в packs Geyser вручную). */
+    public File getExportedPackFile() {
+        return new File(new File(plugin.getDataFolder(), "resourcepack"), "GeyserEvent-Pack.mcpack");
     }
 
     public void removeHudFromPlayer(Player player) {

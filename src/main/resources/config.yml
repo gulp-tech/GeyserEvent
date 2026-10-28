@@ -15,6 +15,12 @@ resourcepack:
   # Автоматически экспортировать Bedrock ресурспак (GeyserEvent-Pack.mcpack)
   # и копировать его в папку plugins/Geyser-Spigot/packs/
   auto-install-to-geyser: true
+  # Путь к папке packs Geyser. Пусто = автоопределение plugins/Geyser-Spigot/packs
+  # (когда плагин Geyser-Spigot стоит прямо на этом сервере).
+  # Если Geyser — отдельный прокси (Standalone/BungeeCord/Velocity), укажите путь к его packs,
+  # например: "/home/geyser/packs". Если путь недоступен — плагин напишет в консоли,
+  # какой файл куда скопировать вручную.
+  geyser-packs-dir: ""
   # Отображать инфо-панель в правом верхнем углу экрана во время ивента
   # (через BossBar и GeyserEvent-Pack.mcpack — НЕ трогает Scoreboard сервера!)
   top-right-hud:
