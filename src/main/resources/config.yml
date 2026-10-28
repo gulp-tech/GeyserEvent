@@ -25,6 +25,10 @@ resourcepack:
   # (через BossBar и GeyserEvent-Pack.mcpack — НЕ трогает Scoreboard сервера!)
   top-right-hud:
     enabled: true
+    # Информационный BossBar вверху экрана во время ивента.
+    # Это запасной канал: если ресурспак не применился, информацию видно в нём
+    # (и в строке над хотбаром). Поставьте false, чтобы оставить только панель в углу.
+    bossbar: true
     title: "&#FF2E2E&lАДСКИЙ РАЗЛОМ"
     event-display-name: "&#34D711Адский-Разлом"
     excavation-display-name: "&#34D711Пляжные-Раскопки"

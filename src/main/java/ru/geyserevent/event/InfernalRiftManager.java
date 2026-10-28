@@ -1533,6 +1533,13 @@ public class InfernalRiftManager {
      * Гарантированно создаёт и обновляет информационный БоссБар активного ивента для ВСЕХ игроков на сервере.
      */
     public void updateEventBossBar() {
+        if (!plugin.getPluginConfig().isEventBossBarEnabled()) {
+            if (bossBar != null) {
+                bossBar.removeAll();
+                bossBar = null;
+            }
+            return;
+        }
         if (!active || defeated || riftCenterLocation == null) {
             if (bossBar != null) {
                 bossBar.removeAll();

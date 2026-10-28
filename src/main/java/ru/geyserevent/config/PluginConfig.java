@@ -36,6 +36,7 @@ public class PluginConfig {
     private boolean autoInstallResourcePackToGeyser;
     private String geyserPacksDir;
     private boolean topRightHudEnabled;
+    private boolean eventBossBarEnabled;
     private String topRightHudTitle;
     private String topRightEventDisplayName;
     private String topRightExcavationDisplayName;
@@ -182,6 +183,8 @@ public class PluginConfig {
         // Если Geyser стоит отдельным прокси (BungeeCord/Velocity/Standalone) — укажите путь к его packs вручную.
         this.geyserPacksDir = cfg.getString("resourcepack.geyser-packs-dir", "").trim();
         this.topRightHudEnabled = cfg.getBoolean("resourcepack.top-right-hud.enabled", true);
+        // Информационный BossBar вверху экрана (запасной вариант для тех, у кого не применился ресурспак)
+        this.eventBossBarEnabled = cfg.getBoolean("resourcepack.top-right-hud.bossbar", true);
         this.topRightHudTitle = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.title", "&#FF2E2E&lАДСКИЙ РАЗЛОМ"));
         this.topRightEventDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.event-display-name", "&#34D711Адский-Разлом"));
         this.topRightExcavationDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.excavation-display-name", "&#34D711Пляжные-Раскопки"));
@@ -426,6 +429,7 @@ public class PluginConfig {
     public boolean isAutoInstallResourcePackToGeyser() { return autoInstallResourcePackToGeyser; }
     public String getGeyserPacksDir() { return geyserPacksDir; }
     public boolean isTopRightHudEnabled() { return topRightHudEnabled; }
+    public boolean isEventBossBarEnabled() { return eventBossBarEnabled; }
     public String getTopRightHudTitle() { return topRightHudTitle; }
     public String getTopRightEventDisplayName() { return topRightEventDisplayName; }
     public String getTopRightExcavationDisplayName() { return topRightExcavationDisplayName; }

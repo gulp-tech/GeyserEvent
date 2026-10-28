@@ -1,4 +1,4 @@
-# 🔥 GeyserEvent v1.9.13 — 4 анархических ивента для Purpur 26.2
+# 🔥 GeyserEvent v1.9.14 — 4 анархических ивента для Purpur 26.2
 
 Плагин с **тремя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»)
 и **постоянным ивентом** «Шахта Древних (Жила Жеод)» на координатах **`0 ~ 0`** мира `world2`.
@@ -14,10 +14,10 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.13)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.5.3)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.14)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.5.4)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/deluxemenus/events.yml |
-| **Релиз v1.9.13** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.13 |
+| **Релиз v1.9.14** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.14 |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
 при запуске сервера (в `onLoad()`), поэтому старый тектурпак/модель рюкзака заменяются сами.
@@ -80,6 +80,25 @@
 
 Если ничего не найдено — плагин создаёт `<папка сервера>/bedrock/packs` и кладёт пак туда,
 а в консоль пишет крупную подсказку, куда скопировать файл вручную.
+
+**При каждом запуске в консоль пишется диагностика:**
+```
+Папки в корне сервера (/home/minecraft/server): bedrock, cache, config, libraries, logs, plugins, world, world2
+Папки packs Bedrock-движка (проверяются):
+   • /home/minecraft/server/bedrock/packs  [есть]
+Ресурспак ивентов скопирован: /home/minecraft/server/bedrock/packs/GeyserEvent-Pack.mcpack
+```
+По этим строкам сразу видно, нашлась ли папка packs и доехал ли пак. Если после этого
+Bedrock-игроки всё равно не получают пак — проверьте в клиенте **Настройки → Глобальные ресурсы**
+(в списке должен быть «GeyserEvent Pack» и быть активным).
+
+**BossBar** (полоска вверху экрана) — запасной канал на случай, если пак не применился.
+Если он не нужен, отключите его:
+```yaml
+resourcepack:
+  top-right-hud:
+    bossbar: false
+```
 
 Узнать точную рабочую папку сервера на Linux:
 

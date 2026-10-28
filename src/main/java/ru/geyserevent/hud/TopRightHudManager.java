@@ -16,6 +16,7 @@ import ru.geyserevent.util.ColorUtil;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -36,10 +37,10 @@ public class TopRightHudManager {
      * Ресурспак GeyserEvent-Pack.mcpack берёт первые 12 символов action bar ('%.12s')
      * и сравнивает с этим маркером: если совпало — прячет обычный action bar и рисует
      * текст ивента в правом верхнем углу экрана.
-     * Маркер SPECIAL намеренно ASCII: у разных клиентов '%.12s' считается либо по символам,
+     * Маркер намеренно ASCII: у разных клиентов '%.12s' считается либо по символам,
      * либо по байтам, а 12 ASCII-символов = 12 байт = 12 символов, поэтому работает всегда.
      */
-    private static final String HUD_MARKER = "------------";
+    private static final String HUD_MARKER = ". . . . . . ";
 
     /** До какого момента панель ивента молчит (чтобы не перебивать сообщения способностей босса). */
     private long cornerHudSuppressedUntil = 0L;
@@ -174,12 +175,49 @@ public class TopRightHudManager {
         addCandidate(dirs, serverRoot, "plugins" + File.separator + "Geyser-Spigot" + File.separator + "packs");
         addCandidate(dirs, serverRoot, "plugins" + File.separator + "Geyser" + File.separator + "packs");
         addCandidate(dirs, serverRoot, "geyser" + File.separator + "packs");
+        addCandidate(dirs, serverRoot, "packs");
+        addCandidate(dirs, serverRoot, "bedrock" + File.separator + "pack");
+
+        // Запасной вариант: обходим папку сервера и plugins и ищем любые папки packs
+        // (движки разных сборок кладут их в разные места).
+        scanForPacksFolders(dirs, serverRoot);
+        scanForPacksFolders(dirs, new File(serverRoot, "plugins"));
 
         if (dirs.isEmpty()) {
             // движок Purpurbedrock: паки кладём в <папка сервера>/bedrock/packs
             dirs.add(new File(serverRoot, "bedrock" + File.separator + "packs"));
         }
         return dirs;
+    }
+
+    /**
+     * Ищет папки packs внутри указанной папки: любая подпапка с именем packs,
+     * а также <подпапка>/packs у подпапок bedrock/geyser (встроенные движки).
+     */
+    private void scanForPacksFolders(List<File> dirs, File base) {
+        if (base == null || !base.isDirectory()) {
+            return;
+        }
+        File[] children = base.listFiles();
+        if (children == null) {
+            return;
+        }
+        for (File child : children) {
+            if (!child.isDirectory()) {
+                continue;
+            }
+            String name = child.getName().toLowerCase(Locale.ROOT);
+            if (name.equals("packs") || name.equals("resource_packs") || name.equals("resourcepacks")) {
+                if (!dirs.contains(child)) {
+                    dirs.add(child);
+                }
+            } else if (name.equals("bedrock") || name.equals("geyser") || name.equals("floodgate")) {
+                File inner = new File(child, "packs");
+                if (inner.isDirectory() && !dirs.contains(inner)) {
+                    dirs.add(inner);
+                }
+            }
+        }
     }
 
     /** Добавляет кандидата, если папка уже есть или её можно создать. */
