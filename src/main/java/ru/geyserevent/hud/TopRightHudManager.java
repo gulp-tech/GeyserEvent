@@ -30,11 +30,14 @@ public class TopRightHudManager {
     private BossBar infoBossBar;
 
     /**
-     * Служебный маркер: 4 символа из приватной области Unicode (U+F8C1..U+F8C4) = 12 байт UTF-8.
-     * Именно по нему ресурспак GeyserEvent-Pack.mcpack понимает, что action bar — это наша
-     * панель ивента: он прячет обычный action bar и рисует текст в правом верхнем углу экрана.
+     * Служебный маркер: РОВНО 12 ASCII-символов.
+     * Ресурспак GeyserEvent-Pack.mcpack берёт первые 12 символов action bar ('%.12s')
+     * и сравнивает с этим маркером: если совпало — прячет обычный action bar и рисует
+     * текст ивента в правом верхнем углу экрана.
+     * Маркер SPECIAL намеренно ASCII: у разных клиентов '%.12s' считается либо по символам,
+     * либо по байтам, а 12 ASCII-символов = 12 байт = 12 символов, поэтому работает всегда.
      */
-    private static final String HUD_MARKER = "\uf8c1\uf8c2\uf8c3\uf8c4";
+    private static final String HUD_MARKER = "------------";
 
     /** До какого момента панель ивента молчит (чтобы не перебивать сообщения способностей босса). */
     private long cornerHudSuppressedUntil = 0L;
@@ -124,7 +127,7 @@ public class TopRightHudManager {
             return;
         }
 
-        String payload = HUD_MARKER + text;
+        String payload = HUD_MARKER + " " + text;
         BedrockService bedrock = plugin.getBedrockService();
         boolean anySent = false;
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -154,6 +157,41 @@ public class TopRightHudManager {
                 player.sendActionBar(" ");
             }
         }
+    }
+
+    /**
+     * Тест панели: 15 секунд показывает панель в правом верхнем углу экрана,
+     * даже если сейчас не идёт ни один ивент. Нужно, чтобы проверить ресурспак у себя в клиенте.
+     */
+    public void startCornerHudTest(Player player) {
+        if (player == null) {
+            return;
+        }
+        // на время теста обычная панель ивента молчит, чтобы не перебивать тест
+        suppressCornerHud(15_000L);
+        String demo = ColorUtil.color("&#FFD614&lПРОВЕРКА ПАНЕЛИ &8· &fработает ресурспак &8· &e0 0 0");
+        new org.bukkit.scheduler.BukkitRunnable() {
+            int ticksLeft = 300;
+
+            @Override
+            public void run() {
+                if (ticksLeft <= 0 || !player.isOnline()) {
+                    cancel();
+                    return;
+                }
+                player.sendActionBar(HUD_MARKER + demo);
+                ticksLeft -= 10;
+            }
+        }.runTaskTimer(plugin, 0L, 10L);
+    }
+
+    /** Путь до установленного ресурспака (для диагностики). */
+    public File getInstalledPackFile() {
+        File pluginsDir = plugin.getDataFolder().getParentFile();
+        if (pluginsDir == null) {
+            return null;
+        }
+        return new File(new File(pluginsDir, "Geyser-Spigot" + File.separator + "packs"), "GeyserEvent-Pack.mcpack");
     }
 
     public void removeHudFromPlayer(Player player) {

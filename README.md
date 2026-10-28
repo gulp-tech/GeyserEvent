@@ -1,4 +1,4 @@
-# 🔥 GeyserEvent v1.9.10 — 4 анархических ивента для Purpur 26.2
+# 🔥 GeyserEvent v1.9.11 — 4 анархических ивента для Purpur 26.2
 
 Плагин с **тремя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»)
 и **постоянным ивентом** «Шахта Древних (Жила Жеод)» на координатах **`0 ~ 0`** мира `world2`.
@@ -14,10 +14,10 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.10)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.5.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.11)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.5.1)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/deluxemenus/events.yml |
-| **Релиз v1.9.10** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.10 |
+| **Релиз v1.9.11** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.11 |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
 при запуске сервера (в `onLoad()`), поэтому старый тектурпак/модель рюкзака заменяются сами.
@@ -65,6 +65,25 @@
   даёт слитки/кристаллы и очки кузницы — **без осколков**.
 
 ---
+
+## 🔍 Проверка панели в углу (если не появилась)
+
+Панель в углу работает **только во время временного ивента** (Адский Разлом, Пляжные Раскопки,
+Котёл Алхимика) и **только у игроков Bedrock** (у Java-игроков та же информация — в BossBar вверху).
+Поэтому, если ивент не идёт, в углу ничего и не должно быть.
+
+Две команды для проверки за 10 секунд:
+
+- **`/rift hudtest`** — на 15 секунд показывает панель в углу, **даже если ивент не идёт**.
+  Видите строку «ПРОВЕРКА ПАНЕЛИ» в правом верхнем углу → ресурспак применился, всё работает.
+  Не видите → ресурспак до игрока не доехал (см. `/rift hudinfo`).
+- **`/rift hudinfo`** — диагностика: ваш клиент (Bedrock/Java), найден ли API Geyser/Floodgate,
+  лежит ли ресурспак в `plugins/Geyser-Spigot/packs/`, идёт ли ивент сейчас.
+
+Если ресурспак не применился: перезапустите сервер (плагин кладёт пак сам при старте) и
+перезайдите в игру — Bedrock должен скачать новую версию пака (v1.5.1). Проверить можно
+в настройках клиента: **Настройки → Глобальные ресурсы** — в списке должен быть
+«GeyserEvent Pack» и он должен быть активным.
 
 ## 🆕 Что нового в v1.9.10 (панель ивента в углу экрана + иконки ивентов)
 
