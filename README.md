@@ -1,4 +1,4 @@
-# 🔥 GeyserEvent v1.9.19 — 4 анархических ивента для Purpur 26.2
+# 🔥 GeyserEvent v1.9.20 — 4 анархических ивента для Purpur 26.2
 
 Плагин с **тремя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»)
 и **постоянным ивентом** «Шахта Древних (Жила Жеод)» на координатах **`0 ~ 0`** мира `world2`.
@@ -14,10 +14,10 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.19)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.10.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.20)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.11.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/deluxemenus/events.yml |
-| **Релиз v1.9.19** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.19 |
+| **Релиз v1.9.20** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.20 |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
 при запуске сервера (в `onLoad()`), поэтому старый тектурпак/модель рюкзака заменяются сами.
@@ -112,12 +112,13 @@ Bedrock-игроки всё равно не получают пак — пров
 `GeyserEvent Pack: работает`, пока пак применён клиентом. Это нужно, чтобы отличить
 «пак не доехал» от «пак доехал, но панель не нарисовалась». Надпись уберу в следующей версии.
 
-**BossBar** (полоска вверху экрана) — запасной канал на случай, если пак не применился.
-Если он не нужен, отключите его:
+**BossBar** (полоска вверху экрана) выключен по умолчанию — вся информация ивента
+показывается панелью в правом верхнем углу. Если ресурспак почему-то не применяется,
+включите запасной канал:
 ```yaml
 resourcepack:
   top-right-hud:
-    bossbar: false
+    bossbar: true
 ```
 
 Узнать точную рабочую папку сервера на Linux:

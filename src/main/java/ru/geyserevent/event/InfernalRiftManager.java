@@ -1513,20 +1513,20 @@ public class InfernalRiftManager {
             String brushStatus = (brushReadyToClaim || brushCountdownSeconds <= 0)
                     ? "&aГотова"
                     : "&#E0C912" + brushCountdownSeconds + "с";
-            return ColorUtil.color(cfg.getIconExcavation() + " &e&lПЛЯЖНЫЕ РАСКОПКИ &8· &fКисточка: "
-                    + brushStatus + " &8· &f" + timeStr + " &8· " + coords);
+            return ColorUtil.color(cfg.getIconExcavation() + " &e&lПЛЯЖНЫЕ РАСКОПКИ  &7·&r  &fКисточка: "
+                    + brushStatus + "  &7·&r  &f" + timeStr + "  &7·&r  " + coords);
         }
         if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
             int nodes = plugin.getAlchemistSchematicManager() != null
                     ? plugin.getAlchemistSchematicManager().getActiveReagentCount()
                     : 0;
-            return ColorUtil.color(cfg.getIconCauldron() + " &d&lКОТЁЛ АЛХИМИКА &8· &fРеагенты: &a"
-                    + nodes + " &8· &f" + timeStr + " &8· " + coords);
+            return ColorUtil.color(cfg.getIconCauldron() + " &d&lКОТЁЛ АЛХИМИКА  &7·&r  &fРеагенты: &a"
+                    + nodes + "  &7·&r  &f" + timeStr + "  &7·&r  " + coords);
         }
         int curHp = (int) Math.ceil(this.bossCurrentHealth);
         int maxHp = (int) Math.ceil(this.bossMaxHealth);
-        return ColorUtil.color(cfg.getIconInfernalRift() + " &c&lАДСКИЙ РАЗЛОМ &8· &c❤ " + curHp + "/" + maxHp
-                + " &8· &f" + timeStr + " &8· " + coords);
+        return ColorUtil.color(cfg.getIconInfernalRift() + " &c&lАДСКИЙ РАЗЛОМ  &7·&r  &c❤ " + curHp + "/" + maxHp
+                + "  &7·&r  &f" + timeStr + "  &7·&r  " + coords);
     }
 
     /**

@@ -184,7 +184,7 @@ public class PluginConfig {
         this.geyserPacksDir = cfg.getString("resourcepack.geyser-packs-dir", "").trim();
         this.topRightHudEnabled = cfg.getBoolean("resourcepack.top-right-hud.enabled", true);
         // Информационный BossBar вверху экрана (запасной вариант для тех, у кого не применился ресурспак)
-        this.eventBossBarEnabled = cfg.getBoolean("resourcepack.top-right-hud.bossbar", true);
+        this.eventBossBarEnabled = cfg.getBoolean("resourcepack.top-right-hud.bossbar", false);
         this.topRightHudTitle = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.title", "&#FF2E2E&lАДСКИЙ РАЗЛОМ"));
         this.topRightEventDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.event-display-name", "&#34D711Адский-Разлом"));
         this.topRightExcavationDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.excavation-display-name", "&#34D711Пляжные-Раскопки"));
