@@ -1,0 +1,171 @@
+// GeyserEvent: panel of the active event in the top-right corner of the screen (Bedrock).
+// Base technique and code: ofunny (https://ofunny.world/, github.com/ofunny/ofunnysBedrockExamples), GPL-3.0.
+// The plugin sends an action bar starting with an event marker (#GE_R# rift,
+// #GE_E# excavation, #GE_C# cauldron). The pack hides the default action bar while a
+// marker is present and draws the event panel in the corner: a pack texture icon
+// (textures/geyserevent/icon_*.png) plus a two line label (event/status, coordinates).
+// Same 'namespace': 'hud' as the vanilla hud_screen.json so the factory and $actionbar_text
+// resolve; the panel sets its own anchor/offset because the vanilla action bar layout
+// would otherwise move it to the middle of the screen.
+{
+  "namespace": "hud",
+  "geyserevent_hud_text": {
+    "type": "panel",
+    "size": [
+      "100%c",
+      "100%c"
+    ],
+    "layer": 31,
+    "alpha": 1.0,
+    "anchor_from": "top_right",
+    "anchor_to": "top_right",
+    "offset": [
+      0,
+      0
+    ],
+    "controls": [
+      {
+        "geyserevent_hud_row": {
+          "type": "stack_panel",
+          "orientation": "horizontal",
+          "size": [
+            "100%c",
+            "100%c"
+          ],
+          "layer": 31,
+          "alpha": 1.0,
+          "anchor_from": "top_right",
+          "anchor_to": "top_right",
+          "offset": [
+            0,
+            4
+          ],
+          "bindings": [
+            {
+              "binding_name": "#show_survival_ui",
+              "binding_name_override": "#visible"
+            }
+          ],
+          "controls": [
+            {
+              "geyserevent_hud_icon": {
+                "type": "panel",
+                "size": [
+                  18,
+                  12
+                ],
+                "layer": 31,
+                "controls": [
+                  {
+                    "geyserevent_icon_rift": {
+                      "type": "image",
+                      "texture": "textures/geyserevent/icon_rift",
+                      "size": [
+                        12,
+                        12
+                      ],
+                      "layer": 31,
+                      "alpha": 1.0,
+                      "anchor_from": "top_left",
+                      "anchor_to": "top_left",
+                      "offset": [
+                        0,
+                        1
+                      ],
+                      "visible": "(($localtext - '#GE_R#') != $localtext)"
+                    }
+                  },
+                  {
+                    "geyserevent_icon_excavation": {
+                      "type": "image",
+                      "texture": "textures/geyserevent/icon_excavation",
+                      "size": [
+                        12,
+                        12
+                      ],
+                      "layer": 31,
+                      "alpha": 1.0,
+                      "anchor_from": "top_left",
+                      "anchor_to": "top_left",
+                      "offset": [
+                        0,
+                        1
+                      ],
+                      "visible": "(($localtext - '#GE_E#') != $localtext)"
+                    }
+                  },
+                  {
+                    "geyserevent_icon_cauldron": {
+                      "type": "image",
+                      "texture": "textures/geyserevent/icon_cauldron",
+                      "size": [
+                        12,
+                        12
+                      ],
+                      "layer": 31,
+                      "alpha": 1.0,
+                      "anchor_from": "top_left",
+                      "anchor_to": "top_left",
+                      "offset": [
+                        0,
+                        1
+                      ],
+                      "visible": "(($localtext - '#GE_C#') != $localtext)"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "geyserevent_hud_label": {
+                "type": "label",
+                "text": "$formattedtext",
+                "color": "$tool_tip_text",
+                "shadow": true,
+                "layer": 31,
+                "alpha": 1.0,
+                "localize": false,
+                "size": [
+                  "default",
+                  "default"
+                ],
+                "offset": [
+                  -4,
+                  0
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "$localtext": "$actionbar_text",
+    "$formattedtext": "($localtext - '#GE_R#' - '#GE_E#' - '#GE_C#' - ' ')",
+    "visible": "(($localtext - '#GE_R#') != $localtext) || (($localtext - '#GE_E#') != $localtext) || (($localtext - '#GE_C#') != $localtext)"
+  },
+  "geyserevent_hud_text_factory": {
+    "type": "panel",
+    "factory": {
+      "name": "hud_actionbar_text_factory",
+      "control_ids": {
+        "hud_actionbar_text": "geyserevent_hud_text@hud.geyserevent_hud_text"
+      }
+    }
+  },
+  "hud_actionbar_text": {
+    "visible": "!((($actionbar_text - '#GE_R#') != $actionbar_text) || (($actionbar_text - '#GE_E#') != $actionbar_text) || (($actionbar_text - '#GE_C#') != $actionbar_text))"
+  },
+  "root_panel": {
+    "modifications": [
+      {
+        "array_name": "controls",
+        "operation": "insert_front",
+        "value": [
+          {
+            "geyserevent_hud_text_factory@hud.geyserevent_hud_text_factory": {}
+          }
+        ]
+      }
+    ]
+  }
+}

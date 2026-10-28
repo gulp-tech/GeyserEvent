@@ -33,14 +33,26 @@ public class TopRightHudManager {
     private BossBar infoBossBar;
 
     /**
-     * Служебный маркер: РОВНО 12 ASCII-символов.
-     * Ресурспак GeyserEvent-Pack.mcpack берёт первые 12 символов action bar ('%.12s')
-     * и сравнивает с этим маркером: если совпало — прячет обычный action bar и рисует
-     * текст ивента в правом верхнем углу экрана.
-     * Маркер намеренно ASCII: у разных клиентов '%.12s' считается либо по символам,
-     * либо по байтам, а 12 ASCII-символов = 12 байт = 12 символов, поэтому работает всегда.
+     * Служебные маркеры начала action bar. Ресурспак GeyserEvent-Pack.mcpack проверяет,
+     * с какого маркера начинается текст: если совпало — прячет обычный action bar,
+     * рисует панель ивента в правом верхнем углу и показывает иконку этого ивента.
+     * Маркеры ASCII и содержат символ '#', которого не бывает в обычном тексте,
+     * поэтому ложных срабатываний не будет.
      */
-    private static final String HUD_MARKER = "............";   // ровно 12 ASCII-точек
+    public static final String HUD_MARKER_RIFT = "#GE_R#";
+    public static final String HUD_MARKER_EXCAVATION = "#GE_E#";
+    public static final String HUD_MARKER_CAULDRON = "#GE_C#";
+
+    /** Маркер для конкретного ивента (по нему ресурспак выбирает иконку). */
+    public static String hudMarker(EventType type) {
+        if (type == EventType.BEACH_EXCAVATION) {
+            return HUD_MARKER_EXCAVATION;
+        }
+        if (type == EventType.ALCHEMIST_CAULDRON) {
+            return HUD_MARKER_CAULDRON;
+        }
+        return HUD_MARKER_RIFT;
+    }
 
     /** До какого момента панель ивента молчит (чтобы не перебивать сообщения способностей босса). */
     private long cornerHudSuppressedUntil = 0L;
@@ -287,7 +299,7 @@ public class TopRightHudManager {
             return;
         }
 
-        String payload = HUD_MARKER + " " + text;
+        String payload = hudMarker(manager.getActiveEventType()) + " " + text;
         BedrockService bedrock = plugin.getBedrockService();
         boolean anySent = false;
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -329,7 +341,7 @@ public class TopRightHudManager {
         }
         // на время теста обычная панель ивента молчит, чтобы не перебивать тест
         suppressCornerHud(15_000L);
-        String demo = ColorUtil.color("&#FFD614&lПРОВЕРКА ПАНЕЛИ &8· &fработает ресурспак &8· &e0 0 0");
+        String demo = ColorUtil.color("&#FFD614&lПРОВЕРКА ПАНЕЛИ  &7·&r  &fработает ресурспак\n&7Координаты: &e0 0 0");
         new org.bukkit.scheduler.BukkitRunnable() {
             int ticksLeft = 300;
 
@@ -339,7 +351,10 @@ public class TopRightHudManager {
                     cancel();
                     return;
                 }
-                player.sendActionBar(HUD_MARKER + demo);
+                EventType testType = plugin.getRiftManager() != null && plugin.getRiftManager().isActive()
+                        ? plugin.getRiftManager().getActiveEventType()
+                        : EventType.INFERNAL_RIFT;
+                player.sendActionBar(hudMarker(testType) + demo);
                 ticksLeft -= 10;
             }
         }.runTaskTimer(plugin, 0L, 10L);

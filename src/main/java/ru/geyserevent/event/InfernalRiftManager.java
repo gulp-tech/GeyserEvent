@@ -1504,29 +1504,29 @@ public class InfernalRiftManager {
         if (!active || defeated || riftCenterLocation == null) {
             return null;
         }
-        PluginConfig cfg = plugin.getPluginConfig();
         String timeStr = formatMinutesSeconds(getSecondsRemainingInEvent());
-        String coords = "&e" + riftCenterLocation.getBlockX() + " " + riftCenterLocation.getBlockY()
-                + " " + riftCenterLocation.getBlockZ();
+        // Вторая строка панели — координаты ивента (иконку рисует ресурспак).
+        String coordsLine = "&7Координаты: &f" + riftCenterLocation.getBlockX() + " "
+                + riftCenterLocation.getBlockY() + " " + riftCenterLocation.getBlockZ();
 
         if (activeEventType == EventType.BEACH_EXCAVATION) {
             String brushStatus = (brushReadyToClaim || brushCountdownSeconds <= 0)
                     ? "&aГотова"
                     : "&#E0C912" + brushCountdownSeconds + "с";
-            return ColorUtil.color(cfg.getIconExcavation() + " &e&lПЛЯЖНЫЕ РАСКОПКИ  &7·&r  &fКисточка: "
-                    + brushStatus + "  &7·&r  &f" + timeStr + "  &7·&r  " + coords);
+            return ColorUtil.color("&e&lПЛЯЖНЫЕ РАСКОПКИ  &7·&r  &fКисточка: " + brushStatus
+                    + "  &7·&r  &f" + timeStr + "\n" + coordsLine);
         }
         if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
             int nodes = plugin.getAlchemistSchematicManager() != null
                     ? plugin.getAlchemistSchematicManager().getActiveReagentCount()
                     : 0;
-            return ColorUtil.color(cfg.getIconCauldron() + " &d&lКОТЁЛ АЛХИМИКА  &7·&r  &fРеагенты: &a"
-                    + nodes + "  &7·&r  &f" + timeStr + "  &7·&r  " + coords);
+            return ColorUtil.color("&d&lКОТЁЛ АЛХИМИКА  &7·&r  &fРеагенты: &a" + nodes
+                    + "  &7·&r  &f" + timeStr + "\n" + coordsLine);
         }
         int curHp = (int) Math.ceil(this.bossCurrentHealth);
         int maxHp = (int) Math.ceil(this.bossMaxHealth);
-        return ColorUtil.color(cfg.getIconInfernalRift() + " &c&lАДСКИЙ РАЗЛОМ  &7·&r  &c❤ " + curHp + "/" + maxHp
-                + "  &7·&r  &f" + timeStr + "  &7·&r  " + coords);
+        return ColorUtil.color("&c&lАДСКИЙ РАЗЛОМ  &7·&r  &c❤ " + curHp + "/" + maxHp
+                + "  &7·&r  &f" + timeStr + "\n" + coordsLine);
     }
 
     /**

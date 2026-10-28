@@ -34,8 +34,10 @@ resourcepack:
     excavation-display-name: "&#34D711Пляжные-Раскопки"
     cauldron-display-name: "&#34D711Котёл-Алхимика"
     rarity-display: "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"
-    # Своя иконка у каждого ивента: показывается в BossBar, в правом верхнем углу экрана
-    # у игроков Bedrock (через GeyserEvent-Pack.mcpack) и в чат-сообщениях ивентов.
+    # Своя иконка у каждого ивента: показывается в BossBar и в чат-сообщениях ивентов.
+    # Панель в правом верхнем углу у игроков Bedrock рисует иконки САМА текстурами
+    # ресурспака (GeyserEvent-Pack.mcpack v1.12.0, textures/geyserevent/icon_*.png),
+    # поэтому эти символы на неё не влияют.
     icon-infernal-rift: "☠"
     icon-excavation: "⚓"
     icon-cauldron: "⚗"
