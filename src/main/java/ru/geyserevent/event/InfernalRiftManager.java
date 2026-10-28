@@ -785,6 +785,9 @@ public class InfernalRiftManager {
                 } else {
                     tickInfernalRift(cfg, now);
                 }
+
+                // Панель ивента в правом верхнем углу экрана (Bedrock) — раз в секунду
+                plugin.getTopRightHudManager().tickCornerHud();
             }
         }.runTaskTimer(plugin, 20L, 20L);
     }
@@ -1200,6 +1203,7 @@ public class InfernalRiftManager {
         removeActiveEventEntities();
         plugin.getAbilityController().removeAllMinions();
         plugin.getTopRightHudManager().clearAllHud();
+        plugin.getTopRightHudManager().clearCornerHud();
         clearAllGpsTrackers();
 
         if (riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
@@ -1287,6 +1291,7 @@ public class InfernalRiftManager {
         plugin.getBeachSchematicManager().restoreActiveSchematic();
         plugin.getAlchemistSchematicManager().restoreActiveSchematic();
         plugin.getTopRightHudManager().clearAllHud();
+        plugin.getTopRightHudManager().clearCornerHud();
         clearAllGpsTrackers();
 
         if (bossBar != null) {
@@ -1491,6 +1496,40 @@ public class InfernalRiftManager {
     }
 
     /**
+     * Компактный текст панели ивента для правого верхнего угла экрана (Bedrock-игроки).
+     * У каждого ивента своя иконка: ☠ Адский Разлом, ⚓ Пляжные Раскопки, ⚗ Котёл Алхимика.
+     * Отправляется раз в секунду, поэтому нагрузка на клиент нулевая.
+     */
+    public String buildEventCornerHudText() {
+        if (!active || defeated || riftCenterLocation == null) {
+            return null;
+        }
+        PluginConfig cfg = plugin.getPluginConfig();
+        String timeStr = formatMinutesSeconds(getSecondsRemainingInEvent());
+        String coords = "&e" + riftCenterLocation.getBlockX() + " " + riftCenterLocation.getBlockY()
+                + " " + riftCenterLocation.getBlockZ();
+
+        if (activeEventType == EventType.BEACH_EXCAVATION) {
+            String brushStatus = (brushReadyToClaim || brushCountdownSeconds <= 0)
+                    ? "&aГотова"
+                    : "&#E0C912" + brushCountdownSeconds + "с";
+            return ColorUtil.color(cfg.getIconExcavation() + " &e&lПЛЯЖНЫЕ РАСКОПКИ &8· &fКисточка: "
+                    + brushStatus + " &8· &f" + timeStr + " &8· " + coords);
+        }
+        if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
+            int nodes = plugin.getAlchemistSchematicManager() != null
+                    ? plugin.getAlchemistSchematicManager().getActiveReagentCount()
+                    : 0;
+            return ColorUtil.color(cfg.getIconCauldron() + " &d&lКОТЁЛ АЛХИМИКА &8· &fРеагенты: &a"
+                    + nodes + " &8· &f" + timeStr + " &8· " + coords);
+        }
+        int curHp = (int) Math.ceil(this.bossCurrentHealth);
+        int maxHp = (int) Math.ceil(this.bossMaxHealth);
+        return ColorUtil.color(cfg.getIconInfernalRift() + " &c&lАДСКИЙ РАЗЛОМ &8· &c❤ " + curHp + "/" + maxHp
+                + " &8· &f" + timeStr + " &8· " + coords);
+    }
+
+    /**
      * Гарантированно создаёт и обновляет информационный БоссБар активного ивента для ВСЕХ игроков на сервере.
      */
     public void updateEventBossBar() {
@@ -1522,7 +1561,7 @@ public class InfernalRiftManager {
                     ? "&aГотова!"
                     : "&#E0C912" + brushCountdownSeconds + "с";
             String barTitle = String.format(
-                    "&e&lПЛЯЖНЫЕ РАСКОПКИ &8| &fКисточка: %s &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
+                    plugin.getPluginConfig().getIconExcavation() + " &e&lПЛЯЖНЫЕ РАСКОПКИ &8| &fКисточка: %s &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
                     brushStatus, timeStr, x, y, z
             );
             bossBar.setTitle(ColorUtil.color(barTitle));
@@ -1533,7 +1572,7 @@ public class InfernalRiftManager {
 
             int activeNodes = plugin.getAlchemistSchematicManager().getActiveReagentCount();
             String barTitle = String.format(
-                    "&d&lКОТЁЛ АЛХИМИКА &8| &fРеагенты: &a%d шт. &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
+                    plugin.getPluginConfig().getIconCauldron() + " &d&lКОТЁЛ АЛХИМИКА &8| &fРеагенты: &a%d шт. &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
                     activeNodes, timeStr, x, y, z
             );
             bossBar.setTitle(ColorUtil.color(barTitle));
@@ -1546,7 +1585,7 @@ public class InfernalRiftManager {
 
             Location loc = (getBossEntity() != null) ? getBossEntity().getLocation() : riftCenterLocation;
             String barTitle = String.format(
-                    "&c&lАДСКИЙ РАЗЛОМ &8| &c❤ %d/%d &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
+                    plugin.getPluginConfig().getIconInfernalRift() + " &c&lАДСКИЙ РАЗЛОМ &8| &c❤ %d/%d &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
                     curHp, maxHp, timeStr, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()
             );
             bossBar.setTitle(ColorUtil.color(barTitle));

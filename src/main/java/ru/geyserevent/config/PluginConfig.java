@@ -40,6 +40,11 @@ public class PluginConfig {
     private String topRightExcavationDisplayName;
     private String topRightCauldronDisplayName;
     private String topRightRarityDisplay;
+    // Иконки ивентов (рисуются шрифтом клиента, работают и на Java, и на Bedrock)
+    private String iconInfernalRift;
+    private String iconExcavation;
+    private String iconCauldron;
+    private String iconMine;
 
     // Event
     private String worldName;
@@ -179,6 +184,11 @@ public class PluginConfig {
         this.topRightCauldronDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.cauldron-display-name", "&#34D711Котёл-Алхимика"));
         this.topRightRarityDisplay = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.rarity-display",
                 "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"));
+        // Своя иконка у каждого ивента (отображается в BossBar, в углу экрана у Bedrock и в чате)
+        this.iconInfernalRift = cfg.getString("resourcepack.top-right-hud.icon-infernal-rift", "☠");
+        this.iconExcavation = cfg.getString("resourcepack.top-right-hud.icon-excavation", "⚓");
+        this.iconCauldron = cfg.getString("resourcepack.top-right-hud.icon-cauldron", "⚗");
+        this.iconMine = cfg.getString("resourcepack.top-right-hud.icon-mine", "⛏");
 
         // Event
         this.worldName = cfg.getString("event.world", "world2");
@@ -416,6 +426,10 @@ public class PluginConfig {
     public String getTopRightExcavationDisplayName() { return topRightExcavationDisplayName; }
     public String getTopRightCauldronDisplayName() { return topRightCauldronDisplayName; }
     public String getTopRightRarityDisplay() { return topRightRarityDisplay; }
+    public String getIconInfernalRift() { return iconInfernalRift; }
+    public String getIconExcavation() { return iconExcavation; }
+    public String getIconCauldron() { return iconCauldron; }
+    public String getIconMine() { return iconMine; }
 
     public String getWorldName() { return worldName; }
     public String getLootRarity() { return lootRarity; }

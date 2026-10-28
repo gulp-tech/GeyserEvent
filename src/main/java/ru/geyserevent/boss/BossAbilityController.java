@@ -575,6 +575,14 @@ public class BossAbilityController {
 
     @SuppressWarnings("deprecation")
     private void sendActionBar(Player player, String message) {
+        // Панель ивента в углу экрана (Bedrock) использует тот же action bar —
+        // на 2.5 секунды уступаем ему место, чтобы сообщение способности не пропало мгновенно.
+        try {
+            if (plugin.getTopRightHudManager() != null) {
+                plugin.getTopRightHudManager().suppressCornerHud(2500L);
+            }
+        } catch (Throwable ignored) {
+        }
         try {
             player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
         } catch (Throwable ignored) {

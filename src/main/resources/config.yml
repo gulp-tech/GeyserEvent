@@ -24,6 +24,12 @@ resourcepack:
     excavation-display-name: "&#34D711Пляжные-Раскопки"
     cauldron-display-name: "&#34D711Котёл-Алхимика"
     rarity-display: "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"
+    # Своя иконка у каждого ивента: показывается в BossBar, в правом верхнем углу экрана
+    # у игроков Bedrock (через GeyserEvent-Pack.mcpack) и в чат-сообщениях ивентов.
+    icon-infernal-rift: "☠"
+    icon-excavation: "⚓"
+    icon-cauldron: "⚗"
+    icon-mine: "⛏"
 
 event:
   # Мир, в котором появляются ивенты «Адский Разлом» и «Пляжные Раскопки»

@@ -421,7 +421,7 @@ public class AncientMineManager {
 
                 if (secondsUntilFullRegen == 30) {
                     notifyNearbyMiners(ColorUtil.color(
-                            "&e┠ &6Шахта Древних (0 ~ 0) &8» &fРудная жила и древние жеоды обновятся через &e30 сек.&f!"
+                            "&e┠ " + plugin.getPluginConfig().getIconMine() + " &6Шахта Древних (0 ~ 0) &8» &fРудная жила и древние жеоды обновятся через &e30 сек.&f!"
                     ));
                 }
 
@@ -544,12 +544,12 @@ public class AncientMineManager {
         if (announceInChat) {
             if (richVeinActive) {
                 Bukkit.broadcastMessage(ColorUtil.color(
-                        "&e┠ &#FFB81C&lШахта Древних (0 ~ 0) &8» &fПробудилась &#34D711&lБОГАТАЯ РУДНАЯ ЖИЛА&f! В карьере обновились все руды и &d"
+                        "&e┠ " + plugin.getPluginConfig().getIconMine() + " &#FFB81C&lШахта Древних (0 ~ 0) &8» &fПробудилась &#34D711&lБОГАТАЯ РУДНАЯ ЖИЛА&f! В карьере обновились все руды и &d"
                                 + activeGeodeBlocks.size() + " древних жеод&f!"
                 ));
             } else {
                 Bukkit.broadcastMessage(ColorUtil.color(
-                        "&e┠ &#FFB81CШахта Древних (0 ~ 0) &8» &fРудные жилы обновились! Пробудилось &a"
+                        "&e┠ " + plugin.getPluginConfig().getIconMine() + " &#FFB81CШахта Древних (0 ~ 0) &8» &fРудные жилы обновились! Пробудилось &a"
                                 + activeGeodeBlocks.size() + " древних жеод&f."
                 ));
             }

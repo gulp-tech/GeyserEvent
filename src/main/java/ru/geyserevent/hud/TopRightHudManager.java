@@ -8,6 +8,7 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.config.PluginConfig;
+import ru.geyserevent.hook.BedrockService;
 import ru.geyserevent.event.EventType;
 import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.util.ColorUtil;
@@ -27,6 +28,19 @@ public class TopRightHudManager {
 
     private final GeyserEventPlugin plugin;
     private BossBar infoBossBar;
+
+    /**
+     * Служебный маркер: 4 символа из приватной области Unicode (U+F8C1..U+F8C4) = 12 байт UTF-8.
+     * Именно по нему ресурспак GeyserEvent-Pack.mcpack понимает, что action bar — это наша
+     * панель ивента: он прячет обычный action bar и рисует текст в правом верхнем углу экрана.
+     */
+    private static final String HUD_MARKER = "\uf8c1\uf8c2\uf8c3\uf8c4";
+
+    /** До какого момента панель ивента молчит (чтобы не перебивать сообщения способностей босса). */
+    private long cornerHudSuppressedUntil = 0L;
+
+    /** Показана ли сейчас панель ивента в углу (нужно, чтобы не слать лишние пакеты). */
+    private boolean cornerHudActive = false;
 
     public TopRightHudManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -76,6 +90,69 @@ public class TopRightHudManager {
         InfernalRiftManager manager = plugin.getRiftManager();
         if (manager != null && manager.isActive()) {
             manager.updateEventBossBar();
+        }
+    }
+
+    /**
+     * Просит панель ивента не показываться указанное время (миллисекунды).
+     * Вызывается при сообщениях способностей босса, чтобы они не пропадали мгновенно.
+     */
+    public void suppressCornerHud(long millis) {
+        this.cornerHudSuppressedUntil = System.currentTimeMillis() + Math.max(0L, millis);
+    }
+
+    /**
+     * Раз в секунду отправляет Bedrock-игрокам текст панели ивента (action bar с маркером).
+     * Java-игроки видят ту же информацию в BossBar, поэтому им ничего не отправляем.
+     * Нагрузка: один пакет на игрока в секунду — это нулевая нагрузка на клиент и сервер.
+     */
+    public void tickCornerHud() {
+        if (!plugin.getPluginConfig().isTopRightHudEnabled()) {
+            return;
+        }
+        InfernalRiftManager manager = plugin.getRiftManager();
+        if (manager == null || !manager.isActive() || manager.isDefeated()) {
+            clearCornerHud();
+            return;
+        }
+        if (System.currentTimeMillis() < cornerHudSuppressedUntil) {
+            return;
+        }
+        String text = manager.buildEventCornerHudText();
+        if (text == null || text.isEmpty()) {
+            clearCornerHud();
+            return;
+        }
+
+        String payload = HUD_MARKER + text;
+        BedrockService bedrock = plugin.getBedrockService();
+        boolean anySent = false;
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player == null || !player.isOnline()) {
+                continue;
+            }
+            if (bedrock == null || !bedrock.isBedrockPlayer(player)) {
+                continue;
+            }
+            player.sendActionBar(payload);
+            anySent = true;
+        }
+        cornerHudActive = anySent;
+    }
+
+    /**
+     * Убирает панель ивента из правого верхнего угла (ивент закончился или выключен в конфиге).
+     */
+    public void clearCornerHud() {
+        if (!cornerHudActive) {
+            return;
+        }
+        cornerHudActive = false;
+        BedrockService bedrock = plugin.getBedrockService();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player != null && player.isOnline() && bedrock != null && bedrock.isBedrockPlayer(player)) {
+                player.sendActionBar(" ");
+            }
         }
     }
 
