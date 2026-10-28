@@ -1,4 +1,4 @@
-# 🔥 GeyserEvent v1.9.18 — 4 анархических ивента для Purpur 26.2
+# 🔥 GeyserEvent v1.9.19 — 4 анархических ивента для Purpur 26.2
 
 Плагин с **тремя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»)
 и **постоянным ивентом** «Шахта Древних (Жила Жеод)» на координатах **`0 ~ 0`** мира `world2`.
@@ -14,10 +14,10 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.18)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.9.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.19)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.10.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/deluxemenus/events.yml |
-| **Релиз v1.9.18** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.18 |
+| **Релиз v1.9.19** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.19 |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
 при запуске сервера (в `onLoad()`), поэтому старый тектурпак/модель рюкзака заменяются сами.
