@@ -1,4 +1,4 @@
-# 🔥 GeyserEvent v1.9.14 — 4 анархических ивента для Purpur 26.2
+# 🔥 GeyserEvent v1.9.15 — 4 анархических ивента для Purpur 26.2
 
 Плагин с **тремя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»)
 и **постоянным ивентом** «Шахта Древних (Жила Жеод)» на координатах **`0 ~ 0`** мира `world2`.
@@ -14,10 +14,10 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.14)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.5.4)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.15)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.6.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/deluxemenus/events.yml |
-| **Релиз v1.9.14** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.14 |
+| **Релиз v1.9.15** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.15 |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
 при запуске сервера (в `onLoad()`), поэтому старый тектурпак/модель рюкзака заменяются сами.
@@ -91,6 +91,26 @@
 По этим строкам сразу видно, нашлась ли папка packs и доехал ли пак. Если после этого
 Bedrock-игроки всё равно не получают пак — проверьте в клиенте **Настройки → Глобальные ресурсы**
 (в списке должен быть «GeyserEvent Pack» и быть активным).
+
+### Пак регистрируется прямо в движке Bedrock (v1.9.15)
+
+Одной папки `packs` может быть недостаточно: движок читает её один раз при старте.
+Поэтому плагин **дополнительно подписывается на события загрузки паков Geyser API**
+(`GeyserDefineResourcePacksEvent` / `GeyserLoadResourcePacksEvent`) и сам добавляет свой пак
+в список отправляемых Bedrock-игрокам. В консоли при старте появятся строки:
+
+```
+Движок Bedrock сообщил свою папку packs: C:\...\bedrock\packs
+Ресурспак ивентов передан движку Bedrock через Geyser API — он будет отправляться Bedrock-игрокам.
+Паки, которые движок Bedrock отправляет игрокам (2): GeyserEvent Pack v1.60, ...
+```
+
+Последняя строка показывает, какие паки реально уходят клиентам — если «GeyserEvent Pack»
+там есть, доставка работает.
+
+**Временная диагностика в самом паке:** в левом верхнем углу экрана появляется надпись
+`GeyserEvent Pack: работает`, пока пак применён клиентом. Это нужно, чтобы отличить
+«пак не доехал» от «пак доехал, но панель не нарисовалась». Надпись уберу в следующей версии.
 
 **BossBar** (полоска вверху экрана) — запасной канал на случай, если пак не применился.
 Если он не нужен, отключите его:

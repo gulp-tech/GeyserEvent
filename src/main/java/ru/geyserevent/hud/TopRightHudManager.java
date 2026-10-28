@@ -40,7 +40,7 @@ public class TopRightHudManager {
      * Маркер намеренно ASCII: у разных клиентов '%.12s' считается либо по символам,
      * либо по байтам, а 12 ASCII-символов = 12 байт = 12 символов, поэтому работает всегда.
      */
-    private static final String HUD_MARKER = ". . . . . . ";
+    private static final String HUD_MARKER = "............";   // ровно 12 ASCII-точек
 
     /** До какого момента панель ивента молчит (чтобы не перебивать сообщения способностей босса). */
     private long cornerHudSuppressedUntil = 0L;
@@ -116,6 +116,11 @@ public class TopRightHudManager {
         plugin.getLogger().info("Ресурспак ивентов скопирован: " + String.join(", ", copied));
         plugin.getLogger().info("Bedrock-игроки получат его при подключении. Если пак не применился —");
         plugin.getLogger().info("перезапустите сервер ещё раз (движок читает папку packs при старте).");
+
+        // Дополнительно регистрируем пак прямо в движке Bedrock через Geyser API:
+        // папку packs движок читает один раз при старте, а так пак попадает в список
+        // отправляемых клиентам в любом случае.
+        GeyserPackBridge.subscribe(plugin, exportedMcpack);
     }
 
     /** Крупная подсказка в консоль, если пак не удалось положить в packs автоматически. */
@@ -163,6 +168,13 @@ public class TopRightHudManager {
         }
         if (serverRoot == null) {
             serverRoot = new File(".");
+        }
+
+        // Папка, которую движок Bedrock назвал сам (самый надёжный вариант)
+        File apiDir = GeyserPackBridge.geyserPacksDirectory();
+        if (apiDir != null && !dirs.contains(apiDir)) {
+            dirs.add(apiDir);
+            plugin.getLogger().info("Движок Bedrock сообщил свою папку packs: " + apiDir.getPath());
         }
 
         addCandidate(dirs, serverRoot, "bedrock" + File.separator + "packs");
