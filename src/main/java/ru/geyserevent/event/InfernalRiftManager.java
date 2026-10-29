@@ -588,7 +588,6 @@ public class InfernalRiftManager {
             Villager villager = spawnExcavationVillager(this.bossHomeLocation);
             this.villagerUuid = villager.getUniqueId();
 
-            createAndShowBossBar();
             plugin.getTopRightHudManager().updateTopRightHud();
             broadcastEventStart();
             startActiveTickLoop();
@@ -605,7 +604,6 @@ public class InfernalRiftManager {
             Villager alchemist = spawnAlchemistNpc(this.bossHomeLocation);
             this.villagerUuid = alchemist.getUniqueId();
 
-            createAndShowBossBar();
             plugin.getTopRightHudManager().updateTopRightHud();
             broadcastEventStart();
             startActiveTickLoop();
@@ -623,7 +621,6 @@ public class InfernalRiftManager {
             PiglinBrute boss = spawnInfernalPiglinBoss(this.bossHomeLocation);
             this.bossUuid = boss.getUniqueId();
 
-            createAndShowBossBar();
             plugin.getTopRightHudManager().updateTopRightHud();
             broadcastEventStart();
             startActiveTickLoop();
@@ -1530,99 +1527,16 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Гарантированно создаёт и обновляет информационный БоссБар активного ивента для ВСЕХ игроков на сервере.
+     * Информационный BossBar ивента убран (v1.9.23): вся информация ивента показывается
+     * панелью в правом верхнем углу у Bedrock-игроков и чат-сообщениями у всех.
+     * Метод оставлен как «убери полосу, если она ещё где-то висит» — на случай,
+     * если в старом config.yml остался bossbar: true.
      */
     public void updateEventBossBar() {
-        if (!plugin.getPluginConfig().isEventBossBarEnabled()) {
-            if (bossBar != null) {
-                bossBar.removeAll();
-                bossBar = null;
-            }
-            return;
-        }
-        if (!active || defeated || riftCenterLocation == null) {
-            if (bossBar != null) {
-                bossBar.removeAll();
-                bossBar = null;
-            }
-            return;
-        }
-
-        if (bossBar == null) {
-            createAndShowBossBar();
-        }
-
-        long remSec = getSecondsRemainingInEvent();
-        long totalSec = plugin.getPluginConfig().getDurationMinutes() * 60L;
-        String timeStr = formatMinutesSeconds(remSec);
-        int x = riftCenterLocation.getBlockX();
-        int y = riftCenterLocation.getBlockY();
-        int z = riftCenterLocation.getBlockZ();
-
-        if (activeEventType == EventType.BEACH_EXCAVATION) {
-            double progress = totalSec > 0 ? Math.max(0.0, Math.min(1.0, (double) remSec / totalSec)) : 1.0;
-            bossBar.setColor(BarColor.YELLOW);
-            bossBar.setProgress(progress);
-
-            String brushStatus = (brushReadyToClaim || brushCountdownSeconds <= 0)
-                    ? "&aГотова!"
-                    : "&#E0C912" + brushCountdownSeconds + "с";
-            String barTitle = String.format(
-                    plugin.getPluginConfig().getIconExcavation() + " &e&lПЛЯЖНЫЕ РАСКОПКИ &8| &fКисточка: %s &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
-                    brushStatus, timeStr, x, y, z
-            );
-            bossBar.setTitle(ColorUtil.color(barTitle));
-        } else if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
-            double progress = totalSec > 0 ? Math.max(0.0, Math.min(1.0, (double) remSec / totalSec)) : 1.0;
-            bossBar.setColor(BarColor.PURPLE);
-            bossBar.setProgress(progress);
-
-            int activeNodes = plugin.getAlchemistSchematicManager().getActiveReagentCount();
-            String barTitle = String.format(
-                    plugin.getPluginConfig().getIconCauldron() + " &d&lКОТЁЛ АЛХИМИКА &8| &fРеагенты: &a%d шт. &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
-                    activeNodes, timeStr, x, y, z
-            );
-            bossBar.setTitle(ColorUtil.color(barTitle));
-        } else {
-            int curHp = (int) Math.ceil(this.bossCurrentHealth);
-            int maxHp = (int) Math.ceil(this.bossMaxHealth);
-            double progress = maxHp > 0 ? Math.max(0.0, Math.min(1.0, this.bossCurrentHealth / this.bossMaxHealth)) : 1.0;
-            bossBar.setColor(BarColor.RED);
-            bossBar.setProgress(progress);
-
-            Location loc = (getBossEntity() != null) ? getBossEntity().getLocation() : riftCenterLocation;
-            String barTitle = String.format(
-                    plugin.getPluginConfig().getIconInfernalRift() + " &c&lАДСКИЙ РАЗЛОМ &8| &c❤ %d/%d &8| &fВремя: &e%s &8| &#E0C912%d %d %d",
-                    curHp, maxHp, timeStr, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()
-            );
-            bossBar.setTitle(ColorUtil.color(barTitle));
-        }
-
-        // Оптимизация: получаем список один раз, а не на каждого игрока (getPlayers() аллоцирует список)
-        List<Player> alreadyShown = bossBar.getPlayers();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!alreadyShown.contains(player)) {
-                bossBar.addPlayer(player);
-            }
-        }
-    }
-
-    private void createAndShowBossBar() {
         if (bossBar != null) {
             bossBar.removeAll();
+            bossBar = null;
         }
-        BarColor color = switch (activeEventType) {
-            case BEACH_EXCAVATION -> BarColor.YELLOW;
-            case ALCHEMIST_CAULDRON -> BarColor.PURPLE;
-            default -> BarColor.RED;
-        };
-        bossBar = Bukkit.createBossBar("", color, BarStyle.SEGMENTED_10);
-        bossBar.setVisible(true);
-        bossBar.setProgress(1.0);
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            bossBar.addPlayer(player);
-        }
-        updateEventBossBar();
     }
 
     /**

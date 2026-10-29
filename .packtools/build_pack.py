@@ -6,7 +6,7 @@ SRC = "/home/user/GeyserEvent/GeyserEvent-Pack.mcpack"
 DST = "/home/user/GeyserEvent/GeyserEvent-Pack.mcpack"
 EMBED = "/home/user/GeyserEvent/src/main/resources/resourcepack/GeyserEvent-Pack.mcpack"
 ICONS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src/main/resources/resourcepack-vanilla/textures/geyserevent")
-VERSION = [1, 13, 0]
+VERSION = [1, 14, 0]
 
 zin = zipfile.ZipFile(SRC, "r")
 entries = {n: zin.read(n) for n in zin.namelist()}
@@ -19,9 +19,9 @@ for name in ("icon_rift.png", "icon_excavation.png", "icon_cauldron.png"):
 
 # --- новый manifest: версия 1.12.0, чтобы Bedrock-клиенты перекачали пак ---
 manifest = json.loads(entries["manifest.json"].decode("utf-8"))
-manifest["header"]["name"] = "GeyserEvent Pack v1.13.0"
+manifest["header"]["name"] = "GeyserEvent Pack v1.14.0"
 manifest["header"]["description"] = ("3D-Рюкзак шахтёра + панель активного ивента в правом верхнем углу экрана: "
-                                    "иконка ивента текстурами ресурспака и две строки (ивент/состояние и координаты)")
+                                    "иконка ивента текстурами ресурспака, две строки (ивент/состояние и координаты) и фон-панель; ванильный action bar спрятан, пока идёт ивент")
 manifest["header"]["version"] = VERSION
 manifest["modules"][0]["version"] = VERSION
 entries["manifest.json"] = json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")

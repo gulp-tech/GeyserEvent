@@ -2,9 +2,6 @@ package ru.geyserevent.hud;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.config.PluginConfig;
@@ -24,13 +21,12 @@ import java.nio.file.StandardCopyOption;
 /**
  * Менеджер инфо-панели ивента и авто-установщик ресурспака GeyserEvent-Pack.mcpack.
  * НЕ трогает Scoreboard игроков (чтобы не конфликтовать со скорбордом сервера).
- * Вся информация выводится через BossBar, который ресурспаком GeyserEvent-Pack.mcpack
- * переносится в правый верхний угол экрана на Bedrock.
+ * Вся информация выводится панелью в правом верхнем углу экрана, которую рисует
+ * ресурспак GeyserEvent-Pack.mcpack (BossBar ивента убран в v1.9.23).
  */
 public class TopRightHudManager {
 
     private final GeyserEventPlugin plugin;
-    private BossBar infoBossBar;
 
     /**
      * Служебные маркеры начала action bar. Ресурспак GeyserEvent-Pack.mcpack проверяет,
@@ -258,7 +254,7 @@ public class TopRightHudManager {
     }
 
     /**
-     * Обновляет главный информационный BossBar активного ивента (без использования Scoreboard и без дублирования полосок).
+     * Обновляет HUD ивента (панель в углу у Bedrock, чат-сообщения у остальных).
      */
     public void updateTopRightHud() {
         clearAllHud();
@@ -278,7 +274,6 @@ public class TopRightHudManager {
 
     /**
      * Раз в секунду отправляет Bedrock-игрокам текст панели ивента (action bar с маркером).
-     * Java-игроки видят ту же информацию в BossBar, поэтому им ничего не отправляем.
      * Нагрузка: один пакет на игрока в секунду — это нулевая нагрузка на клиент и сервер.
      */
     public void tickCornerHud() {
@@ -390,16 +385,13 @@ public class TopRightHudManager {
         return new File(new File(plugin.getDataFolder(), "resourcepack"), "GeyserEvent-Pack.mcpack");
     }
 
+    /** BossBar ивента убран (v1.9.23) — оставлено для совместимости вызовов. */
     public void removeHudFromPlayer(Player player) {
-        if (player != null && infoBossBar != null) {
-            infoBossBar.removePlayer(player);
-        }
+        // ничего не делаем: инфо-полоски больше нет
     }
 
+    /** BossBar ивента убран (v1.9.23) — оставлено для совместимости вызовов. */
     public void clearAllHud() {
-        if (infoBossBar != null) {
-            infoBossBar.removeAll();
-            infoBossBar = null;
-        }
+        // ничего не делаем: инфо-полоски больше нет
     }
 }

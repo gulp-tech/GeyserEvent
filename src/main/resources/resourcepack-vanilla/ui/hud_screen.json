@@ -1,84 +1,104 @@
 // GeyserEvent: panel of the active event in the top-right corner of the screen (Bedrock).
 // Base technique and code: ofunny (https://ofunny.world/, github.com/ofunny/ofunnysBedrockExamples), GPL-3.0.
 // The plugin sends an action bar starting with an event marker (#GE_R# rift,
-// #GE_E# excavation, #GE_C# cauldron). The pack hides the default action bar while a
-// marker is present and draws the event panel in the corner: a pack texture icon
-// (textures/geyserevent/icon_*.png) plus a two line label (event/status, coordinates).
+// #GE_E# excavation, #GE_C# cauldron). While a marker is present the pack:
+//  - hides the vanilla action bar (its alpha is forced to 0), and
+//  - draws the event card in the top-right corner: pack texture icon
+//    (textures/geyserevent/icon_*.png) + two line label (event/status, coordinates)
+//    on the vanilla tip background textures/ui/hud_tip_text_background.
 // Same 'namespace': 'hud' as the vanilla hud_screen.json so the factory and $actionbar_text
 // resolve; the panel sets its own anchor/offset because the vanilla action bar layout
 // would otherwise move it to the middle of the screen.
 {
   "namespace": "hud",
   "geyserevent_hud_text": {
-    "type": "panel",
+    "type": "image",
+    "texture": "textures/ui/hud_tip_text_background",
     "size": [
-      "100%c",
-      "100%c"
+      "100%c + 16px",
+      "100%c + 10px"
     ],
     "layer": 31,
     "alpha": 1.0,
     "anchor_from": "top_right",
     "anchor_to": "top_right",
     "offset": [
-      0,
-      0
+      -4,
+      4
     ],
     "controls": [
       {
-        "geyserevent_icon_rift": {
-          "type": "image",
-          "texture": "textures/geyserevent/icon_rift",
+        "geyserevent_icon_box": {
+          "type": "panel",
           "size": [
             12,
             12
           ],
-          "layer": 31,
-          "alpha": 1.0,
-          "anchor_from": "top_right",
-          "anchor_to": "top_right",
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
           "offset": [
-            -16,
-            5
+            6,
+            9
           ],
-          "visible": "(($localtext - '#GE_R#') != $localtext)"
-        }
-      },
-      {
-        "geyserevent_icon_excavation": {
-          "type": "image",
-          "texture": "textures/geyserevent/icon_excavation",
-          "size": [
-            12,
-            12
-          ],
-          "layer": 31,
-          "alpha": 1.0,
-          "anchor_from": "top_right",
-          "anchor_to": "top_right",
-          "offset": [
-            -16,
-            5
-          ],
-          "visible": "(($localtext - '#GE_E#') != $localtext)"
-        }
-      },
-      {
-        "geyserevent_icon_cauldron": {
-          "type": "image",
-          "texture": "textures/geyserevent/icon_cauldron",
-          "size": [
-            12,
-            12
-          ],
-          "layer": 31,
-          "alpha": 1.0,
-          "anchor_from": "top_right",
-          "anchor_to": "top_right",
-          "offset": [
-            -16,
-            5
-          ],
-          "visible": "(($localtext - '#GE_C#') != $localtext)"
+          "controls": [
+            {
+              "geyserevent_icon_rift": {
+                "type": "image",
+                "texture": "textures/geyserevent/icon_rift",
+                "size": [
+                  12,
+                  12
+                ],
+                "layer": 32,
+                "alpha": 1.0,
+                "anchor_from": "top_left",
+                "anchor_to": "top_left",
+                "offset": [
+                  0,
+                  0
+                ],
+                "visible": "(($localtext - '#GE_R#') != $localtext)"
+              }
+            },
+            {
+              "geyserevent_icon_excavation": {
+                "type": "image",
+                "texture": "textures/geyserevent/icon_excavation",
+                "size": [
+                  12,
+                  12
+                ],
+                "layer": 32,
+                "alpha": 1.0,
+                "anchor_from": "top_left",
+                "anchor_to": "top_left",
+                "offset": [
+                  0,
+                  0
+                ],
+                "visible": "(($localtext - '#GE_E#') != $localtext)"
+              }
+            },
+            {
+              "geyserevent_icon_cauldron": {
+                "type": "image",
+                "texture": "textures/geyserevent/icon_cauldron",
+                "size": [
+                  12,
+                  12
+                ],
+                "layer": 32,
+                "alpha": 1.0,
+                "anchor_from": "top_left",
+                "anchor_to": "top_left",
+                "offset": [
+                  0,
+                  0
+                ],
+                "visible": "(($localtext - '#GE_C#') != $localtext)"
+              }
+            }
+          ]
         }
       },
       {
@@ -87,13 +107,17 @@
           "text": "$formattedtext",
           "color": "$tool_tip_text",
           "shadow": true,
-          "layer": 31,
+          "layer": 32,
           "alpha": 1.0,
           "localize": false,
-          "anchor_from": "top_right",
-          "anchor_to": "top_right",
+          "size": [
+            "default",
+            "default"
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
           "offset": [
-            -24,
+            23,
             4
           ],
           "bindings": [
@@ -119,7 +143,31 @@
     }
   },
   "hud_actionbar_text": {
-    "visible": "(($actionbar_text - '#GE_') = $actionbar_text)"
+    "type": "image",
+    "size": [
+      "100%c + 12px",
+      "100%c + 5px"
+    ],
+    "offset": [
+      0,
+      "50%-68px"
+    ],
+    "texture": "textures/ui/hud_tip_text_background",
+    "alpha": "((($actionbar_text - '#GE_') = $actionbar_text) ? @hud.anim_actionbar_text_background_alpha_out : 0)",
+    "controls": [
+      {
+        "actionbar_message": {
+          "type": "label",
+          "anchor_from": "center",
+          "anchor_to": "center",
+          "color": "$tool_tip_text",
+          "layer": 31,
+          "text": "$actionbar_text",
+          "localize": false,
+          "alpha": "((($actionbar_text - '#GE_') = $actionbar_text) ? @hud.anim_actionbar_text_alpha_out : 0)"
+        }
+      }
+    ]
   },
   "root_panel": {
     "modifications": [

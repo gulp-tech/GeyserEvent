@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Генератор ui/hud_screen.json для ресурспака GeyserEvent (v1.13.0).
+# Генератор ui/hud_screen.json для ресурспака GeyserEvent (v1.14.0).
 # Техника: ofunny (https://ofunny.world/, github.com/ofunny/ofunnysBedrockExamples), GPL-3.0.
 import json, io, os
 
@@ -16,61 +16,54 @@ PREFIX = "#GE_"
 def has(marker, var="$localtext"):
     return "((" + var + " - '" + marker + "') != " + var + ")"
 
+NO_MARKER = "(($actionbar_text - '" + PREFIX + "') = $actionbar_text)"
+
+def icon_control(name, texture, marker):
+    return {
+        name: {
+            "type": "image",
+            "texture": "textures/geyserevent/" + texture,
+            "size": [12, 12],
+            "layer": 32,
+            "alpha": 1.0,
+            "anchor_from": "top_left",
+            "anchor_to": "top_left",
+            "offset": [0, 0],
+            "visible": has(marker)
+        }
+    }
+
 doc = {
   # Тот же namespace, что и у ванильного hud_screen.json — иначе фабрика
   # hud_actionbar_text_factory и переменная $actionbar_text не находятся.
   "namespace": "hud",
 
   # ---- панель активного ивента в правом верхнем углу ----
-  # Фабрика даёт доступ к $actionbar_text; смещение/привязку задаём явно,
-  # иначе панель наследует ванильное смещение и рисуется в центре экрана.
+  # Фон — ванильная «таблетка» textures/ui/hud_tip_text_background, размер считается
+  # по содержимому (100%c), поэтому панель всегда ровно по тексту.
   "geyserevent_hud_text": {
-    "type": "panel",
-    "size": ["100%c", "100%c"],
+    "type": "image",
+    "texture": "textures/ui/hud_tip_text_background",
+    "size": ["100%c + 16px", "100%c + 10px"],
     "layer": 31,
     "alpha": 1.0,
     "anchor_from": "top_right",
     "anchor_to": "top_right",
-    "offset": [0, 0],
+    "offset": [-4, 4],
     "controls": [
-      # --- иконки ивентов: рисует ресурспак (по одной на каждый ивент) ---
+      # --- иконка ивента: рисует ресурспак (12x12, по одной на каждый ивент) ---
       {
-        "geyserevent_icon_rift": {
-          "type": "image",
-          "texture": "textures/geyserevent/icon_rift",
+        "geyserevent_icon_box": {
+          "type": "panel",
           "size": [12, 12],
-          "layer": 31,
-          "alpha": 1.0,
-          "anchor_from": "top_right",
-          "anchor_to": "top_right",
-          "offset": [-16, 5],
-          "visible": has(MARKERS["rift"])
-        }
-      },
-      {
-        "geyserevent_icon_excavation": {
-          "type": "image",
-          "texture": "textures/geyserevent/icon_excavation",
-          "size": [12, 12],
-          "layer": 31,
-          "alpha": 1.0,
-          "anchor_from": "top_right",
-          "anchor_to": "top_right",
-          "offset": [-16, 5],
-          "visible": has(MARKERS["excavation"])
-        }
-      },
-      {
-        "geyserevent_icon_cauldron": {
-          "type": "image",
-          "texture": "textures/geyserevent/icon_cauldron",
-          "size": [12, 12],
-          "layer": 31,
-          "alpha": 1.0,
-          "anchor_from": "top_right",
-          "anchor_to": "top_right",
-          "offset": [-16, 5],
-          "visible": has(MARKERS["cauldron"])
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "offset": [6, 9],
+          "controls": [
+            icon_control("geyserevent_icon_rift", "icon_rift", MARKERS["rift"]),
+            icon_control("geyserevent_icon_excavation", "icon_excavation", MARKERS["excavation"]),
+            icon_control("geyserevent_icon_cauldron", "icon_cauldron", MARKERS["cauldron"])
+          ]
         }
       },
       # --- две строки: (1) ивент + состояние, (2) координаты ---
@@ -80,12 +73,13 @@ doc = {
           "text": "$formattedtext",
           "color": "$tool_tip_text",
           "shadow": True,
-          "layer": 31,
+          "layer": 32,
           "alpha": 1.0,
           "localize": False,
-          "anchor_from": "top_right",
-          "anchor_to": "top_right",
-          "offset": [-24, 4],
+          "size": ["default", "default"],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "offset": [23, 4],
           "bindings": [
             {"binding_name": "#show_survival_ui", "binding_name_override": "#visible"}
           ]
@@ -107,10 +101,29 @@ doc = {
     }
   },
 
-  # ---- прячем ванильную строку над хотбаром, пока летит маркер ивента ----
-  # Только visible: никаких новых переменных, чтобы не сломать ванильную подпись.
+  # ---- ванильная строка над хотбаром: показываем её ТОЛЬКО когда маркера ивента нет ----
+  # Полное определение ванильного контрола (фон + подпись), но alpha уходит в 0,
+  # пока плагин шлёт маркер ивента — сырой "#GE_E# ..." игрок не видит.
   "hud_actionbar_text": {
-    "visible": "(($actionbar_text - '" + PREFIX + "') = $actionbar_text)"
+    "type": "image",
+    "size": ["100%c + 12px", "100%c + 5px"],
+    "offset": [0, "50%-68px"],
+    "texture": "textures/ui/hud_tip_text_background",
+    "alpha": "(" + NO_MARKER + " ? @hud.anim_actionbar_text_background_alpha_out : 0)",
+    "controls": [
+      {
+        "actionbar_message": {
+          "type": "label",
+          "anchor_from": "center",
+          "anchor_to": "center",
+          "color": "$tool_tip_text",
+          "layer": 31,
+          "text": "$actionbar_text",
+          "localize": False,
+          "alpha": "(" + NO_MARKER + " ? @hud.anim_actionbar_text_alpha_out : 0)"
+        }
+      }
+    ]
   },
 
   "root_panel": {
@@ -130,9 +143,11 @@ header = (
   "// GeyserEvent: panel of the active event in the top-right corner of the screen (Bedrock).\n"
   "// Base technique and code: ofunny (https://ofunny.world/, github.com/ofunny/ofunnysBedrockExamples), GPL-3.0.\n"
   "// The plugin sends an action bar starting with an event marker (#GE_R# rift,\n"
-  "// #GE_E# excavation, #GE_C# cauldron). The pack hides the default action bar while a\n"
-  "// marker is present and draws the event panel in the corner: a pack texture icon\n"
-  "// (textures/geyserevent/icon_*.png) plus a two line label (event/status, coordinates).\n"
+  "// #GE_E# excavation, #GE_C# cauldron). While a marker is present the pack:\n"
+  "//  - hides the vanilla action bar (its alpha is forced to 0), and\n"
+  "//  - draws the event card in the top-right corner: pack texture icon\n"
+  "//    (textures/geyserevent/icon_*.png) + two line label (event/status, coordinates)\n"
+  "//    on the vanilla tip background textures/ui/hud_tip_text_background.\n"
   "// Same 'namespace': 'hud' as the vanilla hud_screen.json so the factory and $actionbar_text\n"
   "// resolve; the panel sets its own anchor/offset because the vanilla action bar layout\n"
   "// would otherwise move it to the middle of the screen.\n"
@@ -144,4 +159,3 @@ OUT = os.path.join(ROOT, "src", "main", "resources", "resourcepack-vanilla", "ui
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 io.open(OUT, "w", encoding="utf-8").write(header + body + "\n")
 print("written", OUT)
-print(body)
