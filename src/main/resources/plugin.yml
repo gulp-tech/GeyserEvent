@@ -1,0 +1,44 @@
+name: GeyserEvent
+version: '1.9.25'
+main: ru.geyserevent.GeyserEventPlugin
+api-version: '1.21'
+authors: [GeyserEvent]
+Ивенты «Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика», призывные алтари босса и постоянный ивент «Шахта Древних 45x45 (0 ~ 0)» для Purpur 26.2
+softdepend:
+  - Geyser-Spigot
+  - WorldGuard
+  - floodgate
+  - PlayerPoints
+  - DeluxeMenus
+
+commands:
+  event:
+    description: Команды ивентов для игроков (/event delay, /event gps, /event mine, /event backpack)
+    aliases: [ivent]
+    usage: /<command> <delay|gps|mine|backpack>
+  rift:
+    description: Админ-команды управления ивентами и GUI-меню лута
+    aliases: [geyserevent, razlom, infernalrift]
+    usage: /<command> <menu|minemenu|cauldronmenu|excavationmenu|mine|start|start-here|stop|mineloot|cauldronloot|brushloot|givegeode|givereagent|givebrush|ability|setworld|saveschem|summonaltar|summonlist|summonremove|givesummon|reload|status|top>
+    permission: geyserevent.admin
+  cauldronmenu:
+    description: Отдельное GUI-меню настройки лута «Котла Алхимика»
+    aliases: [alchemistmenu, cmenu]
+    usage: /<command> [обычная|эпическая|легендарная]
+    permission: geyserevent.admin
+  minemenu:
+    description: Отдельное GUI-меню настройки лута постоянного ивента «Шахта Древних (0 ~ 0)»
+    aliases: [geodemenu, mmenu]
+    usage: /<command> [обычная|эпическая|легендарная]
+    permission: geyserevent.admin
+
+permissions:
+  geyserevent.use:
+    description: Доступ к командам /event delay, /event gps и /event mine
+    default: true
+  geyserevent.admin:
+    description: Полное управление всеми ивентами и меню лута (/rift, /cauldronmenu, /minemenu)
+    default: op
+  geyserevent.bypass.bedrock:
+    description: Позволяет администраторам с Java-клиента управлять ивентами и тестировать их
+    default: op

@@ -1,0 +1,146 @@
+# ============================================================================
+# Схематика ивента «Пляжные Раскопки» (17x17 Оазис Раскопок с Пальмами)
+# По центру (0, 1, 0) стоит 2-метровый Житель-Археолог, выдающий кисточки.
+# ============================================================================
+
+name: "beach_excavation"
+description: "Пляж археологических раскопок с пальмами и подозрительным песком"
+npc-spawn-offset:
+  x: 0.5
+  y: 1.0
+  z: 0.5
+  yaw: 0.0
+  pitch: 0.0
+
+# Палитра символов для послойной схемы (17x17, центр в X=8, Z=8)
+palette:
+  '.': "AIR"
+  'S': "SAND"
+  'U': "SUSPICIOUS_SAND"
+  'M': "SMOOTH_SANDSTONE"
+  'C': "CUT_SANDSTONE"
+  'H': "CHISELED_SANDSTONE"
+  'D': "SANDSTONE_SLAB"
+  'L': "SEA_LANTERN"
+  'P': "PRISMARINE_BRICKS"
+  'J': "JUNGLE_WOOD"
+  'V': "JUNGLE_LEAVES"
+  'B': "BARREL"
+  'F': "OAK_FENCE"
+  'T': "LANTERN"
+  'G': "GOLD_BLOCK"
+
+layers:
+  # Уровень земли (y = 0): 17x17 песчаный пляж с блоками подозрительного песка (U) и оазисными вставками
+  0:
+    - "....D S S M S S D...."
+    - "..D S S U S U S S D.."
+    - ".S S M S S C S S M S S."
+    - ".S U S J S S S J S U S."
+    - "D S S S U S U S S S D"
+    - "S U S S S M C M S S S U S"
+    - "M S C U C H C H C U C S M"
+    - "S S S S M C G C M S S S S"
+    - "S U S S S M C M S S S U S"
+    - "D S S S U S U S S S D"
+    - ".S U S J S S S J S U S."
+    - ".S S M S S C S S M S S."
+    - "..D S S U S U S S D.."
+    - "....D S S M S S D...."
+
+# Детальные 3D-блоки пляжа, пальм, археологических точек и центрального пьедестала
+blocks:
+  # Центральный пьедестал для 2-метрового Жителя-Археолога
+  - { x: 0,  y: 0, z: 0,  material: "CHISELED_SANDSTONE" }
+  - { x: -1, y: 0, z: 0,  material: "SMOOTH_SANDSTONE" }
+  - { x: 1,  y: 0, z: 0,  material: "SMOOTH_SANDSTONE" }
+  - { x: 0,  y: 0, z: -1, material: "SMOOTH_SANDSTONE" }
+  - { x: 0,  y: 0, z: 1,  material: "SMOOTH_SANDSTONE" }
+
+  # Дополнительные точки раскопок (SUSPICIOUS_SAND) по всему пляжу
+  - { x: -3, y: 0, z: -2, material: "SUSPICIOUS_SAND" }
+  - { x: 3,  y: 0, z: -2, material: "SUSPICIOUS_SAND" }
+  - { x: -3, y: 0, z: 2,  material: "SUSPICIOUS_SAND" }
+  - { x: 3,  y: 0, z: 2,  material: "SUSPICIOUS_SAND" }
+  - { x: 0,  y: 0, z: -4, material: "SUSPICIOUS_SAND" }
+  - { x: 0,  y: 0, z: 4,  material: "SUSPICIOUS_SAND" }
+  - { x: -4, y: 0, z: 0,  material: "SUSPICIOUS_SAND" }
+  - { x: 4,  y: 0, z: 0,  material: "SUSPICIOUS_SAND" }
+  - { x: -2, y: 0, z: -5, material: "SUSPICIOUS_SAND" }
+  - { x: 2,  y: 0, z: -5, material: "SUSPICIOUS_SAND" }
+  - { x: -2, y: 0, z: 5,  material: "SUSPICIOUS_SAND" }
+  - { x: 2,  y: 0, z: 5,  material: "SUSPICIOUS_SAND" }
+  - { x: -5, y: 0, z: -2, material: "SUSPICIOUS_SAND" }
+  - { x: 5,  y: 0, z: -2, material: "SUSPICIOUS_SAND" }
+  - { x: -5, y: 0, z: 2,  material: "SUSPICIOUS_SAND" }
+  - { x: 5,  y: 0, z: 2,  material: "SUSPICIOUS_SAND" }
+
+  # Бочки и фонари археологического лагеря
+  - { x: -2, y: 1, z: -2, material: "BARREL" }
+  - { x: 2,  y: 1, z: -2, material: "BARREL" }
+  - { x: -2, y: 2, z: -2, material: "LANTERN" }
+  - { x: 2,  y: 2, z: -2, material: "LANTERN" }
+  - { x: -2, y: 1, z: 2,  material: "CHISELED_SANDSTONE" }
+  - { x: 2,  y: 1, z: 2,  material: "CHISELED_SANDSTONE" }
+  - { x: -2, y: 2, z: 2,  material: "LANTERN" }
+  - { x: 2,  y: 2, z: 2,  material: "LANTERN" }
+
+  # Пальма 1 (северо-запад: x = -5, z = -5)
+  - { x: -5, y: 1, z: -5, material: "JUNGLE_WOOD" }
+  - { x: -5, y: 2, z: -5, material: "JUNGLE_WOOD" }
+  - { x: -4, y: 3, z: -4, material: "JUNGLE_WOOD" }
+  - { x: -4, y: 4, z: -4, material: "JUNGLE_WOOD" }
+  - { x: -4, y: 5, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: -5, y: 5, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: -3, y: 5, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: -4, y: 5, z: -5, material: "JUNGLE_LEAVES" }
+  - { x: -4, y: 5, z: -3, material: "JUNGLE_LEAVES" }
+  - { x: -6, y: 4, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: -2, y: 4, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: -4, y: 4, z: -6, material: "JUNGLE_LEAVES" }
+  - { x: -4, y: 4, z: -2, material: "JUNGLE_LEAVES" }
+
+  # Пальма 2 (северо-восток: x = 5, z = -5)
+  - { x: 5,  y: 1, z: -5, material: "JUNGLE_WOOD" }
+  - { x: 5,  y: 2, z: -5, material: "JUNGLE_WOOD" }
+  - { x: 4,  y: 3, z: -4, material: "JUNGLE_WOOD" }
+  - { x: 4,  y: 4, z: -4, material: "JUNGLE_WOOD" }
+  - { x: 4,  y: 5, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: 5,  y: 5, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: 3,  y: 5, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: 4,  y: 5, z: -5, material: "JUNGLE_LEAVES" }
+  - { x: 4,  y: 5, z: -3, material: "JUNGLE_LEAVES" }
+  - { x: 6,  y: 4, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: 2,  y: 4, z: -4, material: "JUNGLE_LEAVES" }
+  - { x: 4,  y: 4, z: -6, material: "JUNGLE_LEAVES" }
+  - { x: 4,  y: 4, z: -2, material: "JUNGLE_LEAVES" }
+
+  # Пальма 3 (юго-запад: x = -5, z = 5)
+  - { x: -5, y: 1, z: 5,  material: "JUNGLE_WOOD" }
+  - { x: -5, y: 2, z: 5,  material: "JUNGLE_WOOD" }
+  - { x: -4, y: 3, z: 4,  material: "JUNGLE_WOOD" }
+  - { x: -4, y: 4, z: 4,  material: "JUNGLE_WOOD" }
+  - { x: -4, y: 5, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: -5, y: 5, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: -3, y: 5, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: -4, y: 5, z: 5,  material: "JUNGLE_LEAVES" }
+  - { x: -4, y: 5, z: 3,  material: "JUNGLE_LEAVES" }
+  - { x: -6, y: 4, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: -2, y: 4, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: -4, y: 4, z: 6,  material: "JUNGLE_LEAVES" }
+  - { x: -4, y: 4, z: 2,  material: "JUNGLE_LEAVES" }
+
+  # Пальма 4 (юго-восток: x = 5, z = 5)
+  - { x: 5,  y: 1, z: 5,  material: "JUNGLE_WOOD" }
+  - { x: 5,  y: 2, z: 5,  material: "JUNGLE_WOOD" }
+  - { x: 4,  y: 3, z: 4,  material: "JUNGLE_WOOD" }
+  - { x: 4,  y: 4, z: 4,  material: "JUNGLE_WOOD" }
+  - { x: 4,  y: 5, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: 5,  y: 5, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: 3,  y: 5, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: 4,  y: 5, z: 5,  material: "JUNGLE_LEAVES" }
+  - { x: 4,  y: 5, z: 3,  material: "JUNGLE_LEAVES" }
+  - { x: 6,  y: 4, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: 2,  y: 4, z: 4,  material: "JUNGLE_LEAVES" }
+  - { x: 4,  y: 4, z: 6,  material: "JUNGLE_LEAVES" }
+  - { x: 4,  y: 4, z: 2,  material: "JUNGLE_LEAVES" }
