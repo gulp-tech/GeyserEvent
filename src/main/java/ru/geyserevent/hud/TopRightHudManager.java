@@ -354,7 +354,7 @@ public class TopRightHudManager {
                 EventType testType = plugin.getRiftManager() != null && plugin.getRiftManager().isActive()
                         ? plugin.getRiftManager().getActiveEventType()
                         : EventType.INFERNAL_RIFT;
-                player.sendActionBar(hudMarker(testType) + demo);
+                player.sendActionBar(hudMarker(testType) + " " + demo);
                 ticksLeft -= 10;
             }
         }.runTaskTimer(plugin, 0L, 10L);

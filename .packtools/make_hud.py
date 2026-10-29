@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
-# Генератор ui/hud_screen.json для ресурспака GeyserEvent (v1.12.0).
+# Генератор ui/hud_screen.json для ресурспака GeyserEvent (v1.13.0).
 # Техника: ofunny (https://ofunny.world/, github.com/ofunny/ofunnysBedrockExamples), GPL-3.0.
 import json, io, os
 
 # --- маркеры начала action bar: по одному на каждый ивент ---
+# У всех общий префикс "#GE_" — по нему пак понимает «ивент идёт» одной проверкой,
+# а полный маркер говорит, какую иконку показать.
 MARKERS = {
     "rift": "#GE_R#",           # Адский Разлом
     "excavation": "#GE_E#",     # Пляжные Раскопки
     "cauldron": "#GE_C#",       # Котёл Алхимика
 }
+PREFIX = "#GE_"
 
 def has(marker, var="$localtext"):
     return "((" + var + " - '" + marker + "') != " + var + ")"
-
-ANY_MARKER = " || ".join(has(m) for m in MARKERS.values())
 
 doc = {
   # Тот же namespace, что и у ванильного hud_screen.json — иначе фабрика
@@ -32,83 +33,61 @@ doc = {
     "anchor_to": "top_right",
     "offset": [0, 0],
     "controls": [
+      # --- иконки ивентов: рисует ресурспак (по одной на каждый ивент) ---
       {
-        "geyserevent_hud_row": {
-          "type": "stack_panel",
-          "orientation": "horizontal",
-          "size": ["100%c", "100%c"],
+        "geyserevent_icon_rift": {
+          "type": "image",
+          "texture": "textures/geyserevent/icon_rift",
+          "size": [12, 12],
           "layer": 31,
           "alpha": 1.0,
           "anchor_from": "top_right",
           "anchor_to": "top_right",
-          "offset": [0, 4],
+          "offset": [-16, 5],
+          "visible": has(MARKERS["rift"])
+        }
+      },
+      {
+        "geyserevent_icon_excavation": {
+          "type": "image",
+          "texture": "textures/geyserevent/icon_excavation",
+          "size": [12, 12],
+          "layer": 31,
+          "alpha": 1.0,
+          "anchor_from": "top_right",
+          "anchor_to": "top_right",
+          "offset": [-16, 5],
+          "visible": has(MARKERS["excavation"])
+        }
+      },
+      {
+        "geyserevent_icon_cauldron": {
+          "type": "image",
+          "texture": "textures/geyserevent/icon_cauldron",
+          "size": [12, 12],
+          "layer": 31,
+          "alpha": 1.0,
+          "anchor_from": "top_right",
+          "anchor_to": "top_right",
+          "offset": [-16, 5],
+          "visible": has(MARKERS["cauldron"])
+        }
+      },
+      # --- две строки: (1) ивент + состояние, (2) координаты ---
+      {
+        "geyserevent_hud_label": {
+          "type": "label",
+          "text": "$formattedtext",
+          "color": "$tool_tip_text",
+          "shadow": True,
+          "layer": 31,
+          "alpha": 1.0,
+          "localize": False,
+          "anchor_from": "top_right",
+          "anchor_to": "top_right",
+          "offset": [-24, 4],
           "bindings": [
             {"binding_name": "#show_survival_ui", "binding_name_override": "#visible"}
-          ],
-          "controls": [
-            {
-              # --- иконка ивента (рисует ресурспак, не текст) ---
-              "geyserevent_hud_icon": {
-                "type": "panel",
-                "size": [18, 12],
-                "layer": 31,
-                "controls": [
-                  {
-                    "geyserevent_icon_rift": {
-                      "type": "image",
-                      "texture": "textures/geyserevent/icon_rift",
-                      "size": [12, 12],
-                      "layer": 31,
-                      "alpha": 1.0,
-                      "anchor_from": "top_left",
-                      "anchor_to": "top_left",
-                      "offset": [0, 1],
-                      "visible": has(MARKERS["rift"])
-                    }
-                  },
-                  {
-                    "geyserevent_icon_excavation": {
-                      "type": "image",
-                      "texture": "textures/geyserevent/icon_excavation",
-                      "size": [12, 12],
-                      "layer": 31,
-                      "alpha": 1.0,
-                      "anchor_from": "top_left",
-                      "anchor_to": "top_left",
-                      "offset": [0, 1],
-                      "visible": has(MARKERS["excavation"])
-                    }
-                  },
-                  {
-                    "geyserevent_icon_cauldron": {
-                      "type": "image",
-                      "texture": "textures/geyserevent/icon_cauldron",
-                      "size": [12, 12],
-                      "layer": 31,
-                      "alpha": 1.0,
-                      "anchor_from": "top_left",
-                      "anchor_to": "top_left",
-                      "offset": [0, 1],
-                      "visible": has(MARKERS["cauldron"])
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              # --- две строки: (1) ивент + состояние, (2) координаты ---
-              "geyserevent_hud_label": {
-                "type": "label",
-                "text": "$formattedtext",
-                "color": "$tool_tip_text",
-                "shadow": True,
-                "layer": 31,
-                "alpha": 1.0,
-                "localize": False,
-                "size": ["default", "default"],
-                "offset": [-4, 0]
-              }
-            }
           ]
         }
       }
@@ -117,7 +96,8 @@ doc = {
     # Убираем маркер ивента и пробел после него — игрок видит только текст.
     "$formattedtext": "($localtext - '" + MARKERS["rift"] + "' - '" + MARKERS["excavation"]
                       + "' - '" + MARKERS["cauldron"] + "' - ' ')",
-    "visible": ANY_MARKER
+    # Общий префикс "#GE_" — одна проверка на любой ивент.
+    "visible": has(PREFIX)
   },
   "geyserevent_hud_text_factory": {
     "type": "panel",
@@ -130,7 +110,7 @@ doc = {
   # ---- прячем ванильную строку над хотбаром, пока летит маркер ивента ----
   # Только visible: никаких новых переменных, чтобы не сломать ванильную подпись.
   "hud_actionbar_text": {
-    "visible": "!(" + " || ".join(has(m, "$actionbar_text") for m in MARKERS.values()) + ")"
+    "visible": "(($actionbar_text - '" + PREFIX + "') = $actionbar_text)"
   },
 
   "root_panel": {
@@ -159,6 +139,9 @@ header = (
 )
 
 body = json.dumps(doc, ensure_ascii=False, indent=2)
-os.makedirs("/tmp/packbuild/ui", exist_ok=True)
-io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "build", "ui", "hud_screen.json"), "w", encoding="utf-8").write(header + body + "\n")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(ROOT, "src", "main", "resources", "resourcepack-vanilla", "ui", "hud_screen.json")
+os.makedirs(os.path.dirname(OUT), exist_ok=True)
+io.open(OUT, "w", encoding="utf-8").write(header + body + "\n")
+print("written", OUT)
 print(body)
