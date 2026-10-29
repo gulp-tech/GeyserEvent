@@ -1,22 +1,24 @@
-// GeyserEvent: panel of the active event in the top-right corner of the screen (Bedrock).
-// Base technique and code: ofunny (https://ofunny.world/, github.com/ofunny/ofunnysBedrockExamples), GPL-3.0.
-// The plugin sends an action bar starting with an event marker (#GE_R# rift,
-// #GE_E# excavation, #GE_C# cauldron). While a marker is present the pack:
-//  - hides the vanilla action bar (its alpha is forced to 0), and
-//  - draws the event card in the top-right corner: pack texture icon
-//    (textures/geyserevent/icon_*.png) + two line label (event/status, coordinates)
-//    on the vanilla tip background textures/ui/hud_tip_text_background.
-// Same 'namespace': 'hud' as the vanilla hud_screen.json so the factory and $actionbar_text
-// resolve; the panel sets its own anchor/offset because the vanilla action bar layout
-// would otherwise move it to the middle of the screen.
+// GeyserEvent: панель активного ивента в правом верхнем углу экрана (Bedrock).
+// Базовая техника и код: ofunny (https://ofunny.world/, github.com/ofunny/ofunnysBedrockExamples), GPL-3.0.
+// Плагин шлёт action bar вида: #GE_R#|19:55~|3500/3500~|100 50 200
+//   (маркер ивента | время ММ:СС | статус | координаты; '~' — страж конца поля).
+// Пока маркер есть, пак:
+//   - прячет ванильный action bar (его alpha принудительно 0), и
+//   - рисует карточку ивента на ванильном фоне textures/ui/hud_tip_text_background:
+//     строка 1 — название ивента, строка 2 — статус и время, строка 3 — координаты.
+// Разделение строк делает сам пак (моланг не умеет переносить '\n' из action bar):
+// поля ASCII, поэтому операция '%.Ns' срабатывает одинаково и в символах, и в байтах,
+// а '~' не даёт полсу совпасть со своим собственным началом.
+// Тот же 'namespace': 'hud', что и у ванильного hud_screen.json — иначе фабрика
+// hud_actionbar_text_factory и переменная $actionbar_text не находятся.
 {
   "namespace": "hud",
   "geyserevent_hud_text": {
     "type": "image",
     "texture": "textures/ui/hud_tip_text_background",
     "size": [
-      "100%c + 16px",
-      "100%c + 10px"
+      "100%c + 18px",
+      "100%c + 12px"
     ],
     "layer": 31,
     "alpha": 1.0,
@@ -28,110 +30,114 @@
     ],
     "controls": [
       {
-        "geyserevent_icon_box": {
-          "type": "panel",
-          "size": [
-            12,
-            12
-          ],
+        "geyserevent_card": {
+          "type": "stack_panel",
+          "orientation": "vertical",
           "anchor_from": "top_left",
           "anchor_to": "top_left",
           "offset": [
-            6,
-            9
+            9,
+            6
           ],
           "controls": [
             {
-              "geyserevent_icon_rift": {
-                "type": "image",
-                "texture": "textures/geyserevent/icon_rift",
-                "size": [
-                  12,
-                  12
-                ],
+              "geyserevent_name_rift": {
+                "type": "label",
+                "text": "§cАДСКИЙ РАЗЛОМ",
+                "localize": false,
+                "shadow": true,
                 "layer": 32,
-                "alpha": 1.0,
-                "anchor_from": "top_left",
-                "anchor_to": "top_left",
-                "offset": [
-                  0,
-                  0
-                ],
-                "visible": "(($localtext - '#GE_R#') != $localtext)"
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($raw - '#GE_R#') != $raw)"
               }
             },
             {
-              "geyserevent_icon_excavation": {
-                "type": "image",
-                "texture": "textures/geyserevent/icon_excavation",
-                "size": [
-                  12,
-                  12
-                ],
+              "geyserevent_name_excavation": {
+                "type": "label",
+                "text": "§eПЛЯЖНЫЕ РАСКОПКИ",
+                "localize": false,
+                "shadow": true,
                 "layer": 32,
-                "alpha": 1.0,
-                "anchor_from": "top_left",
-                "anchor_to": "top_left",
-                "offset": [
-                  0,
-                  0
-                ],
-                "visible": "(($localtext - '#GE_E#') != $localtext)"
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($raw - '#GE_E#') != $raw)"
               }
             },
             {
-              "geyserevent_icon_cauldron": {
-                "type": "image",
-                "texture": "textures/geyserevent/icon_cauldron",
-                "size": [
-                  12,
-                  12
-                ],
+              "geyserevent_name_cauldron": {
+                "type": "label",
+                "text": "§dКОТЁЛ АЛХИМИКА",
+                "localize": false,
+                "shadow": true,
                 "layer": 32,
-                "alpha": 1.0,
-                "anchor_from": "top_left",
-                "anchor_to": "top_left",
-                "offset": [
-                  0,
-                  0
-                ],
-                "visible": "(($localtext - '#GE_C#') != $localtext)"
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($raw - '#GE_C#') != $raw)"
               }
-            }
-          ]
-        }
-      },
-      {
-        "geyserevent_hud_label": {
-          "type": "label",
-          "text": "$formattedtext",
-          "color": "$tool_tip_text",
-          "shadow": true,
-          "layer": 32,
-          "alpha": 1.0,
-          "localize": false,
-          "size": [
-            "default",
-            "default"
-          ],
-          "anchor_from": "top_left",
-          "anchor_to": "top_left",
-          "offset": [
-            23,
-            4
-          ],
-          "bindings": [
+            },
             {
-              "binding_name": "#show_survival_ui",
-              "binding_name_override": "#visible"
+              "geyserevent_status_rift": {
+                "type": "label",
+                "text": "$status_rift",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($raw - '#GE_R#') != $raw)"
+              }
+            },
+            {
+              "geyserevent_status_excavation": {
+                "type": "label",
+                "text": "$status_excavation",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($raw - '#GE_E#') != $raw)"
+              }
+            },
+            {
+              "geyserevent_status_cauldron": {
+                "type": "label",
+                "text": "$status_cauldron",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($raw - '#GE_C#') != $raw)"
+              }
+            },
+            {
+              "geyserevent_coords": {
+                "type": "label",
+                "text": "$coords_line",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left"
+              }
             }
           ]
         }
       }
     ],
-    "$localtext": "$actionbar_text",
-    "$formattedtext": "($localtext - '#GE_R#' - '#GE_E#' - '#GE_C#' - ' ')",
-    "visible": "(($localtext - '#GE_') != $localtext)"
+    "$raw": "$actionbar_text",
+    "$tail": "($raw - '#GE_R#|' - '#GE_E#|' - '#GE_C#|')",
+    "$rest": "($tail - ('%.4s' * $tail + '|') - ('%.5s' * $tail + '|') - ('%.6s' * $tail + '|') - ('%.7s' * $tail + '|') - ('%.8s' * $tail + '|'))",
+    "$time": "($tail - $rest - '|' - '~')",
+    "$coords": "($rest - ('%.2s' * $rest + '|') - ('%.3s' * $rest + '|') - ('%.4s' * $rest + '|') - ('%.5s' * $rest + '|') - ('%.6s' * $rest + '|') - ('%.7s' * $rest + '|') - ('%.8s' * $rest + '|') - ('%.9s' * $rest + '|') - ('%.10s' * $rest + '|') - ('%.11s' * $rest + '|') - ('%.12s' * $rest + '|') - ('%.13s' * $rest + '|') - ('%.14s' * $rest + '|') - ('%.15s' * $rest + '|') - ('%.16s' * $rest + '|') - ('%.17s' * $rest + '|') - ('%.18s' * $rest + '|') - ('%.19s' * $rest + '|') - ('%.20s' * $rest + '|') - ('%.21s' * $rest + '|') - ('%.22s' * $rest + '|') - ('%.23s' * $rest + '|') - ('%.24s' * $rest + '|') - ('%.25s' * $rest + '|') - ('%.26s' * $rest + '|') - ('%.27s' * $rest + '|') - ('%.28s' * $rest + '|') - ('%.29s' * $rest + '|') - ('%.30s' * $rest + '|') - ('%.31s' * $rest + '|') - ('%.32s' * $rest + '|'))",
+    "$status": "($rest - $coords - '|' - '~')",
+    "$status_rift": "('§c❤ ' + $status + '  §7·§r  ' + '§f' + $time)",
+    "$status_excavation": "('§eКисточка: §a' + $status + '  §7·§r  ' + '§f' + $time)",
+    "$status_cauldron": "('§dРеагенты: §a' + $status + '  §7·§r  ' + '§f' + $time)",
+    "$coords_line": "('§7Координаты: §f' + $coords)",
+    "visible": "(($raw - '#GE_') != $raw)"
   },
   "geyserevent_hud_text_factory": {
     "type": "panel",

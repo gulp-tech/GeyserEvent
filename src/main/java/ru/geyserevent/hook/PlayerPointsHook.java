@@ -44,7 +44,7 @@ public class PlayerPointsHook {
      *
      * @param playerUuid UUID игрока
      * @param playerName Никнейм игрока (для консольной команды, если API недоступен)
-     * @param amount     Количество осколков (например 3000, 2000, 1000)
+     * @param amount     Количество осколков (например 1500, 100, 500)
      * @return true, если выдача прошла успешно
      */
     public boolean giveShards(UUID playerUuid, String playerName, int amount) {

@@ -271,13 +271,13 @@ public class PluginConfig {
         this.gatherDamage = cfg.getDouble("abilities.gather.damage", 5.0);
         this.gatherSlownessTicks = cfg.getInt("abilities.gather.slowness-ticks", 60);
 
-        // Rewards (отключена выдача осколков)
+        // Rewards (осколки за топ-3 по урону боссу Адского Разлома)
         this.currencyName = cfg.getString("rewards.currency-name", "осколков");
-        this.usePlayerPointsApi = false;
-        this.fallbackCommand = "";
-        this.rewardFirstPlace = 0;
-        this.rewardSecondPlace = 0;
-        this.rewardThirdPlace = 0;
+        this.usePlayerPointsApi = cfg.getBoolean("rewards.use-playerpoints-api", true);
+        this.fallbackCommand = cfg.getString("rewards.fallback-command", "points give %player% %amount%");
+        this.rewardFirstPlace = Math.max(0, cfg.getInt("rewards.places.1", 1500));
+        this.rewardSecondPlace = Math.max(0, cfg.getInt("rewards.places.2", 100));
+        this.rewardThirdPlace = Math.max(0, cfg.getInt("rewards.places.3", 500));
 
         // Excavation (Пляжные Раскопки)
         this.excavationVillagerName = cfg.getString("excavation.villager-name", "&e&lАрхеолог &8[&fКисточка: &#E0C912%sec%с&8]");

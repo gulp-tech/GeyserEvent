@@ -8,7 +8,6 @@ import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.hook.BedrockService;
 import ru.geyserevent.event.EventType;
 import ru.geyserevent.event.InfernalRiftManager;
-import ru.geyserevent.util.ColorUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -294,7 +293,7 @@ public class TopRightHudManager {
             return;
         }
 
-        String payload = hudMarker(manager.getActiveEventType()) + " " + text;
+        String payload = hudMarker(manager.getActiveEventType()) + "|" + text;
         BedrockService bedrock = plugin.getBedrockService();
         boolean anySent = false;
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -336,7 +335,8 @@ public class TopRightHudManager {
         }
         // на время теста обычная панель ивента молчит, чтобы не перебивать тест
         suppressCornerHud(15_000L);
-        String demo = ColorUtil.color("&#FFD614&lПРОВЕРКА ПАНЕЛИ  &7·&r  &fработает ресурспак\n&7Координаты: &e0 0 0");
+        // Тот же формат, что и у настоящей панели: время~|статус~|координаты
+        String demo = "19:55~|3500/3500~|100 50 200";
         new org.bukkit.scheduler.BukkitRunnable() {
             int ticksLeft = 300;
 
@@ -349,7 +349,7 @@ public class TopRightHudManager {
                 EventType testType = plugin.getRiftManager() != null && plugin.getRiftManager().isActive()
                         ? plugin.getRiftManager().getActiveEventType()
                         : EventType.INFERNAL_RIFT;
-                player.sendActionBar(hudMarker(testType) + " " + demo);
+                player.sendActionBar(hudMarker(testType) + "|" + demo);
                 ticksLeft -= 10;
             }
         }.runTaskTimer(plugin, 0L, 10L);

@@ -91,6 +91,12 @@ public class InfernalRiftManager {
     private static final long TRACKED_ITEM_MAX_AGE_MILLIS = 360_000L;
 
     /**
+     * Символ-«страж» конца поля в тексте панели ивента (см. buildEventCornerHudText).
+     * Ресурспак отрезает поля action bar по нему, поэтому в данных его быть не должно.
+     */
+    public static final String HUD_FIELD_GUARD = "~";
+
+    /**
      * Счётчик до очередной чистки мёртвых записей кулдауна невидимости.
      */
     private int invisibilityCleanupCountdown = 0;
@@ -1226,10 +1232,13 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Выводит топ-3 игроков по нанесённому Боссу урону (без выдачи осколков).
+     * Выдаёт осколки за топ-3 по нанесённому Боссу урону
+     * (1 место — 1500, 2 место — 100, 3 место — 500; настраивается в config.yml → rewards.places)
+     * и показывает итоги всем игрокам.
      */
     private void distributeTopRewards() {
         List<DamageLeaderboard.DamageEntry> top = leaderboard.getTop(3);
+        PluginConfig cfg = plugin.getPluginConfig();
 
         Bukkit.broadcastMessage(ColorUtil.color(
                 "&e┠ &#34D711А&#41CF10д&#4EC80Eс&#5BC00Dк&#68B90Bи&#75B10Aй&#81A909-&#8EA207Р&#9B9A06а&#A89304з&#B58B03л&#C28402о&#CF7C00м &fзавершён."
@@ -1242,19 +1251,35 @@ public class InfernalRiftManager {
                 DamageLeaderboard.DamageEntry entry = top.get(i);
 
                 int dealtDmg = (int) Math.round(entry.damage());
+                int reward = cfg.getRewardForPlace(place);
+
                 Bukkit.broadcastMessage(ColorUtil.color(String.format(
-                        "&e┠ %s: &#E0C912%s &8(&c%d ❤&8)",
-                        placeLabels[i], entry.playerName(), dealtDmg
+                        "&e┠ %s: &#E0C912%s &8(&c%d ❤&8)%s",
+                        placeLabels[i], entry.playerName(), dealtDmg,
+                        reward > 0 ? " &7+&a" + reward + " " + cfg.getCurrencyName() : ""
                 )));
 
                 Player onlineWinner = Bukkit.getPlayer(entry.uuid());
                 if (onlineWinner != null && onlineWinner.isOnline()) {
                     onlineWinner.sendTitle(
                             ColorUtil.color("&6&l" + place + " МЕСТО!"),
-                            ColorUtil.color("&7Нанесено урона: &c" + dealtDmg + " ❤"),
+                            ColorUtil.color(reward > 0
+                                    ? "&7Награда: &a" + reward + " " + cfg.getCurrencyName()
+                                    : "&7Нанесено урона: &c" + dealtDmg + " ❤"),
                             10, 80, 20
                     );
                     onlineWinner.playSound(onlineWinner.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.5f, 0.8f);
+                }
+
+                // Сами осколки: через PlayerPoints API, а если его нет — через команду из конфига.
+                if (reward > 0) {
+                    boolean given = plugin.getPlayerPointsHook() != null
+                            && plugin.getPlayerPointsHook().giveShards(entry.uuid(), entry.playerName(), reward);
+                    if (!given) {
+                        plugin.getLogger().warning("Не удалось выдать " + reward + " "
+                                + cfg.getCurrencyName() + " игроку " + entry.playerName()
+                                + " (включите PlayerPoints или rewards.fallback-command в config.yml)");
+                    }
                 }
             }
         }
@@ -1493,8 +1518,12 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Компактный текст панели ивента для правого верхнего угла экрана (Bedrock-игроки).
-     * У каждого ивента своя иконка: ☠ Адский Разлом, ⚓ Пляжные Раскопки, ⚗ Котёл Алхимика.
+     * Текст панели ивента для правого верхнего угла экрана (Bedrock-игроки).
+     * Формат (его же разбирает ресурспак GeyserEvent-Pack.mcpack):
+     *     &lt;время ММ:СС&gt;~|&lt;статус&gt;~|&lt;координаты x y z&gt;
+     * '~' — символ-«страж» конца поля: пак по нему понимает, где поле кончается
+     * (моланг не умеет ни переносить строку, ни искать подстроку в строке).
+     * Название ивента и все цвета рисует сам пак, поэтому здесь только данные.
      * Отправляется раз в секунду, поэтому нагрузка на клиент нулевая.
      */
     public String buildEventCornerHudText() {
@@ -1502,28 +1531,25 @@ public class InfernalRiftManager {
             return null;
         }
         String timeStr = formatMinutesSeconds(getSecondsRemainingInEvent());
-        // Вторая строка панели — координаты ивента (иконку рисует ресурспак).
-        String coordsLine = "&7Координаты: &f" + riftCenterLocation.getBlockX() + " "
-                + riftCenterLocation.getBlockY() + " " + riftCenterLocation.getBlockZ();
+        String coords = riftCenterLocation.getBlockX() + " " + riftCenterLocation.getBlockY() + " "
+                + riftCenterLocation.getBlockZ();
 
+        String status;
         if (activeEventType == EventType.BEACH_EXCAVATION) {
-            String brushStatus = (brushReadyToClaim || brushCountdownSeconds <= 0)
-                    ? "&aГотова"
-                    : "&#E0C912" + brushCountdownSeconds + "с";
-            return ColorUtil.color("&e&lПЛЯЖНЫЕ РАСКОПКИ  &7·&r  &fКисточка: " + brushStatus
-                    + "  &7·&r  &f" + timeStr + "\n" + coordsLine);
-        }
-        if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
+            status = (brushReadyToClaim || brushCountdownSeconds <= 0)
+                    ? "Готова"
+                    : brushCountdownSeconds + "с";
+        } else if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
             int nodes = plugin.getAlchemistSchematicManager() != null
                     ? plugin.getAlchemistSchematicManager().getActiveReagentCount()
                     : 0;
-            return ColorUtil.color("&d&lКОТЁЛ АЛХИМИКА  &7·&r  &fРеагенты: &a" + nodes
-                    + "  &7·&r  &f" + timeStr + "\n" + coordsLine);
+            status = String.valueOf(nodes);
+        } else {
+            int curHp = (int) Math.ceil(this.bossCurrentHealth);
+            int maxHp = (int) Math.ceil(this.bossMaxHealth);
+            status = curHp + "/" + maxHp;
         }
-        int curHp = (int) Math.ceil(this.bossCurrentHealth);
-        int maxHp = (int) Math.ceil(this.bossMaxHealth);
-        return ColorUtil.color("&c&lАДСКИЙ РАЗЛОМ  &7·&r  &c❤ " + curHp + "/" + maxHp
-                + "  &7·&r  &f" + timeStr + "\n" + coordsLine);
+        return timeStr + HUD_FIELD_GUARD + "|" + status + HUD_FIELD_GUARD + "|" + coords;
     }
 
     /**
