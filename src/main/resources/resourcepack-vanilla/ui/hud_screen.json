@@ -1,15 +1,14 @@
 // GeyserEvent: панель активного ивента в правом верхнем углу экрана (Bedrock).
 // Базовая техника и код: ofunny (https://ofunny.world/, github.com/ofunny/ofunnysBedrockExamples), GPL-3.0.
-// Плагин шлёт action bar вида: #GE_R#|19:55~|3500/3500~|100 50 200
-// При призыве босса: #GE_S#|01:59~|Осталось~|100 50 200 (отсчёт до появления).
-//   (маркер ивента | время ММ:СС | статус | координаты; '~' — страж конца поля).
-// Пока маркер есть, пак:
-//   - прячет ванильный action bar (его alpha принудительно 0), и
-//   - рисует карточку ивента на ванильном фоне textures/ui/hud_tip_text_background:
-//     строка 1 — название ивента, строка 2 — статус и время, строка 3 — координаты.
-// Разделение строк делает сам пак (моланг не умеет переносить '\n' из action bar):
-// поля ASCII, поэтому операция '%.Ns' срабатывает одинаково и в символах, и в байтах,
-// а '~' не даёт полсу совпасть со своим собственным началом.
+// Плагин шлёт action bar вида: #GE_R#;3500/3500~~~~~~~~~~~~~;19:55;714 73 -243
+//   (маркер ; статус 24 байт, добит '~' ; время ММ:СС ; координаты).
+// Данные от плагина — только ASCII: '%.Ns' у Bedrock считается неизвестно в
+// байтах или символах, а на ASCII это одно и то же. Кириллица и цвета — в паке.
+// Переменные плоские (только $actionbar_text + литералы): Bedrock подставляет
+// $переменные в свойство контрола неглубоко, и цепочки рисуются сырым текстом.
+// Пока маркер есть, пак прячет ванильный action bar (только visible) и рисует
+//   карточку ивента на ванильном фоне textures/ui/hud_tip_text_background:
+//   строка 1 — название ивента, строка 2 — состояние с временем, строка 3 — координаты.
 // Тот же 'namespace': 'hud', что и у ванильного hud_screen.json — иначе фабрика
 // hud_actionbar_text_factory и переменная $actionbar_text не находятся.
 {
@@ -26,9 +25,10 @@
     "anchor_from": "top_right",
     "anchor_to": "top_right",
     "offset": [
-      -4,
-      4
+      -6,
+      6
     ],
+    "visible": "(($actionbar_text - '#GE_') != $actionbar_text)",
     "controls": [
       {
         "geyserevent_card": {
@@ -50,7 +50,7 @@
                 "layer": 32,
                 "color": "$tool_tip_text",
                 "text_alignment": "left",
-                "visible": "(($raw - '#GE_R#') != $raw)"
+                "visible": "(($actionbar_text - '#GE_R#') != $actionbar_text)"
               }
             },
             {
@@ -62,7 +62,7 @@
                 "layer": 32,
                 "color": "$tool_tip_text",
                 "text_alignment": "left",
-                "visible": "(($raw - '#GE_E#') != $raw)"
+                "visible": "(($actionbar_text - '#GE_E#') != $actionbar_text)"
               }
             },
             {
@@ -74,7 +74,7 @@
                 "layer": 32,
                 "color": "$tool_tip_text",
                 "text_alignment": "left",
-                "visible": "(($raw - '#GE_C#') != $raw)"
+                "visible": "(($actionbar_text - '#GE_C#') != $actionbar_text)"
               }
             },
             {
@@ -86,84 +86,73 @@
                 "layer": 32,
                 "color": "$tool_tip_text",
                 "text_alignment": "left",
-                "visible": "(($raw - '#GE_S#') != $raw)"
+                "visible": "(($actionbar_text - '#GE_S#') != $actionbar_text)"
               }
             },
             {
               "geyserevent_status_rift": {
                 "type": "label",
-                "text": "$status_rift",
+                "text": "('§c❤ ' + (('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - '~') + '  §7·§r  ' + '§f' + ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')))",
                 "localize": false,
                 "shadow": true,
                 "layer": 32,
                 "color": "$tool_tip_text",
                 "text_alignment": "left",
-                "visible": "(($raw - '#GE_R#') != $raw)"
+                "visible": "(($actionbar_text - '#GE_R#') != $actionbar_text)"
               }
             },
             {
               "geyserevent_status_excavation": {
                 "type": "label",
-                "text": "$status_excavation",
+                "text": "('§eКисточка: §a' + (((('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - '~') = '0') ? 'Готова' : ((('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - '~') + 'с')) + '  §7·§r  ' + '§f' + ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')))",
                 "localize": false,
                 "shadow": true,
                 "layer": 32,
                 "color": "$tool_tip_text",
                 "text_alignment": "left",
-                "visible": "(($raw - '#GE_E#') != $raw)"
+                "visible": "(($actionbar_text - '#GE_E#') != $actionbar_text)"
               }
             },
             {
               "geyserevent_status_cauldron": {
                 "type": "label",
-                "text": "$status_cauldron",
+                "text": "('§dРеагенты: §a' + (('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - '~') + '  §7·§r  ' + '§f' + ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')))",
                 "localize": false,
                 "shadow": true,
                 "layer": 32,
                 "color": "$tool_tip_text",
                 "text_alignment": "left",
-                "visible": "(($raw - '#GE_C#') != $raw)"
+                "visible": "(($actionbar_text - '#GE_C#') != $actionbar_text)"
               }
             },
             {
               "geyserevent_status_summon": {
                 "type": "label",
-                "text": "$status_summon",
+                "text": "('§eБосс появится через' + '  §7·§r  ' + '§f' + ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')))",
                 "localize": false,
                 "shadow": true,
                 "layer": 32,
                 "color": "$tool_tip_text",
                 "text_alignment": "left",
-                "visible": "(($raw - '#GE_S#') != $raw)"
+                "visible": "(($actionbar_text - '#GE_S#') != $actionbar_text)"
               }
             },
             {
               "geyserevent_coords": {
                 "type": "label",
-                "text": "$coords_line",
+                "text": "('§7Координаты: §f' + ((($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';') - ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')) - ';'))",
                 "localize": false,
                 "shadow": true,
                 "layer": 32,
                 "color": "$tool_tip_text",
-                "text_alignment": "left"
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_') != $actionbar_text)"
               }
             }
           ]
         }
       }
-    ],
-    "$raw": "$actionbar_text",
-    "$tail": "($raw - '#GE_R#|' - '#GE_E#|' - '#GE_C#|' - '#GE_S#|')",
-    "$rest": "($tail - ('%.4s' * $tail + '|') - ('%.5s' * $tail + '|') - ('%.6s' * $tail + '|') - ('%.7s' * $tail + '|') - ('%.8s' * $tail + '|'))",
-    "$time": "($tail - $rest - '|' - '~')",
-    "$coords": "($rest - ('%.2s' * $rest + '|') - ('%.3s' * $rest + '|') - ('%.4s' * $rest + '|') - ('%.5s' * $rest + '|') - ('%.6s' * $rest + '|') - ('%.7s' * $rest + '|') - ('%.8s' * $rest + '|') - ('%.9s' * $rest + '|') - ('%.10s' * $rest + '|') - ('%.11s' * $rest + '|') - ('%.12s' * $rest + '|') - ('%.13s' * $rest + '|') - ('%.14s' * $rest + '|') - ('%.15s' * $rest + '|') - ('%.16s' * $rest + '|') - ('%.17s' * $rest + '|') - ('%.18s' * $rest + '|') - ('%.19s' * $rest + '|') - ('%.20s' * $rest + '|') - ('%.21s' * $rest + '|') - ('%.22s' * $rest + '|') - ('%.23s' * $rest + '|') - ('%.24s' * $rest + '|') - ('%.25s' * $rest + '|') - ('%.26s' * $rest + '|') - ('%.27s' * $rest + '|') - ('%.28s' * $rest + '|') - ('%.29s' * $rest + '|') - ('%.30s' * $rest + '|') - ('%.31s' * $rest + '|') - ('%.32s' * $rest + '|') - ('%.33s' * $rest + '|') - ('%.34s' * $rest + '|') - ('%.35s' * $rest + '|') - ('%.36s' * $rest + '|') - ('%.37s' * $rest + '|') - ('%.38s' * $rest + '|') - ('%.39s' * $rest + '|') - ('%.40s' * $rest + '|'))",
-    "$status": "($rest - $coords - '|' - '~')",
-    "$status_rift": "('§c❤ ' + $status + '  §7·§r  ' + '§f' + $time)",
-    "$status_excavation": "('§eКисточка: §a' + $status + '  §7·§r  ' + '§f' + $time)",
-    "$status_cauldron": "('§dРеагенты: §a' + $status + '  §7·§r  ' + '§f' + $time)",
-    "$status_summon": "('§e' + $status + '  §7·§r  ' + '§f' + $time)",
-    "$coords_line": "('§7Координаты: §f' + $coords)",
-    "visible": "(($raw - '#GE_') != $raw)"
+    ]
   },
   "geyserevent_hud_text_factory": {
     "type": "panel",
@@ -175,31 +164,7 @@
     }
   },
   "hud_actionbar_text": {
-    "type": "image",
-    "size": [
-      "100%c + 12px",
-      "100%c + 5px"
-    ],
-    "offset": [
-      0,
-      "50%-68px"
-    ],
-    "texture": "textures/ui/hud_tip_text_background",
-    "alpha": "((($actionbar_text - '#GE_') = $actionbar_text) ? @hud.anim_actionbar_text_background_alpha_out : 0)",
-    "controls": [
-      {
-        "actionbar_message": {
-          "type": "label",
-          "anchor_from": "center",
-          "anchor_to": "center",
-          "color": "$tool_tip_text",
-          "layer": 31,
-          "text": "$actionbar_text",
-          "localize": false,
-          "alpha": "((($actionbar_text - '#GE_') = $actionbar_text) ? @hud.anim_actionbar_text_alpha_out : 0)"
-        }
-      }
-    ]
+    "visible": "(($actionbar_text - '#GE_') = $actionbar_text)"
   },
   "root_panel": {
     "modifications": [

@@ -38,6 +38,68 @@ public class TopRightHudManager {
     public static final String HUD_MARKER_EXCAVATION = "#GE_E#";
     public static final String HUD_MARKER_CAULDRON = "#GE_C#";
 
+    /**
+     * Разделитель полей в тексте панели (ресурспак режет по нему).
+     * Во времени, статусе и координатах егё не бывает.
+     */
+    public static final String HUD_FIELD_SEP = ";";
+
+    /** Фиксированная ширина поля статуса. См. HUD_STATUS_BYTES в .packtools/make_hud.py. */
+    public static final int HUD_STATUS_BYTES = 24;
+
+    /** Фиксированная ширина поля времени (ММ:СС). См. TIME_BYTES в .packtools/make_hud.py. */
+    public static final int HUD_TIME_BYTES = 5;
+
+    /** Символ-заполнитель до фиксированной ширины (его же вычитает ресурспак). */
+    public static final String HUD_PAD = "~";
+
+    /**
+     * Собирает текст для action bar в формате ресурспака:
+     * {@code <маркер>;<статус, добит '~' до 24 байт>;<время ММ:СС>;<координаты>}.
+     *
+     * <p>ВАЖНО: статус и время — только ASCII. Неизвестно, считает ли '%.Ns'
+     * в моланге байты или символы; на ASCII это одно и то же, поэтому
+     * поля режутся верно в любом режиме. Слова рисует сам ресурспак.</p>
+     *
+     * @param marker маркер ивента (#GE_R#, #GE_E#, #GE_C#, #GE_S#)
+     * @param status значение статуса, только ASCII (например 3500/3500, 12, 5 или "" для призыва)
+     * @param time   время ММ:СС
+     * @param coords координаты ивента через пробел
+     */
+    public static String buildHudPayload(String marker, String status, String time, String coords) {
+        return marker + HUD_FIELD_SEP + padField(status, HUD_STATUS_BYTES) + HUD_FIELD_SEP
+                + padField(time, HUD_TIME_BYTES) + HUD_FIELD_SEP + (coords == null ? "" : coords);
+    }
+
+    /**
+     * Добивает или обрезает поле до точной ширины в байтах.
+     * Обрезка идёт по символам, чтобы не разрезать кириллицу пополам.
+     */
+    private static String padField(String value, int width) {
+        String text = value == null ? "" : value;
+        java.nio.charset.Charset utf8 = java.nio.charset.StandardCharsets.UTF_8;
+        if (text.getBytes(utf8).length > width) {
+            StringBuilder cut = new StringBuilder();
+            int len = 0;
+            for (int i = 0; i < text.length(); i++) {
+                int clen = String.valueOf(text.charAt(i)).getBytes(utf8).length;
+                if (len + clen > width) {
+                    break;
+                }
+                cut.append(text.charAt(i));
+                len += clen;
+            }
+            text = cut.toString();
+        }
+        StringBuilder sb = new StringBuilder(text);
+        int len = text.getBytes(utf8).length;
+        while (len < width) {
+            sb.append(HUD_PAD);
+            len++;
+        }
+        return sb.toString();
+    }
+
     /** Маркер для конкретного ивента (по нему ресурспак выбирает иконку). */
     public static String hudMarker(EventType type) {
         if (type == EventType.BEACH_EXCAVATION) {
@@ -320,13 +382,15 @@ public class TopRightHudManager {
         if (System.currentTimeMillis() < cornerHudSuppressedUntil) {
             return;
         }
-        String text = manager.buildEventCornerHudText();
-        if (text == null || text.isEmpty()) {
+        String status = manager.buildEventHudStatus();
+        String time = manager.buildEventHudTime();
+        if (status == null || time == null) {
             clearCornerHud();
             return;
         }
 
-        String payload = hudMarker(manager.getActiveEventType()) + "|" + text;
+        String payload = buildHudPayload(hudMarker(manager.getActiveEventType()), status, time,
+                manager.buildEventCoordsText());
         BedrockService bedrock = plugin.getBedrockService();
         boolean anySent = false;
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -368,8 +432,7 @@ public class TopRightHudManager {
         }
         // на время теста обычная панель ивента молчит, чтобы не перебивать тест
         suppressCornerHud(15_000L);
-        // Тот же формат, что и у настоящей панели: время~|статус~|координаты
-        String demo = "19:55~|3500/3500~|100 50 200";
+        // Тот же формат, что и у настоящей панели.
         new org.bukkit.scheduler.BukkitRunnable() {
             int ticksLeft = 300;
 
@@ -382,7 +445,7 @@ public class TopRightHudManager {
                 EventType testType = plugin.getRiftManager() != null && plugin.getRiftManager().isActive()
                         ? plugin.getRiftManager().getActiveEventType()
                         : EventType.INFERNAL_RIFT;
-                player.sendActionBar(hudMarker(testType) + "|" + demo);
+                player.sendActionBar(buildHudPayload(hudMarker(testType), "3500/3500", "19:55", "100 50 200"));
                 ticksLeft -= 10;
             }
         }.runTaskTimer(plugin, 0L, 10L);

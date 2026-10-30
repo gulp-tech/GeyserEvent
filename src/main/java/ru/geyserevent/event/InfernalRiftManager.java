@@ -91,7 +91,7 @@ public class InfernalRiftManager {
     private static final long TRACKED_ITEM_MAX_AGE_MILLIS = 360_000L;
 
     /**
-     * Символ-«страж» конца поля в тексте панели ивента (см. buildEventCornerHudText).
+     * Символ-заполнитель полей панели (см. TopRightHudManager.buildHudPayload).
      * Ресурспак отрезает поля action bar по нему, поэтому в данных его быть не должно.
      */
     public static final String HUD_FIELD_GUARD = "~";
@@ -1558,30 +1558,50 @@ public class InfernalRiftManager {
      * Название ивента и все цвета рисует сам пак, поэтому здесь только данные.
      * Отправляется раз в секунду, поэтому нагрузка на клиент нулевая.
      */
-    public String buildEventCornerHudText() {
+    /**
+     * Значение для поля «статус» панели ивента.
+     *
+     * <p>ВАЖНО: только ASCII (цифры, '/', пробел). Ресурспак режет поле
+     * операцией '%.Ns', а считает она байты или символы — неизвестно.
+     * На ASCII это одно и то же, поэтому панель работает всегда.
+     * Слова («Кисточка», «Готова», «Босс появится через») рисует сам ресурспак.</p>
+     */
+    public String buildEventHudStatus() {
         if (!active || defeated || riftCenterLocation == null) {
             return null;
         }
-        String timeStr = formatMinutesSeconds(getSecondsRemainingInEvent());
-        String coords = riftCenterLocation.getBlockX() + " " + riftCenterLocation.getBlockY() + " "
-                + riftCenterLocation.getBlockZ();
-
-        String status;
         if (activeEventType == EventType.BEACH_EXCAVATION) {
-            status = (brushReadyToClaim || brushCountdownSeconds <= 0)
-                    ? "Готова"
-                    : brushCountdownSeconds + "с";
-        } else if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
+            // 0 = кисточка готова (ресурспак покажет «Готова»), иначе — секунды до готовности
+            return (brushReadyToClaim || brushCountdownSeconds <= 0)
+                    ? "0"
+                    : String.valueOf(brushCountdownSeconds);
+        }
+        if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
             int nodes = plugin.getAlchemistSchematicManager() != null
                     ? plugin.getAlchemistSchematicManager().getActiveReagentCount()
                     : 0;
-            status = String.valueOf(nodes);
-        } else {
-            int curHp = (int) Math.ceil(this.bossCurrentHealth);
-            int maxHp = (int) Math.ceil(this.bossMaxHealth);
-            status = curHp + "/" + maxHp;
+            return String.valueOf(nodes);
         }
-        return timeStr + HUD_FIELD_GUARD + "|" + status + HUD_FIELD_GUARD + "|" + coords;
+        int curHp = (int) Math.ceil(this.bossCurrentHealth);
+        int maxHp = (int) Math.ceil(this.bossMaxHealth);
+        return curHp + "/" + maxHp;
+    }
+
+    /** Время до конца ивента в виде ММ:СС (всегда 5 символов). */
+    public String buildEventHudTime() {
+        if (!active || defeated || riftCenterLocation == null) {
+            return null;
+        }
+        return formatMinutesSeconds(getSecondsRemainingInEvent());
+    }
+
+    /** Координаты ивента для третьей строки панели. */
+    public String buildEventCoordsText() {
+        if (!active || defeated || riftCenterLocation == null) {
+            return "";
+        }
+        return riftCenterLocation.getBlockX() + " " + riftCenterLocation.getBlockY() + " "
+                + riftCenterLocation.getBlockZ();
     }
 
     /**

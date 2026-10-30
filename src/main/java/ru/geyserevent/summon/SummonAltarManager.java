@@ -593,9 +593,11 @@ public final class SummonAltarManager {
         if (bedrock == null) {
             return;
         }
-        String status = ritual.bossSpawned ? "\u0411\u043e\u0441\u0441 \u043f\u0440\u0438\u0437\u0432\u0430\u043d!" : "\u0411\u043e\u0441\u0441 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0447\u0435\u0440\u0435\u0437";
-        String payload = HUD_MARKER_SUMMON + "|" + formatTime(secondsLeft) + "~|" + status + "~|"
-                + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ();
+        // Слова «Босс появится через» рисует сам ресурспак,
+        // поэтому поле статуса пустое — от плагина нужны только ASCII-данные.
+        String coords = loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ();
+        String payload = ru.geyserevent.hud.TopRightHudManager.buildHudPayload(
+                HUD_MARKER_SUMMON, "", formatTime(secondsLeft), coords);
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player != null && player.isOnline() && bedrock.isBedrockPlayer(player)) {
                 player.sendActionBar(payload);

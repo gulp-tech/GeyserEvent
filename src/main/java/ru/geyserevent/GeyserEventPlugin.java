@@ -132,7 +132,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.9.27 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.9.28 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Временные ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");
