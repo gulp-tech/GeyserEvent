@@ -77,6 +77,30 @@ with zipfile.ZipFile(jar_path, "w", zipfile.ZIP_DEFLATED) as zf:
             full = os.path.join(root, file)
             zf.write(full, os.path.relpath(full, res_dir))
 
+# --- проверка YAML внутри jar: сломанный plugin.yml падает всем сервером ---
+def check_yaml(entry_name):
+    with zipfile.ZipFile(jar_path) as zf:
+        text = zf.read(entry_name).decode("utf-8")
+    try:
+        import yaml
+        data = yaml.safe_load(text)
+    except ImportError:
+        # без PyYAML: проверяем, что у каждой строки верхнего уровня есть ключ
+        for i, line in enumerate(text.splitlines(), 1):
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            if not line.startswith((" ", "\t", "-")) and ":" not in line:
+                raise SystemExit("ОШИБКА YAML: %s строка %d без ключа: %r"
+                                 % (entry_name, i, line))
+        print(entry_name, ": проверка без PyYAML пройдена")
+        return
+    if not isinstance(data, dict):
+        raise SystemExit("ОШИБКА YAML: " + entry_name)
+    print(entry_name, ": YAML валиден (ключей: %d)" % len(data))
+
+for entry in ("plugin.yml", "config.yml"):
+    check_yaml(entry)
+
 print("Built JAR size:", os.path.getsize(jar_path), "bytes")
 with zipfile.ZipFile(jar_path, "r") as zf:
     names = zf.namelist()
