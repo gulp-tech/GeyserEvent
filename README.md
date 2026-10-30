@@ -1,4 +1,4 @@
-# 🔥 GeyserEvent v1.9.26 — 4 анархических ивента для Purpur 26.2
+# 🔥 GeyserEvent v1.9.27 — 4 анархических ивента для Purpur 26.2
 
 Плагин с **тремя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»)
 и **постоянным ивентом** «Шахта Древних (Жила Жеод)» на координатах **`0 ~ 0`** мира `world2`.
@@ -14,10 +14,10 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.26)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.16.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.9.27)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.17.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/f52450bb-geyserevent/deluxemenus/events.yml |
-| **Релиз v1.9.26** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.26 |
+| **Релиз v1.9.27** | https://github.com/gulp-tech/GeyserEvent/releases/tag/v1.9.27 |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
 при запуске сервера (в `onLoad()`), поэтому старый тектурпак/модель рюкзака заменяются сами.
@@ -158,9 +158,9 @@ resourcepack:
   лежит ли ресурспак в `plugins/Geyser-Spigot/packs/`, идёт ли ивент сейчас.
 
 Если ресурспак не применился: перезапустите сервер (плагин кладёт пак сам при старте) и
-перезайдите в игру — Bedrock должен скачать новую версию пака (v1.16.0). Проверить можно
+перезайдите в игру — Bedrock должен скачать новую версию пака (v1.17.0). Проверить можно
 в настройках клиента: **Настройки → Глобальные ресурсы** — в списке должен быть
-«GeyserEvent Pack» и он должен быть активным (и стоять версия **1.16.0**; если версия
+«GeyserEvent Pack» и он должен быть активным (и стоять версия **1.17.0**; если версия
 старая — удалите пак из списка и перезайдите, сервер пришлёт его заново).
 
 ## 🆕 Что нового в v1.9.25 (призывные ивенты: алтарь призыва босса)
@@ -286,7 +286,7 @@ resourcepack:
 > Символы `icon-*` в `config.yml` остаются для чат-сообщений ивентов.
 
 **Как это сделано (и почему не лагает):**
-- Панель рисует **ресурспак** `GeyserEvent-Pack.mcpack` (v1.16.0) — он добавляет свой элемент
+- Панель рисует **ресурспак** `GeyserEvent-Pack.mcpack` (v1.17.0) — он добавляет свой элемент
   HUD в правый верхний угол экрана и работает через JSON-UI «добавлением» элемента,
   поэтому **никакие BossBar'u и родной HUD не ломаются** и не пропадают.
 - Плагин раз в секунду присылает Bedrock-игрокам одну строку (`action bar`) со служебным

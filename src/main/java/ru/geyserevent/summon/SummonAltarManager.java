@@ -58,6 +58,9 @@ public final class SummonAltarManager {
     /** Маркер панели в углу на время призыва (ресурспак рисует «ПРИЗЫВ БОССА»). */
     public static final String HUD_MARKER_SUMMON = "#GE_S#";
 
+    /** Показана ли сейчас панель призыва (чтобы убрать её после окончания). */
+    private boolean summonHudVisible = false;
+
     /** Ключ предмета-призывалки в PDC (если алтарь выдать игроку командой). */
     private final NamespacedKey altarItemKey;
 
@@ -416,6 +419,7 @@ public final class SummonAltarManager {
         }
         Ritual r = ritual;
         ritual = null;
+        stopSummonHud();
         InfernalRiftManager manager = plugin.getRiftManager();
         if (r.bossSpawned && manager != null && manager.isActive()) {
             manager.stopEvent(false);
@@ -465,8 +469,11 @@ public final class SummonAltarManager {
             ritual.noDamageSeconds = 0;
             ritual.noPlayersSeconds = 0;
             ritual.lastDamageMillis = System.currentTimeMillis();
+            // отсчёт кончился — дальше панелью владеет обычная панель ивента
+            stopSummonHud();
         } else {
             ritual = null;
+            stopSummonHud();
             removeAltar(r.altar);
             Bukkit.broadcastMessage(ColorUtil.color(
                     "&e\u253c &c\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u0441\u0442\u0440\u043e\u0438\u0442\u044c \u0430\u0440\u0435\u043d\u0443 \u0431\u043e\u0441\u0441\u0430 \u2012 \u043f\u0440\u0438\u0437\u044b\u0432 \u043e\u0442\u043c\u0435\u043d\u0451\u043d."));
@@ -491,6 +498,8 @@ public final class SummonAltarManager {
     private void tick() {
         PluginConfig cfg = plugin.getPluginConfig();
         if (ritual == null || !cfg.isSummonEnabled()) {
+            // призыва больше нет — страхуем панель на экране
+            stopSummonHud();
             return;
         }
         Location loc = ritual.altar.toLocation();
@@ -528,11 +537,13 @@ public final class SummonAltarManager {
             if (manager == null || !manager.isActive() || manager.isDefeated()) {
                 // босса убили или ивент закончился сам — призыв отработал
                 ritual = null;
+                stopSummonHud();
                 return;
             }
             LivingEntity boss = manager.getBossEntity();
             if (boss == null || !boss.isValid()) {
                 ritual = null;
+                stopSummonHud();
                 return;
             }
         }
@@ -560,6 +571,23 @@ public final class SummonAltarManager {
         }
     }
 
+    /**
+     * Убирает панель призыва с экрана Bedrock-игроков.
+     *
+     * <p>Ресурспак рисует панель, пока в action bar есть маркер #GE_S#.
+     * Если просто перестать слать payload и не отправить пустую строку,
+     * панель останется висеть на экране бесконечно.</p>
+     */
+    private void stopSummonHud() {
+        if (!summonHudVisible) {
+            return;
+        }
+        summonHudVisible = false;
+        if (plugin.getTopRightHudManager() != null) {
+            plugin.getTopRightHudManager().clearCornerHud();
+        }
+    }
+
     private void sendSummonHud(Location loc, int secondsLeft) {
         BedrockService bedrock = plugin.getBedrockService();
         if (bedrock == null) {
@@ -573,6 +601,9 @@ public final class SummonAltarManager {
                 player.sendActionBar(payload);
             }
         }
+        // панель на экране — её нужно будет убрать, когда отсчёт кончится
+        summonHudVisible = true;
+        plugin.getTopRightHudManager().noteCornerHudActive();
     }
 
     private int countPlayersNear(Location loc, double radius) {

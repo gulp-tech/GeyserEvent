@@ -55,6 +55,17 @@ public class TopRightHudManager {
     /** Показана ли сейчас панель ивента в углу (нужно, чтобы не слать лишние пакеты). */
     private boolean cornerHudActive = false;
 
+    /**
+     * Отмечает, что панель сейчас на экране у Bedrock-игроков, и её обязательно нужно убрать.
+     *
+     * <p>Панель призыва босса шлёт не этот менеджер, а SummonAltarManager напрямую,
+     * поэтому флаг должен быть общим: иначе после конца призыва никто не пошлёт пустую строку,
+     * и панель останется висеть на экране бесконечно.</p>
+     */
+    public void noteCornerHudActive() {
+        this.cornerHudActive = true;
+    }
+
     /** Результат последней попытки скопировать ресурспак в Geyser (для /rift hudinfo). */
     private String packInstallResult = "ещё не выполнялась";
 
@@ -119,6 +130,8 @@ public class TopRightHudManager {
             return;
         }
 
+        logExportedPackInfo(exportedMcpack);
+
         packInstallResult = "скопирован в " + String.join(", ", copied);
         plugin.getLogger().info("Ресурспак ивентов скопирован: " + String.join(", ", copied));
         plugin.getLogger().info("Bedrock-игроки получат его при подключении. Если пак не применился —");
@@ -128,6 +141,26 @@ public class TopRightHudManager {
         // папку packs движок читает один раз при старте, а так пак попадает в список
         // отправляемых клиентам в любом случае.
         GeyserPackBridge.subscribe(plugin, exportedMcpack);
+    }
+
+    /**
+     * Пишет в консоль версию и UUID пака, который получат клиент.
+     * Bedrock кэширует паки по UUID и НЕ перекачивает их, пока UUID тот же,
+     * поэтому эта строка — главная проверка, что игроки получили новый пак.
+     */
+    private void logExportedPackInfo(File packFile) {
+        try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(packFile)) {
+            java.util.zip.ZipEntry entry = zip.getEntry("manifest.json");
+            if (entry == null) {
+                return;
+            }
+            String json = new String(zip.getInputStream(entry).readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            String version = json.contains("\"version\"") ? json.split("\"version\"")[1].replaceAll("[^0-9,]", "").replace(",", ".") : "?";
+            String uuid = json.contains("\"uuid\"") ? json.split("\"uuid\"")[1].replaceAll("[^0-9a-fA-F-]", "") : "?";
+            plugin.getLogger().info("Пак для клиентов: версия " + version + ", UUID " + uuid);
+            plugin.getLogger().info("Если панель ивента у игрока старая — пусть перезайдёт в игру (клиент кэширует пак по UUID).");
+        } catch (Exception ignored) {
+        }
     }
 
     /** Крупная подсказка в консоль, если пак не удалось положить в packs автоматически. */
@@ -392,6 +425,7 @@ public class TopRightHudManager {
 
     /** BossBar ивента убран (v1.9.23) — оставлено для совместимости вызовов. */
     public void clearAllHud() {
-        // ничего не делаем: инфо-полоски больше нет
+        // панель ивента/призыва прячется, только пока в action bar есть наш маркер
+        clearCornerHud();
     }
 }
