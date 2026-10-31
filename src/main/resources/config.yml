@@ -268,19 +268,19 @@ abilities:
     enabled: true
     horizontal-strength: 1.65
     vertical-boost: 0.42
-    damage: 4.0
+    damage: 8.0
     slowness-ticks: 40
 
   push:
     enabled: true
     horizontal-strength: 2.05
     vertical-boost: 0.65
-    damage: 6.0
+    damage: 10.0
 
   gather:
     enabled: true
     distance-in-front: 3.5
-    damage: 5.0
+    damage: 8.0
     slowness-ticks: 60
 
 # Награды за топ-3 по нанесённому боссу урону (выдаются, когда Адский Разлом побеждён)
@@ -682,12 +682,15 @@ alien:
   boss-type: "EVOKER"
   # Имя: %hp% — текущее HP, %max_hp% — максимум
   boss-name: "&5&lПришелец-Владыка &8[&d%hp%&7/&d%max_hp% ❤&8]"
-  boss-health: 2500.0
-  boss-damage: 9.0
+  boss-health: 12000.0
+  boss-damage: 18.0
   # Размер модели (1.0 — ванильный)
-  boss-scale: 1.25
+  boss-scale: 1.35
   boss-movement-speed: 0.32
-  boss-knockback-resistance: 0.8
+  boss-knockback-resistance: 1.0
+  # Броня босса: нетэрит-броня по всем слотам (бессмертная, не выпадает).
+  # Даёт ~10 очков брони — урон игрока заметно падает.
+  boss-armor: true
   # Предмет в руке босса (AIR — без оружия)
   boss-weapon: "AIR"
 
@@ -697,14 +700,14 @@ alien:
     # Тип моба: VEX (по умолчанию, летают), ZOGLIN, VINDICATOR, PILLAGER...
     type: "VEX"
     name: "&a&lМалый пришелец &7[%hp% ❤]"
-    health: 40.0
-    damage: 5.0
-    scale: 0.85
+    health: 120.0
+    damage: 12.0
+    scale: 1.0
     weapon: "AIR"
     # Как часто звать подкрепление (чем меньше HP босса, тем чаще)
-    interval-seconds: 25
-    count-per-wave: 3
-    max-active: 8
+    interval-seconds: 20
+    count-per-wave: 4
+    max-active: 10
     trigger-radius: 20.0
 
   # Интервал способностей босса (pull/push/gather из общего раздела abilities)
@@ -715,14 +718,29 @@ alien:
     enabled: true
     # Сколько секунд сундуки доступны после убийства босса (затем площадка откатывается)
     loot-time-seconds: 180
-    # Сколько раз кидать кубик на предмет в каждом сундуке
-    items-per-chest: 5
+    # Сколько раз кидать кубик на предмет в каждом сундуке (помимо базы)
+    rolls-per-chest: 8
     # Смещения сундуков от центра ивента (x y z) — 4 пьедестала схемы
     offsets:
       - "0 2 9"
       - "9 2 0"
       - "0 2 -9"
       - "-9 2 0"
+    # ГАРАНТИРОВАННЫЙ базовый лут: эти предметы ВСЕГДА есть в каждом сундуке
+    # (не зависят от шансов и роллов). Хватит, чтобы лут никогда не был пустым.
+    base-loot:
+      - material: "IRON_INGOT"
+        min: 3
+        max: 6
+      - material: "GOLD_INGOT"
+        min: 2
+        max: 4
+      - material: "EMERALD"
+        min: 2
+        max: 4
+      - material: "DIAMOND"
+        min: 1
+        max: 2
     # Лут: material (материал), min/max (количество), chance (шанс в %),
     # name (название предмета), lore (строки описания)
     loot:

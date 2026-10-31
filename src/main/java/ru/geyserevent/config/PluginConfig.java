@@ -131,6 +131,7 @@ public class PluginConfig {
     private double alienBossMovementSpeed;
     private double alienBossKnockbackResistance;
     private Material alienBossWeapon;
+    private boolean alienBossArmorEnabled;
     private boolean alienMinionsEnabled;
     private EntityType alienMinionType;
     private String alienMinionName;
@@ -148,6 +149,7 @@ public class PluginConfig {
     private int alienChestLootSeconds;
     private final List<int[]> alienChestOffsets = new ArrayList<>();
     private final List<AlienLootItem> alienChestLoot = new ArrayList<>();
+    private final List<AlienLootItem> alienChestBaseLoot = new ArrayList<>();
     private boolean alienRewardsEnabled;
     private final List<String> alienSpawnLines = new ArrayList<>();
     private final List<String> alienDelayActiveLines = new ArrayList<>();
@@ -630,32 +632,33 @@ public class PluginConfig {
         this.alienBossType = entityType(cfg.getString("alien.boss-type", "EVOKER"), EntityType.EVOKER);
         this.alienBossName = ColorUtil.color(cfg.getString("alien.boss-name",
                 "&5&lПришелец-Владыка &8[&d%hp%&7/&d%max_hp% ❤&8]"));
-        this.alienBossHealth = Math.max(50.0, cfg.getDouble("alien.boss-health", 2500.0));
-        this.alienBossDamage = Math.max(1.0, cfg.getDouble("alien.boss-damage", 9.0));
-        this.alienBossScale = Math.max(0.3, cfg.getDouble("alien.boss-scale", 1.25));
+        this.alienBossHealth = Math.max(50.0, cfg.getDouble("alien.boss-health", 12000.0));
+        this.alienBossDamage = Math.max(1.0, cfg.getDouble("alien.boss-damage", 18.0));
+        this.alienBossScale = Math.max(0.3, cfg.getDouble("alien.boss-scale", 1.35));
         this.alienBossMovementSpeed = Math.max(0.05, cfg.getDouble("alien.boss-movement-speed", 0.32));
-        this.alienBossKnockbackResistance = Math.min(1.0, Math.max(0.0, cfg.getDouble("alien.boss-knockback-resistance", 0.8)));
+        this.alienBossKnockbackResistance = Math.min(1.0, Math.max(0.0, cfg.getDouble("alien.boss-knockback-resistance", 1.0)));
+        this.alienBossArmorEnabled = cfg.getBoolean("alien.boss-armor", true);
         this.alienBossWeapon = material(cfg.getString("alien.boss-weapon", "AIR"), Material.AIR);
 
         ConfigurationSection minions = cfg.getConfigurationSection("alien.minions");
-        this.alienMinionsEnabled = minions != null && minions.getBoolean("enabled", true);
+        this.alienMinionsEnabled = minions == null || minions.getBoolean("enabled", true);
         this.alienMinionType = entityType(minions != null ? minions.getString("type", "VEX") : "VEX", EntityType.VEX);
         this.alienMinionName = ColorUtil.color(minions != null ? minions.getString("name",
                 "&a&lМалый пришелец &7[%hp% ❤]") : "&a&lМалый пришелец &7[%hp% ❤]");
-        this.alienMinionHealth = minions != null ? Math.max(1.0, minions.getDouble("health", 40.0)) : 40.0;
-        this.alienMinionDamage = minions != null ? Math.max(0.0, minions.getDouble("damage", 5.0)) : 5.0;
-        this.alienMinionScale = minions != null ? Math.max(0.2, minions.getDouble("scale", 0.85)) : 0.85;
+        this.alienMinionHealth = minions != null ? Math.max(1.0, minions.getDouble("health", 120.0)) : 120.0;
+        this.alienMinionDamage = minions != null ? Math.max(0.0, minions.getDouble("damage", 12.0)) : 12.0;
+        this.alienMinionScale = minions != null ? Math.max(0.2, minions.getDouble("scale", 1.0)) : 1.0;
         this.alienMinionWeapon = material(minions != null ? minions.getString("weapon", "AIR") : "AIR", Material.AIR);
-        this.alienMinionIntervalSeconds = minions != null ? Math.max(3, minions.getInt("interval-seconds", 25)) : 25;
-        this.alienMinionCountPerWave = minions != null ? Math.max(1, minions.getInt("count-per-wave", 3)) : 3;
-        this.alienMaxActiveAlienMinions = minions != null ? Math.max(1, minions.getInt("max-active", 8)) : 8;
+        this.alienMinionIntervalSeconds = minions != null ? Math.max(3, minions.getInt("interval-seconds", 20)) : 20;
+        this.alienMinionCountPerWave = minions != null ? Math.max(1, minions.getInt("count-per-wave", 4)) : 4;
+        this.alienMaxActiveAlienMinions = minions != null ? Math.max(1, minions.getInt("max-active", 10)) : 10;
         this.alienMinionTriggerRadius = minions != null ? Math.max(4.0, minions.getDouble("trigger-radius", 20.0)) : 20.0;
 
         this.alienAbilityIntervalSeconds = Math.max(3, cfg.getInt("alien.ability-interval-seconds", 14));
 
         ConfigurationSection chests = cfg.getConfigurationSection("alien.chests");
-        this.alienChestsEnabled = chests != null && chests.getBoolean("enabled", true);
-        this.alienChestItemsPerChest = chests != null ? Math.max(1, chests.getInt("items-per-chest", 5)) : 5;
+        this.alienChestsEnabled = chests == null || chests.getBoolean("enabled", true);
+        this.alienChestItemsPerChest = chests != null ? Math.max(1, chests.getInt("rolls-per-chest", 8)) : 8;
         this.alienChestLootSeconds = toInt(cfg.get("alien.chests.loot-time-seconds"), 180);
         this.alienChestOffsets.clear();
         if (chests != null) {
@@ -671,6 +674,30 @@ public class PluginConfig {
             this.alienChestOffsets.add(new int[]{9, 2, 0});
             this.alienChestOffsets.add(new int[]{0, 2, -9});
             this.alienChestOffsets.add(new int[]{-9, 2, 0});
+        }
+        this.alienChestBaseLoot.clear();
+        if (chests != null) {
+            for (Map<?, ?> entry : chests.getMapList("base-loot")) {
+                Material mat = material(String.valueOf(entry.get("material")), Material.IRON_INGOT);
+                int min = toInt(entry.get("min"), 1);
+                int max = toInt(entry.get("max"), min);
+                String name = entry.get("name") != null ? ColorUtil.color(String.valueOf(entry.get("name"))) : null;
+                List<String> lore = new ArrayList<>();
+                Object rawLore = entry.get("lore");
+                if (rawLore instanceof List<?> list) {
+                    for (Object line : list) {
+                        lore.add(ColorUtil.color(String.valueOf(line)));
+                    }
+                }
+                this.alienChestBaseLoot.add(new AlienLootItem(mat, Math.max(1, min),
+                        Math.max(1, Math.max(min, max)), 100.0, name, lore));
+            }
+        }
+        if (this.alienChestBaseLoot.isEmpty()) {
+            this.alienChestBaseLoot.add(new AlienLootItem(Material.IRON_INGOT, 3, 6, 100.0, null, List.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem(Material.GOLD_INGOT, 2, 4, 100.0, null, List.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem(Material.EMERALD, 2, 4, 100.0, null, List.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem(Material.DIAMOND, 1, 2, 100.0, null, List.of()));
         }
         this.alienChestLoot.clear();
         if (chests != null) {
@@ -794,6 +821,7 @@ public class PluginConfig {
     public double getAlienBossMovementSpeed() { return alienBossMovementSpeed; }
     public double getAlienBossKnockbackResistance() { return alienBossKnockbackResistance; }
     public Material getAlienBossWeapon() { return alienBossWeapon; }
+    public boolean isAlienBossArmorEnabled() { return alienBossArmorEnabled; }
     public boolean isAlienMinionsEnabled() { return alienMinionsEnabled; }
     public EntityType getAlienMinionType() { return alienMinionType; }
     public String getAlienMinionName() { return alienMinionName; }
@@ -811,6 +839,7 @@ public class PluginConfig {
     public int getAlienChestLootSeconds() { return alienChestLootSeconds; }
     public List<int[]> getAlienChestOffsets() { return alienChestOffsets; }
     public List<AlienLootItem> getAlienChestLoot() { return alienChestLoot; }
+    public List<AlienLootItem> getAlienChestBaseLoot() { return alienChestBaseLoot; }
     public boolean isAlienRewardsEnabled() { return alienRewardsEnabled; }
     public List<String> getAlienSpawnLines() { return alienSpawnLines; }
     public List<String> getAlienDelayActiveLines() { return alienDelayActiveLines; }

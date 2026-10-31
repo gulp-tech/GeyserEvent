@@ -213,6 +213,11 @@ public final class AlienInvasionManager {
             boss.getEquipment().setItemInMainHandDropChance(0.0f);
         }
 
+        // Броня босса: нетэрит-броня по всем слотам (бессмертная, без дропов).
+        if (cfg.isAlienBossArmorEnabled() && boss.getEquipment() != null) {
+            equipArmor(boss);
+        }
+
         updateBossName(boss);
 
         world.playSound(loc, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.6f);
@@ -500,8 +505,46 @@ public final class AlienInvasionManager {
         return opened;
     }
 
+    /**
+     * Надевает на босса нетэрит-броню по всем слотам: предметы бессмертные,
+     * дроп с них — ноль (броня остаётся на боссе при смерти).
+     */
+    private void equipArmor(LivingEntity boss) {
+        org.bukkit.inventory.EntityEquipment equip = boss.getEquipment();
+        if (equip == null) {
+            return;
+        }
+        equip.setHelmet(unbreakableArmor(Material.NETHERITE_HELMET));
+        equip.setHelmetDropChance(0.0f);
+        equip.setChestplate(unbreakableArmor(Material.NETHERITE_CHESTPLATE));
+        equip.setChestplateDropChance(0.0f);
+        equip.setLeggings(unbreakableArmor(Material.NETHERITE_LEGGINGS));
+        equip.setLeggingsDropChance(0.0f);
+        equip.setBoots(unbreakableArmor(Material.NETHERITE_BOOTS));
+        equip.setBootsDropChance(0.0f);
+    }
+
+    private static org.bukkit.inventory.ItemStack unbreakableArmor(Material material) {
+        org.bukkit.inventory.ItemStack armor = new org.bukkit.inventory.ItemStack(material);
+        org.bukkit.inventory.meta.ItemMeta meta = armor.getItemMeta();
+        if (meta != null) {
+            meta.setUnbreakable(true);
+            armor.setItemMeta(meta);
+        }
+        return armor;
+    }
+
     private void fillChest(org.bukkit.inventory.Inventory inventory, int rolls,
                            List<PluginConfig.AlienLootItem> loot) {
+        // Гарантированный базовый лут: в каждом сундуке обязательно есть хотя бы
+        // один предмет из списка base-loot (не зависит от шансов и роллов).
+        for (PluginConfig.AlienLootItem item : plugin.getPluginConfig().getAlienChestBaseLoot()) {
+            int min = item.minAmount();
+            int max = Math.max(min, item.maxAmount());
+            int amount = min + (max > min ? random.nextInt(max - min + 1) : 0);
+            org.bukkit.inventory.ItemStack stack = new org.bukkit.inventory.ItemStack(item.material(), Math.max(1, amount));
+            inventory.addItem(stack);
+        }
         if (loot.isEmpty() || inventory == null) {
             return;
         }

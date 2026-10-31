@@ -326,3 +326,55 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ---------------------------------------------------------------- превью текстур
+def render_texture_preview():
+    """Крупным планом показывает лицо и спину пришельца + текстуры блоков."""
+    import yaml
+    from make_alien_textures import read_png
+
+    W2, H2 = 900, 300
+    pix = [[(14, 16, 26, 255) for _ in range(W2)] for _ in range(H2)]
+    for _ in range(160):
+        x, y = random.Random(7).randrange(W2), random.Random(7).randrange(H2)
+        b = random.Random(x * 31 + y).randrange(60, 140)
+        pix[y][x] = (b, b, min(255, b + 20), 255)
+
+    ev = os.path.join(REPO, "src", "main", "resources", "resourcepack-vanilla",
+                      "textures", "entity", "illager", "evoker.png")
+    w, h, px = read_png(ev)
+
+    blocks = [
+        ("ЛИЦО (пасть + глаза)", (8, 8, 15, 17), (150, 255, 90)),
+        ("СПИНА (руки сзади)", (30, 26, 37, 37), (120, 255, 190)),
+        ("ЗАТЫЛОК", (16, 8, 23, 17), (150, 170, 200)),
+    ]
+    x = 30
+    scale = 16
+    for title, (x0, y0, x1, y1), tint in blocks:
+        bw, bh = x1 - x0 + 1, y1 - y0 + 1
+        for yy in range(bh * scale):
+            for xx in range(bw * scale):
+                c = px[y0 + yy // scale][x0 + xx // scale]
+                X, Y = x + xx, 70 + yy
+                if 0 <= X < W2 and 0 <= Y < H2:
+                    pix[Y][X] = (c[0], c[1], c[2], 255)
+        for xx in range(bw * scale + 2):
+            for Y in (69, 70 + bh * scale):
+                if 0 <= x - 1 + xx < W2 and 0 <= Y < H2:
+                    pix[Y][x - 1 + xx] = (70, 90, 110, 255)
+        for yy in range(bh * scale + 2):
+            for X in (x - 1, x + bw * scale):
+                if 0 <= X < W2 and 0 <= 69 + yy < H2:
+                    pix[69 + yy][X] = (70, 90, 110, 255)
+        draw_text(pix, x, 40, title, tint, scale=2)
+        draw_text(pix, x, 70 + bh * scale + 12, "%dX%d ПИКСЕЛЕЙ" % (bw, bh), (110, 130, 150), scale=1)
+        x += bw * scale + 60
+
+    out = os.path.join(REPO, "alien_textures_preview.png")
+    size = write_png(out, W2, H2, pix)
+    print("написано:", out, size, "байт")
+
+
+render_texture_preview()

@@ -192,16 +192,16 @@ def alienify(pixels, stops, strength=0.72, glow=None, glow_thresh=0.82, glow_mix
 
 # Палитры пришельцев: тень -> полутон -> свет
 ALIEN_BOSS_STOPS = [
-    (0.00, (10, 16, 20)),
-    (0.35, (26, 52, 54)),
-    (0.70, (72, 122, 112)),
-    (1.00, (206, 240, 226)),
+    (0.00, (8, 14, 18)),      # тёмный корпус корабля
+    (0.35, (22, 48, 52)),     # металл
+    (0.70, (74, 132, 118)),   # броня
+    (1.00, (208, 244, 226)),  # свет
 ]
 ALIEN_MINION_STOPS = [
-    (0.00, (12, 14, 18)),
-    (0.35, (34, 48, 52)),
-    (0.70, (86, 116, 108)),
-    (1.00, (186, 214, 204)),
+    (0.00, (10, 14, 14)),
+    (0.35, (28, 46, 44)),
+    (0.70, (78, 118, 96)),
+    (1.00, (188, 224, 196)),
 ]
 ALIEN_FANG_STOPS = [
     (0.00, (14, 10, 22)),
@@ -212,11 +212,141 @@ ALIEN_FANG_STOPS = [
 GLOW_CYAN = (96, 255, 226)
 GLOW_VIOLET = (186, 128, 255)
 
+# Цвета «страшного» пришельца
+MAW_DARK = (52, 6, 8, 255)        # глубину пасти
+MAW_RED = (128, 20, 18, 255)      # края пасти
+TOOTH = (232, 228, 210, 255)      # зубы
+EYE_GLOW = (150, 255, 90, 255)    # светящиеся глаза
+EYE_SOCKET = (10, 12, 10, 255)
+CLAW_GLOW = (120, 255, 190, 255)  # когти дополнительных рук
+ARM_DARK = (16, 30, 32, 255)      # дополнительные руки
+ARM_LIGHT = (58, 104, 96, 255)
+
+# ------------------------------------------------------------------ UV-раскладка
+# Точные прямоугольники граней из моделей Mojang/bedrock-samples
+# (resource_pack/models/entity/evoker.geo.json и vex.geo.json):
+#   куб развёрнут как up/down + 4 стороны, стороны идут по порядку
+#   east, south(лицо), north(спина), west.
+EVOKER_UV = {
+    "face":       (8, 8, 15, 17),    # лицо 8x10
+    "head_back":  (16, 8, 23, 17),   # затылок
+    "body_back":  (30, 26, 37, 37),  # спина корпуса 8x12
+    "skirt_back": (14, 44, 21, 61),  # спина подола 8x18
+    "arm_back":   (48, 50, 51, 61),  # спина рук 4x12
+}
+VEX_UV = {
+    "face": (5, 5, 9, 9),            # лицо 5x5
+    "body": (2, 12, 7, 22),
+}
+
+
+def _put(px, x, y, color):
+    """Ставит пиксель, приводя цвет к RGBA (защита от 3-компонентных кортежей)."""
+    if 0 <= y < len(px) and 0 <= x < len(px[0]):
+        if len(color) == 3:
+            color = (color[0], color[1], color[2], 255)
+        px[y][x] = color
+
+
+def _rect(px, box, color):
+    """Заливает прямоугольник (x0, y0, x1, y1) цветом color."""
+    x0, y0, x1, y1 = box
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            _put(px, x, y, color)
+
+
+def _hline(px, x0, x1, y, color):
+    for x in range(x0, x1 + 1):
+        _put(px, x, y, color)
+
+
+def paint_boss_face(px):
+    """Страшная пасть + светящиеся глаза на лице пришельца (x8-15, y8-17)."""
+    x0, y0, x1, y1 = EVOKER_UV["face"]
+    w = x1 - x0 + 1                       # 8
+    mid = x0 + w // 2                     # центр лица
+
+    # 1. Тёмные глазницы и светящиеся глаза (2x2, как в ванильной раскладке)
+    for ex in (x0 + 1, x1 - 2):           # левый и правый глаз
+        _rect(px, (ex, y0 + 4, ex + 1, y0 + 4), EYE_SOCKET)      # обводка сверху
+        _rect(px, (ex, y0 + 5, ex + 1, y0 + 5), EYE_GLOW)        # свечение
+        _put(px, ex, y0 + 6, EYE_SOCKET)
+        _put(px, ex + 1, y0 + 6, EYE_SOCKET)
+
+    # 2. Брови-гребни
+    _hline(px, x0 + 1, x0 + 2, y0 + 3, (30, 44, 42))
+    _hline(px, x1 - 2, x1 - 1, y0 + 3, (30, 44, 42))
+
+    # 3. ПАСТЬ: широкая, с зубами, занимает низ лица
+    maw_x0, maw_x1 = x0 + 1, x1 - 1
+    _rect(px, (maw_x0, y0 + 6, maw_x1, y0 + 6), MAW_RED)        # верхняя губа
+    _rect(px, (maw_x0, y0 + 7, maw_x1, y0 + 7), MAW_DARK)       # зубы 1-й ряд
+    for x in range(maw_x0, maw_x1 + 1, 2):
+        _put(px, x, y0 + 7, TOOTH)
+    _rect(px, (maw_x0, y0 + 8, maw_x1, y0 + 8), MAW_DARK)       # зубы 2-й ряд
+    for x in range(maw_x0 + 1, maw_x1 + 1, 2):
+        _put(px, x, y0 + 8, TOOTH)
+    _rect(px, (maw_x0, y0 + 9, maw_x1, y0 + 9), MAW_RED)        # нижняя губа
+
+    # 4. Клыки по углам пасти
+    _put(px, maw_x0, y0 + 7, TOOTH)
+    _put(px, maw_x1, y0 + 7, TOOTH)
+    _put(px, maw_x0, y0 + 8, TOOTH)
+    _put(px, maw_x1, y0 + 8, TOOTH)
+
+    # 5. Трещина по лбу (страшный шрам)
+    for i, y in enumerate(range(y0, y0 + 3)):
+        _put(px, mid - 1 + (i % 2), y, (96, 20, 20))
+
+
+def paint_boss_back_arms(px):
+    """Две дополнительные руки на спине пришельца (спина корпуса x30-37, y26-37)."""
+    x0, y0, x1, y1 = EVOKER_UV["body_back"]
+    # правая и левая дополнительные руки по краям спины, спина остаётся видна
+    arms = [(x0, x0 + 2), (x1 - 2, x1)]
+    for ax0, ax1 in arms:
+        # плечо
+        _rect(px, (ax0, y0, ax1, y0 + 1), ARM_LIGHT)
+        # предплечье
+        _rect(px, (ax0, y0 + 2, ax1, y0 + 8), ARM_DARK)
+        # кисть + когти
+        _rect(px, (ax0, y0 + 9, ax1, y0 + 10), ARM_LIGHT)
+        for x in range(ax0, ax1 + 1):
+            _put(px, x, y0 + 11, CLAW_GLOW)
+        # металлический блеск
+        for y in range(y0 + 2, y0 + 9, 3):
+            _put(px, ax0, y, ARM_LIGHT)
+    # позвоночные пластины по центру спины
+    for y in range(y0 + 1, y1, 2):
+        _put(px, x0 + 3, y, (40, 76, 70))
+        _put(px, x0 + 4, y, (40, 76, 70))
+
+
+def paint_minion_face(px):
+    """Два светящихся глаза и тёмный рот малому пришельцу (векс, лицо x5-9 y5-9).
+
+    Лицо векса всего 5x5: глаза — две отдельные светящиеся точки (как у
+    ванильного векса, но кислотного цвета), рот — на нижней строке лица.
+    """
+    x0, y0, x1, y1 = VEX_UV["face"]
+    # Тёмные глазницы: левая, центральная и правая колонки лица
+    _rect(px, (x0, y0 + 2, x0, y0 + 3), EYE_SOCKET)
+    _rect(px, (x0 + 2, y0 + 2, x0 + 2, y0 + 3), EYE_SOCKET)
+    _rect(px, (x1, y0 + 2, x1, y0 + 3), EYE_SOCKET)
+    # Светящиеся глаза — одна точка на каждый глаз (x6 и x8, как у ванильного векса)
+    _put(px, x0 + 1, y0 + 2, EYE_GLOW)
+    _put(px, x0 + 1, y0 + 3, EYE_GLOW)
+    _put(px, x1 - 1, y0 + 2, EYE_GLOW)
+    _put(px, x1 - 1, y0 + 3, EYE_GLOW)
+    # тёмный рот на нижней строке лица
+    _hline(px, x0 + 1, x1 - 1, y1, (30, 12, 14))
+
 
 def make_entity_textures():
+    """Перекрашивает ванильные текстуры под пришельцев и дорисовывает детали."""
     made = []
     jobs = [
-        # (ванильный файл, путь в паке, стопы, свечение, сила перекраски)
         ("evoker.png", os.path.join("illager", "evoker.png"), ALIEN_BOSS_STOPS, GLOW_CYAN, 0.74),
         ("fangs.png", os.path.join("illager", "fangs.png"), ALIEN_FANG_STOPS, GLOW_VIOLET, 0.70),
         ("vex.png", os.path.join("vex", "vex.png"), ALIEN_MINION_STOPS, GLOW_CYAN, 0.74),
@@ -224,11 +354,16 @@ def make_entity_textures():
     for src, rel, stops, glow, strength in jobs:
         w, h, px = read_png(os.path.join(VANILLA, src))
         out = alienify(px, stops, strength=strength, glow=glow)
+        if src == "evoker.png":
+            paint_boss_face(out)        # страшная пасть + светящиеся глаза
+            paint_boss_back_arms(out)   # дополнительные руки на спине
+        elif src == "vex.png":
+            paint_minion_face(out)      # светящиеся глаза малому пришельцу
         dest = os.path.join(OUT_ENTITY, rel)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         size = write_png_rgba(dest, w, h, out)
         made.append((rel, size))
-        print("%-34s %5d bytes (%dx%d, перекрашено)" % (rel, size, w, h))
+        print("%-34s %5d bytes (%dx%d)" % (rel, size, w, h))
     return made
 
 
