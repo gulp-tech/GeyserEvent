@@ -63,6 +63,22 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
             }
 
             case "delay", "time", "info" -> {
+                // Ивент «Вторжение Пришельцев» идёт в своём менеджере
+                if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()
+                        && plugin.getAlienInvasionManager().getCenterLocation() != null) {
+                    var alien = plugin.getAlienInvasionManager();
+                    for (String line : cfg.getAlienDelayActiveLines()) {
+                        sender.sendMessage(ColorUtil.color(line
+                                .replace("%hp%", String.valueOf((int) Math.ceil(alien.getBossCurrentHealth())))
+                                .replace("%max_hp%", String.valueOf((int) Math.ceil(alien.getBossMaxHealth())))
+                                .replace("%remaining%", ColorUtil.formatDuration(alien.getSecondsRemaining()))
+                                .replace("%time%", ColorUtil.formatDuration(alien.getSecondsRemaining()))
+                                .replace("%x%", String.valueOf(alien.getCenterLocation().getBlockX()))
+                                .replace("%y%", String.valueOf(alien.getCenterLocation().getBlockY()))
+                                .replace("%z%", String.valueOf(alien.getCenterLocation().getBlockZ()))));
+                    }
+                    return true;
+                }
                 if (manager.isActive() && manager.getRiftCenterLocation() != null) {
                     List<String> lines = switch (manager.getActiveEventType()) {
                         case BEACH_EXCAVATION -> cfg.getExcavationDelayActiveLines();

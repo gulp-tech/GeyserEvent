@@ -11,6 +11,22 @@
   Если панель будут возвращать: `python3 .packtools/make_hud.py` и вернуть в `build_pack.py`
   добавление `entries["ui/hud_screen.json"]` и снятие удаления файла из базового пака.
 
+## Ивент «Вторжение Пришельцев» (v1.20.0)
+
+`textures/blocks/geyserevent/alien_*.png` — четыре текстуры 16×16 корабля пришельцев
+(обшивка / сплав / энерго-ядро / био-масса), ~0.9 КБ всего, и `textures/entity/`
+с перекрашенными Эвокером (босс) и Вексом (малые пришельцы).
+
+```bash
+python3 .packtools/make_alien_textures.py   # перегенерировать 4 блока + 3 entity-текстуры
+python3 .packtools/make_alien_schematic.py  # перегенерировать schematics/alien_landing.schem.yml (25x25, 607 блоков)
+```
+
+Блоки-носители (`dark_prismarine`, `purpur_block`, `conduit`, `end_stone_bricks`) намеренно
+не используются в схемах других ивентов, поэтому переопределение их текстур видно только
+на посадочной площадке пришельцев. Тип босса/приспешников, статы, сундуки и лут —
+в `config.yml` → секция `alien`.
+
 ## Блоки призыва босса (v1.16.0)
 
 `textures/blocks/geyserevent/*.png` — пять текстур 16×16 (алтарь + 4 пилона),
@@ -23,6 +39,8 @@
 
 ```bash
 python3 .packtools/make_summon_textures.py  # перегенерировать текстуры блоков призыва (16×16 PNG)
+python3 .packtools/make_alien_textures.py   # текстуры корабля и пришельцев (v1.20.0)
+python3 .packtools/make_alien_schematic.py  # схема-посадка пришельцев 25x25 (v1.20.0)
 python3 .packtools/make_hud.py              # перегенерировать ui/hud_screen.json
 python3 .packtools/build_pack.py            # собрать GeyserEvent-Pack.mcpack (+ копия в src/main/resources/resourcepack/)
 python3 .packtools/build_jar.py             # собрать GeyserEvent-1.0.0.jar (ECJ)

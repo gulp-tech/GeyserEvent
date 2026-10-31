@@ -150,6 +150,9 @@ public class InfernalRiftManager {
                 if (active || !plugin.getPluginConfig().isAutoStart()) {
                     return;
                 }
+                if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
+                    return;
+                }
                 long now = System.currentTimeMillis() / 1000L;
                 if (now >= nextAutoStartEpochSeconds) {
                     int onlineBedrock = plugin.getBedrockService().getOnlineBedrockCount();
@@ -571,6 +574,16 @@ public class InfernalRiftManager {
                                 boolean fromSummonAltar) {
         if (targetCenter == null || targetCenter.getWorld() == null) {
             return false;
+        }
+        // Ивент «Вторжение Пришельцев» ведёт свой менеджер (своя схема и свой босс)
+        if (type == EventType.ALIEN_INVASION) {
+            if (plugin.getAlienInvasionManager() == null) {
+                return false;
+            }
+            if (active) {
+                stopEvent(false);
+            }
+            return plugin.getAlienInvasionManager().startEvent(targetCenter, durationSecondsOverride);
         }
         if (active) {
             stopEvent(false);
@@ -1560,11 +1573,7 @@ public class InfernalRiftManager {
             shownOnPersonalBar.addAll(bar.getPlayers());
         }
 
-        Location baseLoc = (active && riftCenterLocation != null && riftCenterLocation.getWorld() != null)
-                ? riftCenterLocation
-                : (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()
-                ? plugin.getAncientMineManager().getCenterLocation()
-                : null);
+        Location baseLoc = resolveGpsBaseLocation();
 
         if (baseLoc == null || baseLoc.getWorld() == null) {
             return;
@@ -1594,9 +1603,10 @@ public class InfernalRiftManager {
                 continue;
             }
 
+            Location alienBossLoc = getAlienGpsTarget();
             Location targetLoc = (active && activeEventType == EventType.INFERNAL_RIFT && getBossEntity() != null)
                     ? getBossEntity().getLocation()
-                    : baseLoc;
+                    : (alienBossLoc != null ? alienBossLoc : baseLoc);
             double dist = player.getLocation().distance(targetLoc);
 
             if (dist > arrivalDist + 1.5) {
@@ -1644,6 +1654,35 @@ public class InfernalRiftManager {
         }
     }
 
+    /**
+     * Базовая точка GPS: активный ивент Разлома → ивент пришельцев → «Шахта Древних».
+     * Локатор один на всех, поэтому пришельцы пользуются им же.
+     */
+    private Location resolveGpsBaseLocation() {
+        if (active && riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
+            return riftCenterLocation;
+        }
+        if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
+            Location alienCenter = plugin.getAlienInvasionManager().getCenterLocation();
+            if (alienCenter != null && alienCenter.getWorld() != null) {
+                return alienCenter;
+            }
+        }
+        if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()) {
+            return plugin.getAncientMineManager().getCenterLocation();
+        }
+        return null;
+    }
+
+    /** Куда ведёт локатор во время ивента пришельцев: к самому пришельцу. */
+    private Location getAlienGpsTarget() {
+        if (plugin.getAlienInvasionManager() == null || !plugin.getAlienInvasionManager().isActive()) {
+            return null;
+        }
+        LivingEntity boss = plugin.getAlienInvasionManager().getBossEntity();
+        return boss != null ? boss.getLocation() : null;
+    }
+
     @SuppressWarnings("deprecation")
     private void disableGpsSilently(Player player) {
         UUID uuid = player.getUniqueId();
@@ -1659,7 +1698,7 @@ public class InfernalRiftManager {
         }
     }
 
-    private void clearAllGpsTrackers() {
+    public void clearAllGpsTrackers() {
         gpsTrackedPlayers.clear();
         gpsWasOutsideRadius.clear();
         for (BossBar bar : gpsBossBars.values()) {
@@ -1715,11 +1754,7 @@ public class InfernalRiftManager {
 
         gpsTrackedPlayers.add(uuid);
 
-        Location baseLoc = (active && riftCenterLocation != null && riftCenterLocation.getWorld() != null)
-                ? riftCenterLocation
-                : (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()
-                ? plugin.getAncientMineManager().getCenterLocation()
-                : null);
+        Location baseLoc = resolveGpsBaseLocation();
 
         if (baseLoc != null && baseLoc.getWorld() != null) {
             if (player.getWorld().equals(baseLoc.getWorld())) {

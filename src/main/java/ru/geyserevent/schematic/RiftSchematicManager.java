@@ -37,6 +37,9 @@ public class RiftSchematicManager {
     private Location activeCenter;
     private Location bossSpawnOffset = new Location(null, 0.5, 1.0, 2.5, 0.0f, 0.0f);
 
+    /** Имя файла схемы в plugins/GeyserEvent/schematics (null — из конфига). */
+    private final String schematicFileName;
+
     public record RelativeBlock(int dx, int dy, int dz, Material material) {
     }
 
@@ -46,7 +49,16 @@ public class RiftSchematicManager {
     private final List<RelativeBlock> loadedBlocks = new ArrayList<>();
 
     public RiftSchematicManager(GeyserEventPlugin plugin) {
+        this(plugin, null);
+    }
+
+    /**
+     * Менеджер схемы для отдельного файла (например, alien_landing.schem.yml),
+     * чтобы один плагин мог держать несколько структур.
+     */
+    public RiftSchematicManager(GeyserEventPlugin plugin, String schematicFileName) {
         this.plugin = plugin;
+        this.schematicFileName = schematicFileName;
         loadSchematicFile();
     }
 
@@ -57,7 +69,7 @@ public class RiftSchematicManager {
             schemDir.mkdirs();
         }
 
-        String fileName = plugin.getPluginConfig().getSchematicFile();
+        String fileName = schematicFileName != null ? schematicFileName : plugin.getPluginConfig().getSchematicFile();
         File schemFile = new File(schemDir, fileName);
         if (!schemFile.exists()) {
             try {
@@ -180,6 +192,14 @@ public class RiftSchematicManager {
     }
 
     public Location pasteSchematic(Location center) {
+        return pasteSchematic(center, 7, 10);
+    }
+
+    /**
+     * Вставляет схему, очищая пространство радиусом {@code clearRadius} и
+     * высотой {@code clearHeight} (нужно для больших структур вроде посадки пришельцев).
+     */
+    public Location pasteSchematic(Location center, int clearRadius, int clearHeight) {
         restoreSchematic();
 
         World world = center.getWorld();
@@ -194,13 +214,14 @@ public class RiftSchematicManager {
 
         Set<String> capturedCoords = new HashSet<>();
 
-        // Очищаем пространство 15x15 (радиус 7, высота 0..10) и запоминаем блоки для отката
-        for (int dx = -7; dx <= 7; dx++) {
-            for (int dz = -7; dz <= 7; dz++) {
-                if (dx * dx + dz * dz > 52) {
+        // Очищаем пространство под схему и запоминаем блоки для отката
+        int clearLimit = clearRadius * clearRadius;
+        for (int dx = -clearRadius; dx <= clearRadius; dx++) {
+            for (int dz = -clearRadius; dz <= clearRadius; dz++) {
+                if (dx * dx + dz * dz > clearLimit) {
                     continue;
                 }
-                for (int dy = 0; dy <= 10; dy++) {
+                for (int dy = 0; dy <= clearHeight; dy++) {
                     int bx = cx + dx;
                     int by = cy + dy;
                     int bz = cz + dz;
@@ -363,7 +384,7 @@ public class RiftSchematicManager {
         if (!schemDir.exists()) {
             schemDir.mkdirs();
         }
-        File schemFile = new File(schemDir, plugin.getPluginConfig().getSchematicFile());
+        File schemFile = new File(schemDir, schematicFileName != null ? schematicFileName : plugin.getPluginConfig().getSchematicFile());
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("name", "infernal_rift_custom");
         yaml.set("boss-spawn-offset.x", 0.5);

@@ -10,6 +10,7 @@ import ru.geyserevent.util.ColorUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Конфигурация плагина GeyserEvent v1.4.0 («Адский Разлом» и «Пляжные Раскопки»).
@@ -117,6 +118,53 @@ public class PluginConfig {
     private Material summonPylonBlock2;
     private Material summonPylonBlock3;
     private Material summonPylonBlock4;
+
+    // Alien Invasion («Вторжение Пришельцев») — v1.20.0
+    private boolean alienEnabled;
+    private int alienDurationMinutes;
+    private int alienProtectionRadius;
+    private EntityType alienBossType;
+    private String alienBossName;
+    private double alienBossHealth;
+    private double alienBossDamage;
+    private double alienBossScale;
+    private double alienBossMovementSpeed;
+    private double alienBossKnockbackResistance;
+    private Material alienBossWeapon;
+    private boolean alienMinionsEnabled;
+    private EntityType alienMinionType;
+    private String alienMinionName;
+    private double alienMinionHealth;
+    private double alienMinionDamage;
+    private double alienMinionScale;
+    private Material alienMinionWeapon;
+    private int alienMinionIntervalSeconds;
+    private int alienMinionCountPerWave;
+    private int alienMaxActiveAlienMinions;
+    private double alienMinionTriggerRadius;
+    private int alienAbilityIntervalSeconds;
+    private boolean alienChestsEnabled;
+    private int alienChestItemsPerChest;
+    private int alienChestLootSeconds;
+    private final List<int[]> alienChestOffsets = new ArrayList<>();
+    private final List<AlienLootItem> alienChestLoot = new ArrayList<>();
+    private boolean alienRewardsEnabled;
+    private final List<String> alienSpawnLines = new ArrayList<>();
+    private final List<String> alienDelayActiveLines = new ArrayList<>();
+    private final List<String> alienDefeatedLines = new ArrayList<>();
+    private String alienChestsLine;
+    private String alienTimeoutLine;
+
+    /** Предмет лута в сундуках пришельцев (материал, количество, шанс, оформление). */
+    public record AlienLootItem(
+            Material material,
+            int minAmount,
+            int maxAmount,
+            double chancePercent,
+            String displayName,
+            List<String> lore
+    ) {
+    }
 
     // Abilities (Radius 15 blocks)
     private double abilityRadius;
@@ -326,6 +374,8 @@ public class PluginConfig {
         this.summonPylonBlock2 = material(cfg.getString("summon.pylon-2-block", "VERDANT_FROGLIGHT"), Material.VERDANT_FROGLIGHT);
         this.summonPylonBlock3 = material(cfg.getString("summon.pylon-3-block", "PEARLESCENT_FROGLIGHT"), Material.PEARLESCENT_FROGLIGHT);
         this.summonPylonBlock4 = material(cfg.getString("summon.pylon-4-block", "BUDDING_AMETHYST"), Material.BUDDING_AMETHYST);
+
+        loadAlienConfig(cfg);
 
         // NPCs & Invisibility (невидимость НЕ работает на НПС ивентов)
         this.npcsIgnoreInvisibility = cfg.getBoolean("npcs.ignore-invisibility", true);
@@ -567,6 +617,206 @@ public class PluginConfig {
     public Material getSummonPylonBlock2() { return summonPylonBlock2; }
     public Material getSummonPylonBlock3() { return summonPylonBlock3; }
     public Material getSummonPylonBlock4() { return summonPylonBlock4; }
+
+    /**
+     * Ивент «Вторжение Пришельцев» (v1.20.0): кастомный босс-пришелец с кастомной
+     * текстурой, малые пришельцы-приспешники и 4 сундука с ресурсами после убийства.
+     */
+    private void loadAlienConfig(FileConfiguration cfg) {
+        this.alienEnabled = cfg.getBoolean("alien.enabled", true);
+        this.alienDurationMinutes = Math.max(1, cfg.getInt("alien.duration-minutes", 15));
+        this.alienProtectionRadius = Math.max(6, cfg.getInt("alien.protection-radius", 13));
+
+        this.alienBossType = entityType(cfg.getString("alien.boss-type", "EVOKER"), EntityType.EVOKER);
+        this.alienBossName = ColorUtil.color(cfg.getString("alien.boss-name",
+                "&5&lПришелец-Владыка &8[&d%hp%&7/&d%max_hp% ❤&8]"));
+        this.alienBossHealth = Math.max(50.0, cfg.getDouble("alien.boss-health", 2500.0));
+        this.alienBossDamage = Math.max(1.0, cfg.getDouble("alien.boss-damage", 9.0));
+        this.alienBossScale = Math.max(0.3, cfg.getDouble("alien.boss-scale", 1.25));
+        this.alienBossMovementSpeed = Math.max(0.05, cfg.getDouble("alien.boss-movement-speed", 0.32));
+        this.alienBossKnockbackResistance = Math.min(1.0, Math.max(0.0, cfg.getDouble("alien.boss-knockback-resistance", 0.8)));
+        this.alienBossWeapon = material(cfg.getString("alien.boss-weapon", "AIR"), Material.AIR);
+
+        ConfigurationSection minions = cfg.getConfigurationSection("alien.minions");
+        this.alienMinionsEnabled = minions != null && minions.getBoolean("enabled", true);
+        this.alienMinionType = entityType(minions != null ? minions.getString("type", "VEX") : "VEX", EntityType.VEX);
+        this.alienMinionName = ColorUtil.color(minions != null ? minions.getString("name",
+                "&a&lМалый пришелец &7[%hp% ❤]") : "&a&lМалый пришелец &7[%hp% ❤]");
+        this.alienMinionHealth = minions != null ? Math.max(1.0, minions.getDouble("health", 40.0)) : 40.0;
+        this.alienMinionDamage = minions != null ? Math.max(0.0, minions.getDouble("damage", 5.0)) : 5.0;
+        this.alienMinionScale = minions != null ? Math.max(0.2, minions.getDouble("scale", 0.85)) : 0.85;
+        this.alienMinionWeapon = material(minions != null ? minions.getString("weapon", "AIR") : "AIR", Material.AIR);
+        this.alienMinionIntervalSeconds = minions != null ? Math.max(3, minions.getInt("interval-seconds", 25)) : 25;
+        this.alienMinionCountPerWave = minions != null ? Math.max(1, minions.getInt("count-per-wave", 3)) : 3;
+        this.alienMaxActiveAlienMinions = minions != null ? Math.max(1, minions.getInt("max-active", 8)) : 8;
+        this.alienMinionTriggerRadius = minions != null ? Math.max(4.0, minions.getDouble("trigger-radius", 20.0)) : 20.0;
+
+        this.alienAbilityIntervalSeconds = Math.max(3, cfg.getInt("alien.ability-interval-seconds", 14));
+
+        ConfigurationSection chests = cfg.getConfigurationSection("alien.chests");
+        this.alienChestsEnabled = chests != null && chests.getBoolean("enabled", true);
+        this.alienChestItemsPerChest = chests != null ? Math.max(1, chests.getInt("items-per-chest", 5)) : 5;
+        this.alienChestLootSeconds = toInt(cfg.get("alien.chests.loot-time-seconds"), 180);
+        this.alienChestOffsets.clear();
+        if (chests != null) {
+            for (String raw : chests.getStringList("offsets")) {
+                int[] xyz = parseOffsets(raw);
+                if (xyz != null) {
+                    this.alienChestOffsets.add(xyz);
+                }
+            }
+        }
+        if (this.alienChestOffsets.isEmpty()) {
+            this.alienChestOffsets.add(new int[]{0, 2, 9});
+            this.alienChestOffsets.add(new int[]{9, 2, 0});
+            this.alienChestOffsets.add(new int[]{0, 2, -9});
+            this.alienChestOffsets.add(new int[]{-9, 2, 0});
+        }
+        this.alienChestLoot.clear();
+        if (chests != null) {
+            for (Map<?, ?> entry : chests.getMapList("loot")) {
+                Material mat = material(String.valueOf(entry.get("material")), Material.DIAMOND);
+                int min = toInt(entry.get("min"), 1);
+                int max = toInt(entry.get("max"), min);
+                double chance = entry.get("chance") instanceof Number n ? n.doubleValue() : 100.0;
+                String name = entry.get("name") != null ? ColorUtil.color(String.valueOf(entry.get("name"))) : null;
+                List<String> lore = new ArrayList<>();
+                Object rawLore = entry.get("lore");
+                if (rawLore instanceof List<?> list) {
+                    for (Object line : list) {
+                        lore.add(ColorUtil.color(String.valueOf(line)));
+                    }
+                }
+                this.alienChestLoot.add(new AlienLootItem(mat, Math.max(1, min), Math.max(1, Math.max(min, max)),
+                        Math.max(0.0, Math.min(100.0, chance)), name, lore));
+            }
+        }
+        if (this.alienChestLoot.isEmpty()) {
+            this.alienChestLoot.add(new AlienLootItem(Material.DIAMOND, 1, 3, 60.0, null, List.of()));
+            this.alienChestLoot.add(new AlienLootItem(Material.EMERALD, 2, 5, 70.0, null, List.of()));
+            this.alienChestLoot.add(new AlienLootItem(NetheriteIngot(), 1, 1, 25.0, null, List.of()));
+        }
+
+        this.alienRewardsEnabled = cfg.getBoolean("alien.rewards.enabled", true);
+        this.alienSpawnLines.clear();
+        for (String line : cfg.getStringList("alien.messages.spawn")) {
+            this.alienSpawnLines.add(ColorUtil.color(line));
+        }
+        if (this.alienSpawnLines.isEmpty()) {
+            this.alienSpawnLines.add(ColorUtil.color(
+                    "&e┼ &#34D711Вторжение Пришельцев &fна карте!"));
+            this.alienSpawnLines.add(ColorUtil.color(
+                    "&e┠ &fНа посадочной площади появился Пришелец-Владыка &8(&d%hp% ❤&8)"));
+            this.alienSpawnLines.add(ColorUtil.color(
+                    "&e┠ &fУбейте его — откроются 4 сундука с ресурсами"));
+            this.alienSpawnLines.add(ColorUtil.color(
+                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%"));
+        }
+        this.alienDefeatedLines.clear();
+        for (String line : cfg.getStringList("alien.messages.defeated")) {
+            this.alienDefeatedLines.add(ColorUtil.color(line));
+        }
+        if (this.alienDefeatedLines.isEmpty()) {
+            this.alienDefeatedLines.add(ColorUtil.color(
+                    "&e┼ &#34D711Пришелец-Владыка повержен! &fЭкипаж судна открыл хранилища."));
+        }
+        this.alienChestsLine = ColorUtil.color(cfg.getString("alien.messages.chests",
+                "&e┼ &#34D711Пришелец повержен! &fОткрылись 4 сундука с ресурсами — ищите их на пьедесталах!"));
+        this.alienTimeoutLine = ColorUtil.color(cfg.getString("alien.messages.timeout",
+                "&e┼ &cПришелец вернулся на корабль — его не успели убить!"));
+        this.alienDelayActiveLines.clear();
+        for (String line : cfg.getStringList("alien.messages.delay-active")) {
+            this.alienDelayActiveLines.add(ColorUtil.color(line));
+        }
+        if (this.alienDelayActiveLines.isEmpty()) {
+            this.alienDelayActiveLines.add(ColorUtil.color(
+                    "&e┼ &#34D711Вторжение Пришельцев &fактивно на карте."));
+            this.alienDelayActiveLines.add(ColorUtil.color(
+                    "&e┠ &fЗдоровье пришельца: &c%hp%/%max_hp% ❤"));
+            this.alienDelayActiveLines.add(ColorUtil.color(
+                    "&e┠ &fДо конца ивента: &#E0C912%remaining%"));
+            this.alienDelayActiveLines.add(ColorUtil.color(
+                    "&e┠ &fКоординаты: &#E0C912%x% %y% %z%"));
+        }
+    }
+
+    private static Material NetheriteIngot() {
+        Material mat = Material.matchMaterial("NETHERITE_INGOT");
+        return mat != null ? mat : Material.DIAMOND;
+    }
+
+    /** Смещение «x y z» из конфига; null — если строка битая. */
+    private static int[] parseOffsets(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return null;
+        }
+        String[] parts = raw.trim().split("[ ,;]+");
+        if (parts.length < 3) {
+            return null;
+        }
+        try {
+            return new int[]{Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2])};
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static EntityType entityType(String raw, EntityType fallback) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return fallback;
+        }
+        try {
+            return EntityType.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return fallback;
+        }
+    }
+
+    private static int toInt(Object obj, int def) {
+        if (obj instanceof Number num) {
+            return num.intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(obj));
+        } catch (Exception ex) {
+            return def;
+        }
+    }
+
+    public boolean isAlienEnabled() { return alienEnabled; }
+    public int getAlienDurationMinutes() { return alienDurationMinutes; }
+    public int getAlienProtectionRadius() { return alienProtectionRadius; }
+    public EntityType getAlienBossType() { return alienBossType; }
+    public String getAlienBossName() { return alienBossName; }
+    public double getAlienBossHealth() { return alienBossHealth; }
+    public double getAlienBossDamage() { return alienBossDamage; }
+    public double getAlienBossScale() { return alienBossScale; }
+    public double getAlienBossMovementSpeed() { return alienBossMovementSpeed; }
+    public double getAlienBossKnockbackResistance() { return alienBossKnockbackResistance; }
+    public Material getAlienBossWeapon() { return alienBossWeapon; }
+    public boolean isAlienMinionsEnabled() { return alienMinionsEnabled; }
+    public EntityType getAlienMinionType() { return alienMinionType; }
+    public String getAlienMinionName() { return alienMinionName; }
+    public double getAlienMinionHealth() { return alienMinionHealth; }
+    public double getAlienMinionDamage() { return alienMinionDamage; }
+    public double getAlienMinionScale() { return alienMinionScale; }
+    public Material getAlienMinionWeapon() { return alienMinionWeapon; }
+    public int getAlienMinionIntervalSeconds() { return alienMinionIntervalSeconds; }
+    public int getAlienMinionCountPerWave() { return alienMinionCountPerWave; }
+    public int getAlienMaxActiveAlienMinions() { return alienMaxActiveAlienMinions; }
+    public double getAlienMinionTriggerRadius() { return alienMinionTriggerRadius; }
+    public int getAlienAbilityIntervalSeconds() { return alienAbilityIntervalSeconds; }
+    public boolean isAlienChestsEnabled() { return alienChestsEnabled; }
+    public int getAlienChestItemsPerChest() { return alienChestItemsPerChest; }
+    public int getAlienChestLootSeconds() { return alienChestLootSeconds; }
+    public List<int[]> getAlienChestOffsets() { return alienChestOffsets; }
+    public List<AlienLootItem> getAlienChestLoot() { return alienChestLoot; }
+    public boolean isAlienRewardsEnabled() { return alienRewardsEnabled; }
+    public List<String> getAlienSpawnLines() { return alienSpawnLines; }
+    public List<String> getAlienDelayActiveLines() { return alienDelayActiveLines; }
+    public List<String> getAlienDefeatedLines() { return alienDefeatedLines; }
+    public String getAlienChestsLine() { return alienChestsLine; }
+    public String getAlienTimeoutLine() { return alienTimeoutLine; }
 
     /** Материал из конфига: если ошиблись названием — берём запасной вариант. */
     private static Material material(String raw, Material fallback) {

@@ -13,7 +13,9 @@ import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.PiglinAbstract;
@@ -321,7 +323,26 @@ public class BossAbilityController {
 
     private void configureMinion(LivingEntity minion, List<Player> nearbyPlayers) {
         PluginConfig cfg = plugin.getPluginConfig();
+        configureMinion(minion, nearbyPlayers, cfg.getMinionHealth(), cfg.getMinionDamage(),
+                cfg.getMinionScale(), cfg.getMinionName(), cfg.getMinionWeaponMaterial());
+    }
+
+    /**
+     * Настраивает приспешника с явными параметрами (используется и Разломом,
+     * и ивентом «Вторжение Пришельцев», у которого свои мобы и статы).
+     */
+    private void configureMinion(LivingEntity minion, List<Player> nearbyPlayers, double health,
+                                 double damage, double scale, String nameFormat, Material weapon) {
+        configureMinion(minion, nearbyPlayers, health, damage, scale, nameFormat, weapon, null);
+    }
+
+    private void configureMinion(LivingEntity minion, List<Player> nearbyPlayers, double health,
+                                 double damage, double scale, String nameFormat, Material weapon,
+                                 NamespacedKey extraTag) {
         minion.getPersistentDataContainer().set(minionKey, PersistentDataType.BYTE, (byte) 1);
+        if (extraTag != null) {
+            minion.getPersistentDataContainer().set(extraTag, PersistentDataType.BYTE, (byte) 1);
+        }
         minion.setRemoveWhenFarAway(false);
         minion.setCustomNameVisible(true);
 
@@ -330,28 +351,53 @@ public class BossAbilityController {
             piglin.setAdult();
         }
 
-        double hp = cfg.getMinionHealth();
-        setEntityAttribute(minion, "MAX_HEALTH", "generic.max_health", hp);
-        minion.setHealth(Math.min(hp, minion.getMaxHealth()));
-        setEntityAttribute(minion, "ATTACK_DAMAGE", "generic.attack_damage", cfg.getMinionDamage());
-        applyEntityScale(minion, cfg.getMinionScale());
-        updateMinionName(minion);
+        setEntityAttribute(minion, "MAX_HEALTH", "generic.max_health", health);
+        minion.setHealth(Math.min(health, minion.getMaxHealth()));
+        setEntityAttribute(minion, "ATTACK_DAMAGE", "generic.attack_damage", damage);
+        applyEntityScale(minion, scale);
+        if (nameFormat != null) {
+            minion.setCustomName(ColorUtil.color(nameFormat.replace("%hp%",
+                    String.valueOf((int) Math.ceil(minion.getHealth())))));
+        }
 
         EntityEquipment equip = minion.getEquipment();
         if (equip != null) {
-            ItemStack axe = new ItemStack(cfg.getMinionWeaponMaterial());
-            ItemMeta meta = axe.getItemMeta();
-            if (meta != null) {
-                meta.setUnbreakable(true);
-                axe.setItemMeta(meta);
+            ItemStack item = new ItemStack(weapon != null ? weapon : Material.AIR);
+            if (item.getType() != Material.AIR) {
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null) {
+                    meta.setUnbreakable(true);
+                    item.setItemMeta(meta);
+                }
             }
-            equip.setItemInMainHand(axe);
+            equip.setItemInMainHand(item);
             equip.setItemInMainHandDropChance(0.0f);
         }
 
         if (minion instanceof Mob mob && !nearbyPlayers.isEmpty()) {
             mob.setTarget(nearbyPlayers.get(ThreadLocalRandom.current().nextInt(nearbyPlayers.size())));
         }
+    }
+
+    /**
+     * Спавнит «малого пришельца» (ивент «Вторжение Пришельцев»): регистрирует его
+     * в общем списке приспешников, поэтому isMinion(), очистка и удаление работают как обычно.
+     *
+     * @return созданный моб или null, если тип нельзя заспавнить
+     */
+    public LivingEntity spawnAlienMinion(EntityType type, Location loc, double health, double damage,
+                                         double scale, String nameFormat, Material weapon,
+                                         List<Player> nearbyPlayers, NamespacedKey extraTag) {
+        if (type == null || loc == null || loc.getWorld() == null) {
+            return null;
+        }
+        Entity entity = loc.getWorld().spawnEntity(loc, type);
+        if (!(entity instanceof LivingEntity minion)) {
+            return null;
+        }
+        configureMinion(minion, nearbyPlayers, health, damage, scale, nameFormat, weapon, extraTag);
+        activeMinions.add(minion.getUniqueId());
+        return minion;
     }
 
     public void updateMinionName(LivingEntity minion) {

@@ -6,7 +6,7 @@ import io, json, zipfile, os, uuid
 SRC = "/home/user/GeyserEvent/GeyserEvent-Pack.mcpack"
 DST = "/home/user/GeyserEvent/GeyserEvent-Pack.mcpack"
 EMBED = "/home/user/GeyserEvent/src/main/resources/resourcepack/GeyserEvent-Pack.mcpack"
-VERSION = [1, 19, 0]
+VERSION = [1, 20, 0]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 # Bedrock кэширует серверные паки ПО UUID и НЕ перекачивает их заново, если UUID
@@ -40,7 +40,8 @@ if "ui/hud_screen.json" in entries:
 manifest = json.loads(entries["manifest.json"].decode("utf-8"))
 manifest["header"]["name"] = "GeyserEvent Pack v" + VERSION_STR
 manifest["header"]["description"] = ("3D-Рюкзак шахтёра + блоки призыва босса "
-                                    "(алтарь + 4 пилона) со своими текстурами; "
+                                    "(алтарь + 4 пилона) + ивент «Вторжение Пришельцев»: "
+                                    "кастомные текстуры корабля и пришельцев; "
                                     "HUD клиента не меняется — информация ивента "
                                     "только в BossBar сверху и GPS в action bar")
 manifest["header"]["uuid"] = PACK_UUID
@@ -67,9 +68,22 @@ SUMMON_BLOCKS = {
     "budding_amethyst": "geyserevent_summon_pylon_4",
 }
 
+# --- ивент «Вторжение Пришельцев»: свои текстуры блоков корабля ---
+# Блоки подобраны так, чтобы их не было в схемах других ивентов: переопределение
+# текстуры видно ТОЛЬКО на посадочной площадке пришельцев.
+ALIEN_BLOCKS = {
+    "dark_prismarine": "geyserevent_alien_hull",   # обшивка корабля
+    "purpur_block": "geyserevent_alien_alloy",     # сплав пришельцев
+    "conduit": "geyserevent_alien_core",           # энерго-ядро
+    "end_stone_bricks": "geyserevent_alien_bio",   # био-масса
+}
+
+ALL_BLOCKS = dict(SUMMON_BLOCKS)
+ALL_BLOCKS.update(ALIEN_BLOCKS)
+
 entries["blocks.json"] = json.dumps({
     "format_version": [1, 1, 0],
-    "blocks": {name: {"textures": tex} for name, tex in SUMMON_BLOCKS.items()},
+    "blocks": {name: {"textures": tex} for name, tex in ALL_BLOCKS.items()},
 }, ensure_ascii=False, indent=2).encode("utf-8")
 
 entries["terrain_texture.json"] = json.dumps({
@@ -78,9 +92,23 @@ entries["terrain_texture.json"] = json.dumps({
     "padding": 8,
     "num_mip_levels": 4,
     "texture_data": {tex: {"textures": "textures/blocks/geyserevent/" + tex.replace("geyserevent_", "")}
-                      for tex in SUMMON_BLOCKS.values()},
+                      for tex in ALL_BLOCKS.values()},
 }, ensure_ascii=False, indent=2).encode("utf-8")
 print("blocks.json / terrain_texture.json:", len(entries["blocks.json"]), "/", len(entries["terrain_texture.json"]), "bytes")
+
+# --- entity-текстуры пришельцев (перекраска ванильных) ---
+# Босс-пришелец = EVOKER, малые пришельцы = VEX: оба встречаются в игре редко,
+# поэтому перекраска не ломает привычный вид мира.
+ENTITY_TEX_DIR = os.path.join(ROOT, "src", "main", "resources", "resourcepack-vanilla", "textures", "entity")
+entity_files = []
+for root, _, files in os.walk(ENTITY_TEX_DIR):
+    for file in sorted(files):
+        if file.endswith(".png"):
+            full = os.path.join(root, file)
+            rel = os.path.relpath(full, ENTITY_TEX_DIR).replace(os.sep, "/")
+            entries["textures/entity/" + rel] = io.open(full, "rb").read()
+            entity_files.append("textures/entity/" + rel)
+print("entity textures:", ", ".join(entity_files))
 
 # --- ui/hud_screen.json В ПАК НЕ ПОПАДАЕТ (v1.9.29) ---
 # По просьбе пользователя панель ивента в углу экрана убрана. Пока на экране остаётся

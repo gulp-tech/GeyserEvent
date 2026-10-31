@@ -12,6 +12,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import ru.geyserevent.GeyserEventPlugin;
+import ru.geyserevent.alien.AlienInvasionManager;
 import ru.geyserevent.boss.BossAbilityType;
 import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.event.DamageLeaderboard;
@@ -212,7 +213,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     type = EventType.fromString(args[1]);
                     if (type == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift &c(Разлом), &#E0C912excavation &c(Раскопки) или &#E0C912cauldron &c(Котёл Алхимика)."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift &c(Разлом), &#E0C912excavation &c(Раскопки), &#E0C912cauldron &c(Котёл Алхимика) или &#E0C912alien &c(Пришельцы)."));
                         return true;
                     }
                 }
@@ -234,7 +235,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     EventType parsed = EventType.fromString(args[1]);
                     if (parsed == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation &cили &#E0C912cauldron&c."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron &cили &#E0C912alien&c."));
                         return true;
                     }
                     type = parsed;
@@ -244,11 +245,19 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             }
 
             case "stop" -> {
-                if (!manager.isActive()) {
+                boolean riftActive = manager.isActive();
+                boolean alienActive = plugin.getAlienInvasionManager() != null
+                        && plugin.getAlienInvasionManager().isActive();
+                if (!riftActive && !alienActive) {
                     sender.sendMessage(ColorUtil.color("&e┠ &cИвент не активен."));
                     return true;
                 }
-                manager.stopEvent(false);
+                if (riftActive) {
+                    manager.stopEvent(false);
+                }
+                if (alienActive) {
+                    plugin.getAlienInvasionManager().stopEvent();
+                }
                 sender.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент остановлен и схема откачена."));
                 return true;
             }
@@ -499,6 +508,21 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (plugin.getSummonAltarManager() != null) {
                     sender.sendMessage(ColorUtil.color("&e┼ &fПризыв: &f" + plugin.getSummonAltarManager().describe()));
                 }
+                }
+                if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
+                    AlienInvasionManager alien = plugin.getAlienInvasionManager();
+                    Location aLoc = alien.getCenterLocation();
+                    sender.sendMessage(ColorUtil.color("&e┼ &fИвент пришельцев: &#34D711"
+                            + (alien.isDefeated() ? "босс повержен, сундуки открыты" : "Пришелец-Владыка")));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fЗдоровье пришельца: &c"
+                            + (int) Math.ceil(alien.getBossCurrentHealth()) + "/"
+                            + (int) Math.ceil(alien.getBossMaxHealth()) + " ❤"
+                            + " &8| &fМалых пришельцев: &a" + alien.countAlienMinions()));
+                    if (aLoc != null) {
+                        sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
+                                + aLoc.getBlockX() + " " + aLoc.getBlockY() + " " + aLoc.getBlockZ()
+                                + " &8(&fосталось " + alien.getSecondsRemaining() + " сек.&8)"));
+                    }
                 }
                 return true;
             }
@@ -818,7 +842,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return filterPrefix(Arrays.asList("regen", "spawn", "set-here", "remove", "menu", "status"), args[1]);
             }
             if (sub.equals("start") || sub.equals("start-here") || sub.equals("starthere")) {
-                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron"), args[1]);
+                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "alien"), args[1]);
             }
             if (sub.equals("menu") || sub.equals("gui") || sub.equals("cauldronmenu") || sub.equals("cmenu")
                     || sub.equals("minemenu") || sub.equals("mmenu") || sub.equals("excavationmenu")
