@@ -41,6 +41,7 @@ python3 .packtools/make_alien_schematic.py  # перегенерировать s
 python3 .packtools/make_summon_textures.py  # перегенерировать текстуры блоков призыва (16×16 PNG)
 python3 .packtools/make_alien_textures.py   # текстуры корабля и пришельцев (v1.20.0)
 python3 .packtools/make_alien_schematic.py  # схема-посадка пришельцев 25x25 (v1.20.0)
+python3 .packtools/render_alien_preview.py  # изометрический превью схемы -> alien_landing_preview.png
 python3 .packtools/make_hud.py              # перегенерировать ui/hud_screen.json
 python3 .packtools/build_pack.py            # собрать GeyserEvent-Pack.mcpack (+ копия в src/main/resources/resourcepack/)
 python3 .packtools/build_jar.py             # собрать GeyserEvent-1.0.0.jar (ECJ)
