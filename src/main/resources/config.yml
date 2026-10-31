@@ -261,15 +261,15 @@ minions:
         rare: true
 
 abilities:
-  radius: 15.0
-  cast-interval-seconds: 14
+  radius: 18.0
+  cast-interval-seconds: 10
 
   pull:
     enabled: true
-    horizontal-strength: 1.65
-    vertical-boost: 0.42
-    damage: 8.0
-    slowness-ticks: 40
+    horizontal-strength: 1.85
+    vertical-boost: 0.55
+    damage: 12.0
+    slowness-ticks: 50
 
   push:
     enabled: true
@@ -279,9 +279,9 @@ abilities:
 
   gather:
     enabled: true
-    distance-in-front: 3.5
-    damage: 8.0
-    slowness-ticks: 60
+    distance-in-front: 4.0
+    damage: 12.0
+    slowness-ticks: 70
 
 # Награды за топ-3 по нанесённому боссу урону (выдаются, когда Адский Разлом побеждён)
 rewards:
@@ -682,8 +682,8 @@ alien:
   boss-type: "EVOKER"
   # Имя: %hp% — текущее HP, %max_hp% — максимум
   boss-name: "&5&lПришелец-Владыка &8[&d%hp%&7/&d%max_hp% ❤&8]"
-  boss-health: 12000.0
-  boss-damage: 18.0
+  boss-health: 16000.0
+  boss-damage: 24.0
   # Размер модели (1.0 — ванильный)
   boss-scale: 1.35
   boss-movement-speed: 0.32
@@ -700,15 +700,15 @@ alien:
     # Тип моба: VEX (по умолчанию, летают), ZOGLIN, VINDICATOR, PILLAGER...
     type: "VEX"
     name: "&a&lМалый пришелец &7[%hp% ❤]"
-    health: 120.0
-    damage: 12.0
-    scale: 1.0
+    health: 160.0
+    damage: 16.0
+    scale: 1.15
     weapon: "AIR"
     # Как часто звать подкрепление (чем меньше HP босса, тем чаще)
-    interval-seconds: 20
-    count-per-wave: 4
-    max-active: 10
-    trigger-radius: 20.0
+    interval-seconds: 15
+    count-per-wave: 6
+    max-active: 14
+    trigger-radius: 25.0
 
   # Интервал способностей босса (pull/push/gather из общего раздела abilities)
   ability-interval-seconds: 14

@@ -1,121 +1,102 @@
-# ============================================================================
-# Схематика ивента «Вторжение Пришельцев» (посадочная площадь 25x25)
-# OPEN ARENA: босс появляется по центру на открытой площадке (Y=0),
-# без капсулы, стены или оболочки — перемещение по площади не ограничено.
-# По центру (0.5, 1.0, 0.5) появляется босс-пришелец, вокруг — 4 пьедестала,
-# на которых после его смерти плагин ставит сундуки с ресурсами.
-# Генератор: .packtools/make_alien_schematic.py
-# ============================================================================
+# Alien landing-site arena — v1.20.2 (beautiful, open center)
+# Center r<5 is EMPTY — boss spawns on natural terrain, no capsule.
+# Multi-layered arena: dark_prismarine / purpur / end_stone_bricks
+# / obsidian rings with conduit runes, amethyst crystals, sea lanterns.
+# Height variation: pedestals (Y=1), crystals (Y=1-2), antennae (Y=1-3).
 
-name: "alien_landing"
-description: "Открытая посадочная площадь пришельцев: гладкий диск, био-зона, 4 пьедестала сундуков и 4 антенны"
-
-# Точка появления босса (относительно центра ивента)
-boss-spawn-offset:
-  # смещение от центра: босс встаёт в центр открытой площадки
-  x: 0.0
-  y: 1.0
-  z: 0.0
-  yaw: 0.0
-  pitch: 0.0
-
-# Палитра символов
 palette:
-  'H': "DARK_PRISMARINE"
-  'A': "PURPUR_BLOCK"
-  'C': "CONDUIT"
-  'B': "END_STONE_BRICKS"
-  'O': "OBSIDIAN"
-  'K': "SCULK"
-  'V': "SCULK_VEIN"
-  'M': "AMETHYST_BLOCK"
-  'L': "SEA_LANTERN"
-  'S': "SHROOMLIGHT"
+  A: purpur_block
+  B: end_stone_bricks
+  C: conduit
+  G: grass_block
+  H: dark_prismarine
+  K: sculk
+  L: sea_lantern
+  M: amethyst_block
+  O: obsidian
+  S: shroomlight
+  V: sculk_vein
 
-# Уровни (Y относительно центра ивента, центр поля — середина строки)
 layers:
-  0:
-    - ".........OOOLOOO........."
-    - ".......OOOOOCOOOOO......."
-    - ".....OOOOOOOBOOOOOOO....."
-    - "....OOOOMBBBBBBBBOOOO...."
-    - "...OCOBBBBBMBBBBBBBOCO..."
-    - "..OOOBBBBBBBBBMBBBBBOOO.."
-    - "..OOBBBBBBBBHBBBBMBBBOO.."
-    - ".OOOBBBBBKHAAAHHBBBBMOOO."
-    - ".OOBBBBBHAAAAAAAHBBBBBOO."
-    - "OOOMBBBHAAHHHHHAAKBBBBOOO"
-    - "OOOBBBMHAHHHHHHHAHBBBBOOO"
-    - "OOOBBBBAAHHHHHHHAABBBBOOO"
-    - "LCBBBBHAAHHHHHHHAAHBBBBCL"
-    - "OOOBBBBAAHHHHHHHAABBBBOOO"
-    - "OOOBBBBHAHHHHHHHAHMBBBOOO"
-    - "OOOBBBBKAAHHHHHAAHBBBMOOO"
-    - ".OOBBBBBHAAAAAAAHBBBBBOO."
-    - ".OOOMBBBBHHAAAHKBBBBBOOO."
-    - "..OOBBBMBBBBHBBBBBBBBOO.."
-    - "..OOOBBBBBMBBBBBBBBBOOO.."
-    - "...OCOBBBBBBBMBBBBBOCO..."
-    - "....OOOOBBBBBBBBMOOOO...."
-    - ".....OOOOOOOBOOOOOOO....."
-    - ".......OOOOOCOOOOO......."
-    - ".........OOOLOOO........."
-
-  1:
+  "0":
+    - "............O............"
+    - "........OOOOLOOOO........"
+    - "......OOOOOOCOOOOOO......"
+    - ".....OOOOMBBBMBBOOOO....."
+    - "....OOOBMBBBBBKBMBOOO...."
+    - "...OOCBMBBBBBBBKBBBCOO..."
+    - "..OOOBKBBBAAAAABBBBBOOO.."
+    - "..OOBMBBAAHHHHHAABBBBOO.."
+    - ".OOOMBBAAH.....HAABBMOOO."
+    - ".OOMBBBAH.......HABKBBOO."
+    - ".OOBBBAH.........HABKBOO."
+    - ".OOBBBAH.........HABBMOO."
+    - "OLCBBBAH.........HABBBCLO"
+    - ".OOMBBAH.........HABBBOO."
+    - ".OOBKBAH.........HABBBOO."
+    - ".OOBBKBAH.......HABBBMOO."
+    - ".OOOMBBAAH.....HAABBMOOO."
+    - "..OOBBBBAAHHHHHAABBMBOO.."
+    - "..OOOBBBBBAAAAABBBKBOOO.."
+    - "...OOCBBBKBBBBBBBMBCOO..."
+    - "....OOOBMBKBBBBBMBOOO...."
+    - ".....OOOOBBMBBBMOOOO....."
+    - "......OOOOOOCOOOOOO......"
+    - "........OOOOLOOOO........"
+    - "............O............"
+  "1":
     - "........................."
     - "........................."
     - "........................."
-    - "............A............"
-    - ".............V....M......"
-    - ".....H....M........H....."
-    - "........V................"
-    - "........................."
-    - "...V....................."
-    - "........................."
-    - "........................."
-    - ".....V..............M...."
-    - "...A.................A..."
-    - "....M..............V....."
-    - "........................."
-    - "........................."
-    - ".....................V..."
-    - "........................."
-    - "................V........"
-    - ".....H........M....H....."
-    - "......M....V............."
-    - "............A............"
-    - "........................."
-    - "........................."
-    - "........................."
-
-  2:
+    - "............M............"
+    - "..........M.VM..M........"
+    - ".....H..M..M..M..M.H....."
+    - "......M..C..C..C..M......"
+    - "......VMC...H.....VM....."
+    - ".....M.C........C...M...."
+    - "......C...........C......"
+    - "....M..............MV...."
+    - ".....M..............M...."
+    - "...MV.CH.........HC.VM..."
+    - "....M..............M....."
+    - "....VM..............M...."
+    - "......C...........C......"
+    - "....M...C........C.M....."
+    - ".....MV.....H...CMV......"
+    - "......M..C..C..C..M......"
+    - ".....H.M..M..M..M..H....."
+    - "........M..MV.M.........."
+    - "............M............"
     - "........................."
     - "........................."
     - "........................."
-    - "........................."
-    - "........................."
-    - ".....H.............H....."
-    - "........................."
+  "2":
     - "........................."
     - "........................."
     - "........................."
+    - "............M............"
+    - "..........M..M..M........"
+    - ".....H..M..M..M..M.H....."
+    - "......M...........M......"
+    - ".......M...........M....."
+    - ".....M..............M...."
+    - "........................."
+    - "....M..............M....."
+    - ".....M..............M...."
+    - "...M.................M..."
+    - "....M..............M....."
+    - ".....M..............M...."
+    - "........................."
+    - "....M..............M....."
+    - ".....M...........M......."
+    - "......M...........M......"
+    - ".....H.M..M..M..M..H....."
+    - "........M..M..M.........."
+    - "............M............"
     - "........................."
     - "........................."
     - "........................."
-    - "........................."
-    - "........................."
-    - "........................."
-    - "........................."
-    - "........................."
-    - "........................."
-    - ".....H.............H....."
-    - "........................."
-    - "........................."
-    - "........................."
-    - "........................."
-    - "........................."
-
-  3:
+  "3":
     - "........................."
     - "........................."
     - "........................."
@@ -142,20 +123,9 @@ layers:
     - "........................."
     - "........................."
 
-# Точные детали (биониты и кристаллы в био-зоне)
-blocks:
-  - { x: -9, y: 1, z: -1, material: "SCULK_VEIN" }
-  - { x: -8, y: 1, z: -4, material: "AMETHYST_CLUSTER" }
-  - { x: -8, y: 1, z: 6, material: "SCULK_VEIN" }
-  - { x: -6, y: 1, z: -3, material: "AMETHYST_CLUSTER" }
-  - { x: -5, y: 1, z: -4, material: "SCULK_VEIN" }
-  - { x: -4, y: 1, z: -2, material: "AMETHYST_CLUSTER" }
-  - { x: -1, y: 1, z: -7, material: "SCULK_VEIN" }
-  - { x: 1, y: 1, z: 7, material: "SCULK_VEIN" }
-  - { x: 4, y: 1, z: 2, material: "AMETHYST_CLUSTER" }
-  - { x: 5, y: 1, z: 4, material: "SCULK_VEIN" }
-  - { x: 6, y: 1, z: 3, material: "AMETHYST_CLUSTER" }
-  - { x: 8, y: 1, z: -6, material: "SCULK_VEIN" }
-  - { x: 8, y: 1, z: 4, material: "AMETHYST_CLUSTER" }
-  - { x: 9, y: 1, z: 1, material: "SCULK_VEIN" }
-
+boss-spawn-offset:
+  x: 0.0
+  y: 1.0
+  z: 0.0
+  yaw: 0.0
+  pitch: 0.0
