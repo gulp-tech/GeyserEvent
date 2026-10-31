@@ -41,7 +41,7 @@ import java.util.UUID;
  *   <li>Админ ставит алтарь: {@code /rift summonaltar} — появляется центральный блок
  *       и 4 пилона по сторонам света (каждый блок со своей текстурой из пака);</li>
  *   <li>игрок нажимает ПКМ по алтарю — начинается отсчёт ({@code summon.wait-seconds},
- *       по умолчанию 2 минуты), в чат и в панель угла идёт таймер;</li>
+ *       по умолчанию 2 минуты), в чат идёт таймер;</li>
  *   <li>когда отсчёт кончился — на этом месте стартует обычный «Адский Разлом»
  *       ({@link InfernalRiftManager#startEventAt(Location, EventType, Integer)});</li>
  *   <li>если игроков рядом нет или босса не бьют — призыв/ивент отменяется,
@@ -54,12 +54,9 @@ import java.util.UUID;
  * мирах алтарь отвечает, что тут призывать нельзя.
  */
 public final class SummonAltarManager {
-
-    /** Маркер панели в углу на время призыва (ресурспак рисует «ПРИЗЫВ БОССА»). */
-    public static final String HUD_MARKER_SUMMON = "#GE_S#";
-
-    /** Показана ли сейчас панель призыва (чтобы убрать её после окончания). */
-    private boolean summonHudVisible = false;
+    // Панель призыва в углу экрана убрана вместе со всей панелью ивента (v1.9.29):
+    // она рисовала моланг-выражения текстом вместо данных. Отсчёт до появления
+    // босса сообщают сообщения в чат (см. tick()), а action bar свободен для GPS.
 
     /** Ключ предмета-призывалки в PDC (если алтарь выдать игроку командой). */
     private final NamespacedKey altarItemKey;
@@ -419,7 +416,6 @@ public final class SummonAltarManager {
         }
         Ritual r = ritual;
         ritual = null;
-        stopSummonHud();
         InfernalRiftManager manager = plugin.getRiftManager();
         if (r.bossSpawned && manager != null && manager.isActive()) {
             manager.stopEvent(false);
@@ -469,11 +465,9 @@ public final class SummonAltarManager {
             ritual.noDamageSeconds = 0;
             ritual.noPlayersSeconds = 0;
             ritual.lastDamageMillis = System.currentTimeMillis();
-            // отсчёт кончился — дальше панелью владеет обычная панель ивента
-            stopSummonHud();
+            // отсчёт кончился — на этом месте стартует ивент
         } else {
             ritual = null;
-            stopSummonHud();
             removeAltar(r.altar);
             Bukkit.broadcastMessage(ColorUtil.color(
                     "&e\u253c &c\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u0441\u0442\u0440\u043e\u0438\u0442\u044c \u0430\u0440\u0435\u043d\u0443 \u0431\u043e\u0441\u0441\u0430 \u2012 \u043f\u0440\u0438\u0437\u044b\u0432 \u043e\u0442\u043c\u0435\u043d\u0451\u043d."));
@@ -498,8 +492,7 @@ public final class SummonAltarManager {
     private void tick() {
         PluginConfig cfg = plugin.getPluginConfig();
         if (ritual == null || !cfg.isSummonEnabled()) {
-            // призыва больше нет — страхуем панель на экране
-            stopSummonHud();
+            // призыва больше нет
             return;
         }
         Location loc = ritual.altar.toLocation();
@@ -537,13 +530,11 @@ public final class SummonAltarManager {
             if (manager == null || !manager.isActive() || manager.isDefeated()) {
                 // босса убили или ивент закончился сам — призыв отработал
                 ritual = null;
-                stopSummonHud();
                 return;
             }
             LivingEntity boss = manager.getBossEntity();
             if (boss == null || !boss.isValid()) {
                 ritual = null;
-                stopSummonHud();
                 return;
             }
         }
@@ -562,50 +553,6 @@ public final class SummonAltarManager {
             cancelRitual("&c\u0411\u043e\u0441\u0441\u0430 \u043d\u0435 \u0430\u0442\u0430\u043a\u043e\u0432\u0430\u043b\u0438 \u0441\u043b\u0438\u0448\u043a\u043e\u043c \u0434\u043e\u043b\u0433\u043e \u2014 \u043e\u043d \u0432\u0435\u0440\u043d\u0443\u043b\u0441\u044f \u0432 \u0420\u0430\u0437\u043b\u043e\u043c.");
             return;
         }
-
-        // ---- панель в правом верхнем углу (Bedrock), только пока идёт отсчёт ----
-        // после появления босса панелью владеет обычная панель ивента,
-        // иначе две панели будут мигать каждую секунду
-        if (!ritual.bossSpawned) {
-            sendSummonHud(loc, ritual.secondsLeft);
-        }
-    }
-
-    /**
-     * Убирает панель призыва с экрана Bedrock-игроков.
-     *
-     * <p>Ресурспак рисует панель, пока в action bar есть маркер #GE_S#.
-     * Если просто перестать слать payload и не отправить пустую строку,
-     * панель останется висеть на экране бесконечно.</p>
-     */
-    private void stopSummonHud() {
-        if (!summonHudVisible) {
-            return;
-        }
-        summonHudVisible = false;
-        if (plugin.getTopRightHudManager() != null) {
-            plugin.getTopRightHudManager().clearCornerHud();
-        }
-    }
-
-    private void sendSummonHud(Location loc, int secondsLeft) {
-        BedrockService bedrock = plugin.getBedrockService();
-        if (bedrock == null) {
-            return;
-        }
-        // Слова «Босс появится через» рисует сам ресурспак,
-        // поэтому поле статуса пустое — от плагина нужны только ASCII-данные.
-        String coords = loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ();
-        String payload = ru.geyserevent.hud.TopRightHudManager.buildHudPayload(
-                HUD_MARKER_SUMMON, "", formatTime(secondsLeft), coords);
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player != null && player.isOnline() && bedrock.isBedrockPlayer(player)) {
-                player.sendActionBar(payload);
-            }
-        }
-        // панель на экране — её нужно будет убрать, когда отсчёт кончится
-        summonHudVisible = true;
-        plugin.getTopRightHudManager().noteCornerHudActive();
     }
 
     private int countPlayersNear(Location loc, double radius) {

@@ -1,13 +1,10 @@
 package ru.geyserevent.hud;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.hook.BedrockService;
-import ru.geyserevent.event.EventType;
-import ru.geyserevent.event.InfernalRiftManager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -18,115 +15,19 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Менеджер инфо-панели ивента и авто-установщик ресурспака GeyserEvent-Pack.mcpack.
+ * Авто-установщик ресурспака GeyserEvent-Pack.mcpack в папку packs Bedrock-движка.
  * НЕ трогает Scoreboard игроков (чтобы не конфликтовать со скорбордом сервера).
- * Вся информация выводится панелью в правом верхнем углу экрана, которую рисует
- * ресурспак GeyserEvent-Pack.mcpack (BossBar ивента убран в v1.9.23).
+ *
+ * <p>ВАЖНО (v1.9.29): панель ивента в углу экрана УБРАНА по просьбе пользователя:
+ * она показывала моланг-выражения текстом вместо данных, пока не найдена
+ * правильная схема. На экране остаётся только BossBar вверху
+ * (GPS-локатор), а action bar свободен — он тоже будет показывать только GPS.
+ * Пак больше не содержит ui/hud_screen.json и не меняет ничего в HUD клиента.
+ * Генератор панели сохранён: .packtools/make_hud.py — когда будем делать заново.</p>
  */
 public class TopRightHudManager {
 
     private final GeyserEventPlugin plugin;
-
-    /**
-     * Служебные маркеры начала action bar. Ресурспак GeyserEvent-Pack.mcpack проверяет,
-     * с какого маркера начинается текст: если совпало — прячет обычный action bar,
-     * рисует панель ивента в правом верхнем углу и показывает иконку этого ивента.
-     * Маркеры ASCII и содержат символ '#', которого не бывает в обычном тексте,
-     * поэтому ложных срабатываний не будет.
-     */
-    public static final String HUD_MARKER_RIFT = "#GE_R#";
-    public static final String HUD_MARKER_EXCAVATION = "#GE_E#";
-    public static final String HUD_MARKER_CAULDRON = "#GE_C#";
-
-    /**
-     * Разделитель полей в тексте панели (ресурспак режет по нему).
-     * Во времени, статусе и координатах егё не бывает.
-     */
-    public static final String HUD_FIELD_SEP = ";";
-
-    /** Фиксированная ширина поля статуса. См. HUD_STATUS_BYTES в .packtools/make_hud.py. */
-    public static final int HUD_STATUS_BYTES = 24;
-
-    /** Фиксированная ширина поля времени (ММ:СС). См. TIME_BYTES в .packtools/make_hud.py. */
-    public static final int HUD_TIME_BYTES = 5;
-
-    /** Символ-заполнитель до фиксированной ширины (его же вычитает ресурспак). */
-    public static final String HUD_PAD = "~";
-
-    /**
-     * Собирает текст для action bar в формате ресурспака:
-     * {@code <маркер>;<статус, добит '~' до 24 байт>;<время ММ:СС>;<координаты>}.
-     *
-     * <p>ВАЖНО: статус и время — только ASCII. Неизвестно, считает ли '%.Ns'
-     * в моланге байты или символы; на ASCII это одно и то же, поэтому
-     * поля режутся верно в любом режиме. Слова рисует сам ресурспак.</p>
-     *
-     * @param marker маркер ивента (#GE_R#, #GE_E#, #GE_C#, #GE_S#)
-     * @param status значение статуса, только ASCII (например 3500/3500, 12, 5 или "" для призыва)
-     * @param time   время ММ:СС
-     * @param coords координаты ивента через пробел
-     */
-    public static String buildHudPayload(String marker, String status, String time, String coords) {
-        return marker + HUD_FIELD_SEP + padField(status, HUD_STATUS_BYTES) + HUD_FIELD_SEP
-                + padField(time, HUD_TIME_BYTES) + HUD_FIELD_SEP + (coords == null ? "" : coords);
-    }
-
-    /**
-     * Добивает или обрезает поле до точной ширины в байтах.
-     * Обрезка идёт по символам, чтобы не разрезать кириллицу пополам.
-     */
-    private static String padField(String value, int width) {
-        String text = value == null ? "" : value;
-        java.nio.charset.Charset utf8 = java.nio.charset.StandardCharsets.UTF_8;
-        if (text.getBytes(utf8).length > width) {
-            StringBuilder cut = new StringBuilder();
-            int len = 0;
-            for (int i = 0; i < text.length(); i++) {
-                int clen = String.valueOf(text.charAt(i)).getBytes(utf8).length;
-                if (len + clen > width) {
-                    break;
-                }
-                cut.append(text.charAt(i));
-                len += clen;
-            }
-            text = cut.toString();
-        }
-        StringBuilder sb = new StringBuilder(text);
-        int len = text.getBytes(utf8).length;
-        while (len < width) {
-            sb.append(HUD_PAD);
-            len++;
-        }
-        return sb.toString();
-    }
-
-    /** Маркер для конкретного ивента (по нему ресурспак выбирает иконку). */
-    public static String hudMarker(EventType type) {
-        if (type == EventType.BEACH_EXCAVATION) {
-            return HUD_MARKER_EXCAVATION;
-        }
-        if (type == EventType.ALCHEMIST_CAULDRON) {
-            return HUD_MARKER_CAULDRON;
-        }
-        return HUD_MARKER_RIFT;
-    }
-
-    /** До какого момента панель ивента молчит (чтобы не перебивать сообщения способностей босса). */
-    private long cornerHudSuppressedUntil = 0L;
-
-    /** Показана ли сейчас панель ивента в углу (нужно, чтобы не слать лишние пакеты). */
-    private boolean cornerHudActive = false;
-
-    /**
-     * Отмечает, что панель сейчас на экране у Bedrock-игроков, и её обязательно нужно убрать.
-     *
-     * <p>Панель призыва босса шлёт не этот менеджер, а SummonAltarManager напрямую,
-     * поэтому флаг должен быть общим: иначе после конца призыва никто не пошлёт пустую строку,
-     * и панель останется висеть на экране бесконечно.</p>
-     */
-    public void noteCornerHudActive() {
-        this.cornerHudActive = true;
-    }
 
     /** Результат последней попытки скопировать ресурспак в Geyser (для /rift hudinfo). */
     private String packInstallResult = "ещё не выполнялась";
@@ -347,109 +248,6 @@ public class TopRightHudManager {
         }
     }
 
-    /**
-     * Обновляет HUD ивента (панель в углу у Bedrock, чат-сообщения у остальных).
-     */
-    public void updateTopRightHud() {
-        clearAllHud();
-        InfernalRiftManager manager = plugin.getRiftManager();
-        if (manager != null && manager.isActive()) {
-            manager.updateEventBossBar();
-        }
-    }
-
-    /**
-     * Просит панель ивента не показываться указанное время (миллисекунды).
-     * Вызывается при сообщениях способностей босса, чтобы они не пропадали мгновенно.
-     */
-    public void suppressCornerHud(long millis) {
-        this.cornerHudSuppressedUntil = System.currentTimeMillis() + Math.max(0L, millis);
-    }
-
-    /**
-     * Раз в секунду отправляет Bedrock-игрокам текст панели ивента (action bar с маркером).
-     * Нагрузка: один пакет на игрока в секунду — это нулевая нагрузка на клиент и сервер.
-     */
-    public void tickCornerHud() {
-        if (!plugin.getPluginConfig().isTopRightHudEnabled()) {
-            return;
-        }
-        InfernalRiftManager manager = plugin.getRiftManager();
-        if (manager == null || !manager.isActive() || manager.isDefeated()) {
-            clearCornerHud();
-            return;
-        }
-        if (System.currentTimeMillis() < cornerHudSuppressedUntil) {
-            return;
-        }
-        String status = manager.buildEventHudStatus();
-        String time = manager.buildEventHudTime();
-        if (status == null || time == null) {
-            clearCornerHud();
-            return;
-        }
-
-        String payload = buildHudPayload(hudMarker(manager.getActiveEventType()), status, time,
-                manager.buildEventCoordsText());
-        BedrockService bedrock = plugin.getBedrockService();
-        boolean anySent = false;
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player == null || !player.isOnline()) {
-                continue;
-            }
-            if (bedrock == null || !bedrock.isBedrockPlayer(player)) {
-                continue;
-            }
-            player.sendActionBar(payload);
-            anySent = true;
-        }
-        cornerHudActive = anySent;
-    }
-
-    /**
-     * Убирает панель ивента из правого верхнего угла (ивент закончился или выключен в конфиге).
-     */
-    public void clearCornerHud() {
-        if (!cornerHudActive) {
-            return;
-        }
-        cornerHudActive = false;
-        BedrockService bedrock = plugin.getBedrockService();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player != null && player.isOnline() && bedrock != null && bedrock.isBedrockPlayer(player)) {
-                player.sendActionBar(" ");
-            }
-        }
-    }
-
-    /**
-     * Тест панели: 15 секунд показывает панель в правом верхнем углу экрана,
-     * даже если сейчас не идёт ни один ивент. Нужно, чтобы проверить ресурспак у себя в клиенте.
-     */
-    public void startCornerHudTest(Player player) {
-        if (player == null) {
-            return;
-        }
-        // на время теста обычная панель ивента молчит, чтобы не перебивать тест
-        suppressCornerHud(15_000L);
-        // Тот же формат, что и у настоящей панели.
-        new org.bukkit.scheduler.BukkitRunnable() {
-            int ticksLeft = 300;
-
-            @Override
-            public void run() {
-                if (ticksLeft <= 0 || !player.isOnline()) {
-                    cancel();
-                    return;
-                }
-                EventType testType = plugin.getRiftManager() != null && plugin.getRiftManager().isActive()
-                        ? plugin.getRiftManager().getActiveEventType()
-                        : EventType.INFERNAL_RIFT;
-                player.sendActionBar(buildHudPayload(hudMarker(testType), "3500/3500", "19:55", "100 50 200"));
-                ticksLeft -= 10;
-            }
-        }.runTaskTimer(plugin, 0L, 10L);
-    }
 
     /** Файл ресурспака в папке packs Bedrock-движка (если он там есть). */
     public File getInstalledPackFile() {
@@ -486,9 +284,12 @@ public class TopRightHudManager {
         // ничего не делаем: инфо-полоски больше нет
     }
 
-    /** BossBar ивента убран (v1.9.23) — оставлено для совместимости вызовов. */
+    /**
+     * Панели ивента больше нет (v1.9.29, по просьбе пользователя) —
+     * информацию ивента показывает только GPS-локатор в виде BossBar вверху экрана.
+     * Метод оставлен для совместимости вызовов.
+     */
     public void clearAllHud() {
-        // панель ивента/призыва прячется, только пока в action bar есть наш маркер
-        clearCornerHud();
+        // ничего не делаем: панелей нет, action bar свободен для GPS
     }
 }

@@ -91,12 +91,6 @@ public class InfernalRiftManager {
     private static final long TRACKED_ITEM_MAX_AGE_MILLIS = 360_000L;
 
     /**
-     * Символ-заполнитель полей панели (см. TopRightHudManager.buildHudPayload).
-     * Ресурспак отрезает поля action bar по нему, поэтому в данных его быть не должно.
-     */
-    public static final String HUD_FIELD_GUARD = "~";
-
-    /**
      * Счётчик до очередной чистки мёртвых записей кулдауна невидимости.
      */
     private int invisibilityCleanupCountdown = 0;
@@ -618,7 +612,6 @@ public class InfernalRiftManager {
             Villager villager = spawnExcavationVillager(this.bossHomeLocation);
             this.villagerUuid = villager.getUniqueId();
 
-            plugin.getTopRightHudManager().updateTopRightHud();
             broadcastEventStart();
             startActiveTickLoop();
             return true;
@@ -634,7 +627,6 @@ public class InfernalRiftManager {
             Villager alchemist = spawnAlchemistNpc(this.bossHomeLocation);
             this.villagerUuid = alchemist.getUniqueId();
 
-            plugin.getTopRightHudManager().updateTopRightHud();
             broadcastEventStart();
             startActiveTickLoop();
             return true;
@@ -651,7 +643,6 @@ public class InfernalRiftManager {
             PiglinBrute boss = spawnInfernalPiglinBoss(this.bossHomeLocation);
             this.bossUuid = boss.getUniqueId();
 
-            plugin.getTopRightHudManager().updateTopRightHud();
             broadcastEventStart();
             startActiveTickLoop();
             return true;
@@ -812,9 +803,6 @@ public class InfernalRiftManager {
                 } else {
                     tickInfernalRift(cfg, now);
                 }
-
-                // Панель ивента в правом верхнем углу экрана (Bedrock) — раз в секунду
-                plugin.getTopRightHudManager().tickCornerHud();
             }
         }.runTaskTimer(plugin, 20L, 20L);
     }
@@ -948,7 +936,6 @@ public class InfernalRiftManager {
             if (v != null) {
                 updateExcavationVillagerNameAndBar(v);
             }
-            plugin.getTopRightHudManager().updateTopRightHud();
         } else {
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, 1.0f, 1.0f);
             String msg = ColorUtil.color("&eАрхеолог &8| &fСледующая кисточка через &#E0C912" + brushCountdownSeconds + " сек.");
@@ -1024,7 +1011,6 @@ public class InfernalRiftManager {
             if (v != null) {
                 updateAlchemistNameAndBar(v);
             }
-            plugin.getTopRightHudManager().updateTopRightHud();
         } else {
             player.playSound(player.getLocation(), Sound.BLOCK_BREWING_STAND_BREW, 1.0f, 1.2f);
             String msg = ColorUtil.color(
@@ -1237,7 +1223,6 @@ public class InfernalRiftManager {
         removeActiveEventEntities();
         plugin.getAbilityController().removeAllMinions();
         plugin.getTopRightHudManager().clearAllHud();
-        plugin.getTopRightHudManager().clearCornerHud();
         clearAllGpsTrackers();
 
         if (riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
@@ -1344,7 +1329,6 @@ public class InfernalRiftManager {
         plugin.getBeachSchematicManager().restoreActiveSchematic();
         plugin.getAlchemistSchematicManager().restoreActiveSchematic();
         plugin.getTopRightHudManager().clearAllHud();
-        plugin.getTopRightHudManager().clearCornerHud();
         clearAllGpsTrackers();
 
         if (bossBar != null) {
@@ -1550,63 +1534,8 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Текст панели ивента для правого верхнего угла экрана (Bedrock-игроки).
-     * Формат (его же разбирает ресурспак GeyserEvent-Pack.mcpack):
-     *     &lt;время ММ:СС&gt;~|&lt;статус&gt;~|&lt;координаты x y z&gt;
-     * '~' — символ-«страж» конца поля: пак по нему понимает, где поле кончается
-     * (моланг не умеет ни переносить строку, ни искать подстроку в строке).
-     * Название ивента и все цвета рисует сам пак, поэтому здесь только данные.
-     * Отправляется раз в секунду, поэтому нагрузка на клиент нулевая.
-     */
-    /**
-     * Значение для поля «статус» панели ивента.
-     *
-     * <p>ВАЖНО: только ASCII (цифры, '/', пробел). Ресурспак режет поле
-     * операцией '%.Ns', а считает она байты или символы — неизвестно.
-     * На ASCII это одно и то же, поэтому панель работает всегда.
-     * Слова («Кисточка», «Готова», «Босс появится через») рисует сам ресурспак.</p>
-     */
-    public String buildEventHudStatus() {
-        if (!active || defeated || riftCenterLocation == null) {
-            return null;
-        }
-        if (activeEventType == EventType.BEACH_EXCAVATION) {
-            // 0 = кисточка готова (ресурспак покажет «Готова»), иначе — секунды до готовности
-            return (brushReadyToClaim || brushCountdownSeconds <= 0)
-                    ? "0"
-                    : String.valueOf(brushCountdownSeconds);
-        }
-        if (activeEventType == EventType.ALCHEMIST_CAULDRON) {
-            int nodes = plugin.getAlchemistSchematicManager() != null
-                    ? plugin.getAlchemistSchematicManager().getActiveReagentCount()
-                    : 0;
-            return String.valueOf(nodes);
-        }
-        int curHp = (int) Math.ceil(this.bossCurrentHealth);
-        int maxHp = (int) Math.ceil(this.bossMaxHealth);
-        return curHp + "/" + maxHp;
-    }
-
-    /** Время до конца ивента в виде ММ:СС (всегда 5 символов). */
-    public String buildEventHudTime() {
-        if (!active || defeated || riftCenterLocation == null) {
-            return null;
-        }
-        return formatMinutesSeconds(getSecondsRemainingInEvent());
-    }
-
-    /** Координаты ивента для третьей строки панели. */
-    public String buildEventCoordsText() {
-        if (!active || defeated || riftCenterLocation == null) {
-            return "";
-        }
-        return riftCenterLocation.getBlockX() + " " + riftCenterLocation.getBlockY() + " "
-                + riftCenterLocation.getBlockZ();
-    }
-
-    /**
-     * Информационный BossBar ивента убран (v1.9.23): вся информация ивента показывается
-     * панелью в правом верхнем углу у Bedrock-игроков и чат-сообщениями у всех.
+     * Старый информационный BossBar ивента убран (v1.9.23): информацию ивента
+     * плагин больше не показывает вообще — только BossBar босса и GPS-локатор.
      * Метод оставлен как «убери полосу, если она ещё где-то висит» — на случай,
      * если в старом config.yml остался bossbar: true.
      */

@@ -516,19 +516,6 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            case "hudtest", "hud" -> {
-                if (!(sender instanceof Player player)) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cПроверка панели доступна только в игре."));
-                    return true;
-                }
-                plugin.getTopRightHudManager().startCornerHudTest(player);
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Проверка панели запущена на 15 секунд."));
-                sender.sendMessage(ColorUtil.color("&e┠ &fПосмотрите в &eправый верхний угол &fэкрана:"));
-                sender.sendMessage(ColorUtil.color("&e┠ &8• &fвидите строку «ПРОВЕРКА ПАНЕЛИ» — ресурспак работает, всё ок;"));
-                sender.sendMessage(ColorUtil.color("&e┠ &8• &fне видите — ресурспак не применился (см. &e/rift hudinfo&f)."));
-                return true;
-            }
-
             case "hudinfo" -> {
                 BedrockService bedrock = plugin.getBedrockService();
                 boolean bedrockApi;
@@ -538,12 +525,10 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 } catch (Throwable ignored) {
                     bedrockApi = false;
                 }
-                sender.sendMessage(ColorUtil.color("&e┠ &fПанель ивента в углу: "
-                        + (cfg.isTopRightHudEnabled() ? "&aвключена" : "&cвыключена в конфиге")));
                 if (sender instanceof Player player) {
                     boolean isBedrock = bedrock != null && bedrock.isBedrockPlayer(player);
                     sender.sendMessage(ColorUtil.color("&e┠ &fВаш клиент: "
-                            + (isBedrock ? "&aBedrock &7(панель в углу работает)" : "&eJava &7(информация ивента — в BossBar вверху)")));
+                        + (isBedrock ? "&aBedrock" : "&eJava") + " &7(информация ивента — в BossBar сверху + GPS в action bar)"));
                 }
                 sender.sendMessage(ColorUtil.color("&e┠ &fAPI Bedrock: " + (bedrockApi ? "&aподключено" : "&cне найдено")
                         + " &7(Geyser / Floodgate)"));
@@ -570,8 +555,8 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 }
                 sender.sendMessage(ColorUtil.color("&e┠ &fИвент сейчас: "
                         + (manager.isActive() ? "&aидёт «" + manager.getActiveEventType().getDisplayName() + "»" : "&7не идёт")));
-                sender.sendMessage(ColorUtil.color("&e┠ &fПанель в углу появляется &7только во время временного ивента "
-                        + "(Адский Разлом, Пляжные Раскопки, Котёл Алхимика)."));
+                sender.sendMessage(ColorUtil.color("&e┠ &fПак нужен для &eрюкзака шахтёра &fи блоков призыва — скачивается автоматически."));
+                sender.sendMessage(ColorUtil.color("&e┠ &fНа экране плагин рисует только BossBar сверху + GPS в action bar."));
                 return true;
             }
 

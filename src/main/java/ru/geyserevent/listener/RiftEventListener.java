@@ -182,7 +182,6 @@ public class RiftEventListener implements Listener {
             plugin.getMinerBackpackManager().removeVisualBackpack(player);
         }
         player.removePotionEffect(PotionEffectType.GLOWING);
-        plugin.getTopRightHudManager().removeHudFromPlayer(player);
         brushStrokeCooldown.remove(player.getUniqueId());
         villagerClickCooldown.remove(player.getUniqueId());
         zoneCheckCooldown.remove(player.getUniqueId());
@@ -197,7 +196,6 @@ public class RiftEventListener implements Listener {
             plugin.getMinerBackpackManager().removeVisualBackpack(player);
         }
         player.removePotionEffect(PotionEffectType.GLOWING);
-        plugin.getTopRightHudManager().removeHudFromPlayer(player);
         brushStrokeCooldown.remove(player.getUniqueId());
         villagerClickCooldown.remove(player.getUniqueId());
         zoneCheckCooldown.remove(player.getUniqueId());
@@ -578,7 +576,6 @@ public class RiftEventListener implements Listener {
         if (alch != null) {
             plugin.getRiftManager().updateAlchemistNameAndBar(alch);
         }
-        plugin.getTopRightHudManager().updateTopRightHud();
     }
 
     @SuppressWarnings("deprecation")
