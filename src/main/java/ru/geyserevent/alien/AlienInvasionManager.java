@@ -73,6 +73,8 @@ public final class AlienInvasionManager {
     private int secondsElapsed;
     private int abilityCooldownSeconds;
     private int minionCooldownSeconds;
+    private int movementTickCounter;
+    private Location wanderTarget;
     private final Set<Location> spawnedChests = ConcurrentHashMap.newKeySet();
     private final Set<UUID> alienMinions = ConcurrentHashMap.newKeySet();
 
@@ -220,8 +222,9 @@ public final class AlienInvasionManager {
 
         updateBossName(boss);
 
-        world.playSound(loc, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.6f);
-        world.playSound(loc, Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 1.4f);
+        // Страшные звуки пришельцев (v1.20.3)
+        world.playSound(loc, "alien_growl", 2.0f, 0.8f);
+        world.playSound(loc, Sound.BLOCK_BEACON_ACTIVATE, 1.5f, 1.4f);
         world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 1.0, 0), 120, 0.6, 1.0, 0.6, 0.02);
         return boss;
     }
@@ -309,8 +312,8 @@ public final class AlienInvasionManager {
         }
         if (spawned > 0) {
             World w = bossLoc.getWorld();
-            w.playSound(bossLoc, Sound.BLOCK_PORTAL_TRAVEL, 0.8f, 1.3f);
-            w.playSound(bossLoc, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.4f, 1.1f);
+            w.playSound(bossLoc, "alien_screech", 0.8f, 1.3f);
+            w.playSound(bossLoc, Sound.BLOCK_PORTAL_TRAVEL, 0.6f, 1.1f);
         }
         return spawned;
     }
@@ -376,7 +379,7 @@ public final class AlienInvasionManager {
             Location loc = boss.getLocation();
             if (loc.getWorld() != null) {
                 loc.getWorld().strikeLightningEffect(loc);
-                loc.getWorld().playSound(loc, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.5f, 0.5f);
+                loc.getWorld().playSound(loc, "alien_growl", 2.5f, 0.5f);
             }
             boss.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 120, 1, false, false));
             plugin.getAbilityController().castGatherAllAbility(boss);
@@ -404,7 +407,7 @@ public final class AlienInvasionManager {
 
         if (center != null && center.getWorld() != null) {
             World w = center.getWorld();
-            w.playSound(center, Sound.UI_TOAST_CHALLENGE_COMPLETE, 2.0f, 0.9f);
+            w.playSound(center, "alien_death", 2.0f, 0.9f);
             w.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.7f);
             w.spawnParticle(Particle.EXPLOSION_EMITTER, center.clone().add(0, 2, 0), 4, 0.5, 0.5, 0.5, 0.0);
         }
@@ -676,7 +679,15 @@ public final class AlienInvasionManager {
         if (--this.abilityCooldownSeconds <= 0) {
             this.abilityCooldownSeconds = cfg.getAlienAbilityIntervalSeconds();
             plugin.getAbilityController().castNextRotationAbility(boss);
+            // Страшный звук способности пришельца
+            Location bossLoc = boss.getLocation();
+            if (bossLoc.getWorld() != null) {
+                bossLoc.getWorld().playSound(bossLoc, "alien_screech", 0.6f, 1.2f);
+            }
         }
+
+        // Движение босса: преследование игроков + блуждание (boss может покинуть арену)
+        updateBossMovement(boss, cfg);
 
         // Волны малых пришельцев
         if (cfg.isAlienMinionsEnabled() && --this.minionCooldownSeconds <= 0) {
@@ -689,6 +700,89 @@ public final class AlienInvasionManager {
         if (now >= eventEndEpochSeconds) {
             Bukkit.broadcastMessage(cfg.getAlienTimeoutLine());
             stopEvent();
+        }
+    }
+
+    // ------------------------------------------------------------------ движение босса
+
+    /**
+     * Движение босса-пришельца: идёт к ближайшему игроку в радиусе преследования,
+     * иначе бродит в случайном направлении. Помогает боссу покинуть арену-тарелку.
+     * Движение осуществляется через teleport() с шагом, ограниченным скоростью —
+     * это тяжелее для сервера, чем нативный AI, но гарантирует, что босс не застряет.
+     */
+    private void updateBossMovement(LivingEntity boss, PluginConfig cfg) {
+        if (++this.movementTickCounter % 4 != 0) {
+            return; // движение каждые 4 тики (0.2с) — не слишком часто
+        }
+        Location bossLoc = boss.getLocation();
+        World world = bossLoc.getWorld();
+        if (world == null) {
+            return;
+        }
+
+        // Шаг перемещения за раз — производный от скорости движения
+        double step = cfg.getAlienBossMovementSpeed() * 4.0; // 4 тики = 0.2с
+
+        // Ищем ближайшего игрока в радиусе преследования
+        double chaseRange = cfg.getAlienBossChaseRange();
+        Location target = null;
+        double closestDist = chaseRange * chaseRange;
+        for (Player player : world.getPlayers()) {
+            if (player.isDead() || !player.isValid()) {
+                continue;
+            }
+            if (!plugin.getBedrockService().canParticipate(player)) {
+                continue;
+            }
+            Location pLoc = player.getLocation();
+            if (!pLoc.getWorld().equals(world)) {
+                continue;
+            }
+            double dx = pLoc.getX() - bossLoc.getX();
+            double dz = pLoc.getZ() - bossLoc.getZ();
+            double distSq = dx * dx + dz * dz;
+            if (distSq < closestDist) {
+                closestDist = distSq;
+                target = pLoc;
+            }
+        }
+
+        if (target != null) {
+            // Двигаемся к игроку — только горизонтально, чтобы не лезть под землю
+            double dx = target.getX() - bossLoc.getX();
+            double dz = target.getZ() - bossLoc.getZ();
+            double dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > 1.0) {
+                dx /= dist;
+                dz /= dist;
+                Location newLoc = bossLoc.clone().add(dx * step, 0, dz * step);
+                // Проверка на прочность блока под ногами
+                if (!newLoc.getBlock().getType().isSolid()) {
+                    newLoc.setY(bossLoc.getY());
+                }
+                boss.teleport(newLoc);
+            }
+        } else {
+            // Блуждание: периодически меняем направление
+            if (wanderTarget == null || bossLoc.distanceSquared(wanderTarget) < 4.0) {
+                // Выбираем случайную точку на расстоянии 3-8 блоков
+                double angle = random.nextDouble() * 2 * Math.PI;
+                double dist = 3.0 + random.nextDouble() * 5.0;
+                wanderTarget = bossLoc.clone().add(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
+            }
+            double dx = wanderTarget.getX() - bossLoc.getX();
+            double dz = wanderTarget.getZ() - bossLoc.getZ();
+            double dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > 0.5) {
+                dx /= dist;
+                dz /= dist;
+                Location newLoc = bossLoc.clone().add(dx * step, 0, dz * step);
+                if (!newLoc.getBlock().getType().isSolid()) {
+                    newLoc.setY(bossLoc.getY());
+                }
+                boss.teleport(newLoc);
+            }
         }
     }
 

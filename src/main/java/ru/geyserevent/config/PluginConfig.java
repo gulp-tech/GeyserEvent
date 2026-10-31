@@ -130,6 +130,7 @@ public class PluginConfig {
     private double alienBossScale;
     private double alienBossMovementSpeed;
     private double alienBossKnockbackResistance;
+    private double alienBossChaseRange;
     private Material alienBossWeapon;
     private boolean alienBossArmorEnabled;
     private boolean alienMinionsEnabled;
@@ -637,6 +638,7 @@ public class PluginConfig {
         this.alienBossScale = Math.max(0.3, cfg.getDouble("alien.boss-scale", 1.35));
         this.alienBossMovementSpeed = Math.max(0.05, cfg.getDouble("alien.boss-movement-speed", 0.32));
         this.alienBossKnockbackResistance = Math.min(1.0, Math.max(0.0, cfg.getDouble("alien.boss-knockback-resistance", 1.0)));
+        this.alienBossChaseRange = Math.max(5.0, cfg.getDouble("alien.boss-chase-range", 25.0));
         this.alienBossArmorEnabled = cfg.getBoolean("alien.boss-armor", true);
         this.alienBossWeapon = material(cfg.getString("alien.boss-weapon", "AIR"), Material.AIR);
 
@@ -820,6 +822,7 @@ public class PluginConfig {
     public double getAlienBossScale() { return alienBossScale; }
     public double getAlienBossMovementSpeed() { return alienBossMovementSpeed; }
     public double getAlienBossKnockbackResistance() { return alienBossKnockbackResistance; }
+    public double getAlienBossChaseRange() { return alienBossChaseRange; }
     public Material getAlienBossWeapon() { return alienBossWeapon; }
     public boolean isAlienBossArmorEnabled() { return alienBossArmorEnabled; }
     public boolean isAlienMinionsEnabled() { return alienMinionsEnabled; }

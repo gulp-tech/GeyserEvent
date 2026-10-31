@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.20.2'
+version: '1.20.3'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]

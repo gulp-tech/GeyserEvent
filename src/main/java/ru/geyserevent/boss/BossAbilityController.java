@@ -110,9 +110,8 @@ public class BossAbilityController {
         boss.swingMainHand();
         world.playSound(bossLoc, Sound.ENTITY_PIGLIN_BRUTE_ANGRY, 2.0f, 0.6f);
         world.playSound(bossLoc, Sound.BLOCK_CHAIN_BREAK, 2.0f, 0.5f);
-        // Оптимизация FPS (v1.9.8): 45 -> 22 частицы (на Bedrock-телефонах большое количество
-        // частиц в одной точке — самая частая причина просадок FPS)
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, bossLoc.clone().add(0, 1.2, 0), 22, 0.8, 0.8, 0.8, 0.08);
+        // FPS-оптимизация (v1.20.3): 22 -> 12 частиц
+        world.spawnParticle(Particle.SOUL_FIRE_FLAME, bossLoc.clone().add(0, 1.2, 0), 12, 0.8, 0.8, 0.8, 0.08);
 
         double horizStrength = cfg.getPullHorizontalStrength();
         double vertBoost = cfg.getPullVerticalBoost();
@@ -230,8 +229,9 @@ public class BossAbilityController {
 
         world.playSound(gatherPoint, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 2.0f, 0.5f);
         world.playSound(gatherPoint, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.6f);
-        world.spawnParticle(Particle.PORTAL, gatherPoint.clone().add(0, 1.0, 0), 40, 0.6, 0.8, 0.6, 0.35);
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, gatherPoint.clone().add(0, 0.5, 0), 20, 0.4, 0.4, 0.4, 0.04);
+        // FPS-оптимизация (v1.20.3): 40 -> 20, 20 -> 10
+        world.spawnParticle(Particle.PORTAL, gatherPoint.clone().add(0, 1.0, 0), 20, 0.6, 0.8, 0.6, 0.35);
+        world.spawnParticle(Particle.SOUL_FIRE_FLAME, gatherPoint.clone().add(0, 0.5, 0), 10, 0.4, 0.4, 0.4, 0.04);
 
         double damage = cfg.getGatherDamage();
         int slowTicks = cfg.getGatherSlownessTicks();
@@ -307,8 +307,9 @@ public class BossAbilityController {
             if (entity instanceof LivingEntity minion) {
                 configureMinion(minion, playersWithin20);
                 activeMinions.add(minion.getUniqueId());
-                world.spawnParticle(Particle.FLAME, spawnLoc.clone().add(0, 1.0, 0), 12, 0.3, 0.5, 0.3, 0.05);
-                world.spawnParticle(Particle.LARGE_SMOKE, spawnLoc.clone().add(0, 1.0, 0), 8, 0.3, 0.5, 0.3, 0.02);
+                // FPS-оптимизация (v1.20.3): 12->6, 8->4
+                world.spawnParticle(Particle.FLAME, spawnLoc.clone().add(0, 1.0, 0), 6, 0.3, 0.5, 0.3, 0.05);
+                world.spawnParticle(Particle.LARGE_SMOKE, spawnLoc.clone().add(0, 1.0, 0), 4, 0.3, 0.5, 0.3, 0.02);
                 spawned++;
             }
         }
@@ -594,7 +595,8 @@ public class BossAbilityController {
         }
         Vector dir = end.toVector().subtract(start.toVector()).normalize().multiply(step);
         Location cur = start.clone();
-        int steps = (int) Math.min(40, distance / step);
+        // FPS-оптимизация: максимум 12 точек на линию (вместо 40)
+        int steps = (int) Math.min(12, distance / step);
         for (int i = 0; i < steps; i++) {
             viewer.spawnParticle(particle, cur, 1, 0.02, 0.02, 0.02, 0.0);
             cur.add(dir);
@@ -606,10 +608,10 @@ public class BossAbilityController {
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.EXPLOSION, center, 3, 0.5, 0.2, 0.5, 0.02);
-        // Оптимизация FPS: кольца реже (шаг 4.0) и точек на кольцо в 2 раза меньше
-        for (double r = 2.0; r <= maxRadius; r += 4.0) {
-            int points = (int) (r * 3);
+        world.spawnParticle(Particle.EXPLOSION, center, 2, 0.5, 0.2, 0.5, 0.02);
+        // FPS-оптимизация: кольца реже (шаг 6.0) и точек на кольцо меньше
+        for (double r = 3.0; r <= maxRadius; r += 6.0) {
+            int points = (int) (r * 2);
             for (int i = 0; i < points; i++) {
                 double angle = 2 * Math.PI * i / points;
                 double x = center.getX() + Math.cos(angle) * r;

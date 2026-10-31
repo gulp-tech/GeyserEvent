@@ -6,7 +6,7 @@ import io, json, zipfile, os, uuid
 SRC = "/home/user/GeyserEvent/GeyserEvent-Pack.mcpack"
 DST = "/home/user/GeyserEvent/GeyserEvent-Pack.mcpack"
 EMBED = "/home/user/GeyserEvent/src/main/resources/resourcepack/GeyserEvent-Pack.mcpack"
-VERSION = [1, 20, 2]
+VERSION = [1, 20, 3]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 # Bedrock кэширует серверные паки ПО UUID и НЕ перекачивает их заново, если UUID
