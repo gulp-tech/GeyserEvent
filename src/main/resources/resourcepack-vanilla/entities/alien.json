@@ -1,0 +1,229 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "ale:alien",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "is_experimental": false,
+ 
+"scripts":{
+  "animate":[
+      ]
+},
+"animations":{
+}
+},
+    "component_groups": {
+      "minecraft:target": {
+        "minecraft:behavior.melee_attack": {
+          "priority": 1,
+          "speed_multiplier": 1.5,
+          "track_target": true
+        },
+        "minecraft:timer": {
+          "looping": true,
+          "time": 5.0,
+          "time_down_event": {
+            "event": "minecraft:target_outside",
+            "target": "self"
+          }
+        }
+      },
+      "minecraft:target_outside": {
+        "minecraft:shooter": {
+          "def": "ale:pow"
+        },
+        "minecraft:behavior.ranged_attack": {
+          "burst_shots": 1,
+          "burst_interval": 0,
+          "charge_charged_trigger": 0,
+          "charge_shoot_trigger": 0.4,
+          "attack_interval_min": 0,
+          "attack_interval_max": 0,
+          "attack_radius": 16.0
+        },
+        "minecraft:timer": {
+          "time": 1.0,
+          "looping": true,
+          "time_down_event": {
+            "event": "minecraft:target"
+          }
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [ "Aleexandre" ]
+      },
+      "minecraft:scale": {
+        "value": 1.0
+      },
+      "minecraft:attack": {
+        "damage": 5
+      },
+      "minecraft:collision_box": {
+        "width": 0.6,
+        "height": 2.8
+      },
+      "minecraft:health": {
+        "value": 150
+      },
+      "minecraft:movement": {
+        "value": 0.40
+      },
+      "minecraft:can_power_jump": {
+      },
+      "minecraft:movement.basic": {
+      },
+      "minecraft:jump.static": {
+      },
+    
+      "minecraft:equipment": {
+        "table": "loot_tables/hand/pistolaumverde.json"
+      },
+      "minecraft:loot": {
+        "table": "loot_tables/entities/ba.json"
+      },
+      "minecraft:on_death": {
+        "event": "minecraft:death",
+        "target": "self"
+      },
+      "minecraft:navigation.walk": {
+        "avoid_water": true,
+        "avoid_damage_blocks": true
+      },
+      "minecraft:behavior.move_towards_restriction": {
+        "priority": 4,
+        "speed_multiplier": 1
+      },
+      "minecraft:behavior.random_stroll": {
+        "priority": 6,
+        "speed_multiplier": 0.5
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 7,
+        "look_distance": 6.0,
+        "probability": 0.02
+      },
+      "minecraft:behavior.random_look_around": {
+        "priority": 8
+      },
+      "minecraft:behavior.hurt_by_target": {
+        "priority": 1
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:follow_range": {
+        "value": 48,
+        "max": 48
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 2,
+        "entity_types": [
+          {
+            "filters": {
+              "any_of": [
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "mob"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "player"
+                }
+              ]
+            },
+            "max_dist": 8
+          }
+        ]
+      },
+      "minecraft:physics": {
+      },
+      "minecraft:scaffolding_climber": { }
+    },
+    "events": {
+      "minecraft:death": {
+        "run_command": {
+          "command": [
+    
+          ]
+        }
+      },
+      "minecraft:entity_spawned": {
+        "add": {
+          "component_groups": [
+            "minecraft:target"
+          ]
+        }
+      },
+      "minecraft:target": {
+        "add": {
+          "component_groups": [
+            "minecraft:target"
+          ]
+        },
+        "remove": {
+          "component_groups": [
+            "minecraft:target_outside"
+          ]
+        }
+      },
+      "minecraft:target_outside": {
+        "sequence": [
+          {
+            "filters": {
+              "test": "has_target",
+              "subject": "self",
+              "operator": "!=",
+              "value": true
+            },
+            "add": {
+              "component_groups": [
+                "minecraft:target_outside"
+              ]
+            },
+            "remove": {
+              "component_groups": [
+                "minecraft:target"
+              ]
+            },
+            "run_command": {
+              "command": [
+              ]
+            }
+          },
+          {
+            "filters": {
+              "test": "has_target",
+              "subject": "self",
+              "operator": "==",
+              "value": true
+            },
+            "add": {
+              "component_groups": [
+                "minecraft:target_outside"
+              ]
+            },
+            "remove": {
+              "component_groups": [
+                "minecraft:target"
+              ]
+            },
+            "run_command": {
+              "command": [
+     
+                "playanimation @s animation.b.atirando ale",
+                "effect @s slowness 2 255 true"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

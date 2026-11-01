@@ -1,0 +1,45 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "ale:alien",
+      "materials": {
+	    "default": "entity_alphatest"
+	  },
+      "textures": {
+        "default": "textures/entity/alien"
+      },
+      "geometry": {
+        "default": "geometry.alien"
+      },
+      "scripts": {
+        "pre_animation": [
+          "variable.tcos0 = (Math.cos(query.modified_distance_moved * 38.17) * query.modified_move_speed / variable.gliding_speed_value) * 57.3;"
+        ],
+        "animate": [
+          "mob_controller",
+          "attack_controller"
+        ]
+      },
+      "animations": {
+        "parado": "animation.me.parado",
+        "andando": "animation.j.anda2",
+        "correndo": "animation.prei.anda",
+        "attack1": "animation.j.attack1",
+        "attack2": "animation.j.attack2",
+        "attack3": "animation.j.attack3",
+        "attack_controller": "controller.animation.attack",
+        "mob_controller": "controller.animation.mob_controller"
+      },
+      "spawn_egg": {
+        "texture": "spawn_egg",
+        "texture_index": 7
+      },
+      "render_controllers": [
+        "controller.render.dano"
+
+      ],
+      "enable_attachables": true
+    }
+  }
+}

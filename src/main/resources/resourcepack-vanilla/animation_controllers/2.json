@@ -1,0 +1,60 @@
+{
+  "format_version": "1.10.0",
+  "animation_controllers": {
+    "controller.animation.mob_controller": {
+      "initial_state": "default",
+      "states": {
+        "default": {
+          "transitions": [
+            {
+              "parado": "q.modified_move_speed < 0.1"
+            },
+            {
+              "andando": "q.modified_move_speed > 0.1 && !q.has_target"
+            },
+            {
+              "correndo": "q.modified_move_speed > 0.1 && q.has_target"
+            }
+          ],
+          "blend_transition": 0.1
+        },
+        "parado": {
+          "animations": ["parado"],
+          "transitions": [
+            {
+              "andando": "q.modified_move_speed > 0.1 && !q.has_target"
+            },
+            {
+              "correndo": "q.modified_move_speed > 0.1 && q.has_target"
+            }
+          ],
+          "blend_transition": 0.1
+        },
+        "andando": {
+          "animations": ["andando"],
+          "transitions": [
+            {
+              "parado": "q.modified_move_speed < 0.1"
+            },
+            {
+              "correndo": "q.modified_move_speed > 0.1 && q.has_target"
+            }
+          ],
+          "blend_transition": 0.1
+        },
+        "correndo": {
+          "animations": ["correndo"],
+          "transitions": [
+            {
+              "andando": "q.modified_move_speed > 0.1 && !q.has_target"
+            },
+            {
+              "parado": "q.modified_move_speed < 0.1"
+            }
+          ],
+          "blend_transition": 0.1
+        }
+      }
+    }
+  }
+}
