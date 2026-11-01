@@ -730,49 +730,146 @@ alien:
       - "-9 2 0"
     # ГАРАНТИРОВАННЫЙ базовый лут: эти предметы ВСЕГДА есть в каждом сундуке
     # (не зависят от шансов и роллов). Хватит, чтобы лут никогда не был пустым.
+    # Гарантированный базовый лут: эти предметы ВСЕГДА есть в каждом сундуке
+    # (не зависят от шансов и роллов). Ключ — произвольное название.
     base-loot:
-      - material: "IRON_INGOT"
+      iron:
+        material: "IRON_INGOT"
         min: 3
         max: 6
-      - material: "GOLD_INGOT"
+      gold:
+        material: "GOLD_INGOT"
         min: 2
         max: 4
-      - material: "EMERALD"
+      emerald:
+        material: "EMERALD"
         min: 2
         max: 4
-      - material: "DIAMOND"
+      diamond:
+        material: "DIAMOND"
         min: 1
         max: 2
     # Лут: material (материал), min/max (количество), chance (шанс в %),
-    # name (название предмета), lore (строки описания)
+    # rare (true — легендарный лут), name (название предмета), lore (строки описания)
+    # Ключ — произвольное название для идентификации в /rift menu
     loot:
-      - material: "DIAMOND"
+      diamond:
+        material: "DIAMOND"
         min: 1
         max: 3
         chance: 60
-      - material: "EMERALD"
+        rare: false
+      emerald:
+        material: "EMERALD"
         min: 2
         max: 5
         chance: 70
-      - material: "NETHERITE_INGOT"
-        min: 1
-        max: 1
-        chance: 20
-        name: "&#34D711Инопланетный слиток"
-        lore:
-          - "&7Добыто из корабля пришельцев"
-      - material: "GOLD_INGOT"
+        rare: false
+      gold_ingot:
+        material: "GOLD_INGOT"
         min: 3
         max: 8
         chance: 80
-      - material: "EXPERIENCE_BOTTLE"
+        rare: false
+      experience_bottle:
+        material: "EXPERIENCE_BOTTLE"
         min: 4
         max: 10
         chance: 65
-      - material: "AMETHYST_SHARD"
+        rare: false
+      amethyst_shard:
+        material: "AMETHYST_SHARD"
         min: 4
         max: 12
         chance: 75
+        rare: false
+      netherite_ingot:
+        material: "NETHERITE_INGOT"
+        min: 1
+        max: 1
+        chance: 20
+        rare: true
+        name: "&#34D711Инопланетный слиток"
+        lore:
+          - "&7Добыто из корабля пришельцев"
+      ancient_debris:
+        material: "ANCIENT_DEBRIS"
+        min: 1
+        max: 2
+        chance: 12
+        rare: true
+      netherite_scrap:
+        material: "NETHERITE_SCRAP"
+        min: 1
+        max: 2
+        chance: 10
+        rare: true
+      netherite_upgrade_template:
+        material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+        min: 1
+        max: 1
+        chance: 6
+        rare: true
+      netherite_sword:
+        material: "NETHERITE_SWORD"
+        min: 1
+        max: 1
+        chance: 3
+        rare: true
+      netherite_pickaxe:
+        material: "NETHERITE_PICKAXE"
+        min: 1
+        max: 1
+        chance: 3
+        rare: true
+      netherite_chestplate:
+        material: "NETHERITE_CHESTPLATE"
+        min: 1
+        max: 1
+        chance: 2
+        rare: true
+      netherite_leggings:
+        material: "NETHERITE_LEGGINGS"
+        min: 1
+        max: 1
+        chance: 2
+        rare: true
+      netherite_helmet:
+        material: "NETHERITE_HELMET"
+        min: 1
+        max: 1
+        chance: 2
+        rare: true
+      netherite_boots:
+        material: "NETHERITE_BOOTS"
+        min: 1
+        max: 1
+        chance: 2
+        rare: true
+      diamond_block:
+        material: "DIAMOND_BLOCK"
+        min: 1
+        max: 2
+        chance: 15
+        rare: true
+      golden_apple:
+        material: "GOLDEN_APPLE"
+        min: 1
+        max: 2
+        chance: 20
+        rare: false
+      enchanted_golden_apple:
+        material: "ENCHANTED_GOLDEN_APPLE"
+        min: 1
+        max: 1
+        chance: 8
+        rare: true
+      totem_of_undying:
+        material: "TOTEM_OF_UNDYING"
+        min: 1
+        max: 1
+        chance: 5
+        rare: true
 
   # ---- Награды за урон (общие с Разломом rewards.places и rewards.currency-name) ----
   rewards:

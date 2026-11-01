@@ -158,12 +158,14 @@ public class PluginConfig {
     private String alienChestsLine;
     private String alienTimeoutLine;
 
-    /** Предмет лута в сундуках пришельцев (материал, количество, шанс, оформление). */
+    /** Предмет лута в сундуках пришельцев (ключ, материал, количество, шанс, rare, оформление). */
     public record AlienLootItem(
+            String key,
             Material material,
             int minAmount,
             int maxAmount,
             double chancePercent,
+            boolean rare,
             String displayName,
             List<String> lore
     ) {
@@ -679,51 +681,55 @@ public class PluginConfig {
         }
         this.alienChestBaseLoot.clear();
         if (chests != null) {
-            for (Map<?, ?> entry : chests.getMapList("base-loot")) {
-                Material mat = material(String.valueOf(entry.get("material")), Material.IRON_INGOT);
-                int min = toInt(entry.get("min"), 1);
-                int max = toInt(entry.get("max"), min);
-                String name = entry.get("name") != null ? ColorUtil.color(String.valueOf(entry.get("name"))) : null;
-                List<String> lore = new ArrayList<>();
-                Object rawLore = entry.get("lore");
-                if (rawLore instanceof List<?> list) {
-                    for (Object line : list) {
-                        lore.add(ColorUtil.color(String.valueOf(line)));
+            ConfigurationSection baseLootSec = chests.getConfigurationSection("base-loot");
+            if (baseLootSec != null) {
+                for (String key : baseLootSec.getKeys(false)) {
+                    ConfigurationSection itemSec = baseLootSec.getConfigurationSection(key);
+                    if (itemSec == null) continue;
+                    Material mat = material(itemSec.getString("material", "IRON_INGOT"), Material.IRON_INGOT);
+                    int min = Math.max(1, itemSec.getInt("min", 1));
+                    int max = Math.max(min, itemSec.getInt("max", min));
+                    String name = itemSec.getString("name") != null ? ColorUtil.color(itemSec.getString("name")) : null;
+                    List<String> lore = new ArrayList<>();
+                    for (String loreLine : itemSec.getStringList("lore")) {
+                        lore.add(ColorUtil.color(loreLine));
                     }
+                    this.alienChestBaseLoot.add(new AlienLootItem(key, mat, min, max, 100.0, false, name, lore));
                 }
-                this.alienChestBaseLoot.add(new AlienLootItem(mat, Math.max(1, min),
-                        Math.max(1, Math.max(min, max)), 100.0, name, lore));
             }
         }
         if (this.alienChestBaseLoot.isEmpty()) {
-            this.alienChestBaseLoot.add(new AlienLootItem(Material.IRON_INGOT, 3, 6, 100.0, null, List.of()));
-            this.alienChestBaseLoot.add(new AlienLootItem(Material.GOLD_INGOT, 2, 4, 100.0, null, List.of()));
-            this.alienChestBaseLoot.add(new AlienLootItem(Material.EMERALD, 2, 4, 100.0, null, List.of()));
-            this.alienChestBaseLoot.add(new AlienLootItem(Material.DIAMOND, 1, 2, 100.0, null, List.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem("iron", Material.IRON_INGOT, 3, 6, 100.0, false, null, List.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 2, 4, 100.0, false, null, List.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem("emerald", Material.EMERALD, 2, 4, 100.0, false, null, List.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 2, 100.0, false, null, List.of()));
         }
         this.alienChestLoot.clear();
         if (chests != null) {
-            for (Map<?, ?> entry : chests.getMapList("loot")) {
-                Material mat = material(String.valueOf(entry.get("material")), Material.DIAMOND);
-                int min = toInt(entry.get("min"), 1);
-                int max = toInt(entry.get("max"), min);
-                double chance = entry.get("chance") instanceof Number n ? n.doubleValue() : 100.0;
-                String name = entry.get("name") != null ? ColorUtil.color(String.valueOf(entry.get("name"))) : null;
-                List<String> lore = new ArrayList<>();
-                Object rawLore = entry.get("lore");
-                if (rawLore instanceof List<?> list) {
-                    for (Object line : list) {
-                        lore.add(ColorUtil.color(String.valueOf(line)));
+            ConfigurationSection lootSec = chests.getConfigurationSection("loot");
+            if (lootSec != null) {
+                for (String key : lootSec.getKeys(false)) {
+                    ConfigurationSection itemSec = lootSec.getConfigurationSection(key);
+                    if (itemSec == null) continue;
+                    Material mat = material(itemSec.getString("material", "DIAMOND"), Material.DIAMOND);
+                    if (mat == null || mat.isAir()) continue;
+                    int min = Math.max(1, itemSec.getInt("min", 1));
+                    int max = Math.max(min, itemSec.getInt("max", min));
+                    double chance = Math.max(0.0, Math.min(100.0, itemSec.getDouble("chance", 25.0)));
+                    boolean rare = itemSec.getBoolean("rare", false);
+                    String name = itemSec.getString("name") != null ? ColorUtil.color(itemSec.getString("name")) : null;
+                    List<String> lore = new ArrayList<>();
+                    for (String loreLine : itemSec.getStringList("lore")) {
+                        lore.add(ColorUtil.color(loreLine));
                     }
+                    this.alienChestLoot.add(new AlienLootItem(key, mat, min, max, chance, rare, name, lore));
                 }
-                this.alienChestLoot.add(new AlienLootItem(mat, Math.max(1, min), Math.max(1, Math.max(min, max)),
-                        Math.max(0.0, Math.min(100.0, chance)), name, lore));
             }
         }
         if (this.alienChestLoot.isEmpty()) {
-            this.alienChestLoot.add(new AlienLootItem(Material.DIAMOND, 1, 3, 60.0, null, List.of()));
-            this.alienChestLoot.add(new AlienLootItem(Material.EMERALD, 2, 5, 70.0, null, List.of()));
-            this.alienChestLoot.add(new AlienLootItem(NetheriteIngot(), 1, 1, 25.0, null, List.of()));
+            this.alienChestLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 3, 60.0, false, null, List.of()));
+            this.alienChestLoot.add(new AlienLootItem("emerald", Material.EMERALD, 2, 5, 70.0, false, null, List.of()));
+            this.alienChestLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 20.0, true, null, List.of()));
         }
 
         this.alienRewardsEnabled = cfg.getBoolean("alien.rewards.enabled", true);

@@ -546,6 +546,18 @@ public final class AlienInvasionManager {
             int max = Math.max(min, item.maxAmount());
             int amount = min + (max > min ? random.nextInt(max - min + 1) : 0);
             org.bukkit.inventory.ItemStack stack = new org.bukkit.inventory.ItemStack(item.material(), Math.max(1, amount));
+            if (item.displayName() != null || !item.lore().isEmpty()) {
+                org.bukkit.inventory.meta.ItemMeta meta = stack.getItemMeta();
+                if (meta != null) {
+                    if (item.displayName() != null) {
+                        meta.setDisplayName(item.displayName());
+                    }
+                    if (!item.lore().isEmpty()) {
+                        meta.setLore(item.lore());
+                    }
+                    stack.setItemMeta(meta);
+                }
+            }
             inventory.addItem(stack);
         }
         if (loot.isEmpty() || inventory == null) {
@@ -553,7 +565,9 @@ public final class AlienInvasionManager {
         }
         for (int i = 0; i < rolls; i++) {
             PluginConfig.AlienLootItem item = loot.get(random.nextInt(loot.size()));
-            if (item.chancePercent() < 100.0 && random.nextDouble() * 100.0 > item.chancePercent()) {
+            // Учёт rare-лута: легендарные предметы в 2 раза реже в песенках
+            double effectiveChance = item.rare() ? item.chancePercent() * 0.5 : item.chancePercent();
+            if (effectiveChance < 100.0 && random.nextDouble() * 100.0 > effectiveChance) {
                 continue;
             }
             int min = item.minAmount();
