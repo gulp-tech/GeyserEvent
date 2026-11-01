@@ -1,0 +1,26 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "ale:fire",
+      "materials": {
+        "default": "enderman"
+      },
+      "textures": {
+        "default": "textures/entity/fire"
+      },
+      "geometry": {
+        "default": "geometry.fire"
+      },
+      "render_controllers": [ "controller.render.item_sprite" ],
+      "animations": {
+        "spears_of_chaos": "animation.olhar"
+      },
+      "scripts": {
+        "animate": [
+          "spears_of_chaos"
+        ]
+      }
+    }
+  }
+} 

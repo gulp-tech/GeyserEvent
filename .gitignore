@@ -1,0 +1,10 @@
+target/
+build/
+.gradle/
+.idea/
+*.iml
+.DS_Store
+
+# python
+__pycache__/
+*.pyc

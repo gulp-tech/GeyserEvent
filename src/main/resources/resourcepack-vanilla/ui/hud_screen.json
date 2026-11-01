@@ -1,0 +1,182 @@
+// GeyserEvent: панель активного ивента в правом верхнем углу экрана (Bedrock).
+// Базовая техника и код: ofunny (https://ofunny.world/, github.com/ofunny/ofunnysBedrockExamples), GPL-3.0.
+// Плагин шлёт action bar вида: #GE_R#;3500/3500~~~~~~~~~~~~~;19:55;714 73 -243
+//   (маркер ; статус 24 байт, добит '~' ; время ММ:СС ; координаты).
+// Данные от плагина — только ASCII: '%.Ns' у Bedrock считается неизвестно в
+// байтах или символах, а на ASCII это одно и то же. Кириллица и цвета — в паке.
+// Переменные плоские (только $actionbar_text + литералы): Bedrock подставляет
+// $переменные в свойство контрола неглубоко, и цепочки рисуются сырым текстом.
+// Пока маркер есть, пак прячет ванильный action bar (только visible) и рисует
+//   карточку ивента на ванильном фоне textures/ui/hud_tip_text_background:
+//   строка 1 — название ивента, строка 2 — состояние с временем, строка 3 — координаты.
+// Тот же 'namespace': 'hud', что и у ванильного hud_screen.json — иначе фабрика
+// hud_actionbar_text_factory и переменная $actionbar_text не находятся.
+{
+  "namespace": "hud",
+  "geyserevent_hud_text": {
+    "type": "image",
+    "texture": "textures/ui/hud_tip_text_background",
+    "size": [
+      "100%c + 18px",
+      "100%c + 12px"
+    ],
+    "layer": 31,
+    "alpha": 1.0,
+    "anchor_from": "top_right",
+    "anchor_to": "top_right",
+    "offset": [
+      -6,
+      6
+    ],
+    "visible": "(($actionbar_text - '#GE_') != $actionbar_text)",
+    "controls": [
+      {
+        "geyserevent_card": {
+          "type": "stack_panel",
+          "orientation": "vertical",
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "offset": [
+            9,
+            6
+          ],
+          "controls": [
+            {
+              "geyserevent_name_rift": {
+                "type": "label",
+                "text": "§cАДСКИЙ РАЗЛОМ",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_R#') != $actionbar_text)"
+              }
+            },
+            {
+              "geyserevent_name_excavation": {
+                "type": "label",
+                "text": "§eПЛЯЖНЫЕ РАСКОПКИ",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_E#') != $actionbar_text)"
+              }
+            },
+            {
+              "geyserevent_name_cauldron": {
+                "type": "label",
+                "text": "§dКОТЁЛ АЛХИМИКА",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_C#') != $actionbar_text)"
+              }
+            },
+            {
+              "geyserevent_name_summon": {
+                "type": "label",
+                "text": "§6ПРИЗЫВ БОССА",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_S#') != $actionbar_text)"
+              }
+            },
+            {
+              "geyserevent_status_rift": {
+                "type": "label",
+                "text": "('§c❤ ' + (('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - '~') + '  §7·§r  ' + '§f' + ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')))",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_R#') != $actionbar_text)"
+              }
+            },
+            {
+              "geyserevent_status_excavation": {
+                "type": "label",
+                "text": "('§eКисточка: §a' + (((('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - '~') = '0') ? 'Готова' : ((('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - '~') + 'с')) + '  §7·§r  ' + '§f' + ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')))",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_E#') != $actionbar_text)"
+              }
+            },
+            {
+              "geyserevent_status_cauldron": {
+                "type": "label",
+                "text": "('§dРеагенты: §a' + (('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - '~') + '  §7·§r  ' + '§f' + ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')))",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_C#') != $actionbar_text)"
+              }
+            },
+            {
+              "geyserevent_status_summon": {
+                "type": "label",
+                "text": "('§eБосс появится через' + '  §7·§r  ' + '§f' + ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')))",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_S#') != $actionbar_text)"
+              }
+            },
+            {
+              "geyserevent_coords": {
+                "type": "label",
+                "text": "('§7Координаты: §f' + ((($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';') - ('%.5s' * (($actionbar_text - ('%.7s' * $actionbar_text)) - ('%.24s' * ($actionbar_text - ('%.7s' * $actionbar_text))) - ';')) - ';'))",
+                "localize": false,
+                "shadow": true,
+                "layer": 32,
+                "color": "$tool_tip_text",
+                "text_alignment": "left",
+                "visible": "(($actionbar_text - '#GE_') != $actionbar_text)"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "geyserevent_hud_text_factory": {
+    "type": "panel",
+    "factory": {
+      "name": "hud_actionbar_text_factory",
+      "control_ids": {
+        "hud_actionbar_text": "geyserevent_hud_text@hud.geyserevent_hud_text"
+      }
+    }
+  },
+  "hud_actionbar_text": {
+    "visible": "(($actionbar_text - '#GE_') = $actionbar_text)"
+  },
+  "root_panel": {
+    "modifications": [
+      {
+        "array_name": "controls",
+        "operation": "insert_front",
+        "value": [
+          {
+            "geyserevent_hud_text_factory@hud.geyserevent_hud_text_factory": {}
+          }
+        ]
+      }
+    ]
+  }
+}

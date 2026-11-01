@@ -1,0 +1,130 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "ale:fire",
+      "is_spawnable": false,
+      "is_summonable": true,
+      "is_experimental": false,
+	  "runtime_identifier": "minecraft:snowball"
+    },
+
+    "component_groups": {
+      "minecraft:exploding": {
+        "minecraft:explode": {
+          "fuse_length": 0,
+          "fuse_lit": true,
+          "power": 0,
+          "causes_fire": false,
+          "fire_affected_by_griefing": false,
+          "destroy_affected_by_griefing": false
+        }
+      },
+	  "despawning": {
+        "minecraft:type_family": {
+          "family": ["despawer", "despawer_despawning"
+          ]
+        }
+      }
+    },
+
+    "components": {
+      "minecraft:type_family": {
+        "family": ["sla"
+        ]
+      }, 
+      "minecraft:collision_box": {
+        "width": 1,
+        "height": 1
+      },
+      "minecraft:projectile": {
+        "on_hit": {
+          "definition_event": {
+            "affect_projectile": true,
+            "event_trigger": {
+              "event": "minecraft:explode",
+              "target": "self"
+            }
+          },
+		  "impact_damage": {
+            "damage": 8,
+            "knockback": false,
+            "semirandomdiffdamage": false,
+            "destroyonhit": true
+          }
+        },
+        "power": 2.4,
+        "gravity": 0,
+        "inertia": 1,
+        "liquid_inertia": 1,
+        "uncertainty_base": 0,
+        "uncertainty_multiplier": 0,
+        "anchor": 1,
+        "offset": [0, -0.1, 0],
+        "reflect_on_hurt": true,
+        "catch_fire": true
+      },
+      "minecraft:environment_sensor": {
+        "triggers": [
+          {
+            "event": "ale:command"
+          }
+        ]
+      },
+	  "minecraft:timer": {
+        "looping": true,
+        "random_time_choices": [
+          {
+            "weight": 50,
+            "value": 4
+          }
+        ],
+        "time_down_event": {
+          "event": "minecraft:start_despawn",
+          "target": "self"
+        }
+      },
+      "minecraft:physics": {},
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+	  "minecraft:despawn": {
+        "filters": {
+          "all_of": [
+            {
+              "any_of": [
+                {
+                  "test":
+                  "is_family",
+                  "subject": "self",
+                  "value": "despawer_despawning"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "events": {
+      "ale:command": {
+        "run_command": {
+          "command": [
+          ]
+        }
+      },
+      "minecraft:explode": {
+        "add": {
+          "component_groups": [
+            "minecraft:exploding"
+          ]
+        }
+      },
+	  "minecraft:start_despawn": {
+        "add": {
+          "component_groups": ["despawning"]
+        }
+      }
+    }
+  }
+}

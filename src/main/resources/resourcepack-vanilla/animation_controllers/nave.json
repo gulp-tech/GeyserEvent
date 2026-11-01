@@ -1,0 +1,49 @@
+{
+  "format_version": "1.10.0",
+  "animation_controllers": {
+    "controller.animation.nave": {
+      "states": {
+        "default": {
+          "transitions": [ { "walking": "q.variant != 2 && !q.has_target" }, { "walking2": "q.variant == 0" } ]
+        },
+        "walking": {
+          "transitions": [ { "default": "(1.0)" } ],
+          "on_entry": [
+            "@s no_alvo "
+          ]
+        }, 
+        "walking2": {
+          "transitions": [ { "default": "(1.0)" } ],
+          "on_entry": [
+            "/execute positioned ~ ~-4 ~ run effect @e[family=mob,r=3] levitation 1 4 true",
+            "/execute positioned ~ ~-4 ~ run effect @e[family=monster,r=3] levitation 1 4 true",
+            "/execute positioned ~ ~-4 ~ run effect @e[family=player,r=3] levitation 1 4 true",
+
+            "/execute if block ~~-3~ air run damage @e[family=mob,r=3.5] 4 entity_attack entity @s",
+            "/execute if block ~~-3~ air run damage @e[family=monster,r=3.5] 4 entity_attack entity @s",
+            "/execute if block ~~-3~ air run damage @e[family=player,r=3.5] 4 entity_attack entity @s"
+
+
+
+          ]
+        }
+      }
+    },
+    "controller.animation.nave2": {
+      "states": {
+        "default": {
+          "transitions": [ { "a": "q.variant == 0 && q.has_target" }]
+        },
+        "a": {
+          "transitions": [ { "default": "(1.0)" } ],
+          "on_entry": [
+            "/effect @s slow_falling 1 4 true",
+            "/execute unless block ~~-2~ air run effect @s levitation 1 3 true",
+            "/execute unless block ~~-5~ air run effect @s levitation 1 0 true"
+          ]
+      
+        }
+      }
+    }
+  }
+}
