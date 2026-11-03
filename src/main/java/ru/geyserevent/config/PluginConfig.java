@@ -286,7 +286,7 @@ public class PluginConfig {
         this.maxSpawnAttempts = Math.max(5, cfg.getInt("event.spawn.max-attempts", 35));
 
         // Schematic
-        this.schematicFile = cfg.getString("schematic.file", "infernal_rift.schem.yml");
+        this.schematicFile = cfg.getString("schematic.file", "infernal_citadel_25.schem.yml");
         this.restoreBlocksOnEnd = cfg.getBoolean("schematic.restore-blocks-on-end", true);
         this.protectRegion = cfg.getBoolean("schematic.protect-region", true);
         this.protectionRadius = Math.max(5, cfg.getInt("schematic.protection-radius", 12));

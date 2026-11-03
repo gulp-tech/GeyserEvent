@@ -72,10 +72,10 @@ event:
     max-attempts: 35
 
 schematic:
-  file: "infernal_rift.schem.yml"
+  file: "infernal_citadel_25.schem.yml"
   restore-blocks-on-end: true
   protect-region: true
-  protection-radius: 12
+  protection-radius: 13
   disable-portal-teleport: true
 
 # ============================================================================

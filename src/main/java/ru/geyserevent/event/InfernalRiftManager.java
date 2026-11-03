@@ -19,6 +19,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.PiglinAbstract;
 import org.bukkit.entity.PiglinBrute;
 import org.bukkit.entity.Player;
@@ -645,7 +646,7 @@ public class InfernalRiftManager {
             return true;
         } else {
             // 1. Строим схему «Адский Разлом»
-            this.bossHomeLocation = plugin.getSchematicManager().pasteSchematic(this.riftCenterLocation);
+            this.bossHomeLocation = plugin.getSchematicManager().pasteSchematic(this.riftCenterLocation, 14, 12);
             if (this.bossHomeLocation == null) {
                 this.bossHomeLocation = this.riftCenterLocation.clone().add(0, 1, 2);
             }
@@ -768,10 +769,11 @@ public class InfernalRiftManager {
         BossAbilityController.setEntityAttribute(boss, "MOVEMENT_SPEED", "generic.movement_speed", cfg.getBossMovementSpeed());
         BossAbilityController.setEntityAttribute(boss, "KNOCKBACK_RESISTANCE", "generic.knockback_resistance", cfg.getBossKnockbackResistance());
         BossAbilityController.setEntityAttribute(boss, "ATTACK_DAMAGE", "generic.attack_damage", cfg.getBossDamage());
-        BossAbilityController.setEntityAttribute(boss, "FOLLOW_RANGE", "generic.follow_range", 32.0);
+        BossAbilityController.setEntityAttribute(boss, "FOLLOW_RANGE", "generic.follow_range", 48.0);
 
         BossAbilityController.setEntityAttribute(boss, "MAX_HEALTH", "generic.max_health", cfg.getBossHealth());
         boss.setHealth(boss.getMaxHealth());
+        boss.setAI(true);
 
         EntityEquipment equip = boss.getEquipment();
         if (equip != null) {
@@ -1127,8 +1129,31 @@ public class InfernalRiftManager {
         if (boss instanceof PiglinAbstract piglin) {
             piglin.setImmuneToZombification(true);
         }
+        boss.setAI(true);
 
-        // Возврат босса к алтарю при уводе слишком далеко
+        // Нативный ИИ: бежит и бьёт ближайшего игрока
+        Player closest = nearestRiftPlayer(boss.getLocation(), cfg.getBossLeashRadius());
+        if (boss instanceof Mob mob && closest != null) {
+            Entity current = mob.getTarget();
+            if (!(current instanceof Player) || current.isDead() || !current.isValid()) {
+                mob.setTarget(closest);
+            }
+        }
+
+        // Фаза 2+: аура огня вокруг босса
+        if (bossPhase >= 2 && closest != null && closest.getLocation().distanceSquared(boss.getLocation()) <= 16.0) {
+            closest.setFireTicks(Math.max(closest.getFireTicks(), 40));
+        }
+
+        World world = boss.getWorld();
+        if (world != null && secondsElapsed % 2 == 0) {
+            world.spawnParticle(Particle.SOUL_FIRE_FLAME, boss.getLocation().add(0, 1.2, 0), 8, 0.4, 0.6, 0.4, 0.01);
+            if (bossPhase >= 3) {
+                world.spawnParticle(Particle.FLAME, boss.getLocation().add(0, 1.0, 0), 10, 0.5, 0.4, 0.5, 0.02);
+            }
+        }
+
+        // Поводок: телепорт домой только если утащили очень далеко
         if (bossHomeLocation != null && boss.getWorld().equals(bossHomeLocation.getWorld())) {
             double maxDist = cfg.getBossLeashRadius();
             if (boss.getLocation().distanceSquared(bossHomeLocation) > maxDist * maxDist) {
@@ -1137,7 +1162,6 @@ public class InfernalRiftManager {
             }
         }
 
-        // Способности босса в радиусе 15 блоков
         int castInterval = (bossPhase >= 3)
                 ? Math.max(5, cfg.getAbilityCastIntervalSeconds() - 4)
                 : cfg.getAbilityCastIntervalSeconds();
@@ -1146,15 +1170,33 @@ public class InfernalRiftManager {
             plugin.getAbilityController().castNextRotationAbility(boss);
         }
 
-        // Приспешники появляются тогда, когда игрок подошёл ближе чем на 20 блоков (без сообщений в чат!)
+        int minionInterval = (bossPhase >= 3)
+                ? Math.max(8, cfg.getMinionSummonIntervalSeconds() / 2)
+                : cfg.getMinionSummonIntervalSeconds();
         if (cfg.isMinionsEnabled() && minionCooldownSeconds <= 0) {
             int spawned = plugin.getAbilityController().summonMinions(boss, false);
             if (spawned > 0) {
-                minionCooldownSeconds = cfg.getMinionSummonIntervalSeconds();
+                minionCooldownSeconds = minionInterval;
             }
         }
 
         updateBossNameAndHealthBar(boss);
+    }
+
+    private Player nearestRiftPlayer(Location from, double range) {
+        if (from == null) {
+            return null;
+        }
+        Player best = null;
+        double bestSq = range * range;
+        for (Player player : plugin.getAbilityController().getTargetPlayersInRadius(from, range)) {
+            double d = player.getLocation().distanceSquared(from);
+            if (d < bestSq) {
+                bestSq = d;
+                best = player;
+            }
+        }
+        return best;
     }
 
     /**
@@ -1208,7 +1250,8 @@ public class InfernalRiftManager {
                 w.playSound(loc, Sound.ENTITY_WITHER_BREAK_BLOCK, 2.0f, 0.7f);
             }
             boss.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 120, 0, false, false));
-            plugin.getAbilityController().summonMinions(boss, false);
+            plugin.getAbilityController().summonMinions(boss, true);
+            Bukkit.broadcastMessage(ColorUtil.color("&e┼ &cВладыка Разлома впал в ярость! &8(&fфаза 2&8)"));
         } else if (bossPhase == 2 && ratio <= 0.20 && ratio > 0.0) {
             bossPhase = 3;
             Location loc = boss.getLocation();
@@ -1216,9 +1259,12 @@ public class InfernalRiftManager {
             if (w != null) {
                 w.strikeLightningEffect(loc);
                 w.playSound(loc, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.5f, 0.6f);
+                w.playSound(loc, Sound.ENTITY_WITHER_SPAWN, 1.6f, 0.5f);
             }
             boss.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 120, 1, false, false));
             plugin.getAbilityController().castGatherAllAbility(boss);
+            plugin.getAbilityController().summonMinions(boss, true);
+            Bukkit.broadcastMessage(ColorUtil.color("&e┼ &4&lРазлом раскрывается! &cВладыка жжёт всех рядом &8(&fфаза 3&8)"));
         }
     }
 

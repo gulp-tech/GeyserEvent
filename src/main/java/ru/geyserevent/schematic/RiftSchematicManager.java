@@ -70,6 +70,9 @@ public class RiftSchematicManager {
         }
 
         String fileName = schematicFileName != null ? schematicFileName : plugin.getPluginConfig().getSchematicFile();
+        if ("infernal_rift.schem.yml".equals(fileName)) {
+            fileName = "infernal_citadel_25.schem.yml";
+        }
         File schemFile = new File(schemDir, fileName);
         if (!schemFile.exists()) {
             try {
