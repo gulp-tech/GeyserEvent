@@ -1,0 +1,47 @@
+{
+  "alien_growl": {
+    "sounds": [
+      {"name": "alien/alien_growl", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.0,
+    "pitch": 1.0,
+    "attenuation_distance": 64
+  },
+  "alien_screech": {
+    "sounds": [
+      {"name": "alien/alien_screech", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.0,
+    "pitch": 1.0,
+    "attenuation_distance": 64
+  },
+  "alien_ambient": {
+    "sounds": [
+      {"name": "alien/alien_ambient", "stream": false}
+    ],
+    "category": "ambient",
+    "volume": 0.5,
+    "pitch": 1.0,
+    "attenuation_distance": 32
+  },
+  "alien_transmit": {
+    "sounds": [
+      {"name": "alien/alien_transmit", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 0.8,
+    "pitch": 1.0,
+    "attenuation_distance": 48
+  },
+  "alien_death": {
+    "sounds": [
+      {"name": "alien/alien_death", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.5,
+    "pitch": 1.0,
+    "attenuation_distance": 80
+  }
+}

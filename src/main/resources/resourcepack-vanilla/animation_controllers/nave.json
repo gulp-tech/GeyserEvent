@@ -1,0 +1,45 @@
+{
+    "format_version" : "1.10.0",
+    "animation_controllers" : {
+        "controller.animation.nave": {
+          "states": {
+            "default": {
+              "blend_transition": 0.1,
+              "animations": ["parado"],
+              "transitions": [
+                {
+                  "andando": "q.modified_move_speed > 0.1 && q.variant != 0"
+                },
+                {
+                  "abduzir": "q.variant == 0"
+                }
+              ]
+            },
+            "andando": {
+              "blend_transition": 0.1,
+              "animations": ["andando"],
+              "transitions": [
+                {
+                  "default": "q.modified_move_speed < 0.1 && q.variant != 0"
+                },
+                {
+                  "abduzir": "q.variant == 0"
+                }
+              ]
+            },
+            "abduzir": {
+              "blend_transition": 0.1,
+              "animations": ["abduzir"],
+              "transitions": [
+                {
+                  "default": "q.modified_move_speed < 0.1 && q.variant != 0"
+                },
+                {
+                  "andando": "q.modified_move_speed > 0.1 && q.variant != 0"
+                }
+              ]
+            }
+          }
+        }
+    }
+}

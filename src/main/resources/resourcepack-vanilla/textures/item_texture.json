@@ -1,0 +1,10 @@
+{
+  "resource_pack_name": "Shield Hero",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "b": {
+      "textures": "textures/items/b"
+    
+    }   
+  }
+}
