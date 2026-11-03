@@ -20,6 +20,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.PiglinAbstract;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Raider;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -361,15 +362,14 @@ public class BossAbilityController {
                     String.valueOf((int) Math.ceil(minion.getHealth())))));
         }
 
+        disarmIllager(minion);
         EntityEquipment equip = minion.getEquipment();
-        if (equip != null) {
-            ItemStack item = new ItemStack(weapon != null ? weapon : Material.AIR);
-            if (item.getType() != Material.AIR) {
-                ItemMeta meta = item.getItemMeta();
-                if (meta != null) {
-                    meta.setUnbreakable(true);
-                    item.setItemMeta(meta);
-                }
+        if (equip != null && weapon != null && weapon != Material.AIR) {
+            ItemStack item = new ItemStack(weapon);
+            ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                meta.setUnbreakable(true);
+                item.setItemMeta(meta);
             }
             equip.setItemInMainHand(item);
             equip.setItemInMainHandDropChance(0.0f);
@@ -397,8 +397,45 @@ public class BossAbilityController {
             return null;
         }
         configureMinion(minion, nearbyPlayers, health, damage, scale, nameFormat, weapon, extraTag);
+        if (weapon == null || weapon == Material.AIR) {
+            disarmIllager(minion);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (minion.isValid() && !minion.isDead()) {
+                    disarmIllager(minion);
+                }
+            }, 1L);
+        }
         activeMinions.add(minion.getUniqueId());
         return minion;
+    }
+
+    /** Снимает топор/флаг рейда с виндicator — на Bedrock это рисуется поверх модели пришельца. */
+    public static void disarmIllager(LivingEntity entity) {
+        if (entity == null) {
+            return;
+        }
+        if (entity instanceof Raider raider) {
+            raider.setCanJoinRaid(false);
+            raider.setPatrolLeader(false);
+            raider.setPatrolTarget(null);
+        }
+        EntityEquipment equip = entity.getEquipment();
+        if (equip == null) {
+            return;
+        }
+        ItemStack air = new ItemStack(Material.AIR);
+        equip.setItemInMainHand(air);
+        equip.setItemInOffHand(air);
+        equip.setHelmet(air);
+        equip.setChestplate(air);
+        equip.setLeggings(air);
+        equip.setBoots(air);
+        equip.setItemInMainHandDropChance(0.0f);
+        equip.setItemInOffHandDropChance(0.0f);
+        equip.setHelmetDropChance(0.0f);
+        equip.setChestplateDropChance(0.0f);
+        equip.setLeggingsDropChance(0.0f);
+        equip.setBootsDropChance(0.0f);
     }
 
     public void updateMinionName(LivingEntity minion) {

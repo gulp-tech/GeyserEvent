@@ -657,9 +657,9 @@ public class PluginConfig {
         this.alienMinionDamage = minions != null ? Math.max(0.0, minions.getDouble("damage", 12.0)) : 12.0;
         this.alienMinionScale = minions != null ? Math.max(0.2, minions.getDouble("scale", 1.0)) : 1.0;
         this.alienMinionWeapon = material(minions != null ? minions.getString("weapon", "AIR") : "AIR", Material.AIR);
-        this.alienMinionIntervalSeconds = minions != null ? Math.max(3, minions.getInt("interval-seconds", 20)) : 20;
-        this.alienMinionCountPerWave = minions != null ? Math.max(1, minions.getInt("count-per-wave", 4)) : 4;
-        this.alienMaxActiveAlienMinions = minions != null ? Math.max(1, minions.getInt("max-active", 10)) : 10;
+        this.alienMinionIntervalSeconds = minions != null ? Math.max(20, minions.getInt("interval-seconds", 25)) : 25;
+        this.alienMinionCountPerWave = minions != null ? Math.max(1, Math.min(2, minions.getInt("count-per-wave", 2))) : 2;
+        this.alienMaxActiveAlienMinions = minions != null ? Math.max(1, Math.min(4, minions.getInt("max-active", 4))) : 4;
         this.alienMinionTriggerRadius = minions != null ? Math.max(4.0, minions.getDouble("trigger-radius", 20.0)) : 20.0;
 
         this.alienAbilityIntervalSeconds = Math.max(3, cfg.getInt("alien.ability-interval-seconds", 14));

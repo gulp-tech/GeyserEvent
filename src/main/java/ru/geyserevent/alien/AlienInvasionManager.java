@@ -128,7 +128,7 @@ public final class AlienInvasionManager {
         this.bossPhase = 1;
         this.secondsElapsed = 0;
         this.abilityCooldownSeconds = cfg.getAlienAbilityIntervalSeconds();
-        this.minionCooldownSeconds = Math.max(3, cfg.getAlienMinionIntervalSeconds() / 2);
+        this.minionCooldownSeconds = cfg.getAlienMinionIntervalSeconds();
         this.leaderboard.clear();
         this.spawnedChests.clear();
         this.alienMinions.clear();
@@ -264,6 +264,7 @@ public final class AlienInvasionManager {
             mob.setTarget(null);
         }
 
+        BossAbilityController.disarmIllager(boss);
         Material weapon = cfg.getAlienBossWeapon();
         if (weapon != null && weapon != Material.AIR && boss.getEquipment() != null) {
             ItemStack item = new ItemStack(weapon);
@@ -274,6 +275,12 @@ public final class AlienInvasionManager {
             }
             boss.getEquipment().setItemInMainHand(item);
             boss.getEquipment().setItemInMainHandDropChance(0.0f);
+        } else {
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (boss.isValid() && !boss.isDead()) {
+                    BossAbilityController.disarmIllager(boss);
+                }
+            }, 1L);
         }
 
         // Броня босса: нетэрит-броня по всем слотам (бессмертная, без дропов).
@@ -449,9 +456,6 @@ public final class AlienInvasionManager {
             plugin.getAbilityController().castGatherAllAbility(boss);
             spawnMinionWave(true);
         }
-        // Чем меньше HP, тем чаще пришелец зовёт подкрепление
-        int interval = Math.max(6, (int) Math.round(cfg.getAlienMinionIntervalSeconds() * ratio));
-        this.minionCooldownSeconds = Math.min(this.minionCooldownSeconds, interval);
     }
 
     /** Босс убит: награды, сундуки и отложенная очистка схемы. */
@@ -880,6 +884,7 @@ public final class AlienInvasionManager {
                 continue;
             }
             minion.setAI(true);
+            BossAbilityController.disarmIllager(minion);
             Entity current = minion.getTarget();
             if (current instanceof Player living && living.isValid() && !living.isDead()) {
                 continue;

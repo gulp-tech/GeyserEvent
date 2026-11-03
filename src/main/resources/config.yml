@@ -707,10 +707,9 @@ alien:
     damage: 16.0
     scale: 0.55
     weapon: "AIR"
-    # Как часто звать подкрепление (чем меньше HP босса, тем чаще)
-    interval-seconds: 15
-    count-per-wave: 6
-    max-active: 14
+    interval-seconds: 25
+    count-per-wave: 2
+    max-active: 4
     trigger-radius: 25.0
 
   # Летающая тарелка над ареной (модель nave из пака al3xandre на сущности GHAST).
