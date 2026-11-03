@@ -636,7 +636,7 @@ public class PluginConfig {
         this.alienDurationMinutes = Math.max(1, cfg.getInt("alien.duration-minutes", 15));
         this.alienProtectionRadius = Math.max(6, cfg.getInt("alien.protection-radius", 13));
 
-        this.alienBossType = entityType(cfg.getString("alien.boss-type", "EVOKER"), EntityType.EVOKER);
+        this.alienBossType = entityType(cfg.getString("alien.boss-type", "VINDICATOR"), EntityType.VINDICATOR);
         this.alienBossName = ColorUtil.color(cfg.getString("alien.boss-name",
                 "&5&lПришелец-Владыка &8[&d%hp%&7/&d%max_hp% ❤&8]"));
         this.alienBossHealth = Math.max(50.0, cfg.getDouble("alien.boss-health", 12000.0));
@@ -650,7 +650,7 @@ public class PluginConfig {
 
         ConfigurationSection minions = cfg.getConfigurationSection("alien.minions");
         this.alienMinionsEnabled = minions == null || minions.getBoolean("enabled", true);
-        this.alienMinionType = entityType(minions != null ? minions.getString("type", "VEX") : "VEX", EntityType.VEX);
+        this.alienMinionType = entityType(minions != null ? minions.getString("type", "VINDICATOR") : "VINDICATOR", EntityType.VINDICATOR);
         this.alienMinionName = ColorUtil.color(minions != null ? minions.getString("name",
                 "&a&lМалый пришелец &7[%hp% ❤]") : "&a&lМалый пришелец &7[%hp% ❤]");
         this.alienMinionHealth = minions != null ? Math.max(1.0, minions.getDouble("health", 120.0)) : 120.0;

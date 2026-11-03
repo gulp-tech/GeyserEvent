@@ -1,4 +1,4 @@
-# 🛸 GeyserEvent v1.21.1 — 5 анархических ивентов для Purpur 26.2
+# 🛸 GeyserEvent v1.21.2 — 5 анархических ивентов для Purpur 26.2
 
 Плагин с **четырьмя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»,
 **«Вторжение Пришельцев»**) и **постоянным ивентом** «Шахта Древних (Жила Жеод)»
@@ -15,8 +15,8 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.21.1)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.21.1)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.21.2)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.21.2)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/deluxemenus/events.yml |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
@@ -197,6 +197,13 @@ resourcepack:
 в настройках клиента: **Настройки → Глобальные ресурсы** — в списке должен быть
 «GeyserEvent Pack» и он должен быть активным (и стоять версия **1.21.0**; если версия
 старая — удалите пак из списка и перезайдите, сервер пришлёт его заново).
+
+## 🆕 Что нового в v1.21.2 (нормальный ИИ + плоская посадка)
+
+- Босс и малые — **VINDICATOR** с ванильным pathfinding: бегут к игроку и бьют.
+  Телепорты убраны (из-за них ИИ «плыл» и не атаковал). Эвокер больше не используется.
+- Новая схема `alien_pad_25.schem.yml`: сплошной диск 25×25, центр свободный для ходьбы,
+  4 пьедестала под сундуки, 4 антенны. Старый рваный «звёздный» пол больше не ставится.
 
 ## 🆕 Что нового в v1.21.1 (вызыватель полностью заменён пришельцем)
 

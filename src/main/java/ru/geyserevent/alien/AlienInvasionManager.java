@@ -55,7 +55,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AlienInvasionManager {
 
     /** Файл схемы в plugins/GeyserEvent/schematics/. */
-    public static final String SCHEMATIC_FILE = "alien_landing.schem.yml";
+    public static final String SCHEMATIC_FILE = "alien_pad_25.schem.yml";
 
     private final GeyserEventPlugin plugin;
     private final RiftSchematicManager schematicManager;
@@ -81,8 +81,7 @@ public final class AlienInvasionManager {
     private int secondsElapsed;
     private int abilityCooldownSeconds;
     private int minionCooldownSeconds;
-    private int movementTickCounter;
-    private Location wanderTarget;
+    private int meleeCooldownTicks;
     private final Set<Location> spawnedChests = ConcurrentHashMap.newKeySet();
     private final Set<UUID> alienMinions = ConcurrentHashMap.newKeySet();
 
@@ -256,9 +255,14 @@ public final class AlienInvasionManager {
         BossAbilityController.setEntityAttribute(boss, "MOVEMENT_SPEED", "generic.movement_speed", cfg.getAlienBossMovementSpeed());
         BossAbilityController.setEntityAttribute(boss, "KNOCKBACK_RESISTANCE", "generic.knockback_resistance", cfg.getAlienBossKnockbackResistance());
         BossAbilityController.setEntityAttribute(boss, "ATTACK_DAMAGE", "generic.attack_damage", cfg.getAlienBossDamage());
-        BossAbilityController.setEntityAttribute(boss, "FOLLOW_RANGE", "generic.follow_range", 32.0);
+        BossAbilityController.setEntityAttribute(boss, "FOLLOW_RANGE", "generic.follow_range", 48.0);
         BossAbilityController.setEntityAttribute(boss, "MAX_HEALTH", "generic.max_health", this.bossMaxHealth);
         boss.setHealth(boss.getMaxHealth());
+        boss.setAI(true);
+        boss.setRemoveWhenFarAway(false);
+        if (boss instanceof Mob mob) {
+            mob.setTarget(null);
+        }
 
         Material weapon = cfg.getAlienBossWeapon();
         if (weapon != null && weapon != Material.AIR && boss.getEquipment() != null) {
@@ -360,6 +364,8 @@ public final class AlienInvasionManager {
                     cfg.getAlienMinionScale(), cfg.getAlienMinionName(), cfg.getAlienMinionWeapon(),
                     nearby, alienMinionKey);
             if (minion != null) {
+                minion.setAI(true);
+                BossAbilityController.setEntityAttribute(minion, "FOLLOW_RANGE", "generic.follow_range", 40.0);
                 alienMinions.add(minion.getUniqueId());
                 spawned++;
                 World w = spawnLoc.getWorld();
@@ -747,7 +753,7 @@ public final class AlienInvasionManager {
 
         // Тик каждые 5 ванильных тиков (0.25 с): движение и парение тарелки — плавные,
         // а секундные кулдауны способностей/волн считаются через subSecondTicks.
-        updateBossMovement(boss, cfg);
+        updateNativeAi(boss, cfg);
         silenceEvoker(boss);
         hoverUfo();
 
@@ -817,82 +823,70 @@ public final class AlienInvasionManager {
         ufo.teleport(next);
     }
 
-    // ------------------------------------------------------------------ движение босса
+    // ------------------------------------------------------------------ ИИ босса и приспешников
 
     /**
-     * Движение босса-пришельца: идёт к ближайшему игроку в радиусе преследования,
-     * иначе бродит в случайном направлении. Помогает боссу покинуть арену-тарелку.
-     * Движение осуществляется через teleport() с шагом, ограниченным скоростью —
-     * это тяжелее для сервера, чем нативный AI, но гарантирует, что босс не застряет.
+     * Нативный ИИ: цель через {@code Mob#setTarget}, ходьба ванильным pathfinding,
+     * удар {@code LivingEntity#attack} если цель в радиусе 3 блоков.
+     * Никаких teleport() — из-за них босс дёргался и не бил.
      */
-    private void updateBossMovement(LivingEntity boss, PluginConfig cfg) {
-        Location bossLoc = boss.getLocation();
-        World world = bossLoc.getWorld();
-        if (world == null) {
+    private void updateNativeAi(LivingEntity boss, PluginConfig cfg) {
+        if (!(boss instanceof Mob mob)) {
             return;
         }
+        mob.setAI(true);
 
-        // Шаг за 0.25 с: скорость 0.32 ≈ 1.5 блока/с — босс не телепортируется рывками.
-        double step = cfg.getAlienBossMovementSpeed() * 1.15;
-
-        // Ищем ближайшего игрока в радиусе преследования
-        double chaseRange = cfg.getAlienBossChaseRange();
-        Location target = null;
-        double closestDist = chaseRange * chaseRange;
-        for (Player player : world.getPlayers()) {
-            if (player.isDead() || !player.isValid()) {
-                continue;
+        Player closest = nearestPlayer(boss.getLocation(), cfg.getAlienBossChaseRange());
+        if (closest != null) {
+            Entity current = mob.getTarget();
+            if (current == null || current.isDead() || current != closest) {
+                mob.setTarget(closest);
             }
-            if (!plugin.getBedrockService().canParticipate(player)) {
-                continue;
+            if (meleeCooldownTicks > 0) {
+                meleeCooldownTicks--;
             }
-            Location pLoc = player.getLocation();
-            if (!pLoc.getWorld().equals(world)) {
-                continue;
-            }
-            double dx = pLoc.getX() - bossLoc.getX();
-            double dz = pLoc.getZ() - bossLoc.getZ();
-            double distSq = dx * dx + dz * dz;
-            if (distSq < closestDist) {
-                closestDist = distSq;
-                target = pLoc;
+            if (meleeCooldownTicks <= 0 && closest.getLocation().distanceSquared(boss.getLocation()) <= 9.0) {
+                meleeCooldownTicks = 4; // 4 * 0.25 с = 1 удар в секунду
+                closest.damage(cfg.getAlienBossDamage(), boss);
             }
         }
 
-        if (target != null) {
-            // Двигаемся к игроку — только горизонтально, чтобы не лезть под землю
-            double dx = target.getX() - bossLoc.getX();
-            double dz = target.getZ() - bossLoc.getZ();
-            double dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist > 1.0) {
-                dx /= dist;
-                dz /= dist;
-                Location newLoc = bossLoc.clone().add(dx * step, 0, dz * step);
-                // Проверка на прочность блока под ногами
-                if (!newLoc.getBlock().getType().isSolid()) {
-                    newLoc.setY(bossLoc.getY());
-                }
-                boss.teleport(newLoc);
+        retargetMinions(cfg);
+    }
+
+    private Player nearestPlayer(Location from, double range) {
+        if (from == null || from.getWorld() == null) {
+            return null;
+        }
+        Player best = null;
+        double bestSq = range * range;
+        for (Player player : plugin.getAbilityController().getTargetPlayersInRadius(from, range)) {
+            double d = player.getLocation().distanceSquared(from);
+            if (d < bestSq) {
+                bestSq = d;
+                best = player;
             }
-        } else {
-            // Блуждание: периодически меняем направление
-            if (wanderTarget == null || bossLoc.distanceSquared(wanderTarget) < 4.0) {
-                // Выбираем случайную точку на расстоянии 3-8 блоков
-                double angle = random.nextDouble() * 2 * Math.PI;
-                double dist = 3.0 + random.nextDouble() * 5.0;
-                wanderTarget = bossLoc.clone().add(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
+        }
+        return best;
+    }
+
+    private void retargetMinions(PluginConfig cfg) {
+        if (!cfg.isAlienMinionsEnabled() || center == null) {
+            return;
+        }
+        for (UUID uuid : alienMinions) {
+            Entity entity = Bukkit.getEntity(uuid);
+            if (!(entity instanceof Mob minion) || minion.isDead() || !minion.isValid()) {
+                continue;
             }
-            double dx = wanderTarget.getX() - bossLoc.getX();
-            double dz = wanderTarget.getZ() - bossLoc.getZ();
-            double dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist > 0.5) {
-                dx /= dist;
-                dz /= dist;
-                Location newLoc = bossLoc.clone().add(dx * step, 0, dz * step);
-                if (!newLoc.getBlock().getType().isSolid()) {
-                    newLoc.setY(bossLoc.getY());
-                }
-                boss.teleport(newLoc);
+            minion.setAI(true);
+            Entity current = minion.getTarget();
+            if (current instanceof Player living && living.isValid() && !living.isDead()) {
+                continue;
+            }
+            Player next = nearestPlayer(minion.getLocation(), cfg.getAlienMinionTriggerRadius());
+            if (next != null) {
+                minion.setTarget(next);
             }
         }
     }
