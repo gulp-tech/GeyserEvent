@@ -3,6 +3,7 @@
   "minecraft:client_entity": {
     "description": {
       "identifier": "minecraft:evocation_illager",
+      "min_engine_version": "1.8.0",
       "materials": {
         "default": "entity_alphatest"
       },
@@ -10,12 +11,13 @@
         "default": "textures/entity/alien"
       },
       "geometry": {
-        "default": "geometry.alien"
+        "default": "geometry.evoker.v1.8"
       },
       "scripts": {
         "initialize": [
           "variable.gliding_speed_value = 1.0;"
         ],
+        "scale": "1.0",
         "pre_animation": [
           "variable.tcos0 = (Math.cos(query.modified_distance_moved * 38.17) * query.modified_move_speed) * 57.3;"
         ],
@@ -32,10 +34,16 @@
         "attack2": "animation.j.attack2",
         "attack3": "animation.j.attack3",
         "attack_controller": "controller.animation.attack",
-        "mob_controller": "controller.animation.mob_controller"
+        "mob_controller": "controller.animation.mob_controller",
+        "general": "animation.me.parado",
+        "casting": "animation.j.attack1",
+        "move": "animation.j.anda2",
+        "look_at_target": "animation.me.parado",
+        "controller_general": "controller.animation.mob_controller",
+        "controller_move": "controller.animation.mob_controller"
       },
       "render_controllers": [
-        "controller.render.dano"
+        "controller.render.evoker"
       ],
       "enable_attachables": false
     }

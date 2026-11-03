@@ -9,6 +9,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -27,6 +28,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
@@ -674,6 +676,27 @@ public class RiftEventListener implements Listener {
     private boolean isAlienMob(Entity entity) {
         AlienInvasionManager alien = plugin.getAlienInvasionManager();
         return alien != null && (alien.isAlienBoss(entity) || alien.isAlienMinion(entity) || alien.isAlienUfo(entity));
+    }
+
+    /**
+     * Клыки и вексы от заклинания вызывателя не появляются.
+     * Наши малые пришельцы спавнятся с причиной CUSTOM — их не трогаем.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
+        AlienInvasionManager alien = plugin.getAlienInvasionManager();
+        if (alien == null || !alien.isActive()) {
+            return;
+        }
+        EntityType type = event.getEntityType();
+        String typeName = type != null ? type.name() : "";
+        if (typeName.contains("FANG")) {
+            event.setCancelled(true);
+            return;
+        }
+        if (type == EntityType.VEX && event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPELL) {
+            event.setCancelled(true);
+        }
     }
 
     /** Мобы остальных ивентов (Разлом, Раскопки, Котёл). */

@@ -14,9 +14,11 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Evoker;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Spellcaster;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -276,6 +278,7 @@ public final class AlienInvasionManager {
         }
 
         updateBossName(boss);
+        silenceEvoker(boss);
 
         // Страшные звуки пришельцев (v1.20.3)
         world.playSound(loc, "alien_growl", 2.0f, 0.8f);
@@ -745,6 +748,7 @@ public final class AlienInvasionManager {
         // Тик каждые 5 ванильных тиков (0.25 с): движение и парение тарелки — плавные,
         // а секундные кулдауны способностей/волн считаются через subSecondTicks.
         updateBossMovement(boss, cfg);
+        silenceEvoker(boss);
         hoverUfo();
 
         this.subSecondTicks++;
@@ -938,6 +942,20 @@ public final class AlienInvasionManager {
 
     public boolean isAlienUfo(Entity entity) {
         return entity != null && entity.getPersistentDataContainer().has(alienUfoKey, PersistentDataType.BYTE);
+    }
+
+    /**
+     * Вызыватель (эвокер) на Java нужен только как хитбокс для Geyser.
+     * Заклинания, клыки и «wololo» полностью глушим — на экране должен быть пришелец.
+     */
+    private void silenceEvoker(LivingEntity boss) {
+        if (!(boss instanceof Evoker evoker)) {
+            return;
+        }
+        evoker.setSpell(Spellcaster.Spell.NONE);
+        if (evoker.getEquipment() != null) {
+            evoker.getEquipment().clear();
+        }
     }
 
     /**

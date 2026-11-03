@@ -1,4 +1,4 @@
-# 🛸 GeyserEvent v1.21.0 — 5 анархических ивентов для Purpur 26.2
+# 🛸 GeyserEvent v1.21.1 — 5 анархических ивентов для Purpur 26.2
 
 Плагин с **четырьмя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»,
 **«Вторжение Пришельцев»**) и **постоянным ивентом** «Шахта Древних (Жила Жеод)»
@@ -15,8 +15,8 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.21.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-1.0.0.jar |
-| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.21.0)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-Pack.mcpack |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.21.1)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-1.0.0.jar |
+| **Ресурспак `GeyserEvent-Pack.mcpack` (v1.21.1)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/deluxemenus/events.yml |
 
 Ресурспак встроен внутрь плагина и **автоматически перезаписывается** в `plugins/Geyser-Spigot/packs/`
@@ -197,6 +197,16 @@ resourcepack:
 в настройках клиента: **Настройки → Глобальные ресурсы** — в списке должен быть
 «GeyserEvent Pack» и он должен быть активным (и стоять версия **1.21.0**; если версия
 старая — удалите пак из списка и перезайдите, сервер пришлёт его заново).
+
+## 🆕 Что нового в v1.21.1 (вызыватель полностью заменён пришельцем)
+
+На Bedrock модель эвокера — это `geometry.evoker.v1.8`, а не `geometry.alien`.
+Теперь сетка пришельца **подложена под ванильный идентификатор вызывателя**,
+текстура лежит в `textures/entity/illager/evoker.png`, рендер-контроллер
+`controller.render.evoker` больше не рисует рясу иллюджера. Заклинания, клыки
+и вексы от SPELL глушатся на сервере. На экране остаётся пришелец, не вызыватель.
+
+UUID пака `1.21.1` — клиенты перекачают пак.
 
 ## 🆕 Что нового в v1.21.0 (настоящие 3D-модели al3xandre + тарелка)
 
