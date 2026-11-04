@@ -5,9 +5,9 @@
   • 3D-рюкзак шахтёра (turtle_helmet attachable)
   • блоки призыва босса и обшивки корабля (редкие ванильные блоки)
   • 3D-модели из аддона al3xandre, ПРИВЯЗАННЫЕ к ванильным сущностям:
-      minecraft:evocation_illager / minecraft:evoker  → geometry.alien (босс)
-      minecraft:vex                                   → geometry.alien (малые)
-      minecraft:ghast                                 → geometry.nave  (тарелка)
+      minecraft:vindicator → geometry.alien (босс и малые пришельцы)
+      minecraft:ghast      → geometry.nave  (тарелка)
+    Вызыватель (evoker) НЕ трогаем — магазины/NPC на нём остаются ванильными.
     На Java-сервере Geyser не умеет спавнить ale:alien / ale:nave, поэтому
     идентификаторы кастомного аддона сюда НЕ попадают.
   • звуки пришельцев (sounds/sound_definitions.json)
@@ -19,7 +19,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 2]
+VERSION = [1, 21, 5]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -61,9 +61,8 @@ manifest = {
     "header": {
         "name": "GeyserEvent Pack v" + VERSION_STR,
         "description": (
-            "3D-рюкзак шахтёра, блоки призыва, 3D-пришелец (эвокер), "
-            "малые пришельцы (векс) и летающая тарелка (гаст) из пака al3xandre. "
-            "HUD клиента не меняется."
+            "3D-рюкзак шахтёра, блоки призыва, 3D-пришелец (vindicator), "
+            "летающая тарелка (гаст). Вызыватель не изменён. HUD не меняется."
         ),
         "uuid": PACK_UUID,
         "version": VERSION,
