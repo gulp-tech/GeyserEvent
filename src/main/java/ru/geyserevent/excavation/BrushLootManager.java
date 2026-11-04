@@ -154,7 +154,26 @@ public class BrushLootManager {
             Material mat = Material.matchMaterial(matName);
             if (mat != null && !mat.isAir()) {
                 int amount = Math.max(1, toInt(map.get("amount"), 1));
-                entries.add(new BrushLootEntry(new ItemStack(mat, amount), chance));
+                ItemStack stack = new ItemStack(mat, amount);
+                Object nameObj = map.get("name");
+                Object loreObj = map.get("lore");
+                if (nameObj != null || loreObj != null) {
+                    ItemMeta meta = stack.getItemMeta();
+                    if (meta != null) {
+                        if (nameObj != null) {
+                            meta.setDisplayName(ColorUtil.color(String.valueOf(nameObj)));
+                        }
+                        if (loreObj instanceof List<?> loreList) {
+                            List<String> lore = new ArrayList<>();
+                            for (Object line : loreList) {
+                                lore.add(ColorUtil.color(String.valueOf(line)));
+                            }
+                            meta.setLore(lore);
+                        }
+                        stack.setItemMeta(meta);
+                    }
+                }
+                entries.add(new BrushLootEntry(stack, chance));
             }
         }
         return entries;

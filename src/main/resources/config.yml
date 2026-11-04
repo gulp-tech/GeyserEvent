@@ -425,6 +425,15 @@ excavation:
         - material: "NETHERITE_PICKAXE"
           amount: 1
           chance: 10.0
+        - material: "PAPER"
+          amount: 1
+          chance: 20.0
+          name: "&aСфера пустоты"
+          lore:
+            - "&a+4 к урону"
+            - "&a+4 к защите"
+            - "&a+4 к здоровью"
+            - "&a+5% к скорости"
 
 # ============================================================================
 # Ивент 3: «Котёл Алхимика» (отдельные таблицы лута реагентов)
@@ -880,6 +889,18 @@ alien:
         max: 1
         chance: 10.0
         rare: true
+      void_sphere:
+        material: "PAPER"
+        min: 1
+        max: 1
+        chance: 20.0
+        rare: true
+        name: "&aСфера пустоты"
+        lore:
+          - "&a+4 к урону"
+          - "&a+4 к защите"
+          - "&a+4 к здоровью"
+          - "&a+5% к скорости"
 
   # ---- Награды за урон (общие с Разломом rewards.places и rewards.currency-name) ----
   rewards:
