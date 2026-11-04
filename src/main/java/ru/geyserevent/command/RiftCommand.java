@@ -325,6 +325,11 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
+            case "copylot", "copyloot", "cloneloot", "скопироватьлут" -> {
+                handleCopyLootSubcommand(sender, label, args);
+                return true;
+            }
+
             case "ability", "cast" -> {
                 if (args.length < 2) {
                     sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " ability <pull|push|gather|minions>"));
@@ -815,7 +820,141 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " cauldronloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " givegeode / givereagent / givebrush <обычная|эпическая|легендарная> [игрок]"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " copylot <откуда> <куда> [редкость] &8— &fСкопировать лут с другого ивента"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " reload"));
+    }
+
+    private enum CopyLootTarget {
+        EXCAVATION, CAULDRON, MINE, ALIEN
+    }
+
+    private CopyLootTarget parseCopyLootTarget(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        EventType type = EventType.fromString(raw);
+        if (type == EventType.BEACH_EXCAVATION) {
+            return CopyLootTarget.EXCAVATION;
+        }
+        if (type == EventType.ALCHEMIST_CAULDRON) {
+            return CopyLootTarget.CAULDRON;
+        }
+        if (type == EventType.ALIEN_INVASION) {
+            return CopyLootTarget.ALIEN;
+        }
+        return switch (raw.trim().toLowerCase(Locale.ROOT)) {
+            case "mine", "шахта", "geode", "жеода", "minemenu" -> CopyLootTarget.MINE;
+            case "brush", "excavationmenu" -> CopyLootTarget.EXCAVATION;
+            case "reagent", "cauldronmenu" -> CopyLootTarget.CAULDRON;
+            default -> null;
+        };
+    }
+
+    private String copyLootTitle(CopyLootTarget target) {
+        return switch (target) {
+            case EXCAVATION -> "Пляжные Раскопки";
+            case CAULDRON -> "Котёл Алхимика";
+            case MINE -> "Шахта Древних";
+            case ALIEN -> "Пришельцы";
+        };
+    }
+
+    private LootCategory toLootCategory(CopyLootTarget target) {
+        return switch (target) {
+            case EXCAVATION -> LootCategory.EXCAVATION;
+            case CAULDRON -> LootCategory.CAULDRON;
+            case MINE -> LootCategory.MINE;
+            case ALIEN -> null;
+        };
+    }
+
+    private void handleCopyLootSubcommand(CommandSender sender, String label, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " copylot <откуда> <куда> [редкость]"));
+            sender.sendMessage(ColorUtil.color("&e┠ &7Ивенты: &#E0C912excavation&7, &#E0C912cauldron&7, &#E0C912mine&7, &#E0C912alien"));
+            sender.sendMessage(ColorUtil.color("&e┠ &7Пример: &#E0C912/" + label + " copylot excavation cauldron"));
+            sender.sendMessage(ColorUtil.color("&e┠ &7Только легендарка: &#E0C912/" + label + " copylot mine excavation legendary"));
+            return;
+        }
+        CopyLootTarget from = parseCopyLootTarget(args[1]);
+        CopyLootTarget to = parseCopyLootTarget(args[2]);
+        if (from == null || to == null) {
+            sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивенты: &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912mine&c, &#E0C912alien"));
+            return;
+        }
+        if (from == to) {
+            sender.sendMessage(ColorUtil.color("&e┠ &cОткуда и куда — разные ивенты."));
+            return;
+        }
+        BrushTier onlyTier = args.length >= 4 ? BrushTier.fromString(args[3]) : null;
+        if (args.length >= 4 && onlyTier == null) {
+            sender.sendMessage(ColorUtil.color("&e┠ &cРедкость: &#E0C912обычная&c, &#E0C912эпическая&c или &#E0C912легендарная"));
+            return;
+        }
+
+        int copied;
+        LootCategory fromCat = toLootCategory(from);
+        LootCategory toCat = toLootCategory(to);
+        if (fromCat != null && toCat != null) {
+            copied = plugin.getBrushLootManager().copyLoot(fromCat, toCat, onlyTier);
+        } else if (fromCat != null) {
+            copied = copyCategoryToAlien(fromCat, onlyTier);
+        } else if (toCat != null) {
+            copied = copyAlienToCategory(toCat, onlyTier);
+        } else {
+            sender.sendMessage(ColorUtil.color("&e┠ &cНельзя копировать alien → alien."));
+            return;
+        }
+
+        String tierNote = onlyTier != null
+                ? " &8(" + onlyTier.getConfigKey() + ")"
+                : " &8(все редкости)";
+        sender.sendMessage(ColorUtil.color(
+                "&e┠ &#34D711Скопировано предметов: &f" + copied
+                        + " &7из &#E0C912" + copyLootTitle(from)
+                        + " &7в &#E0C912" + copyLootTitle(to) + tierNote
+        ));
+    }
+
+    private int copyCategoryToAlien(LootCategory from, BrushTier onlyTier) {
+        plugin.getConfig().set("alien.chests.loot", null);
+        int n = 0;
+        BrushTier[] tiers = onlyTier != null ? new BrushTier[]{onlyTier} : BrushTier.values();
+        for (BrushTier tier : tiers) {
+            for (BrushLootManager.BrushLootEntry entry : plugin.getBrushLootManager().getLootEntries(tier, from)) {
+                n++;
+                String key = (onlyTier == null ? tier.getConfigKey() + "_" : "") + "item" + n;
+                String path = "alien.chests.loot." + key;
+                ItemStack item = entry.item();
+                plugin.getConfig().set(path + ".material", item.getType().name());
+                int amount = Math.max(1, item.getAmount());
+                plugin.getConfig().set(path + ".min", amount);
+                plugin.getConfig().set(path + ".max", amount);
+                plugin.getConfig().set(path + ".chance", entry.chance());
+                plugin.getConfig().set(path + ".rare", tier == BrushTier.LEGENDARY);
+            }
+        }
+        plugin.saveConfig();
+        plugin.getPluginConfig().reload();
+        return n;
+    }
+
+    private int copyAlienToCategory(LootCategory to, BrushTier onlyTier) {
+        List<PluginConfig.AlienLootItem> src = plugin.getPluginConfig().getAlienChestLoot();
+        BrushLootManager loot = plugin.getBrushLootManager();
+        int n = 0;
+        BrushTier[] tiers = onlyTier != null ? new BrushTier[]{onlyTier} : BrushTier.values();
+        for (BrushTier tier : tiers) {
+            loot.clearLoot(tier, to);
+            for (PluginConfig.AlienLootItem item : src) {
+                if (item.material() == null || item.material().isAir()) {
+                    continue;
+                }
+                loot.addLootItem(tier, new ItemStack(item.material(), Math.max(1, item.maxAmount())), item.chancePercent(), to);
+                n++;
+            }
+        }
+        return n;
     }
 
     @Override
@@ -834,7 +973,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             return filterPrefix(Arrays.asList(
                     "menu", "minemenu", "cauldronmenu", "excavationmenu", "mine", "gui",
                     "start", "start-here", "stop", "mineloot", "cauldronloot", "brushloot",
-                    "givegeode", "givereagent", "givebrush", "ability", "setworld", "saveschem", "status", "top", "reload"
+                    "givegeode", "givereagent", "givebrush", "copylot", "ability", "setworld", "saveschem", "status", "top", "reload"
             ), args[0]);
         }
         if (args.length == 2) {
@@ -857,6 +996,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     || sub.equals("mineloot") || sub.equals("geodeloot")) {
                 return filterPrefix(Arrays.asList("add", "list", "remove", "clear", "обычная", "эпическая", "легендарная"), args[1]);
             }
+            if (sub.equals("copylot") || sub.equals("copyloot") || sub.equals("cloneloot")) {
+                return filterPrefix(Arrays.asList("excavation", "cauldron", "mine", "alien"), args[1]);
+            }
             if (sub.equals("ability") || sub.equals("cast")) {
                 return filterPrefix(Arrays.asList("pull", "push", "gather", "minions"), args[1]);
             }
@@ -873,6 +1015,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 3) {
             String sub = args[0].toLowerCase(Locale.ROOT);
+            if (sub.equals("copylot") || sub.equals("copyloot") || sub.equals("cloneloot")) {
+                return filterPrefix(Arrays.asList("excavation", "cauldron", "mine", "alien"), args[2]);
+            }
             if (sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
                     || sub.equals("reagentloot") || sub.equals("alchemistloot")
                     || sub.equals("mineloot") || sub.equals("geodeloot") || sub.equals("menu")) {
@@ -881,6 +1026,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 4) {
             String sub = args[0].toLowerCase(Locale.ROOT);
+            if (sub.equals("copylot") || sub.equals("copyloot") || sub.equals("cloneloot")) {
+                return filterPrefix(Arrays.asList("обычная", "эпическая", "легендарная", "common", "epic", "legendary"), args[3]);
+            }
             if ((sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
                     || sub.equals("reagentloot") || sub.equals("alchemistloot")
                     || sub.equals("mineloot") || sub.equals("geodeloot")) && args[1].equalsIgnoreCase("add")) {

@@ -775,6 +775,29 @@ public class BrushLootManager {
         return getLootMap(category).getOrDefault(tier, List.of());
     }
 
+    /**
+     * Копирует таблицу лута с одного ивента на другой (предметы и шансы).
+     * {@code onlyTier == null} — все три редкости.
+     * @return сколько предметов записано, или -1 если from == to
+     */
+    public int copyLoot(LootCategory from, LootCategory to, BrushTier onlyTier) {
+        if (from == null || to == null || from == to) {
+            return -1;
+        }
+        int copied = 0;
+        BrushTier[] tiers = onlyTier != null ? new BrushTier[]{onlyTier} : BrushTier.values();
+        for (BrushTier tier : tiers) {
+            List<BrushLootEntry> dest = new ArrayList<>();
+            for (BrushLootEntry entry : getLootEntries(tier, from)) {
+                dest.add(new BrushLootEntry(entry.item().clone(), entry.chance()));
+            }
+            getLootMap(to).put(tier, dest);
+            saveTierLootToConfig(tier, dest, to);
+            copied += dest.size();
+        }
+        return copied;
+    }
+
     private void saveTierLootToConfig(BrushTier tier, List<BrushLootEntry> entries, LootCategory category) {
         List<Map<String, Object>> serialized = new ArrayList<>();
         for (BrushLootEntry e : entries) {

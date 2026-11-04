@@ -15,7 +15,7 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.21.5)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-1.0.0.jar |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.21.6)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-1.0.0.jar |
 | **Ресурспак `GeyserEvent-Pack.mcpack` (v1.21.2)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/deluxemenus/events.yml |
 
@@ -197,6 +197,11 @@ resourcepack:
 в настройках клиента: **Настройки → Глобальные ресурсы** — в списке должен быть
 «GeyserEvent Pack» и он должен быть активным (и стоять версия **1.21.0**; если версия
 старая — удалите пак из списка и перезайдите, сервер пришлёт его заново).
+
+## 🆕 Что нового в v1.21.6
+
+- `/rift copylot <откуда> <куда> [редкость]` — скопировать лут с другого ивента
+  (`excavation`, `cauldron`, `mine`, `alien`). Пример: `/rift copylot excavation cauldron`
 
 ## 🆕 Что нового в v1.21.5
 
