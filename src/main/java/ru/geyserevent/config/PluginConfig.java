@@ -282,9 +282,13 @@ public class PluginConfig {
         this.autoMinPlayers.clear();
         ConfigurationSection minSec = cfg.getConfigurationSection("event.auto-min-players");
         for (EventType type : EventType.values()) {
-            int value = minSec != null
-                    ? minSec.getInt(type.getId(), this.minBedrockPlayers)
-                    : this.minBedrockPlayers;
+            int fallback = isBossEvent(type) ? 10 : this.minBedrockPlayers;
+            int value = minSec != null && minSec.contains(type.getId())
+                    ? minSec.getInt(type.getId(), fallback)
+                    : fallback;
+            if (isBossEvent(type)) {
+                value = Math.max(10, value);
+            }
             this.autoMinPlayers.put(type, Math.max(0, value));
         }
         this.cleanupDelaySeconds = Math.max(1, cfg.getInt("event.cleanup-delay-seconds", 15));
@@ -360,9 +364,9 @@ public class PluginConfig {
         this.currencyName = cfg.getString("rewards.currency-name", "осколков");
         this.usePlayerPointsApi = cfg.getBoolean("rewards.use-playerpoints-api", true);
         this.fallbackCommand = cfg.getString("rewards.fallback-command", "points give %player% %amount%");
-        this.rewardFirstPlace = Math.max(0, cfg.getInt("rewards.places.1", 1500));
-        this.rewardSecondPlace = Math.max(0, cfg.getInt("rewards.places.2", 100));
-        this.rewardThirdPlace = Math.max(0, cfg.getInt("rewards.places.3", 500));
+        this.rewardFirstPlace = Math.max(0, cfg.getInt("rewards.places.1", 720));
+        this.rewardSecondPlace = Math.max(0, cfg.getInt("rewards.places.2", 480));
+        this.rewardThirdPlace = Math.max(0, cfg.getInt("rewards.places.3", 240));
 
         // Excavation (Пляжные Раскопки)
         this.excavationVillagerName = cfg.getString("excavation.villager-name", "&e&lАрхеолог &8[&fКисточка: &#E0C912%sec%с&8]");
@@ -547,11 +551,19 @@ public class PluginConfig {
     public int getDurationMinutes() { return durationMinutes; }
     public int getMinBedrockPlayers() { return minBedrockPlayers; }
 
+    public static boolean isBossEvent(EventType type) {
+        return type == EventType.INFERNAL_RIFT || type == EventType.ALIEN_INVASION;
+    }
+
     public int getAutoMinPlayers(EventType type) {
         if (type == null) {
             return minBedrockPlayers;
         }
-        return autoMinPlayers.getOrDefault(type, minBedrockPlayers);
+        int value = autoMinPlayers.getOrDefault(type, isBossEvent(type) ? 10 : minBedrockPlayers);
+        if (isBossEvent(type)) {
+            return Math.max(10, value);
+        }
+        return value;
     }
 
     public void setAutoMinPlayers(EventType type, int amount) {
@@ -560,10 +572,14 @@ public class PluginConfig {
             this.minBedrockPlayers = clamped;
             plugin.getConfig().set("event.min-bedrock-players", clamped);
             for (EventType each : EventType.values()) {
-                this.autoMinPlayers.put(each, clamped);
-                plugin.getConfig().set("event.auto-min-players." + each.getId(), clamped);
+                int eachValue = isBossEvent(each) ? Math.max(10, clamped) : clamped;
+                this.autoMinPlayers.put(each, eachValue);
+                plugin.getConfig().set("event.auto-min-players." + each.getId(), eachValue);
             }
         } else {
+            if (isBossEvent(type)) {
+                clamped = Math.max(10, clamped);
+            }
             this.autoMinPlayers.put(type, clamped);
             plugin.getConfig().set("event.auto-min-players." + type.getId(), clamped);
         }

@@ -873,8 +873,12 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             return;
         }
         if (amount < 0 || amount > 1000) {
-            sender.sendMessage(ColorUtil.color("&e┠ &cЧисло от 0 до 1000. &70 = авто всегда."));
+            sender.sendMessage(ColorUtil.color("&e┠ &cЧисло от 0 до 1000."));
             return;
+        }
+        if (!all && PluginConfig.isBossEvent(type) && amount < 10) {
+            sender.sendMessage(ColorUtil.color("&e┠ &cБосс-ивенты автостартуют только от &f10 &cонлайна."));
+            amount = 10;
         }
         cfg.setAutoMinPlayers(type, amount);
         if (all) {
