@@ -330,6 +330,11 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
+            case "minplayers", "minplayer", "игроки", "players" -> {
+                handleMinPlayersSubcommand(sender, label, args);
+                return true;
+            }
+
             case "ability", "cast" -> {
                 if (args.length < 2) {
                     sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " ability <pull|push|gather|minions>"));
@@ -510,6 +515,11 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912" + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()));
                 } else {
                     sender.sendMessage(ColorUtil.color("&e┠ &fДо появления временного ивента: &#E0C912" + ColorUtil.formatDurationVerbose(manager.getSecondsUntilNextStart())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Авто: rift " + cfg.getAutoMinPlayers(EventType.INFERNAL_RIFT)
+                            + " / раскопки " + cfg.getAutoMinPlayers(EventType.BEACH_EXCAVATION)
+                            + " / котёл " + cfg.getAutoMinPlayers(EventType.ALCHEMIST_CAULDRON)
+                            + " / пришельцы " + cfg.getAutoMinPlayers(EventType.ALIEN_INVASION)
+                            + " игроков  &8| &fсейчас " + plugin.getBedrockService().getOnlineBedrockCount()));
                 if (plugin.getSummonAltarManager() != null) {
                     sender.sendMessage(ColorUtil.color("&e┼ &fПризыв: &f" + plugin.getSummonAltarManager().describe()));
                 }
@@ -821,7 +831,59 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " brushloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " givegeode / givereagent / givebrush <обычная|эпическая|легендарная> [игрок]"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " copylot <откуда> <куда> [редкость] &8— &fСкопировать лут с другого ивента"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " minplayers [ивент|all] [число] &8— &fСколько игроков нужно для авто-старта"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " reload"));
+    }
+
+    private void handleMinPlayersSubcommand(CommandSender sender, String label, String[] args) {
+        PluginConfig cfg = plugin.getPluginConfig();
+        int online = plugin.getBedrockService().getOnlineBedrockCount();
+        if (args.length == 1) {
+            sender.sendMessage(ColorUtil.color("&e┠ &fОнлайн сейчас: &#E0C912" + online
+                    + " &8| &fручной старт всегда без проверки"));
+            for (EventType type : EventType.values()) {
+                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912" + type.getId()
+                        + " &8— &f" + type.getDisplayName() + ": &#34D711" + cfg.getAutoMinPlayers(type)
+                        + " &7игроков для авто"));
+            }
+            sender.sendMessage(ColorUtil.color("&e┠ &7Пример: &#E0C912/" + label + " minplayers alien 8"));
+            return;
+        }
+        String targetRaw = args[1];
+        boolean all = targetRaw.equalsIgnoreCase("all") || targetRaw.equalsIgnoreCase("все");
+        EventType type = all ? null : EventType.fromString(targetRaw);
+        if (!all && type == null) {
+            sender.sendMessage(ColorUtil.color("&e┠ &cИвент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912alien &cили &#E0C912all"));
+            return;
+        }
+        if (args.length < 3) {
+            if (all) {
+                sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " minplayers all <число>"));
+            } else {
+                sender.sendMessage(ColorUtil.color("&e┠ &fАвто-старт &#E0C912" + type.getDisplayName()
+                        + "&f: &#34D711" + cfg.getAutoMinPlayers(type) + " &fигроков"));
+            }
+            return;
+        }
+        int amount;
+        try {
+            amount = Integer.parseInt(args[2]);
+        } catch (NumberFormatException ex) {
+            sender.sendMessage(ColorUtil.color("&e┠ &cУкажите число игроков, например &#E0C9125"));
+            return;
+        }
+        if (amount < 0 || amount > 1000) {
+            sender.sendMessage(ColorUtil.color("&e┠ &cЧисло от 0 до 1000. &70 = авто всегда."));
+            return;
+        }
+        cfg.setAutoMinPlayers(type, amount);
+        if (all) {
+            sender.sendMessage(ColorUtil.color("&e┠ &#34D711Для авто-старта всех ивентов нужно &f" + amount + " &aигроков"));
+        } else {
+            sender.sendMessage(ColorUtil.color("&e┠ &#34D711Авто &#E0C912" + type.getDisplayName()
+                    + "&a: нужно &f" + amount + " &aигроков онлайн"));
+        }
+        sender.sendMessage(ColorUtil.color("&e┠ &7/" + label + " start и start-here работают при любом онлайне"));
     }
 
     private enum CopyLootTarget {
@@ -973,7 +1035,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             return filterPrefix(Arrays.asList(
                     "menu", "minemenu", "cauldronmenu", "excavationmenu", "mine", "gui",
                     "start", "start-here", "stop", "mineloot", "cauldronloot", "brushloot",
-                    "givegeode", "givereagent", "givebrush", "copylot", "ability", "setworld", "saveschem", "status", "top", "reload"
+                    "givegeode", "givereagent", "givebrush", "copylot", "minplayers", "ability", "setworld", "saveschem", "status", "top", "reload"
             ), args[0]);
         }
         if (args.length == 2) {
@@ -999,6 +1061,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             if (sub.equals("copylot") || sub.equals("copyloot") || sub.equals("cloneloot")) {
                 return filterPrefix(Arrays.asList("excavation", "cauldron", "mine", "alien"), args[1]);
             }
+            if (sub.equals("minplayers") || sub.equals("minplayer") || sub.equals("игроки") || sub.equals("players")) {
+                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "alien", "all"), args[1]);
+            }
             if (sub.equals("ability") || sub.equals("cast")) {
                 return filterPrefix(Arrays.asList("pull", "push", "gather", "minions"), args[1]);
             }
@@ -1017,6 +1082,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             String sub = args[0].toLowerCase(Locale.ROOT);
             if (sub.equals("copylot") || sub.equals("copyloot") || sub.equals("cloneloot")) {
                 return filterPrefix(Arrays.asList("excavation", "cauldron", "mine", "alien"), args[2]);
+            }
+            if (sub.equals("minplayers") || sub.equals("minplayer") || sub.equals("игроки") || sub.equals("players")) {
+                return filterPrefix(Arrays.asList("1", "2", "3", "5", "8", "10"), args[2]);
             }
             if (sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
                     || sub.equals("reagentloot") || sub.equals("alchemistloot")

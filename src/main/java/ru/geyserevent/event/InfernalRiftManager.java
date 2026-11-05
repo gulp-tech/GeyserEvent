@@ -38,6 +38,7 @@ import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.excavation.BrushTier;
 import ru.geyserevent.util.ColorUtil;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.HashSet;
@@ -156,10 +157,15 @@ public class InfernalRiftManager {
                 }
                 long now = System.currentTimeMillis() / 1000L;
                 if (now >= nextAutoStartEpochSeconds) {
-                    int onlineBedrock = plugin.getBedrockService().getOnlineBedrockCount();
-                    if (onlineBedrock >= plugin.getPluginConfig().getMinBedrockPlayers()) {
-                        EventType[] types = EventType.values();
-                        EventType randomType = types[ThreadLocalRandom.current().nextInt(types.length)];
+                    int online = plugin.getBedrockService().getOnlineBedrockCount();
+                    List<EventType> eligible = new ArrayList<>();
+                    for (EventType type : EventType.values()) {
+                        if (online >= plugin.getPluginConfig().getAutoMinPlayers(type)) {
+                            eligible.add(type);
+                        }
+                    }
+                    if (!eligible.isEmpty()) {
+                        EventType randomType = eligible.get(ThreadLocalRandom.current().nextInt(eligible.size()));
                         startEventRandomInConfiguredWorld(randomType);
                     } else {
                         nextAutoStartEpochSeconds = now + 300L;

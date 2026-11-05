@@ -1,4 +1,4 @@
-# 🛸 GeyserEvent v1.21.8 — 5 анархических ивентов для Purpur 26.2
+# 🛸 GeyserEvent v1.21.9 — 5 анархических ивентов для Purpur 26.2
 
 Плагин с **четырьмя временными ивентами** («Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика»,
 **«Вторжение Пришельцев»**) и **постоянным ивентом** «Шахта Древних (Жила Жеод)»
@@ -15,7 +15,7 @@
 
 | Файл | Прямая ссылка |
 |---|---|
-| **Плагин `GeyserEvent-1.0.0.jar` (v1.21.8)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-1.0.0.jar |
+| **Плагин `GeyserEvent-1.0.0.jar` (v1.21.9)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-1.0.0.jar |
 | **Ресурспак `GeyserEvent-Pack.mcpack` (v1.21.2)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/GeyserEvent-Pack.mcpack |
 | **Меню DeluxeMenus `events.yml` (`/events`)** | https://github.com/gulp-tech/GeyserEvent/raw/arena/0d820c4a-geyserevent/deluxemenus/events.yml |
 
@@ -197,6 +197,11 @@ resourcepack:
 в настройках клиента: **Настройки → Глобальные ресурсы** — в списке должен быть
 «GeyserEvent Pack» и он должен быть активным (и стоять версия **1.21.0**; если версия
 старая — удалите пак из списка и перезайдите, сервер пришлёт его заново).
+
+## 🆕 Что нового в v1.21.9
+
+- Авто-старт: свой минимум игроков на каждый ивент. `/rift minplayers alien 8`
+- Ручной `/rift start` и `/rift start-here` запускают любой ивент без проверки онлайна.
 
 ## 🆕 Что нового в v1.21.8
 

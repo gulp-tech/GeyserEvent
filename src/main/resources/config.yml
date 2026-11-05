@@ -51,8 +51,16 @@ event:
   interval-minutes: 60
   # Длительность ивента (в минутах). Через 20 минут ивент пропадает.
   duration-minutes: 20
-  # Минимальное количество Bedrock-игроков онлайн для авто-старта
+  # Минимум игроков онлайн для АВТО-старта, если у ивента нет своего числа.
+  # Ручной запуск (/rift start, /rift start-here) всегда без проверки.
   min-bedrock-players: 1
+  # Сколько игроков нужно, чтобы этот ивент сам появился по таймеру.
+  # Меняется командой: /rift minplayers <rift|excavation|cauldron|alien|all> <число>
+  auto-min-players:
+    rift: 1
+    excavation: 1
+    cauldron: 1
+    alien: 1
   # Задержка перед очисткой после убийства босса (в секундах)
   cleanup-delay-seconds: 15
 

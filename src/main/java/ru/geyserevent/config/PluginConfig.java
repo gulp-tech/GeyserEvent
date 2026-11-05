@@ -5,9 +5,11 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import ru.geyserevent.GeyserEventPlugin;
+import ru.geyserevent.event.EventType;
 import ru.geyserevent.util.ColorUtil;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -56,6 +58,7 @@ public class PluginConfig {
     private int intervalMinutes;
     private int durationMinutes;
     private int minBedrockPlayers;
+    private final EnumMap<EventType, Integer> autoMinPlayers = new EnumMap<>(EventType.class);
     private int cleanupDelaySeconds;
     private double gpsArrivalDistance;
     private boolean gpsParticleTrail;
@@ -276,6 +279,14 @@ public class PluginConfig {
         this.intervalMinutes = Math.max(1, cfg.getInt("event.interval-minutes", 60));
         this.durationMinutes = Math.max(1, cfg.getInt("event.duration-minutes", 20));
         this.minBedrockPlayers = Math.max(0, cfg.getInt("event.min-bedrock-players", 1));
+        this.autoMinPlayers.clear();
+        ConfigurationSection minSec = cfg.getConfigurationSection("event.auto-min-players");
+        for (EventType type : EventType.values()) {
+            int value = minSec != null
+                    ? minSec.getInt(type.getId(), this.minBedrockPlayers)
+                    : this.minBedrockPlayers;
+            this.autoMinPlayers.put(type, Math.max(0, value));
+        }
         this.cleanupDelaySeconds = Math.max(1, cfg.getInt("event.cleanup-delay-seconds", 15));
         this.gpsArrivalDistance = Math.max(2.0, cfg.getDouble("event.gps.arrival-distance", 10.0));
         this.gpsParticleTrail = cfg.getBoolean("event.gps.particle-trail", true);
@@ -535,6 +546,29 @@ public class PluginConfig {
     public int getIntervalMinutes() { return intervalMinutes; }
     public int getDurationMinutes() { return durationMinutes; }
     public int getMinBedrockPlayers() { return minBedrockPlayers; }
+
+    public int getAutoMinPlayers(EventType type) {
+        if (type == null) {
+            return minBedrockPlayers;
+        }
+        return autoMinPlayers.getOrDefault(type, minBedrockPlayers);
+    }
+
+    public void setAutoMinPlayers(EventType type, int amount) {
+        int clamped = Math.max(0, amount);
+        if (type == null) {
+            this.minBedrockPlayers = clamped;
+            plugin.getConfig().set("event.min-bedrock-players", clamped);
+            for (EventType each : EventType.values()) {
+                this.autoMinPlayers.put(each, clamped);
+                plugin.getConfig().set("event.auto-min-players." + each.getId(), clamped);
+            }
+        } else {
+            this.autoMinPlayers.put(type, clamped);
+            plugin.getConfig().set("event.auto-min-players." + type.getId(), clamped);
+        }
+        plugin.saveConfig();
+    }
     public int getCleanupDelaySeconds() { return cleanupDelaySeconds; }
     public double getGpsArrivalDistance() { return gpsArrivalDistance; }
     public boolean isGpsParticleTrail() { return gpsParticleTrail; }
