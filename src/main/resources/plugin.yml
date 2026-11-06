@@ -1,9 +1,11 @@
 name: GeyserEvent
-version: '1.21.11'
+version: '1.21.12'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
 description: Ивенты «Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика», «Вторжение Пришельцев» (3D-модель al3xandre + тарелка), призывные алтари и «Шахта Древних 45x45 (0 ~ 0)» для Purpur 26.2
+loadbefore:
+  - HyperTNT
 softdepend:
   - Geyser-Spigot
   - WorldGuard

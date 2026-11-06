@@ -7,7 +7,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -64,9 +66,12 @@ import ru.geyserevent.alien.AlienInvasionManager;
 import ru.geyserevent.event.EventType;
 import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.excavation.BrushTier;
+import ru.geyserevent.mine.AncientMineManager;
 import ru.geyserevent.util.ColorUtil;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -87,6 +92,8 @@ public class RiftEventListener implements Listener {
      */
     private final Map<UUID, Long> zoneCheckCooldown = new HashMap<>();
     private final Map<String, Integer> blockExcavationStep = new HashMap<>();
+    /** HyperTNT explosive radius 15 — запас, чтобы TNT снаружи не снёс схему. */
+    private static final int CUSTOM_BLAST_REACH = 16;
 
     public RiftEventListener(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -1066,36 +1073,118 @@ public class RiftEventListener implements Listener {
     }
 
     /**
-     * Кастомный TNT (HyperTNT) отменяет ванильный взрыв и ломает блоки сам.
-     * HIGH + cancel → их HIGHEST ignoreCancelled не сработает в привате/ивенте.
+     * HyperTNT: в onExplosionPrime сам cancel + explode()/setType, EntityExplode не вызывается.
+     * Их canExplode смотрит только Shieldy, не WG. Слушаем LOWEST ignoreCancelled=false,
+     * пока TNT ещё не взорвался, и с запасом радиуса 16 (у них до 15).
      */
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onExplosionPrime(ExplosionPrimeEvent event) {
         Location loc = event.getEntity().getLocation();
-        if (!isExplosionBlocked(loc)) {
+        if (!blastCanHitProtection(loc, CUSTOM_BLAST_REACH)) {
             return;
         }
+        List<BlockState> snapshot = captureProtectedNear(loc, CUSTOM_BLAST_REACH);
         event.setCancelled(true);
         if (event.getEntity() instanceof TNTPrimed primed) {
             primed.remove();
         }
+        if (snapshot.isEmpty()) {
+            return;
+        }
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            for (BlockState state : snapshot) {
+                Block now = state.getBlock();
+                if (now.getType() != state.getType() || !now.getBlockData().equals(state.getBlockData())) {
+                    state.update(true, false);
+                }
+            }
+        });
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onEntityExplode(EntityExplodeEvent event) {
         event.blockList().removeIf(b -> isProtectedEventLocation(b.getLocation()));
+        if (blastCanHitProtection(event.getLocation(), CUSTOM_BLAST_REACH)) {
+            event.blockList().removeIf(b -> isProtectedEventLocation(b.getLocation()));
+        }
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onBlockExplode(BlockExplodeEvent event) {
         event.blockList().removeIf(b -> isProtectedEventLocation(b.getLocation()));
     }
 
-    private boolean isExplosionBlocked(Location loc) {
-        if (isProtectedEventLocation(loc)) {
+    private boolean blastCanHitProtection(Location loc, double reach) {
+        if (loc == null || loc.getWorld() == null) {
+            return false;
+        }
+        AncientMineManager mine = plugin.getAncientMineManager();
+        if (mine != null && mine.getCenterLocation() != null) {
+            Location center = mine.getCenterLocation();
+            if (center.getWorld() != null && center.getWorld().equals(loc.getWorld())) {
+                double dx = loc.getX() - center.getX();
+                double dz = loc.getZ() - center.getZ();
+                double dy = loc.getY() - center.getY();
+                double lim = AncientMineManager.MINE_RADIUS + 2 + reach;
+                if (dx * dx + dz * dz <= lim * lim && dy >= -6.0 - reach && dy <= 16.0 + reach) {
+                    return true;
+                }
+            }
+        }
+        AlienInvasionManager alien = plugin.getAlienInvasionManager();
+        if (alien != null && alien.isActive() && !alien.isDefeated() && alien.getCenterLocation() != null) {
+            Location center = alien.getCenterLocation();
+            if (center.getWorld() != null && center.getWorld().equals(loc.getWorld())) {
+                int r = plugin.getPluginConfig().getAlienProtectionRadius();
+                if (Math.abs(loc.getX() - center.getX()) <= r + reach
+                        && Math.abs(loc.getZ() - center.getZ()) <= r + reach
+                        && Math.abs(loc.getY() - center.getY()) <= 12 + reach) {
+                    return true;
+                }
+            }
+        }
+        InfernalRiftManager rift = plugin.getRiftManager();
+        if (rift != null && rift.isActive() && rift.getRiftCenterLocation() != null) {
+            Location center = rift.getRiftCenterLocation();
+            if (center.getWorld() != null && center.getWorld().equals(loc.getWorld())) {
+                int r = Math.max(18, plugin.getPluginConfig().getProtectionRadius() + 4);
+                if (Math.abs(loc.getX() - center.getX()) <= r + reach
+                        && Math.abs(loc.getZ() - center.getZ()) <= r + reach
+                        && Math.abs(loc.getY() - center.getY()) <= 16 + reach) {
+                    return true;
+                }
+            }
+        }
+        if (plugin.getWorldGuardHook() != null && !plugin.getWorldGuardHook().allowsExplosion(loc)) {
             return true;
         }
-        return plugin.getWorldGuardHook() != null && !plugin.getWorldGuardHook().allowsExplosion(loc);
+        return isProtectedEventLocation(loc);
+    }
+
+    private List<BlockState> captureProtectedNear(Location loc, int reach) {
+        List<BlockState> snapshot = new ArrayList<>();
+        World world = loc.getWorld();
+        if (world == null) {
+            return snapshot;
+        }
+        int cx = loc.getBlockX();
+        int cy = loc.getBlockY();
+        int cz = loc.getBlockZ();
+        int minY = world.getMinHeight();
+        int maxY = world.getMaxHeight() - 1;
+        for (int x = cx - reach; x <= cx + reach; x++) {
+            for (int z = cz - reach; z <= cz + reach; z++) {
+                int yFrom = Math.max(minY, cy - reach);
+                int yTo = Math.min(maxY, cy + reach);
+                for (int y = yFrom; y <= yTo; y++) {
+                    Block block = world.getBlockAt(x, y, z);
+                    if (isProtectedEventLocation(block.getLocation())) {
+                        snapshot.add(block.getState());
+                    }
+                }
+            }
+        }
+        return snapshot;
     }
 
     private boolean isProtectedEventLocation(Location loc) {

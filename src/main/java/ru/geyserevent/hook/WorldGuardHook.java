@@ -226,6 +226,10 @@ public final class WorldGuardHook {
             regionSetFlag.invoke(region, interactFlagField.get(null), allowState);
             applyOptionalFlag(region, passthroughFlagField);
             applyOptionalFlag(region, useFlagField);
+            setFlag(region, tntFlagField, denyState);
+            setFlag(region, otherExplosionFlagField, denyState);
+            setFlag(region, creeperExplosionFlagField, denyState);
+            setFlag(region, fireFlagField, denyState);
 
             // Пересоздаём регион, чтобы флаги гарантированно применились
             if ((Boolean) managerHasRegion.invoke(manager, REGION_ID)) {
