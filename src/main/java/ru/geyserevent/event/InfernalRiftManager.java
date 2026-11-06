@@ -35,6 +35,7 @@ import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.config.PluginConfig;
+import ru.geyserevent.hook.WorldGuardHook;
 import ru.geyserevent.excavation.BrushTier;
 import ru.geyserevent.util.ColorUtil;
 
@@ -633,6 +634,7 @@ public class InfernalRiftManager {
             this.villagerUuid = villager.getUniqueId();
 
             broadcastEventStart();
+            protectEventWorldGuardRegion();
             startActiveTickLoop();
             return true;
         } else if (this.activeEventType == EventType.ALCHEMIST_CAULDRON) {
@@ -648,6 +650,7 @@ public class InfernalRiftManager {
             this.villagerUuid = alchemist.getUniqueId();
 
             broadcastEventStart();
+            protectEventWorldGuardRegion();
             startActiveTickLoop();
             return true;
         } else {
@@ -664,9 +667,26 @@ public class InfernalRiftManager {
             this.bossUuid = boss.getUniqueId();
 
             broadcastEventStart();
+            protectEventWorldGuardRegion();
             startActiveTickLoop();
             return true;
         }
+    }
+
+    private void protectEventWorldGuardRegion() {
+        Location center = this.riftCenterLocation;
+        if (center == null || center.getWorld() == null || plugin.getWorldGuardHook() == null) {
+            return;
+        }
+        int radius = plugin.getPluginConfig().getProtectionRadius();
+        plugin.getWorldGuardHook().syncProtectionRegion(
+                center.getWorld(),
+                WorldGuardHook.EVENT_REGION_ID,
+                center.getBlockX(),
+                center.getBlockY(),
+                center.getBlockZ(),
+                radius
+        );
     }
 
     private Villager spawnExcavationVillager(Location loc) {
@@ -1395,6 +1415,9 @@ public class InfernalRiftManager {
         plugin.getAlchemistSchematicManager().restoreActiveSchematic();
         plugin.getTopRightHudManager().clearAllHud();
         clearAllGpsTrackers();
+        if (riftCenterLocation != null && riftCenterLocation.getWorld() != null && plugin.getWorldGuardHook() != null) {
+            plugin.getWorldGuardHook().removeRegion(riftCenterLocation.getWorld(), WorldGuardHook.EVENT_REGION_ID);
+        }
 
         if (bossBar != null) {
             bossBar.removeAll();

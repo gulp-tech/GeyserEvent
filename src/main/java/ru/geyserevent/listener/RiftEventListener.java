@@ -14,6 +14,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -27,6 +28,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
@@ -1046,6 +1048,12 @@ public class RiftEventListener implements Listener {
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
         }
+        if (plugin.getAlienInvasionManager() != null
+                && plugin.getAlienInvasionManager().isProtectedBlock(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
         if (!plugin.getRiftManager().isActive()) {
             return;
         }
@@ -1057,29 +1065,56 @@ public class RiftEventListener implements Listener {
         }
     }
 
+    /**
+     * Кастомный TNT (HyperTNT) отменяет ванильный взрыв и ломает блоки сам.
+     * HIGH + cancel → их HIGHEST ignoreCancelled не сработает в привате/ивенте.
+     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onEntityExplode(EntityExplodeEvent event) {
-        event.blockList().removeIf(b -> plugin.getAncientMineManager() != null
-                && plugin.getAncientMineManager().isInsideMineTerritory(b.getLocation()));
-        if (!plugin.getRiftManager().isActive()) {
+    public void onExplosionPrime(ExplosionPrimeEvent event) {
+        Location loc = event.getEntity().getLocation();
+        if (!isExplosionBlocked(loc)) {
             return;
         }
-        event.blockList().removeIf(Block::isLiquid);
-        event.blockList().removeIf(b -> plugin.getSchematicManager().isProtectedBlock(b.getLocation())
-                || plugin.getBeachSchematicManager().isProtectedArenaBlock(b)
-                || plugin.getAlchemistSchematicManager().isProtectedArenaBlock(b));
+        event.setCancelled(true);
+        if (event.getEntity() instanceof TNTPrimed primed) {
+            primed.remove();
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        event.blockList().removeIf(b -> isProtectedEventLocation(b.getLocation()));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent event) {
-        event.blockList().removeIf(b -> plugin.getAncientMineManager() != null
-                && plugin.getAncientMineManager().isInsideMineTerritory(b.getLocation()));
-        if (!plugin.getRiftManager().isActive()) {
-            return;
+        event.blockList().removeIf(b -> isProtectedEventLocation(b.getLocation()));
+    }
+
+    private boolean isExplosionBlocked(Location loc) {
+        if (isProtectedEventLocation(loc)) {
+            return true;
         }
-        event.blockList().removeIf(b -> plugin.getSchematicManager().isProtectedBlock(b.getLocation())
-                || plugin.getBeachSchematicManager().isProtectedArenaBlock(b)
-                || plugin.getAlchemistSchematicManager().isProtectedArenaBlock(b));
+        return plugin.getWorldGuardHook() != null && !plugin.getWorldGuardHook().allowsExplosion(loc);
+    }
+
+    private boolean isProtectedEventLocation(Location loc) {
+        if (loc == null) {
+            return false;
+        }
+        if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isInsideMineTerritory(loc)) {
+            return true;
+        }
+        if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isProtectedBlock(loc)) {
+            return true;
+        }
+        if (plugin.getRiftManager() == null || !plugin.getRiftManager().isActive()) {
+            return false;
+        }
+        Block block = loc.getBlock();
+        return plugin.getSchematicManager().isProtectedBlock(loc)
+                || plugin.getBeachSchematicManager().isProtectedArenaBlock(block)
+                || plugin.getAlchemistSchematicManager().isProtectedArenaBlock(block);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

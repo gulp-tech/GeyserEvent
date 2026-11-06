@@ -29,6 +29,7 @@ import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.event.DamageLeaderboard;
+import ru.geyserevent.hook.WorldGuardHook;
 import ru.geyserevent.schematic.RiftSchematicManager;
 import ru.geyserevent.util.ColorUtil;
 
@@ -163,6 +164,17 @@ public final class AlienInvasionManager {
 
         // 5. Сразу пара малых пришельцев, чтобы ивент не выглядел пустым
         spawnMinionWave(true);
+
+        if (this.center != null && this.center.getWorld() != null && plugin.getWorldGuardHook() != null) {
+            plugin.getWorldGuardHook().syncProtectionRegion(
+                    this.center.getWorld(),
+                    WorldGuardHook.ALIEN_REGION_ID,
+                    this.center.getBlockX(),
+                    this.center.getBlockY(),
+                    this.center.getBlockZ(),
+                    cfg.getAlienProtectionRadius()
+            );
+        }
 
         startTickLoop();
         return true;
@@ -680,6 +692,9 @@ public final class AlienInvasionManager {
             cleanupTask = null;
         }
 
+        if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
+            plugin.getWorldGuardHook().removeRegion(center.getWorld(), WorldGuardHook.ALIEN_REGION_ID);
+        }
         removeAlienEntities();
         plugin.getAbilityController().removeAllMinions();
         schematicManager.restoreSchematic();

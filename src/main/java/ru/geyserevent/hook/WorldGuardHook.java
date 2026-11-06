@@ -1,6 +1,7 @@
 package ru.geyserevent.hook;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 
@@ -27,13 +28,17 @@ import java.lang.reflect.Method;
 public final class WorldGuardHook {
 
     public static final String REGION_ID = "geyserevent_mine";
+    public static final String EVENT_REGION_ID = "geyserevent_event";
+    public static final String ALIEN_REGION_ID = "geyserevent_alien";
     private static final int REGION_PRIORITY = 100;
+    private static final int EVENT_REGION_PRIORITY = 95;
 
     private final Object worldGuardPlugin;
     private final boolean available;
 
     // Закэшированные отражённые члены (заполняются один раз)
     private static volatile boolean reflected;
+    private static Object regionContainerTarget;
     private static Method wgGetRegionContainer;
     private static Method adapterAdapt;
     private static Method containerGet;
@@ -49,7 +54,14 @@ public final class WorldGuardHook {
     private static Field interactFlagField;
     private static Field passthroughFlagField;
     private static Field useFlagField;
+    private static Field tntFlagField;
+    private static Field otherExplosionFlagField;
+    private static Field creeperExplosionFlagField;
+    private static Field fireFlagField;
+    private static Method managerGetApplicableRegions;
+    private static Method regionGetFlag;
     private static Object allowState;
+    private static Object denyState;
 
     public WorldGuardHook() {
         this.worldGuardPlugin = resolveWorldGuardPlugin();
@@ -115,13 +127,36 @@ public final class WorldGuardHook {
             interactFlagField = flagsClass.getField("INTERACT");
             passthroughFlagField = flagsClass.getField("PASSTHROUGH");
             useFlagField = flagsClass.getField("USE");
+            tntFlagField = optionalFlag(flagsClass, "TNT");
+            otherExplosionFlagField = optionalFlag(flagsClass, "OTHER_EXPLOSION");
+            creeperExplosionFlagField = optionalFlag(flagsClass, "CREEPER_EXPLOSION");
+            fireFlagField = optionalFlag(flagsClass, "FIRE");
 
             Class<?> stateClass = Class.forName("com.sk89q.worldguard.protection.flags.StateFlag$State");
             @SuppressWarnings({"unchecked", "rawtypes"})
-            Object state = Enum.valueOf((Class) stateClass.asSubclass(Enum.class), "ALLOW");
-            allowState = state;
+            Class denyEnum = stateClass.asSubclass(Enum.class);
+            allowState = Enum.valueOf(denyEnum, "ALLOW");
+            denyState = Enum.valueOf(denyEnum, "DENY");
 
-            wgGetRegionContainer = worldGuardPlugin.getClass().getMethod("getRegionContainer");
+            try {
+                managerGetApplicableRegions = managerClass.getMethod("getApplicableRegions",
+                        Class.forName("com.sk89q.worldedit.math.BlockVector3"));
+            } catch (NoSuchMethodException ignored) {
+                managerGetApplicableRegions = null;
+            }
+            regionGetFlag = Class.forName("com.sk89q.worldguard.protection.regions.ProtectedRegion")
+                    .getMethod("getFlag", Class.forName("com.sk89q.worldguard.protection.flags.Flag"));
+
+            try {
+                wgGetRegionContainer = worldGuardPlugin.getClass().getMethod("getRegionContainer");
+                regionContainerTarget = worldGuardPlugin;
+            } catch (NoSuchMethodException ignored) {
+                Class<?> wgApi = Class.forName("com.sk89q.worldguard.WorldGuard");
+                Object instance = wgApi.getMethod("getInstance").invoke(null);
+                Object platform = instance.getClass().getMethod("getPlatform").invoke(instance);
+                wgGetRegionContainer = platform.getClass().getMethod("getRegionContainer");
+                regionContainerTarget = platform;
+            }
             reflected = true;
             return true;
         } catch (Throwable throwable) {
@@ -166,7 +201,7 @@ public final class WorldGuardHook {
                 return false;
             }
 
-            Object container = wgGetRegionContainer.invoke(worldGuardPlugin);
+            Object container = wgGetRegionContainer.invoke(regionContainerTarget);
             if (container == null) {
                 return false;
             }
@@ -206,6 +241,14 @@ public final class WorldGuardHook {
         }
     }
 
+    private static Field optionalFlag(Class<?> flagsClass, String name) {
+        try {
+            return flagsClass.getField(name);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
     private void applyOptionalFlag(Object region, Field flagField) {
         try {
             Object flag = flagField.get(null);
@@ -228,7 +271,7 @@ public final class WorldGuardHook {
             if (!resolveReflection()) {
                 return false;
             }
-            Object container = wgGetRegionContainer.invoke(worldGuardPlugin);
+            Object container = wgGetRegionContainer.invoke(regionContainerTarget);
             if (container == null) {
                 return false;
             }
@@ -244,6 +287,148 @@ public final class WorldGuardHook {
                 }
             }
             return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public boolean removeRegion(World world, String regionId) {
+        if (!available || world == null || regionId == null) {
+            return false;
+        }
+        try {
+            if (!resolveReflection()) {
+                return false;
+            }
+            Object container = wgGetRegionContainer.invoke(regionContainerTarget);
+            if (container == null) {
+                return false;
+            }
+            Object weWorld = adapterAdapt.invoke(null, world);
+            Object manager = containerGet.invoke(container, weWorld);
+            if (manager == null) {
+                return false;
+            }
+            if ((Boolean) managerHasRegion.invoke(manager, regionId)) {
+                managerRemoveRegion.invoke(manager, regionId);
+                if (managerSave != null) {
+                    managerSave.invoke(manager);
+                }
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Приват ивента: TNT/взрывы DENY. BUILD не трогаем — раскопки/реагенты должны ломаться.
+     */
+    public boolean syncProtectionRegion(World world, String regionId, int centerX, int centerY, int centerZ, int radius) {
+        if (!available || world == null || regionId == null) {
+            return false;
+        }
+        try {
+            if (!resolveReflection()) {
+                return false;
+            }
+            Object container = wgGetRegionContainer.invoke(regionContainerTarget);
+            if (container == null) {
+                return false;
+            }
+            Object weWorld = adapterAdapt.invoke(null, world);
+            Object manager = containerGet.invoke(container, weWorld);
+            if (manager == null) {
+                return false;
+            }
+            int minY = Math.max(world.getMinHeight(), centerY - 16);
+            int maxY = Math.min(world.getMaxHeight() - 1, centerY + 24);
+            Object min = blockVectorAt.invoke(null, centerX - radius, minY, centerZ - radius);
+            Object max = blockVectorAt.invoke(null, centerX + radius, maxY, centerZ + radius);
+            Object region = cuboidConstructor.newInstance(regionId, min, max);
+            regionSetPriority.invoke(region, EVENT_REGION_PRIORITY);
+            setFlag(region, tntFlagField, denyState);
+            setFlag(region, otherExplosionFlagField, denyState);
+            setFlag(region, creeperExplosionFlagField, denyState);
+            setFlag(region, fireFlagField, denyState);
+            if ((Boolean) managerHasRegion.invoke(manager, regionId)) {
+                managerRemoveRegion.invoke(manager, regionId);
+            }
+            managerAddRegion.invoke(manager, region);
+            if (managerSave != null) {
+                managerSave.invoke(manager);
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * false — в этой точке WorldGuard запрещает взрыв (приват игрока или TNT: deny).
+     */
+    public boolean allowsExplosion(Location loc) {
+        if (!available || loc == null || loc.getWorld() == null) {
+            return true;
+        }
+        try {
+            if (!resolveReflection() || managerGetApplicableRegions == null || regionGetFlag == null) {
+                return true;
+            }
+            Object container = wgGetRegionContainer.invoke(regionContainerTarget);
+            if (container == null) {
+                return true;
+            }
+            Object weWorld = adapterAdapt.invoke(null, loc.getWorld());
+            Object manager = containerGet.invoke(container, weWorld);
+            if (manager == null) {
+                return true;
+            }
+            Object vector = blockVectorAt.invoke(null, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+            Object set = managerGetApplicableRegions.invoke(manager, vector);
+            if (!(set instanceof Iterable<?> regions)) {
+                return true;
+            }
+            for (Object region : regions) {
+                if (flagEquals(region, tntFlagField, denyState)
+                        || flagEquals(region, otherExplosionFlagField, denyState)
+                        || flagEquals(region, creeperExplosionFlagField, denyState)) {
+                    return false;
+                }
+                if (flagEquals(region, buildFlagField, denyState)
+                        && !flagEquals(region, tntFlagField, allowState)) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
+
+    private void setFlag(Object region, Field flagField, Object state) {
+        if (flagField == null || state == null) {
+            return;
+        }
+        try {
+            Object flag = flagField.get(null);
+            if (flag != null) {
+                regionSetFlag.invoke(region, flag, state);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private boolean flagEquals(Object region, Field flagField, Object expected) {
+        if (flagField == null || expected == null || regionGetFlag == null) {
+            return false;
+        }
+        try {
+            Object flag = flagField.get(null);
+            if (flag == null) {
+                return false;
+            }
+            return expected.equals(regionGetFlag.invoke(region, flag));
         } catch (Throwable ignored) {
             return false;
         }
