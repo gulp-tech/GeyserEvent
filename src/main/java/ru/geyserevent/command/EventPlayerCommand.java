@@ -64,6 +64,22 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
 
             case "delay", "time", "info" -> {
                 // Ивент «Вторжение Пришельцев» идёт в своём менеджере
+                if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()
+                        && plugin.getGravityHoardManager().getCenterLocation() != null) {
+                    var wind = plugin.getGravityHoardManager();
+                    sender.sendMessage(ColorUtil.color("&e┼ &#7DF9FFСердце Ветра &fактивно на карте."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fЯдро: &b"
+                            + (int) Math.ceil(wind.getCoreHealth()) + "/"
+                            + (int) Math.ceil(wind.getCoreMaxHealth()) + " ❤"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fДо конца: &#E0C912"
+                            + ColorUtil.formatDuration(wind.getSecondsRemaining())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
+                            + wind.getCenterLocation().getBlockX() + " "
+                            + wind.getCenterLocation().getBlockY() + " "
+                            + wind.getCenterLocation().getBlockZ()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Металл тянет к ядру, без брони — полёт к шалкерам"));
+                    return true;
+                }
                 if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()
                         && plugin.getAlienInvasionManager().getCenterLocation() != null) {
                     var alien = plugin.getAlienInvasionManager();

@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.geyserevent.alien.AlienInvasionManager;
+import ru.geyserevent.wind.GravityHoardManager;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.boss.MinionLootManager;
 import ru.geyserevent.cauldron.AlchemistSchematicManager;
@@ -55,6 +56,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private SummonAltarManager summonAltarManager;
     private InfernalRiftManager riftManager;
     private AlienInvasionManager alienInvasionManager;
+    private GravityHoardManager gravityHoardManager;
 
     @Override
     public void onLoad() {
@@ -95,6 +97,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
 
         // 4b. Ивент «Вторжение Пришельцев»: свой босс с кастомной текстурой и 4 сундука
         this.alienInvasionManager = new AlienInvasionManager(this);
+        this.gravityHoardManager = new GravityHoardManager(this);
 
         // 5. Регистрация слушателей событий
         getServer().getPluginManager().registerEvents(new RiftEventListener(this), this);
@@ -137,8 +140,8 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.12 успешно запущен! (Purpur 26.2)");
-        getLogger().info(" Временные ивенты: Адский Разлом, Пляжные Раскопки, Котёл Алхимика, Вторжение Пришельцев");
+        getLogger().info(" GeyserEvent v1.21.13 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Пришельцы, Сердце Ветра");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");
     }
@@ -202,6 +205,10 @@ public final class GeyserEventPlugin extends JavaPlugin {
         if (this.alienInvasionManager != null && this.alienInvasionManager.isActive()) {
             getLogger().info("Завершение ивента «Вторжение Пришельцев» и откат схемы...");
             this.alienInvasionManager.stopEvent();
+        }
+        if (this.gravityHoardManager != null && this.gravityHoardManager.isActive()) {
+            getLogger().info("Завершение ивента «Сердце Ветра» и откат схемы...");
+            this.gravityHoardManager.stopEvent();
         }
         if (this.riftManager != null && this.riftManager.isActive()) {
             getLogger().info("Завершение активного ивента и откат схемы...");
@@ -268,6 +275,8 @@ public final class GeyserEventPlugin extends JavaPlugin {
     }
 
     public AlienInvasionManager getAlienInvasionManager() { return alienInvasionManager; }
+
+    public GravityHoardManager getGravityHoardManager() { return gravityHoardManager; }
 
     public TopRightHudManager getTopRightHudManager() {
         return topRightHudManager;

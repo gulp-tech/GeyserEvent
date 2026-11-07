@@ -156,6 +156,9 @@ public class InfernalRiftManager {
                 if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
                     return;
                 }
+                if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
+                    return;
+                }
                 long now = System.currentTimeMillis() / 1000L;
                 if (now >= nextAutoStartEpochSeconds) {
                     int online = plugin.getBedrockService().getOnlineBedrockCount();
@@ -583,6 +586,11 @@ public class InfernalRiftManager {
         if (targetCenter == null || targetCenter.getWorld() == null) {
             return false;
         }
+        if (type != EventType.GRAVITY_HOARD
+                && plugin.getGravityHoardManager() != null
+                && plugin.getGravityHoardManager().isActive()) {
+            plugin.getGravityHoardManager().stopEvent();
+        }
         // Ивент «Вторжение Пришельцев» ведёт свой менеджер (своя схема и свой босс)
         if (type == EventType.ALIEN_INVASION) {
             if (plugin.getAlienInvasionManager() == null) {
@@ -591,7 +599,22 @@ public class InfernalRiftManager {
             if (active) {
                 stopEvent(false);
             }
+            if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
+                plugin.getGravityHoardManager().stopEvent();
+            }
             return plugin.getAlienInvasionManager().startEvent(targetCenter, durationSecondsOverride);
+        }
+        if (type == EventType.GRAVITY_HOARD) {
+            if (plugin.getGravityHoardManager() == null) {
+                return false;
+            }
+            if (active) {
+                stopEvent(false);
+            }
+            if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
+                plugin.getAlienInvasionManager().stopEvent();
+            }
+            return plugin.getGravityHoardManager().startEvent(targetCenter, durationSecondsOverride);
         }
         if (active) {
             stopEvent(false);
@@ -1679,9 +1702,10 @@ public class InfernalRiftManager {
             }
 
             Location alienBossLoc = getAlienGpsTarget();
+            Location windCoreLoc = getWindGpsTarget();
             Location targetLoc = (active && activeEventType == EventType.INFERNAL_RIFT && getBossEntity() != null)
                     ? getBossEntity().getLocation()
-                    : (alienBossLoc != null ? alienBossLoc : baseLoc);
+                    : (alienBossLoc != null ? alienBossLoc : (windCoreLoc != null ? windCoreLoc : baseLoc));
             double dist = player.getLocation().distance(targetLoc);
 
             if (dist > arrivalDist + 1.5) {
@@ -1743,6 +1767,12 @@ public class InfernalRiftManager {
                 return alienCenter;
             }
         }
+        if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
+            Location windCenter = plugin.getGravityHoardManager().getCenterLocation();
+            if (windCenter != null && windCenter.getWorld() != null) {
+                return windCenter;
+            }
+        }
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()) {
             return plugin.getAncientMineManager().getCenterLocation();
         }
@@ -1756,6 +1786,14 @@ public class InfernalRiftManager {
         }
         LivingEntity boss = plugin.getAlienInvasionManager().getBossEntity();
         return boss != null ? boss.getLocation() : null;
+    }
+
+    private Location getWindGpsTarget() {
+        if (plugin.getGravityHoardManager() == null || !plugin.getGravityHoardManager().isActive()) {
+            return null;
+        }
+        LivingEntity core = plugin.getGravityHoardManager().getCoreEntity();
+        return core != null ? core.getLocation() : plugin.getGravityHoardManager().getCenterLocation();
     }
 
     @SuppressWarnings("deprecation")

@@ -68,6 +68,7 @@ import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.excavation.BrushTier;
 import ru.geyserevent.mine.AncientMineManager;
 import ru.geyserevent.util.ColorUtil;
+import ru.geyserevent.wind.GravityHoardManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -810,6 +811,18 @@ public class RiftEventListener implements Listener {
             event.setCancelled(true);
             return;
         }
+        GravityHoardManager windMgr = plugin.getGravityHoardManager();
+        if (windMgr != null && windMgr.isActive() && windMgr.isHoardEntity(victim)) {
+            Player attacker = resolveAttackerPlayer(damager);
+            if (windMgr.isCore(victim) && victim instanceof LivingEntity living) {
+                double finalDmg = Math.max(1.0, Math.max(event.getDamage(), event.getFinalDamage()));
+                event.setDamage(0.0);
+                event.setCancelled(true);
+                windMgr.handleDamage(living, attacker, finalDmg);
+                return;
+            }
+            return;
+        }
         boolean victimIsAlienBoss = alienMgr != null && alienMgr.isAlienBoss(victim);
         boolean victimIsAlienMinion = alienMgr != null && alienMgr.isAlienMinion(victim);
         boolean damagerIsAlienBoss = alienMgr != null && alienMgr.isAlienBoss(damager);
@@ -895,6 +908,15 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBossEnvironmentalDamage(EntityDamageEvent event) {
         Entity entity = event.getEntity();
+        GravityHoardManager windEnv = plugin.getGravityHoardManager();
+        if (windEnv != null && windEnv.isActive()) {
+            if (windEnv.isHoardEntity(entity)
+                    || (entity instanceof Player && windEnv.cancelFallInArena(entity.getLocation())
+                    && event.getCause() == EntityDamageEvent.DamageCause.FALL)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
         if (plugin.getRiftManager().isExcavationVillager(entity)
                 || (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(entity))) {
             event.setCancelled(true);
@@ -928,6 +950,21 @@ public class RiftEventListener implements Listener {
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
         AlienInvasionManager alienDeath = plugin.getAlienInvasionManager();
+        GravityHoardManager windDeath = plugin.getGravityHoardManager();
+        if (windDeath != null && windDeath.isCore(entity)) {
+            event.getDrops().clear();
+            event.setDroppedExp(400);
+            if (!windDeath.isDefeated()) {
+                windDeath.handleCoreDefeated();
+            }
+            return;
+        }
+        if (windDeath != null && windDeath.isHoardShulker(entity)) {
+            event.getDrops().clear();
+            event.setDroppedExp(15);
+            windDeath.handleShulkerDeath(entity);
+            return;
+        }
         if (alienDeath != null && alienDeath.isAlienBoss(entity)) {
             event.getDrops().clear();
             event.setDroppedExp(600);
@@ -1017,6 +1054,12 @@ public class RiftEventListener implements Listener {
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
         }
+        if (plugin.getGravityHoardManager() != null
+                && plugin.getGravityHoardManager().isProtectedBlock(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
 
         if (!plugin.getRiftManager().isActive()) {
             return;
@@ -1057,6 +1100,12 @@ public class RiftEventListener implements Listener {
         }
         if (plugin.getAlienInvasionManager() != null
                 && plugin.getAlienInvasionManager().isProtectedBlock(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
+        if (plugin.getGravityHoardManager() != null
+                && plugin.getGravityHoardManager().isProtectedBlock(block.getLocation())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
@@ -1143,6 +1192,18 @@ public class RiftEventListener implements Listener {
                 }
             }
         }
+        GravityHoardManager wind = plugin.getGravityHoardManager();
+        if (wind != null && wind.isActive() && wind.getCenterLocation() != null) {
+            Location center = wind.getCenterLocation();
+            if (center.getWorld() != null && center.getWorld().equals(loc.getWorld())) {
+                int r = GravityHoardManager.ARENA_RADIUS + 2;
+                if (Math.abs(loc.getX() - center.getX()) <= r + reach
+                        && Math.abs(loc.getZ() - center.getZ()) <= r + reach
+                        && Math.abs(loc.getY() - center.getY()) <= 14 + reach) {
+                    return true;
+                }
+            }
+        }
         InfernalRiftManager rift = plugin.getRiftManager();
         if (rift != null && rift.isActive() && rift.getRiftCenterLocation() != null) {
             Location center = rift.getRiftCenterLocation();
@@ -1195,6 +1256,9 @@ public class RiftEventListener implements Listener {
             return true;
         }
         if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isProtectedBlock(loc)) {
+            return true;
+        }
+        if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isProtectedBlock(loc)) {
             return true;
         }
         if (plugin.getRiftManager() == null || !plugin.getRiftManager().isActive()) {
