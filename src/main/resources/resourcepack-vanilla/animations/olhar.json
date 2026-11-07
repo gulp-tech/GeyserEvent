@@ -1,0 +1,33 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"animation.olhar": {
+			"loop": true,
+			"bones": {
+				"root": {
+					"rotation": ["-q.target_x_rotation", "-q.body_y_rotation", 0]
+				}
+			},
+			"particle_effects": {
+				"0.0": [
+					{
+						"effect": "verde",
+						"locator": "verde"
+					},
+					{
+						"effect": "verde",
+						"locator": "verde2"
+					},
+					{
+						"effect": "branco",
+						"locator": "branco"
+					},
+					{
+						"effect": "branco",
+						"locator": "branco2"
+					}
+				]
+			}
+		}
+	}
+}

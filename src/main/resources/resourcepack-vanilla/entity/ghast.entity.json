@@ -1,0 +1,38 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "minecraft:ghast",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/nave",
+        "shooting": "textures/entity/nave"
+      },
+      "geometry": {
+        "default": "geometry.ghast"
+      },
+      "scripts": {
+        "initialize": [
+          "variable.gliding_speed_value = 1.0;"
+        ],
+        "animate": [
+          "nave"
+        ]
+      },
+      "animations": {
+        "parado": "animation.nave.para",
+        "andando": "animation.nave.anda",
+        "abduzir": "animation.nave.abduzir",
+        "nave": "controller.animation.nave",
+        "move": "animation.nave.anda",
+        "scale": "animation.nave.para"
+      },
+      "render_controllers": [
+        "controller.render.ghast"
+      ],
+      "enable_attachables": false
+    }
+  }
+}
