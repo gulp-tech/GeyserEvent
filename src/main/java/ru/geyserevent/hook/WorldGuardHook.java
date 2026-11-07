@@ -58,6 +58,9 @@ public final class WorldGuardHook {
     private static Field otherExplosionFlagField;
     private static Field creeperExplosionFlagField;
     private static Field fireFlagField;
+    private static Field pvpFlagField;
+    private static Field mobDamageFlagField;
+    private static Field invincibleFlagField;
     private static Method managerGetApplicableRegions;
     private static Method regionGetFlag;
     private static Object allowState;
@@ -131,6 +134,9 @@ public final class WorldGuardHook {
             otherExplosionFlagField = optionalFlag(flagsClass, "OTHER_EXPLOSION");
             creeperExplosionFlagField = optionalFlag(flagsClass, "CREEPER_EXPLOSION");
             fireFlagField = optionalFlag(flagsClass, "FIRE");
+            pvpFlagField = optionalFlag(flagsClass, "PVP");
+            mobDamageFlagField = optionalFlag(flagsClass, "MOB_DAMAGE");
+            invincibleFlagField = optionalFlag(flagsClass, "INVINCIBLE");
 
             Class<?> stateClass = Class.forName("com.sk89q.worldguard.protection.flags.StateFlag$State");
             @SuppressWarnings({"unchecked", "rawtypes"})
@@ -355,6 +361,9 @@ public final class WorldGuardHook {
             setFlag(region, otherExplosionFlagField, denyState);
             setFlag(region, creeperExplosionFlagField, denyState);
             setFlag(region, fireFlagField, denyState);
+            setFlag(region, pvpFlagField, allowState);
+            setFlag(region, mobDamageFlagField, allowState);
+            setFlag(region, invincibleFlagField, denyState);
             if ((Boolean) managerHasRegion.invoke(manager, regionId)) {
                 managerRemoveRegion.invoke(manager, regionId);
             }

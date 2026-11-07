@@ -194,6 +194,16 @@ public class BrushLootGuiManager {
                         "&eНажмите, чтобы открыть меню лута"
                 )
         ));
+        inv.setItem(40, createButton(
+                Material.WIND_CHARGE,
+                "&#7DF9FF&lСердце Ветра — Настройка лута",
+                List.of(
+                        "&7Тот же лут, что у пришельцев:",
+                        "&7парящие шалкеры и сундуки после ядра.",
+                        "",
+                        "&eНажмите, чтобы открыть меню лута"
+                )
+        ));
 
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
@@ -714,7 +724,7 @@ public class BrushLootGuiManager {
                 case 29 -> openTierMenu(player, BrushTier.COMMON, LootCategory.MINE);
                 case 31 -> openTierMenu(player, BrushTier.EPIC, LootCategory.MINE);
                 case 33 -> openTierMenu(player, BrushTier.LEGENDARY, LootCategory.MINE);
-                case 36 -> openAlienMenu(player);
+                case 36, 40 -> openAlienMenu(player);
                 default -> {
                 }
             }

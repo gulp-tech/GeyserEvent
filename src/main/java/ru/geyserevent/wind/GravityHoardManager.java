@@ -19,11 +19,12 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
@@ -42,10 +43,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Ивент «Сердце Ветра» — механика, которой нет на обычных анархиях.
  *
- * <p>В воронке из меди и аметиста парит ядро. Каждые несколько секунд
- * бьёт <b>гравитационный импульс</b>: игроки в железной/незеритовой броне
- * притягиваются к ядру, без металла — взлетают к парящим шалкерам-сундукам.
- * Убил ядро — на пьедесталах открываются сундуки.</p>
+ * <p>В воронке из меди и аметиста парит ядро и стреляет ветряными зарядами.
+ * Шалкеры — парящие сундуки, с них падает лут. Убил ядро — сундуки на пьедесталах.</p>
  */
 public final class GravityHoardManager {
 
@@ -106,7 +105,7 @@ public final class GravityHoardManager {
         this.leaderboard.clear();
         this.shulkers.clear();
         this.center = snapToSurface(targetCenter);
-        this.pulseCooldown = Math.max(6, plugin.getConfig().getInt("wind.pulse-seconds", 10));
+        this.pulseCooldown = Math.max(2, plugin.getConfig().getInt("wind.pulse-seconds", 3));
         this.shulkerCooldown = 2;
         this.coreMaxHealth = Math.max(200.0, plugin.getConfig().getDouble("wind.core-health", 900.0));
         this.coreHealth = this.coreMaxHealth;
@@ -322,8 +321,8 @@ public final class GravityHoardManager {
                 }
                 pulseCooldown--;
                 if (pulseCooldown <= 0) {
-                    gravityPulse();
-                    pulseCooldown = Math.max(6, plugin.getConfig().getInt("wind.pulse-seconds", 10));
+                    shootWindCharges();
+                    pulseCooldown = Math.max(2, plugin.getConfig().getInt("wind.pulse-seconds", 3));
                 }
                 shulkerCooldown--;
                 if (shulkerCooldown <= 0) {
@@ -331,65 +330,101 @@ public final class GravityHoardManager {
                     shulkerCooldown = 22;
                 }
                 leashCore();
+                leashShulkers();
                 refreshBossBar();
             }
         };
         tickTask.runTaskTimer(plugin, 20L, 20L);
     }
 
-    private void gravityPulse() {
-        if (center == null || center.getWorld() == null) {
+    private void shootWindCharges() {
+        LivingEntity core = getCoreEntity();
+        if (core == null || center == null || center.getWorld() == null || defeated) {
             return;
         }
+        Player target = nearestPlayer();
+        if (target == null) {
+            return;
+        }
+        if (core instanceof Mob mob) {
+            mob.setTarget(target);
+        }
+        Location from = core.getEyeLocation();
+        Vector dir = target.getEyeLocation().toVector().subtract(from.toVector());
+        if (dir.lengthSquared() < 0.05) {
+            return;
+        }
+        dir.normalize();
         World world = center.getWorld();
-        world.playSound(center, Sound.ENTITY_PHANTOM_FLAP, 2.2f, 0.45f);
-        world.playSound(center, Sound.ITEM_TRIDENT_RIPTIDE_3, 1.4f, 0.55f);
-        world.spawnParticle(Particle.CLOUD, center.clone().add(0, 3, 0), 50, 3.5, 1.5, 3.5, 0.08);
-        world.spawnParticle(Particle.SWEEP_ATTACK, center.clone().add(0, 2, 0), 12, 2.0, 0.8, 2.0, 0.0);
+        world.playSound(from, Sound.ITEM_TRIDENT_RIPTIDE_2, 1.6f, 1.35f);
+        world.spawnParticle(Particle.CLOUD, from, 8, 0.2, 0.2, 0.2, 0.02);
+        EntityType chargeType = resolveChargeType();
+        Entity spawned = world.spawnEntity(from.clone().add(dir.clone().multiply(0.6)), chargeType);
+        spawned.setVelocity(dir.multiply(1.45));
+        if (spawned instanceof Projectile projectile) {
+            projectile.setShooter(core);
+            projectile.getPersistentDataContainer().set(coreKey, PersistentDataType.BYTE, (byte) 1);
+        }
+    }
 
-        String metalMsg = ColorUtil.color("&bСердце Ветра &8» &fМеталл на тебе — ядро тянет вниз!");
-        String airMsg = ColorUtil.color("&bСердце Ветра &8» &fБроня снята — тебя швыряет к парящим сундукам!");
-        for (Player player : world.getPlayers()) {
-            if (!isInsideArena(player.getLocation())) {
+    public void handleChargeHit(ProjectileHitEvent event) {
+        Projectile projectile = event.getEntity();
+        if (!projectile.getPersistentDataContainer().has(coreKey, PersistentDataType.BYTE)) {
+            ProjectileSource shooter = projectile.getShooter();
+            if (!(shooter instanceof Entity shooterEntity) || !isCore(shooterEntity)) {
+                return;
+            }
+        }
+        if (!(event.getHitEntity() instanceof Player player)) {
+            return;
+        }
+        if (!plugin.getBedrockService().canParticipate(player) || !isInsideArena(player.getLocation())) {
+            return;
+        }
+        double damage = Math.max(2.0, plugin.getConfig().getDouble("wind.charge-damage", 6.0));
+        player.damage(damage, getCoreEntity());
+        Vector knock = player.getLocation().toVector().subtract(center.toVector());
+        if (knock.lengthSquared() > 0.2) {
+            knock.normalize().multiply(0.45).setY(0.28);
+            player.setVelocity(player.getVelocity().add(knock));
+        }
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
+    }
+
+    private Player nearestPlayer() {
+        if (center == null || center.getWorld() == null) {
+            return null;
+        }
+        Player best = null;
+        double bestDist = 28.0 * 28.0;
+        for (Player player : center.getWorld().getPlayers()) {
+            if (!player.isValid() || player.isDead()) {
                 continue;
             }
             if (!plugin.getBedrockService().canParticipate(player)) {
                 continue;
             }
-            if (wearsMetal(player)) {
-                Vector pull = center.toVector().subtract(player.getLocation().toVector());
-                if (pull.lengthSquared() > 0.4) {
-                    pull.normalize().multiply(1.05).setY(0.22);
-                    player.setVelocity(pull);
-                }
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 0, false, false, true));
-                player.sendMessage(metalMsg);
-            } else {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 45, 3, false, false, true));
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 100, 0, false, false, true));
-                Vector up = new Vector((random.nextDouble() - 0.5) * 0.4, 0.85, (random.nextDouble() - 0.5) * 0.4);
-                player.setVelocity(player.getVelocity().add(up));
-                player.sendMessage(airMsg);
-            }
-        }
-    }
-
-    private static boolean wearsMetal(Player player) {
-        ItemStack[] armor = player.getInventory().getArmorContents();
-        if (armor == null) {
-            return false;
-        }
-        for (ItemStack piece : armor) {
-            if (piece == null || piece.getType().isAir()) {
+            if (!isInsideArena(player.getLocation())) {
                 continue;
             }
-            String name = piece.getType().name();
-            if (name.contains("IRON") || name.contains("GOLD") || name.contains("CHAIN")
-                    || name.contains("NETHERITE") || name.contains("COPPER")) {
-                return true;
+            double dist = player.getLocation().distanceSquared(center);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = player;
             }
         }
-        return false;
+        return best;
+    }
+
+    private static EntityType resolveChargeType() {
+        for (String name : new String[]{"WIND_CHARGE", "BREEZE_WIND_CHARGE"}) {
+            for (EntityType type : EntityType.values()) {
+                if (name.equals(type.name())) {
+                    return type;
+                }
+            }
+        }
+        return EntityType.SNOWBALL;
     }
 
     private LivingEntity spawnCore(Location loc) {
@@ -449,6 +484,10 @@ public final class GravityHoardManager {
             shulker.getPersistentDataContainer().set(shulkerKey, PersistentDataType.BYTE, (byte) 1);
             shulker.setRemoveWhenFarAway(false);
             shulker.setGravity(false);
+            shulker.setAI(false);
+            if (shulker instanceof Mob mob) {
+                mob.setAware(false);
+            }
             shulker.setGlowing(true);
             shulker.setCustomNameVisible(true);
             shulker.setCustomName(ColorUtil.color("&dПарящий сундук"));
@@ -538,56 +577,100 @@ public final class GravityHoardManager {
         int cy = origin.getBlockY();
         int cz = origin.getBlockZ();
         int r = ARENA_RADIUS;
+        Material exposed = mat("EXPOSED_COPPER", Material.COPPER_BLOCK);
+        Material oxidized = mat("OXIDIZED_COPPER", Material.WEATHERED_COPPER);
+        if (oxidized == Material.WEATHERED_COPPER) {
+            oxidized = mat("WEATHERED_COPPER", Material.COPPER_BLOCK);
+        }
+        Material grate = mat("COPPER_GRATE", Material.CUT_COPPER);
+        Material cluster = mat("AMETHYST_CLUSTER", Material.AMETHYST_BLOCK);
+        Material tuffBricks = mat("TUFF_BRICKS", Material.TUFF);
         for (int dx = -r; dx <= r; dx++) {
             for (int dz = -r; dz <= r; dz++) {
                 double dist = Math.hypot(dx, dz);
-                if (dist > r + 0.2) {
+                if (dist > r + 0.35) {
                     continue;
                 }
-                for (int dy = 0; dy <= 9; dy++) {
+                for (int dy = -1; dy <= 8; dy++) {
                     Block block = world.getBlockAt(cx + dx, cy + dy, cz + dz);
                     savedBlocks.add(block.getState());
                     if (dy >= 1) {
                         block.setType(Material.AIR, false);
                     }
                 }
+                Block foundation = world.getBlockAt(cx + dx, cy - 1, cz + dz);
+                foundation.setType(Material.COBBLED_DEEPSLATE, false);
+                markProtected(foundation);
+
                 Material floor;
-                if (dist < 1.6) {
+                if (dist < 1.5) {
                     floor = Material.LODESTONE;
-                } else if (dist < 3.4) {
+                } else if (dist < 2.6) {
+                    floor = grate;
+                } else if (dist < 4.2) {
                     floor = Material.AMETHYST_BLOCK;
-                } else if (dist < 6.5) {
-                    floor = Material.COPPER_BLOCK;
-                } else if (dist < 8.5) {
-                    floor = Material.TUFF;
+                } else if (dist < 6.4) {
+                    floor = (Math.abs(dx + dz) % 2 == 0) ? Material.COPPER_BLOCK : exposed;
+                } else if (dist < 8.3) {
+                    floor = tuffBricks;
                 } else {
                     floor = Material.COBBLED_DEEPSLATE;
                 }
                 Block floorBlock = world.getBlockAt(cx + dx, cy, cz + dz);
                 floorBlock.setType(floor, false);
                 markProtected(floorBlock);
-                if (dist > 8.2 && dist < 9.6) {
-                    Block rim = world.getBlockAt(cx + dx, cy + 1, cz + dz);
-                    rim.setType(Material.COPPER_BULB, false);
-                    markProtected(rim);
+
+                if (dist > 8.35 && dist < 10.05) {
+                    Block wall = world.getBlockAt(cx + dx, cy + 1, cz + dz);
+                    wall.setType(oxidized, false);
+                    markProtected(wall);
+                    if (((dx + dz) & 3) == 0) {
+                        Block light = world.getBlockAt(cx + dx, cy + 2, cz + dz);
+                        light.setType(Material.COPPER_BULB, false);
+                        markProtected(light);
+                    }
+                }
+                if (dist > 3.6 && dist < 4.3 && ((dx + 2 * dz) % 3 == 0)) {
+                    Block gem = world.getBlockAt(cx + dx, cy + 1, cz + dz);
+                    gem.setType(cluster, false);
+                    markProtected(gem);
                 }
             }
         }
+        placeTower(world, cx + 6, cy, cz + 6);
+        placeTower(world, cx + 6, cy, cz - 6);
+        placeTower(world, cx - 6, cy, cz + 6);
+        placeTower(world, cx - 6, cy, cz - 6);
         placePedestal(world, cx + 7, cy, cz);
         placePedestal(world, cx - 7, cy, cz);
         placePedestal(world, cx, cy, cz + 7);
         placePedestal(world, cx, cy, cz - 7);
-        world.getBlockAt(cx, cy + 1, cz).setType(Material.LIGHTNING_ROD, false);
-        markProtected(world.getBlockAt(cx, cy + 1, cz));
+        setProtected(world, cx, cy + 1, cz, Material.LIGHTNING_ROD);
+    }
+
+    private void placeTower(World world, int x, int y, int z) {
+        Material cut = Material.CUT_COPPER;
+        setProtected(world, x, y, z, cut);
+        setProtected(world, x, y + 1, z, cut);
+        setProtected(world, x, y + 2, z, cut);
+        setProtected(world, x, y + 3, z, Material.LIGHTNING_ROD);
     }
 
     private void placePedestal(World world, int x, int y, int z) {
-        Block base = world.getBlockAt(x, y, z);
-        base.setType(Material.CUT_COPPER, false);
-        markProtected(base);
-        Block top = world.getBlockAt(x, y + 1, z);
-        top.setType(Material.AMETHYST_BLOCK, false);
-        markProtected(top);
+        setProtected(world, x, y, z, Material.CUT_COPPER);
+        setProtected(world, x, y + 1, z, Material.AMETHYST_BLOCK);
+        setProtected(world, x, y + 2, z, mat("AMETHYST_CLUSTER", Material.AMETHYST_BLOCK));
+    }
+
+    private void setProtected(World world, int x, int y, int z, Material material) {
+        Block block = world.getBlockAt(x, y, z);
+        block.setType(material, false);
+        markProtected(block);
+    }
+
+    private static Material mat(String name, Material fallback) {
+        Material material = Material.matchMaterial(name);
+        return material != null ? material : fallback;
     }
 
     private void markProtected(Block block) {
@@ -631,6 +714,30 @@ public final class GravityHoardManager {
             core.teleport(center.clone().add(0.5, 2.2, 0.5));
         }
         core.setCustomName(ColorUtil.color("&b&lСердце Ветра &8[&f" + (int) Math.ceil(coreHealth) + " ❤&8]"));
+        Player target = nearestPlayer();
+        if (target != null && core instanceof Mob mob) {
+            mob.setTarget(target);
+        }
+    }
+
+    private void leashShulkers() {
+        if (center == null || center.getWorld() == null) {
+            return;
+        }
+        int[][] spots = {{6, 5, 0}, {-6, 5, 0}, {0, 6, 6}, {0, 6, -6}, {4, 8, 4}, {-4, 7, -4}};
+        int i = 0;
+        for (UUID id : List.copyOf(shulkers)) {
+            Entity entity = Bukkit.getEntity(id);
+            if (!(entity instanceof LivingEntity shulker) || shulker.isDead()) {
+                shulkers.remove(id);
+                continue;
+            }
+            if (shulker.getLocation().distanceSquared(center) > 14 * 14) {
+                int[] spot = spots[i % spots.length];
+                shulker.teleport(center.clone().add(spot[0] + 0.5, spot[1], spot[2] + 0.5));
+            }
+            i++;
+        }
     }
 
     private void createBossBar() {
@@ -665,8 +772,8 @@ public final class GravityHoardManager {
             return;
         }
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFСердце Ветра &fраскололо небо!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fСними железо — взлетишь к &#d580ffпарящим сундукам"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fОставь броню — ядро &bпритянет &fтебя в воронку"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЯдро стреляет ветряными зарядами — уворачивайся"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fБей ядро и &#d580ffпарящие сундуки &fза лут"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                 + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЛокатор: &#34D711/event gps"));

@@ -77,7 +77,7 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
                             + wind.getCenterLocation().getBlockX() + " "
                             + wind.getCenterLocation().getBlockY() + " "
                             + wind.getCenterLocation().getBlockZ()));
-                    sender.sendMessage(ColorUtil.color("&e┠ &7Металл тянет к ядру, без брони — полёт к шалкерам"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Ядро стреляет зарядами, шалкеры — парящие сундуки"));
                     return true;
                 }
                 if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()

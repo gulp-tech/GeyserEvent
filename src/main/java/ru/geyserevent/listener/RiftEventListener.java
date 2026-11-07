@@ -34,6 +34,8 @@ import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
+import org.bukkit.event.entity.EntityTeleportEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
@@ -908,6 +910,9 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBossEnvironmentalDamage(EntityDamageEvent event) {
         Entity entity = event.getEntity();
+        if (event instanceof EntityDamageByEntityEvent) {
+            return;
+        }
         GravityHoardManager windEnv = plugin.getGravityHoardManager();
         if (windEnv != null && windEnv.isActive()) {
             if (windEnv.isHoardEntity(entity)
@@ -920,9 +925,6 @@ public class RiftEventListener implements Listener {
         if (plugin.getRiftManager().isExcavationVillager(entity)
                 || (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(entity))) {
             event.setCancelled(true);
-            return;
-        }
-        if (event instanceof EntityDamageByEntityEvent) {
             return;
         }
         AlienInvasionManager alienEnv = plugin.getAlienInvasionManager();
@@ -942,6 +944,22 @@ public class RiftEventListener implements Listener {
                 || cause == EntityDamageEvent.DamageCause.HOT_FLOOR
                 || cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION
                 || cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onWindChargeHit(ProjectileHitEvent event) {
+        GravityHoardManager wind = plugin.getGravityHoardManager();
+        if (wind != null && wind.isActive()) {
+            wind.handleChargeHit(event);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onHoardShulkerTeleport(EntityTeleportEvent event) {
+        GravityHoardManager wind = plugin.getGravityHoardManager();
+        if (wind != null && wind.isHoardShulker(event.getEntity())) {
             event.setCancelled(true);
         }
     }
