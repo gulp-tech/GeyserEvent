@@ -533,11 +533,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
                     var wind = plugin.getGravityHoardManager();
                     Location wLoc = wind.getCenterLocation();
-                    sender.sendMessage(ColorUtil.color("&e┼ &fИвент ветра: &#7DF9FF"
-                            + (wind.isDefeated() ? "ядро разрушено, сундуки открыты" : "Сердце Ветра")));
-                    sender.sendMessage(ColorUtil.color("&e┠ &fЗдоровье ядра: &b"
-                            + (int) Math.ceil(wind.getCoreHealth()) + "/"
-                            + (int) Math.ceil(wind.getCoreMaxHealth()) + " ❤"));
+                    sender.sendMessage(ColorUtil.color("&e┼ &fИвент: &#7DF9FFДревний клад &8(&fбез босса&8)"));
                     if (wLoc != null) {
                         sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                                 + wLoc.getBlockX() + " " + wLoc.getBlockY() + " " + wLoc.getBlockZ()

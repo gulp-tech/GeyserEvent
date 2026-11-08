@@ -67,17 +67,14 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
                 if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()
                         && plugin.getGravityHoardManager().getCenterLocation() != null) {
                     var wind = plugin.getGravityHoardManager();
-                    sender.sendMessage(ColorUtil.color("&e┼ &#7DF9FFСердце Ветра &fактивно на карте."));
-                    sender.sendMessage(ColorUtil.color("&e┠ &fЯдро: &b"
-                            + (int) Math.ceil(wind.getCoreHealth()) + "/"
-                            + (int) Math.ceil(wind.getCoreMaxHealth()) + " ❤"));
+                    sender.sendMessage(ColorUtil.color("&e┼ &#7DF9FFДревний клад &fактивен на карте."));
                     sender.sendMessage(ColorUtil.color("&e┠ &fДо конца: &#E0C912"
                             + ColorUtil.formatDuration(wind.getSecondsRemaining())));
                     sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                             + wind.getCenterLocation().getBlockX() + " "
                             + wind.getCenterLocation().getBlockY() + " "
                             + wind.getCenterLocation().getBlockZ()));
-                    sender.sendMessage(ColorUtil.color("&e┠ &7Ядро стреляет зарядами, шалкеры — парящие сундуки"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7В центре руин — древний сундук с лутом"));
                     return true;
                 }
                 if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()
