@@ -10,6 +10,8 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.Chest;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -60,6 +62,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
@@ -384,6 +387,24 @@ public class RiftEventListener implements Listener {
                 && plugin.getAncientMineManager().isPlayerInsideMineZone(player.getLocation())) {
             event.setCancelled(true);
             triggerBlacksmithClickDebounced(player);
+            return;
+        }
+        GravityHoardManager windChest = plugin.getGravityHoardManager();
+        if (windChest != null && windChest.isActive()) {
+            InventoryHolder holder = event.getInventory().getHolder();
+            Block chestBlock = null;
+            if (holder instanceof Chest chest) {
+                chestBlock = chest.getBlock();
+            } else if (holder instanceof DoubleChest doubleChest) {
+                InventoryHolder left = doubleChest.getLeftSide();
+                if (left instanceof Chest leftChest) {
+                    chestBlock = leftChest.getBlock();
+                }
+            }
+            if (chestBlock != null && windChest.isEventChest(chestBlock)
+                    && windChest.handleChestClick(player)) {
+                event.setCancelled(true);
+            }
         }
     }
 
@@ -473,6 +494,18 @@ public class RiftEventListener implements Listener {
                 event.getPlayer().sendMessage(msg);
             }
             return;
+        }
+
+        if (action == Action.RIGHT_CLICK_BLOCK) {
+            GravityHoardManager windChest = plugin.getGravityHoardManager();
+            if (windChest != null && windChest.isActive() && windChest.isEventChest(block)) {
+                if (windChest.handleChestClick(event.getPlayer())) {
+                    event.setCancelled(true);
+                    event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
+                    event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+                }
+                return;
+            }
         }
 
         InfernalRiftManager manager = plugin.getRiftManager();
