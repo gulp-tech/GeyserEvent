@@ -1,9 +1,9 @@
 name: GeyserEvent
-version: '1.21.28'
+version: '1.21.29'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
-description: Ивенты «Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика», «Вторжение Пришельцев», «Сердце Ветра», призывные алтари и «Шахта Древних 45x45 (0 ~ 0)» для Purpur 26.2
+description: Ивенты «Адский Разлом», «Пляжные Раскопки», «Котёл Алхимика», «Вторжение Пришельцев», «Сердце Ветра», призывные алтари, «Шкибиди», «Роналду SIUU» и «Шахта Древних 45x45 (0 ~ 0)» для Purpur 1.21–26.63
 loadbefore:
   - HyperTNT
 softdepend:
@@ -12,6 +12,8 @@ softdepend:
   - floodgate
   - PlayerPoints
   - DeluxeMenus
+  - Essentials
+  - EssentialsX
 
 commands:
   event:

@@ -54,7 +54,7 @@ public final class RonaldoEventManager {
 
     public static final String REGION_ID = "geyserevent_ronaldo";
     public static final String SCHEMATIC_FILE = "ronaldo_stadium.schem.yml";
-    public static final int ARENA_RADIUS = 32;
+    public static final int ARENA_RADIUS = 34;
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -552,7 +552,7 @@ public final class RonaldoEventManager {
         if (center == null) {
             return null;
         }
-        Location loc = new Location(center.getWorld(), center.getX(), center.getY() + 3.2, center.getZ() - 18.5);
+        Location loc = new Location(center.getWorld(), center.getX(), center.getY() + 3.2, center.getZ() - 28.5);
         loc.setYaw(180f);
         loc.setPitch(0f);
         return loc;
@@ -703,80 +703,71 @@ public final class RonaldoEventManager {
         if (center == null) {
             return;
         }
-        String name = plugin.getConfig().getString("ronaldo.warp-name", "ronaldo");
-        if (name == null || name.isBlank()) {
-            return;
-        }
+        String name = warpName();
         this.activeWarpName = name;
         Location warpLoc = snapToSurface(center.clone());
         warpLoc.setY(warpLoc.getY() + 1.0);
-        if (tryEssentialsSetWarp(name, warpLoc)) {
-            plugin.getLogger().info("Варп «" + name + "» выставлен через Essentials.");
+        if (essentialsWarp(true, name, warpLoc)) {
+            plugin.getLogger().info("Essentials: /setwarp " + name);
         }
-        runWarpCommand(plugin.getConfig().getString("ronaldo.warp-set-command",
-                "setwarp {name}"), name, warpLoc);
+        dispatchEssentials("setwarp " + name);
     }
 
     private void deleteEventWarp() {
-        String name = activeWarpName;
-        if (name == null || name.isBlank()) {
-            name = plugin.getConfig().getString("ronaldo.warp-name", "ronaldo");
+        String name = activeWarpName != null ? activeWarpName : warpName();
+        if (essentialsWarp(false, name, null)) {
+            plugin.getLogger().info("Essentials: /delwarp " + name);
         }
-        if (name == null || name.isBlank()) {
-            return;
-        }
-        if (tryEssentialsDelWarp(name)) {
-            plugin.getLogger().info("Варп «" + name + "» удалён через Essentials.");
-        }
-        runWarpCommand(plugin.getConfig().getString("ronaldo.warp-delete-command",
-                "delwarp {name}"), name, center);
+        dispatchEssentials("delwarp " + name);
         this.activeWarpName = null;
     }
 
-    private boolean tryEssentialsSetWarp(String name, Location loc) {
-        Plugin ess = Bukkit.getPluginManager().getPlugin("Essentials");
-        if (ess == null || !ess.isEnabled()) {
+    private String warpName() {
+        String name = plugin.getConfig().getString("ronaldo.warp-name", "ronaldo");
+        return (name == null || name.isBlank()) ? "ronaldo" : name.trim();
+    }
+
+    private Plugin findEssentials() {
+        for (String id : new String[]{"Essentials", "EssentialsX", "EssentialsX-Core"}) {
+            Plugin ess = Bukkit.getPluginManager().getPlugin(id);
+            if (ess != null && ess.isEnabled()) {
+                return ess;
+            }
+        }
+        return null;
+    }
+
+    private boolean essentialsWarp(boolean set, String name, Location loc) {
+        Plugin ess = findEssentials();
+        if (ess == null) {
             return false;
         }
         try {
             Object warps = ess.getClass().getMethod("getWarps").invoke(ess);
-            warps.getClass().getMethod("setWarp", String.class, Location.class).invoke(warps, name, loc);
+            if (set) {
+                warps.getClass().getMethod("setWarp", String.class, Location.class).invoke(warps, name, loc);
+            } else {
+                warps.getClass().getMethod("delWarp", String.class).invoke(warps, name);
+            }
             return true;
         } catch (Throwable t) {
-            plugin.getLogger().warning("Essentials setWarp: " + t.getMessage());
+            plugin.getLogger().warning("Essentials " + (set ? "setwarp" : "delwarp") + " " + name + ": " + t.getMessage());
             return false;
         }
     }
 
-    private boolean tryEssentialsDelWarp(String name) {
-        Plugin ess = Bukkit.getPluginManager().getPlugin("Essentials");
-        if (ess == null || !ess.isEnabled()) {
-            return false;
-        }
-        try {
-            Object warps = ess.getClass().getMethod("getWarps").invoke(ess);
-            warps.getClass().getMethod("delWarp", String.class).invoke(warps, name);
-            return true;
-        } catch (Throwable t) {
-            plugin.getLogger().warning("Essentials delWarp: " + t.getMessage());
-            return false;
-        }
-    }
-
-    private void runWarpCommand(String template, String name, Location loc) {
-        if (template == null || template.isBlank()) {
+    private void dispatchEssentials(String command) {
+        if (command == null || command.isBlank()) {
             return;
         }
-        String cmd = template
-                .replace("{name}", name)
-                .replace("{world}", loc != null && loc.getWorld() != null ? loc.getWorld().getName() : "")
-                .replace("{x}", loc != null ? String.valueOf(loc.getBlockX()) : "0")
-                .replace("{y}", loc != null ? String.valueOf(loc.getBlockY()) : "0")
-                .replace("{z}", loc != null ? String.valueOf(loc.getBlockZ()) : "0");
         try {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
         } catch (Throwable t) {
-            plugin.getLogger().warning("Команда варпа не выполнилась: " + cmd + " (" + t.getMessage() + ")");
+            plugin.getLogger().warning("Команда не выполнилась: /" + command + " (" + t.getMessage() + ")");
+        }
+        try {
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "essentials:" + command);
+        } catch (Throwable ignored) {
         }
     }
 
@@ -787,8 +778,8 @@ public final class RonaldoEventManager {
         World world = loc.getWorld();
         int cx = loc.getBlockX() >> 4;
         int cz = loc.getBlockZ() >> 4;
-        for (int dx = -4; dx <= 4; dx++) {
-            for (int dz = -4; dz <= 4; dz++) {
+        for (int dx = -5; dx <= 5; dx++) {
+            for (int dz = -5; dz <= 5; dz++) {
                 Chunk chunk = world.getChunkAt(cx + dx, cz + dz);
                 chunk.setForceLoaded(loaded);
                 if (loaded) {

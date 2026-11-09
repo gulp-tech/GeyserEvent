@@ -82,7 +82,7 @@
   },
   "ronaldo_siuu": {
     "sounds": [
-      {"name": "ronaldo/siuu", "stream": false}
+      {"name": "ronaldo/siuu", "stream": true}
     ],
     "category": "hostile",
     "volume": 1.8,

@@ -1934,7 +1934,7 @@ skibidi:
 # ============================================================================
 # Ивент 7: «Роналду SIUU» — большой стадион, босс CR7, волны клонов.
 # Старт: /ronaldo  или  /rift start ronaldo
-# Варп ronaldo ставится на старте и удаляется в конце (Essentials / команда).
+# Варп: старт Essentials /setwarp ronaldo, конец /delwarp ronaldo.
 # Лут: /rift copylot excavation ronaldo
 # ============================================================================
 ronaldo:
@@ -1953,8 +1953,9 @@ ronaldo:
   boss-levels: 50
   siuu-interval-seconds: 8
   warp-name: ronaldo
-  warp-set-command: "setwarp {name}"
-  warp-delete-command: "delwarp {name}"
+  # Essentials: старт /setwarp ronaldo, конец /delwarp ronaldo
+  warp-set-command: "setwarp ronaldo"
+  warp-delete-command: "delwarp ronaldo"
   loot:
     gold:
       material: GOLD_INGOT
