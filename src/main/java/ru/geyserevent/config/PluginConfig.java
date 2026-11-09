@@ -166,6 +166,7 @@ public class PluginConfig {
     private String alienTimeoutLine;
     private final List<AlienLootItem> skibidiLoot = new ArrayList<>();
     private final List<AlienLootItem> windLoot = new ArrayList<>();
+    private final List<AlienLootItem> ronaldoLoot = new ArrayList<>();
 
     /** Предмет лута в сундуках пришельцев (ключ, материал, количество, шанс, rare, оформление). */
     public record AlienLootItem(
@@ -409,6 +410,7 @@ public class PluginConfig {
         loadAlienConfig(cfg);
         loadSkibidiLoot(cfg);
         loadWindLoot(cfg);
+        loadRonaldoLoot(cfg);
 
         // NPCs & Invisibility (невидимость НЕ работает на НПС ивентов)
         this.npcsIgnoreInvisibility = cfg.getBoolean("npcs.ignore-invisibility", true);
@@ -563,7 +565,8 @@ public class PluginConfig {
     public static boolean isBossEvent(EventType type) {
         return type == EventType.INFERNAL_RIFT
                 || type == EventType.ALIEN_INVASION
-                || type == EventType.SKIBIDI;
+                || type == EventType.SKIBIDI
+                || type == EventType.RONALDO;
     }
 
     public int getAutoMinPlayers(EventType type) {
@@ -932,6 +935,7 @@ public class PluginConfig {
     public String getAlienTimeoutLine() { return alienTimeoutLine; }
     public List<AlienLootItem> getSkibidiLoot() { return skibidiLoot; }
     public List<AlienLootItem> getWindLoot() { return windLoot; }
+    public List<AlienLootItem> getRonaldoLoot() { return ronaldoLoot; }
 
     private void loadSkibidiLoot(FileConfiguration cfg) {
         this.skibidiLoot.clear();
@@ -950,6 +954,16 @@ public class PluginConfig {
         this.windLoot.addAll(readChanceLoot(cfg.getConfigurationSection("wind.loot")));
         if (this.windLoot.isEmpty()) {
             this.windLoot.addAll(this.alienChestLoot);
+        }
+    }
+
+    private void loadRonaldoLoot(FileConfiguration cfg) {
+        this.ronaldoLoot.clear();
+        this.ronaldoLoot.addAll(readChanceLoot(cfg.getConfigurationSection("ronaldo.loot")));
+        if (this.ronaldoLoot.isEmpty()) {
+            this.ronaldoLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 4, 10, 80.0, false, null, List.of(), Map.of()));
+            this.ronaldoLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 2, 5, 35.0, false, null, List.of(), Map.of()));
+            this.ronaldoLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 12.0, true, null, List.of(), Map.of()));
         }
     }
 

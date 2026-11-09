@@ -753,7 +753,8 @@ public class RiftEventListener implements Listener {
         return plugin.getRiftManager().isBoss(entity)
                 || plugin.getRiftManager().isExcavationVillager(entity)
                 || plugin.getAbilityController().isMinion(entity)
-                || (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isToilet(entity));
+                || (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isToilet(entity))
+                || (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isRonaldo(entity));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -792,6 +793,9 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onToiletChangeBlock(EntityChangeBlockEvent event) {
         if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isToilet(event.getEntity())) {
+            event.setCancelled(true);
+        }
+        if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isRonaldo(event.getEntity())) {
             event.setCancelled(true);
         }
     }
@@ -839,6 +843,18 @@ public class RiftEventListener implements Listener {
                 event.setCancelled(true);
             }
         }
+        var ronaldo = plugin.getRonaldoEventManager();
+        if (ronaldo != null && ronaldo.isActive()) {
+            boolean sourceCr7 = ronaldo.isRonaldo(source);
+            boolean targetCr7 = ronaldo.isRonaldo(target);
+            if (sourceCr7 && targetCr7) {
+                event.setCancelled(true);
+                return;
+            }
+            if (sourceCr7 && !(target instanceof Player)) {
+                event.setCancelled(true);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -874,6 +890,11 @@ public class RiftEventListener implements Listener {
         }
         var skibidiDmg = plugin.getSkibidiToiletManager();
         if (skibidiDmg != null && skibidiDmg.isToilet(victim) && skibidiDmg.isToilet(damager)) {
+            event.setCancelled(true);
+            return;
+        }
+        var ronaldoDmg = plugin.getRonaldoEventManager();
+        if (ronaldoDmg != null && ronaldoDmg.isRonaldo(victim) && ronaldoDmg.isRonaldo(damager)) {
             event.setCancelled(true);
             return;
         }
@@ -1053,6 +1074,12 @@ public class RiftEventListener implements Listener {
             plugin.getSkibidiToiletManager().handleToiletDeath(entity);
             return;
         }
+        if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isRonaldo(entity)) {
+            event.getDrops().clear();
+            event.setDroppedExp(0);
+            plugin.getRonaldoEventManager().handleDeath(entity);
+            return;
+        }
         if (alienDeath != null && alienDeath.isAlienBoss(entity)) {
             event.getDrops().clear();
             event.setDroppedExp(600);
@@ -1154,6 +1181,12 @@ public class RiftEventListener implements Listener {
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
         }
+        if (plugin.getRonaldoEventManager() != null
+                && plugin.getRonaldoEventManager().isProtectedBlock(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
 
         if (!plugin.getRiftManager().isActive()) {
             return;
@@ -1206,6 +1239,12 @@ public class RiftEventListener implements Listener {
         }
         if (plugin.getSkibidiToiletManager() != null
                 && plugin.getSkibidiToiletManager().isProtectedBlock(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
+        if (plugin.getRonaldoEventManager() != null
+                && plugin.getRonaldoEventManager().isProtectedBlock(block.getLocation())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
@@ -1362,6 +1401,9 @@ public class RiftEventListener implements Listener {
             return true;
         }
         if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isProtectedBlock(loc)) {
+            return true;
+        }
+        if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isProtectedBlock(loc)) {
             return true;
         }
         if (plugin.getRiftManager() == null || !plugin.getRiftManager().isActive()) {

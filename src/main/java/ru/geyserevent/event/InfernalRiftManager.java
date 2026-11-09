@@ -162,6 +162,9 @@ public class InfernalRiftManager {
                 if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
                     return;
                 }
+                if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
+                    return;
+                }
                 long now = System.currentTimeMillis() / 1000L;
                 if (now >= nextAutoStartEpochSeconds) {
                     int online = plugin.getBedrockService().getOnlineBedrockCount();
@@ -599,6 +602,11 @@ public class InfernalRiftManager {
                 && plugin.getSkibidiToiletManager().isActive()) {
             plugin.getSkibidiToiletManager().stopEvent();
         }
+        if (type != EventType.RONALDO
+                && plugin.getRonaldoEventManager() != null
+                && plugin.getRonaldoEventManager().isActive()) {
+            plugin.getRonaldoEventManager().stopEvent();
+        }
         // Ивент «Вторжение Пришельцев» ведёт свой менеджер (своя схема и свой босс)
         if (type == EventType.ALIEN_INVASION) {
             if (plugin.getAlienInvasionManager() == null) {
@@ -637,7 +645,28 @@ public class InfernalRiftManager {
             if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
                 plugin.getGravityHoardManager().stopEvent();
             }
+            if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
+                plugin.getRonaldoEventManager().stopEvent();
+            }
             return plugin.getSkibidiToiletManager().startEvent(targetCenter, durationSecondsOverride);
+        }
+        if (type == EventType.RONALDO) {
+            if (plugin.getRonaldoEventManager() == null) {
+                return false;
+            }
+            if (active) {
+                stopEvent(false);
+            }
+            if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
+                plugin.getAlienInvasionManager().stopEvent();
+            }
+            if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
+                plugin.getGravityHoardManager().stopEvent();
+            }
+            if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
+                plugin.getSkibidiToiletManager().stopEvent();
+            }
+            return plugin.getRonaldoEventManager().startEvent(targetCenter, durationSecondsOverride);
         }
         if (active) {
             stopEvent(false);
@@ -1803,6 +1832,15 @@ public class InfernalRiftManager {
             }
             if (skibidi != null && skibidi.getWorld() != null) {
                 return skibidi;
+            }
+        }
+        if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
+            Location ronaldo = plugin.getRonaldoEventManager().getBossLocation();
+            if (ronaldo == null) {
+                ronaldo = plugin.getRonaldoEventManager().getCenterLocation();
+            }
+            if (ronaldo != null && ronaldo.getWorld() != null) {
+                return ronaldo;
             }
         }
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()) {

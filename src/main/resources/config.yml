@@ -63,6 +63,7 @@ event:
     alien: 10
     wind: 1
     skibidi: 10
+    ronaldo: 10
   # Задержка перед очисткой после убийства босса (в секундах)
   cleanup-delay-seconds: 15
 
@@ -1929,3 +1930,130 @@ skibidi:
         mending: 1
         punch: 2
         flame: 1
+
+# ============================================================================
+# Ивент 7: «Роналду SIUU» — большой стадион, босс CR7, волны клонов.
+# Старт: /ronaldo  или  /rift start ronaldo
+# Варп ronaldo ставится на старте и удаляется в конце (Essentials / команда).
+# Лут: /rift copylot excavation ronaldo
+# ============================================================================
+ronaldo:
+  enabled: true
+  duration-minutes: 20
+  wave-interval-seconds: 180
+  wave-min: 3
+  wave-max: 6
+  health: 220
+  damage: 30
+  scale: 1.0
+  boss-health: 900
+  boss-damage: 40
+  boss-scale: 1.35
+  levels: 30
+  boss-levels: 50
+  siuu-interval-seconds: 8
+  warp-name: ronaldo
+  warp-set-command: "setwarp {name}"
+  warp-delete-command: "delwarp {name}"
+  loot:
+    gold:
+      material: GOLD_INGOT
+      min: 4
+      max: 12
+      chance: 80
+    iron:
+      material: IRON_INGOT
+      min: 6
+      max: 14
+      chance: 70
+    diamond:
+      material: DIAMOND
+      min: 2
+      max: 6
+      chance: 38
+    emerald:
+      material: EMERALD
+      min: 2
+      max: 6
+      chance: 40
+    golden_apple:
+      material: GOLDEN_APPLE
+      min: 1
+      max: 3
+      chance: 24
+    xp:
+      material: EXPERIENCE_BOTTLE
+      min: 8
+      max: 20
+      chance: 40
+    netherite:
+      material: NETHERITE_INGOT
+      min: 1
+      max: 1
+      chance: 12
+      rare: true
+    totem:
+      material: TOTEM_OF_UNDYING
+      min: 1
+      max: 1
+      chance: 10
+      rare: true
+    enchanted_apple:
+      material: ENCHANTED_GOLDEN_APPLE
+      min: 1
+      max: 1
+      chance: 6
+      rare: true
+    netherite_helm:
+      material: NETHERITE_HELMET
+      min: 1
+      max: 1
+      chance: 8
+      rare: true
+      enchants:
+        protection: 4
+        unbreaking: 3
+        mending: 1
+    netherite_chest:
+      material: NETHERITE_CHESTPLATE
+      min: 1
+      max: 1
+      chance: 8
+      rare: true
+      enchants:
+        protection: 4
+        unbreaking: 3
+        mending: 1
+    netherite_legs:
+      material: NETHERITE_LEGGINGS
+      min: 1
+      max: 1
+      chance: 8
+      rare: true
+      enchants:
+        protection: 4
+        unbreaking: 3
+        mending: 1
+    netherite_boots:
+      material: NETHERITE_BOOTS
+      min: 1
+      max: 1
+      chance: 8
+      rare: true
+      enchants:
+        protection: 4
+        unbreaking: 3
+        mending: 1
+        feather_falling: 4
+    diamond_sword:
+      material: DIAMOND_SWORD
+      min: 1
+      max: 1
+      chance: 14
+      rare: true
+      enchants:
+        sharpness: 5
+        unbreaking: 3
+        mending: 1
+        looting: 3
+        fire_aspect: 2

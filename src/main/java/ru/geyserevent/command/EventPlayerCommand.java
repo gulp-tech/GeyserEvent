@@ -64,6 +64,21 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
 
             case "delay", "time", "info" -> {
                 // Ивент «Вторжение Пришельцев» идёт в своём менеджере
+                if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()
+                        && plugin.getRonaldoEventManager().getCenterLocation() != null) {
+                    var ronaldo = plugin.getRonaldoEventManager();
+                    sender.sendMessage(ColorUtil.color("&e┼ &e&lРоналду SIUU &fактивен."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fДо конца: &#E0C912"
+                            + ColorUtil.formatDuration(ronaldo.getSecondsRemaining())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
+                            + ronaldo.getCenterLocation().getBlockX() + " "
+                            + ronaldo.getCenterLocation().getBlockY() + " "
+                            + ronaldo.getCenterLocation().getBlockZ()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fСледующая волна: &#E0C912"
+                            + ColorUtil.formatDuration(ronaldo.getSecondsToNextWave())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Варп: &#E0C912/warp ronaldo &7· SIUU на арене"));
+                    return true;
+                }
                 if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()
                         && plugin.getSkibidiToiletManager().getCenterLocation() != null) {
                     var skibidi = plugin.getSkibidiToiletManager();

@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.geyserevent.alien.AlienInvasionManager;
+import ru.geyserevent.ronaldo.RonaldoEventManager;
 import ru.geyserevent.skibidi.SkibidiToiletManager;
 import ru.geyserevent.wind.GravityHoardManager;
 import ru.geyserevent.boss.BossAbilityController;
@@ -12,6 +13,7 @@ import ru.geyserevent.cauldron.AlchemistSchematicManager;
 import ru.geyserevent.command.EventPlayerCommand;
 import ru.geyserevent.command.KladCommand;
 import ru.geyserevent.command.RiftCommand;
+import ru.geyserevent.command.RonaldoCommand;
 import ru.geyserevent.command.SkibidiCommand;
 import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.event.InfernalRiftManager;
@@ -61,6 +63,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private AlienInvasionManager alienInvasionManager;
     private GravityHoardManager gravityHoardManager;
     private SkibidiToiletManager skibidiToiletManager;
+    private RonaldoEventManager ronaldoEventManager;
 
     @Override
     public void onLoad() {
@@ -103,6 +106,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         this.alienInvasionManager = new AlienInvasionManager(this);
         this.gravityHoardManager = new GravityHoardManager(this);
         this.skibidiToiletManager = new SkibidiToiletManager(this);
+        this.ronaldoEventManager = new RonaldoEventManager(this);
 
         // 5. Регистрация слушателей событий
         getServer().getPluginManager().registerEvents(new RiftEventListener(this), this);
@@ -144,6 +148,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
             skibidiCmd.setExecutor(skibidiExecutor);
             skibidiCmd.setTabCompleter(skibidiExecutor);
         }
+        PluginCommand ronaldoCmd = getCommand("ronaldo");
+        if (ronaldoCmd != null) {
+            RonaldoCommand ronaldoExecutor = new RonaldoCommand(this);
+            ronaldoCmd.setExecutor(ronaldoExecutor);
+            ronaldoCmd.setTabCompleter(ronaldoExecutor);
+        }
 
         // 8. Экспорт и автоматическая перезапись меню DeluxeMenus (events.yml) и текстурпака (GeyserEvent-Pack.mcpack)
         exportDeluxeMenusConfig();
@@ -157,11 +167,14 @@ public final class GeyserEventPlugin extends JavaPlugin {
             if (this.skibidiToiletManager != null) {
                 this.skibidiToiletManager.cleanupOrphanSchematic();
             }
+            if (this.ronaldoEventManager != null) {
+                this.ronaldoEventManager.cleanupOrphanSchematic();
+            }
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.21 успешно запущен! (Purpur 26.2)");
-        getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Пришельцы, Клад, Шкибиди");
+        getLogger().info(" GeyserEvent v1.21.28 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Пришельцы, Клад, Шкибиди, Роналду");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");
     }
@@ -236,6 +249,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
         } else if (this.skibidiToiletManager != null) {
             this.skibidiToiletManager.cleanupOrphanSchematic();
         }
+        if (this.ronaldoEventManager != null && this.ronaldoEventManager.isActive()) {
+            getLogger().info("Завершение ивента «Роналду» и откат схемы...");
+            this.ronaldoEventManager.stopEvent();
+        } else if (this.ronaldoEventManager != null) {
+            this.ronaldoEventManager.cleanupOrphanSchematic();
+        }
         if (this.riftManager != null && this.riftManager.isActive()) {
             getLogger().info("Завершение активного ивента и откат схемы...");
             this.riftManager.stopEvent(false);
@@ -305,6 +324,8 @@ public final class GeyserEventPlugin extends JavaPlugin {
     public GravityHoardManager getGravityHoardManager() { return gravityHoardManager; }
 
     public SkibidiToiletManager getSkibidiToiletManager() { return skibidiToiletManager; }
+
+    public RonaldoEventManager getRonaldoEventManager() { return ronaldoEventManager; }
 
     public TopRightHudManager getTopRightHudManager() {
         return topRightHudManager;

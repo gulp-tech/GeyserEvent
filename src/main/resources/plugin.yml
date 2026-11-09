@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.21.27'
+version: '1.21.28'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
@@ -41,6 +41,11 @@ commands:
   skibidi:
     description: Запустить ивент «Шкибиди Туалет»
     aliases: [toilet, shkibid]
+    usage: /<command> [here|stop]
+    permission: geyserevent.admin
+  ronaldo:
+    description: Запустить ивент «Роналду SIUU»
+    aliases: [cr7, siuu, ronaldu]
     usage: /<command> [here|stop]
     permission: geyserevent.admin
 

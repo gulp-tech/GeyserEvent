@@ -90,6 +90,9 @@ public final class GravityHoardManager {
         if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
             plugin.getSkibidiToiletManager().stopEvent();
         }
+        if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
+            plugin.getRonaldoEventManager().stopEvent();
+        }
         stopEvent();
 
         targetCenter.getChunk().load(true);

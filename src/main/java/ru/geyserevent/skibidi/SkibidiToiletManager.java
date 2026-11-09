@@ -101,6 +101,9 @@ public final class SkibidiToiletManager {
         if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
             plugin.getGravityHoardManager().stopEvent();
         }
+        if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
+            plugin.getRonaldoEventManager().stopEvent();
+        }
         stopEvent();
 
         targetCenter.getChunk().load(true);
