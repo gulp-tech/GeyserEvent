@@ -159,6 +159,9 @@ public class InfernalRiftManager {
                 if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
                     return;
                 }
+                if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
+                    return;
+                }
                 long now = System.currentTimeMillis() / 1000L;
                 if (now >= nextAutoStartEpochSeconds) {
                     int online = plugin.getBedrockService().getOnlineBedrockCount();
