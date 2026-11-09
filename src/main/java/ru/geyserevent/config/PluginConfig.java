@@ -554,7 +554,9 @@ public class PluginConfig {
     public int getMinBedrockPlayers() { return minBedrockPlayers; }
 
     public static boolean isBossEvent(EventType type) {
-        return type == EventType.INFERNAL_RIFT || type == EventType.ALIEN_INVASION;
+        return type == EventType.INFERNAL_RIFT
+                || type == EventType.ALIEN_INVASION
+                || type == EventType.SKIBIDI;
     }
 
     public int getAutoMinPlayers(EventType type) {

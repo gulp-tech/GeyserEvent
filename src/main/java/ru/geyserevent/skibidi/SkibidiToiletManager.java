@@ -121,9 +121,10 @@ public final class SkibidiToiletManager {
         this.secondsToNextWave = 0;
 
         setChunksForceLoaded(this.center, true);
-        this.toiletHome = schematicManager.pasteSchematic(this.center, ARENA_RADIUS + 2, 36);
+        schematicManager.pasteSchematic(this.center, ARENA_RADIUS + 2, 36);
+        this.toiletHome = bigToiletSpawnLocation();
         if (this.toiletHome == null) {
-            this.toiletHome = this.center.clone().add(0.5, 8, 0.5);
+            this.toiletHome = this.center.clone().add(0.5, 1.0, -18.0);
         }
         schematicManager.persistRestoreState(restoreSnapshotFile());
         spawnHologram();
@@ -340,7 +341,7 @@ public final class SkibidiToiletManager {
             spawned.setGravity(true);
             spawned.setAI(true);
             spawned.setAware(true);
-            spawned.setCollidable(true);
+            spawned.setCollidable(false);
             spawned.setInvulnerable(false);
             spawned.getPersistentDataContainer().set(toiletKey, PersistentDataType.BYTE, big ? (byte) 2 : (byte) 1);
         });
@@ -358,7 +359,8 @@ public final class SkibidiToiletManager {
             damage = 40.0;
         }
         double scale = plugin.getConfig().getDouble(
-                big ? "skibidi.big-scale" : "skibidi.scale", big ? 1.85 : 1.2);
+                big ? "skibidi.big-scale" : "skibidi.scale", big ? 1.15 : 1.0);
+        scale = Math.min(scale, big ? 1.2 : 1.1);
         BossAbilityController.applyEntityScale(ravager, scale);
         BossAbilityController.setEntityAttribute(ravager, "MAX_HEALTH", "generic.max_health", health);
         BossAbilityController.setEntityAttribute(ravager, "ATTACK_DAMAGE", "generic.attack_damage", damage);
@@ -482,6 +484,7 @@ public final class SkibidiToiletManager {
                     }
                 }
             }
+            living.setCollidable(false);
             if (living instanceof Mob mob && (mob.getTarget() == null || mob.getTarget().isDead())) {
                 acquireTarget(living);
             }
@@ -603,6 +606,17 @@ public final class SkibidiToiletManager {
         if (home != null && display.getLocation().distanceSquared(home) > 0.25) {
             display.teleport(home);
         }
+    }
+
+    private Location bigToiletSpawnLocation() {
+        if (center == null || center.getWorld() == null) {
+            return null;
+        }
+        Location loc = snapToSurface(center.clone().add(0, 0, -18));
+        loc.setY(loc.getY() + 1.0);
+        loc.setYaw(180f);
+        loc.setPitch(0f);
+        return loc;
     }
 
     private Location hologramLocation() {

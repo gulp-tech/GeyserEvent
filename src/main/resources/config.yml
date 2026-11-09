@@ -62,7 +62,7 @@ event:
     cauldron: 1
     alien: 10
     wind: 1
-    skibidi: 1
+    skibidi: 10
   # Задержка перед очисткой после убийства босса (в секундах)
   cleanup-delay-seconds: 15
 
@@ -960,10 +960,10 @@ skibidi:
   wave-max: 5
   health: 600
   damage: 30
-  scale: 1.2
+  scale: 1.0
   big-health: 600
   big-damage: 40
-  big-scale: 1.85
+  big-scale: 1.15
   levels: 30
   big-levels: 50
   loot:
