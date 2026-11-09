@@ -157,22 +157,14 @@ public class BrushLootManager {
                 ItemStack stack = new ItemStack(mat, amount);
                 Object nameObj = map.get("name");
                 Object loreObj = map.get("lore");
-                if (nameObj != null || loreObj != null) {
-                    ItemMeta meta = stack.getItemMeta();
-                    if (meta != null) {
-                        if (nameObj != null) {
-                            meta.setDisplayName(ColorUtil.color(String.valueOf(nameObj)));
-                        }
-                        if (loreObj instanceof List<?> loreList) {
-                            List<String> lore = new ArrayList<>();
-                            for (Object line : loreList) {
-                                lore.add(ColorUtil.color(String.valueOf(line)));
-                            }
-                            meta.setLore(lore);
-                        }
-                        stack.setItemMeta(meta);
+                List<String> lore = new ArrayList<>();
+                if (loreObj instanceof List<?> loreList) {
+                    for (Object line : loreList) {
+                        lore.add(ColorUtil.color(String.valueOf(line)));
                     }
                 }
+                String name = nameObj != null ? ColorUtil.color(String.valueOf(nameObj)) : null;
+                ru.geyserevent.util.LootStacks.apply(stack, name, lore, ru.geyserevent.util.LootStacks.readEnchants(map.get("enchants")));
                 entries.add(new BrushLootEntry(stack, chance));
             }
         }

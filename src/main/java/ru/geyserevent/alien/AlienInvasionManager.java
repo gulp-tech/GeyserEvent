@@ -625,20 +625,7 @@ public final class AlienInvasionManager {
             int min = item.minAmount();
             int max = Math.max(min, item.maxAmount());
             int amount = min + (max > min ? random.nextInt(max - min + 1) : 0);
-            org.bukkit.inventory.ItemStack stack = new org.bukkit.inventory.ItemStack(item.material(), Math.max(1, amount));
-            if (item.displayName() != null || !item.lore().isEmpty()) {
-                org.bukkit.inventory.meta.ItemMeta meta = stack.getItemMeta();
-                if (meta != null) {
-                    if (item.displayName() != null) {
-                        meta.setDisplayName(item.displayName());
-                    }
-                    if (!item.lore().isEmpty()) {
-                        meta.setLore(item.lore());
-                    }
-                    stack.setItemMeta(meta);
-                }
-            }
-            inventory.addItem(stack);
+            inventory.addItem(ru.geyserevent.util.LootStacks.fromAlien(item, Math.max(1, amount)));
         }
         if (loot.isEmpty() || inventory == null) {
             return;
@@ -653,20 +640,7 @@ public final class AlienInvasionManager {
             int min = item.minAmount();
             int max = Math.max(min, item.maxAmount());
             int amount = min + (max > min ? random.nextInt(max - min + 1) : 0);
-            ItemStack stack = new ItemStack(item.material(), Math.max(1, amount));
-            if (item.displayName() != null || !item.lore().isEmpty()) {
-                ItemMeta meta = stack.getItemMeta();
-                if (meta != null) {
-                    if (item.displayName() != null) {
-                        meta.setDisplayName(item.displayName());
-                    }
-                    if (!item.lore().isEmpty()) {
-                        meta.setLore(item.lore());
-                    }
-                    stack.setItemMeta(meta);
-                }
-            }
-            inventory.addItem(stack);
+            inventory.addItem(ru.geyserevent.util.LootStacks.fromAlien(item, Math.max(1, amount)));
         }
     }
 

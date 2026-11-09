@@ -176,8 +176,13 @@ public class PluginConfig {
             double chancePercent,
             boolean rare,
             String displayName,
-            List<String> lore
+            List<String> lore,
+            Map<String, Integer> enchants
     ) {
+        public AlienLootItem {
+            lore = lore == null ? List.of() : lore;
+            enchants = enchants == null ? Map.of() : enchants;
+        }
     }
 
     // Abilities (Radius 15 blocks)
@@ -760,15 +765,15 @@ public class PluginConfig {
                     for (String loreLine : itemSec.getStringList("lore")) {
                         lore.add(ColorUtil.color(loreLine));
                     }
-                    this.alienChestBaseLoot.add(new AlienLootItem(key, mat, min, max, 100.0, false, name, lore));
+                    this.alienChestBaseLoot.add(new AlienLootItem(key, mat, min, max, 100.0, false, name, lore, Map.of()));
                 }
             }
         }
         if (this.alienChestBaseLoot.isEmpty()) {
-            this.alienChestBaseLoot.add(new AlienLootItem("iron", Material.IRON_INGOT, 3, 6, 100.0, false, null, List.of()));
-            this.alienChestBaseLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 2, 4, 100.0, false, null, List.of()));
-            this.alienChestBaseLoot.add(new AlienLootItem("emerald", Material.EMERALD, 2, 4, 100.0, false, null, List.of()));
-            this.alienChestBaseLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 2, 100.0, false, null, List.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem("iron", Material.IRON_INGOT, 3, 6, 100.0, false, null, List.of(), Map.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 2, 4, 100.0, false, null, List.of(), Map.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem("emerald", Material.EMERALD, 2, 4, 100.0, false, null, List.of(), Map.of()));
+            this.alienChestBaseLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 2, 100.0, false, null, List.of(), Map.of()));
         }
         this.alienChestLoot.clear();
         if (chests != null) {
@@ -788,14 +793,14 @@ public class PluginConfig {
                     for (String loreLine : itemSec.getStringList("lore")) {
                         lore.add(ColorUtil.color(loreLine));
                     }
-                    this.alienChestLoot.add(new AlienLootItem(key, mat, min, max, chance, rare, name, lore));
+                    this.alienChestLoot.add(new AlienLootItem(key, mat, min, max, chance, rare, name, lore, ru.geyserevent.util.LootStacks.readEnchants(itemSec.get("enchants"))));
                 }
             }
         }
         if (this.alienChestLoot.isEmpty()) {
-            this.alienChestLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 3, 60.0, false, null, List.of()));
-            this.alienChestLoot.add(new AlienLootItem("emerald", Material.EMERALD, 2, 5, 70.0, false, null, List.of()));
-            this.alienChestLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 20.0, true, null, List.of()));
+            this.alienChestLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 3, 60.0, false, null, List.of(), Map.of()));
+            this.alienChestLoot.add(new AlienLootItem("emerald", Material.EMERALD, 2, 5, 70.0, false, null, List.of(), Map.of()));
+            this.alienChestLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 20.0, true, null, List.of(), Map.of()));
         }
 
         this.alienRewardsEnabled = cfg.getBoolean("alien.rewards.enabled", true);
@@ -932,11 +937,11 @@ public class PluginConfig {
         this.skibidiLoot.clear();
         this.skibidiLoot.addAll(readChanceLoot(cfg.getConfigurationSection("skibidi.loot")));
         if (this.skibidiLoot.isEmpty()) {
-            this.skibidiLoot.add(new AlienLootItem("iron", Material.IRON_INGOT, 3, 8, 80.0, false, null, List.of()));
-            this.skibidiLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 2, 5, 60.0, false, null, List.of()));
-            this.skibidiLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 3, 30.0, false, null, List.of()));
-            this.skibidiLoot.add(new AlienLootItem("emerald", Material.EMERALD, 1, 4, 35.0, false, null, List.of()));
-            this.skibidiLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 10.0, true, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("iron", Material.IRON_INGOT, 3, 8, 80.0, false, null, List.of(), Map.of()));
+            this.skibidiLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 2, 5, 60.0, false, null, List.of(), Map.of()));
+            this.skibidiLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 3, 30.0, false, null, List.of(), Map.of()));
+            this.skibidiLoot.add(new AlienLootItem("emerald", Material.EMERALD, 1, 4, 35.0, false, null, List.of(), Map.of()));
+            this.skibidiLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 10.0, true, null, List.of(), Map.of()));
         }
     }
 
@@ -971,7 +976,8 @@ public class PluginConfig {
             for (String loreLine : itemSec.getStringList("lore")) {
                 lore.add(ColorUtil.color(loreLine));
             }
-            list.add(new AlienLootItem(key, mat, min, max, chance, rare, name, lore));
+            Map<String, Integer> enchants = ru.geyserevent.util.LootStacks.readEnchants(itemSec.get("enchants"));
+            list.add(new AlienLootItem(key, mat, min, max, chance, rare, name, lore, enchants));
         }
         return list;
     }

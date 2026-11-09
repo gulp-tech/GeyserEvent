@@ -548,19 +548,7 @@ public final class SkibidiToiletManager {
             int min = Math.max(1, item.minAmount());
             int max = Math.max(min, item.maxAmount());
             int amount = min + random.nextInt(max - min + 1);
-            ItemStack stack = new ItemStack(item.material(), amount);
-            if (item.displayName() != null || (item.lore() != null && !item.lore().isEmpty())) {
-                ItemMeta meta = stack.getItemMeta();
-                if (meta != null) {
-                    if (item.displayName() != null) {
-                        meta.setDisplayName(item.displayName());
-                    }
-                    if (item.lore() != null && !item.lore().isEmpty()) {
-                        meta.setLore(item.lore());
-                    }
-                    stack.setItemMeta(meta);
-                }
-            }
+            ItemStack stack = ru.geyserevent.util.LootStacks.fromAlien(item, amount);
             Item dropped = loc.getWorld().dropItemNaturally(loc, stack);
             dropped.setPickupDelay(5);
         }

@@ -565,18 +565,7 @@ public final class GravityHoardManager {
         int min = item.minAmount();
         int max = Math.max(min, item.maxAmount());
         int amount = min + (max > min ? random.nextInt(max - min + 1) : 0);
-        ItemStack stack = new ItemStack(item.material(), Math.max(1, amount));
-        if (item.displayName() != null) {
-            ItemMeta meta = stack.getItemMeta();
-            if (meta != null) {
-                meta.setDisplayName(item.displayName());
-                if (item.lore() != null && !item.lore().isEmpty()) {
-                    meta.setLore(item.lore());
-                }
-                stack.setItemMeta(meta);
-            }
-        }
-        return stack;
+        return ru.geyserevent.util.LootStacks.fromAlien(item, Math.max(1, amount));
     }
 
     private void pasteArena(Location origin) {
