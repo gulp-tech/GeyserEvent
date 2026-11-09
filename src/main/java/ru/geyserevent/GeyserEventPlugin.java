@@ -9,6 +9,7 @@ import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.boss.MinionLootManager;
 import ru.geyserevent.cauldron.AlchemistSchematicManager;
 import ru.geyserevent.command.EventPlayerCommand;
+import ru.geyserevent.command.KladCommand;
 import ru.geyserevent.command.RiftCommand;
 import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.event.InfernalRiftManager;
@@ -127,6 +128,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
             mineMenuCmd.setExecutor(adminExecutor);
             mineMenuCmd.setTabCompleter(adminExecutor);
         }
+        PluginCommand kladCmd = getCommand("klad");
+        if (kladCmd != null) {
+            KladCommand kladExecutor = new KladCommand(this);
+            kladCmd.setExecutor(kladExecutor);
+            kladCmd.setTabCompleter(kladExecutor);
+        }
 
         // 8. Экспорт и автоматическая перезапись меню DeluxeMenus (events.yml) и текстурпака (GeyserEvent-Pack.mcpack)
         exportDeluxeMenusConfig();
@@ -140,7 +147,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.16 успешно запущен! (Purpur 26.2)");
+        getLogger().info(" GeyserEvent v1.21.17 успешно запущен! (Purpur 26.2)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Пришельцы, Сердце Ветра");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");

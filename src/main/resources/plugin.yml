@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.21.16'
+version: '1.21.17'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
@@ -32,6 +32,11 @@ commands:
     description: Отдельное GUI-меню настройки лута постоянного ивента «Шахта Древних (0 ~ 0)»
     aliases: [geodemenu, mmenu]
     usage: /<command> [обычная|эпическая|легендарная]
+    permission: geyserevent.admin
+  klad:
+    description: Запустить ивент «Древний клад» (один сундук в руинах)
+    aliases: [drevniy, ancientklad]
+    usage: /<command> [here|stop]
     permission: geyserevent.admin
 
 permissions:

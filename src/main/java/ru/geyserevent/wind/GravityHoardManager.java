@@ -12,9 +12,11 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
+import org.bukkit.block.Lidded;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -23,21 +25,21 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.config.PluginConfig;
-import ru.geyserevent.hook.WorldGuardHook;
 import ru.geyserevent.util.ColorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * «Сердце Ветра» — клад в руинах древнего города. Без босса и приспешников:
- * схема + один ивентовый сундук (trapped chest с кастомной моделью в паке Bedrock,
- * обычные сундуки не трогаем).
+ * «Древний клад» — квадратные руины, один ванильный trapped chest, голограмма,
+ * таймер по клику, дрожь крышки и откидывание при открытии.
  */
 public final class GravityHoardManager {
 
@@ -49,19 +51,21 @@ public final class GravityHoardManager {
     private final Random random = new Random();
     private final List<BlockState> savedBlocks = new ArrayList<>();
     private final Set<String> protectedKeys = ConcurrentHashMap.newKeySet();
+    private final List<UUID> hologramIds = new ArrayList<>();
 
     private boolean active;
     private boolean activated;
     private boolean unlocked;
     private boolean lootFilled;
     private Location center;
-    private Location chestWest;
-    private Location chestEast;
+    private Location chestLocation;
     private long startEpochSeconds;
     private long unlockAtEpoch;
     private long eventEndEpochSeconds;
     private BossBar bossBar;
     private BukkitRunnable tickTask;
+    private BukkitRunnable animTask;
+    private int shakeCounter;
 
     public GravityHoardManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -73,7 +77,7 @@ public final class GravityHoardManager {
             return false;
         }
         if (!plugin.getConfig().getBoolean("wind.enabled", true)) {
-            plugin.getLogger().warning("Ивент «Сердце Ветра» выключен (wind.enabled: false).");
+            plugin.getLogger().warning("Ивент «Древний клад» выключен (wind.enabled: false).");
             return false;
         }
         if (plugin.getRiftManager() != null && plugin.getRiftManager().isActive()) {
@@ -89,6 +93,7 @@ public final class GravityHoardManager {
         this.activated = false;
         this.unlocked = false;
         this.lootFilled = false;
+        this.shakeCounter = 0;
         this.center = snapToSurface(targetCenter);
         this.startEpochSeconds = System.currentTimeMillis() / 1000L;
 
@@ -101,6 +106,7 @@ public final class GravityHoardManager {
         setChunksForceLoaded(this.center, true);
         pasteArena(this.center);
         placeEventChest();
+        spawnHolograms();
         createBossBar();
         broadcastSpawn();
 
@@ -115,6 +121,7 @@ public final class GravityHoardManager {
             );
         }
         startTickLoop();
+        startAnimLoop();
         return true;
     }
 
@@ -123,6 +130,11 @@ public final class GravityHoardManager {
             tickTask.cancel();
             tickTask = null;
         }
+        if (animTask != null) {
+            animTask.cancel();
+            animTask = null;
+        }
+        clearHolograms();
         if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
             plugin.getWorldGuardHook().removeRegion(center.getWorld(), REGION_ID);
         }
@@ -139,15 +151,14 @@ public final class GravityHoardManager {
         this.unlocked = false;
         this.lootFilled = false;
         this.center = null;
-        this.chestWest = null;
-        this.chestEast = null;
+        this.chestLocation = null;
     }
 
     public boolean isEventChest(Block block) {
         if (!active || block == null) {
             return false;
         }
-        return sameBlock(block, chestWest) || sameBlock(block, chestEast);
+        return sameBlock(block, chestLocation);
     }
 
     private static boolean sameBlock(Block block, Location loc) {
@@ -181,10 +192,12 @@ public final class GravityHoardManager {
                     + ColorUtil.formatDuration(wait)));
             player.sendMessage(ColorUtil.color("&e┠ &fТы запустил отсчёт. Жди &#E0C912"
                     + ColorUtil.formatDuration(wait) + "&f."));
-            if (center != null && center.getWorld() != null) {
-                center.getWorld().playSound(center, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 1.4f, 0.7f);
+            if (chestLocation != null && chestLocation.getWorld() != null) {
+                chestLocation.getWorld().playSound(chestLocation, Sound.BLOCK_CHEST_LOCKED, 1.1f, 0.6f);
+                chestLocation.getWorld().playSound(chestLocation, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.9f, 0.7f);
             }
             refreshBossBar();
+            refreshHolograms();
             return true;
         }
         tryUnlock(now);
@@ -194,6 +207,10 @@ public final class GravityHoardManager {
                     + ColorUtil.formatDuration(left)));
             return true;
         }
+        if (chestLocation != null && chestLocation.getWorld() != null) {
+            player.playSound(chestLocation, Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+        }
+        keepLidOpen();
         return false;
     }
 
@@ -235,7 +252,7 @@ public final class GravityHoardManager {
     }
 
     public Location getChestLocation() {
-        return chestWest != null ? chestWest : chestEast;
+        return chestLocation;
     }
 
     public int getSecondsRemaining() {
@@ -243,7 +260,6 @@ public final class GravityHoardManager {
         return (int) Math.max(0L, left);
     }
 
-    /** Совместимость со старым статусом /rift — босса больше нет. */
     public double getCoreHealth() {
         return 0;
     }
@@ -279,7 +295,6 @@ public final class GravityHoardManager {
     }
 
     public void handleChargeHit(ProjectileHitEvent event) {
-        // босса больше нет
     }
 
     public boolean cancelFallInArena(Location loc) {
@@ -302,48 +317,79 @@ public final class GravityHoardManager {
                 }
                 long now = System.currentTimeMillis() / 1000L;
                 tryUnlock(now);
-                if (center != null && center.getWorld() != null && chestWest != null) {
-                    Location fx = chestWest.clone().add(1.0, 0.9, 0.5);
-                    center.getWorld().spawnParticle(Particle.SCULK_SOUL, fx, 4, 0.55, 0.25, 0.35, 0.01);
+                if (unlocked) {
+                    keepLidOpen();
+                }
+                if (center != null && center.getWorld() != null && chestLocation != null) {
+                    Location fx = chestLocation.clone().add(0.5, 0.9, 0.5);
+                    center.getWorld().spawnParticle(Particle.SCULK_SOUL, fx, unlocked ? 6 : 3, 0.28, 0.2, 0.28, 0.01);
                 }
                 refreshBossBar();
+                refreshHolograms();
             }
         };
         tickTask.runTaskTimer(plugin, 20L, 20L);
+    }
+
+    private void startAnimLoop() {
+        animTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!active || chestLocation == null || chestLocation.getWorld() == null) {
+                    return;
+                }
+                if (!activated || unlocked) {
+                    return;
+                }
+                long leftMs = Math.max(0L, unlockAtEpoch * 1000L - System.currentTimeMillis());
+                int totalMs = Math.max(1, plugin.getConfig().getInt("wind.unlock-seconds", 300)) * 1000;
+                double progress = 1.0 - Math.min(1.0, leftMs / (double) totalMs);
+                // Чем ближе к открытию, тем чаще дрожь: от ~1.6с до каждого тика анимации.
+                int period = (int) Math.max(1, Math.round(16.0 - progress * 15.0));
+                shakeCounter++;
+                if (shakeCounter % period != 0) {
+                    return;
+                }
+                shakeChest(progress);
+            }
+        };
+        animTask.runTaskTimer(plugin, 2L, 2L);
+    }
+
+    private void shakeChest(double progress) {
+        Block block = chestLocation.getBlock();
+        if (block.getState() instanceof Lidded lid) {
+            if (lid.isOpen()) {
+                lid.close();
+            } else {
+                lid.open();
+            }
+        }
+        World world = chestLocation.getWorld();
+        Location fx = chestLocation.clone().add(0.5, 0.55, 0.5);
+        float pitch = (float) (0.7 + progress * 0.9);
+        world.playSound(fx, Sound.BLOCK_CHEST_LOCKED, 0.35f + (float) progress * 0.45f, pitch);
+        int count = 2 + (int) (progress * 8);
+        world.spawnParticle(Particle.CRIT, fx, count, 0.22, 0.12, 0.22, 0.02);
+        world.spawnParticle(Particle.SMOKE, fx, 1 + (int) (progress * 3), 0.15, 0.1, 0.15, 0.01);
     }
 
     private void placeEventChest() {
         if (center == null) {
             return;
         }
-        Block west = center.getBlock().getRelative(0, 1, 0);
-        Block east = west.getRelative(BlockFace.EAST);
-        west.setType(Material.TRAPPED_CHEST, false);
-        east.setType(Material.TRAPPED_CHEST, false);
-
-        org.bukkit.block.data.type.Chest westData =
+        Block block = center.getBlock().getRelative(0, 1, 0);
+        org.bukkit.block.data.type.Chest data =
                 (org.bukkit.block.data.type.Chest) Material.TRAPPED_CHEST.createBlockData();
-        westData.setFacing(BlockFace.NORTH);
-        westData.setType(org.bukkit.block.data.type.Chest.Type.RIGHT);
-        west.setBlockData(westData, false);
-
-        org.bukkit.block.data.type.Chest eastData =
-                (org.bukkit.block.data.type.Chest) Material.TRAPPED_CHEST.createBlockData();
-        eastData.setFacing(BlockFace.NORTH);
-        eastData.setType(org.bukkit.block.data.type.Chest.Type.LEFT);
-        east.setBlockData(eastData, false);
-
-        markProtected(west);
-        markProtected(east);
-        this.chestWest = west.getLocation();
-        this.chestEast = east.getLocation();
-        tagChest(west);
-        tagChest(east);
-        Bukkit.getScheduler().runTaskLater(plugin, this::reassertDoubleChest, 1L);
-
-        World world = west.getWorld();
-        world.playSound(west.getLocation(), Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.9f, 0.55f);
-        world.spawnParticle(Particle.SCULK_SOUL, west.getLocation().add(1.0, 0.8, 0.5), 22, 0.7, 0.3, 0.4, 0.02);
+        data.setFacing(BlockFace.SOUTH);
+        data.setType(org.bukkit.block.data.type.Chest.Type.SINGLE);
+        block.setBlockData(data, false);
+        markProtected(block);
+        this.chestLocation = block.getLocation();
+        tagChest(block);
+        World world = block.getWorld();
+        world.playSound(block.getLocation(), Sound.BLOCK_CHEST_CLOSE, 0.8f, 0.7f);
+        world.spawnParticle(Particle.SCULK_SOUL, block.getLocation().add(0.5, 0.8, 0.5), 16, 0.3, 0.25, 0.3, 0.02);
     }
 
     private void tagChest(Block block) {
@@ -351,28 +397,6 @@ public final class GravityHoardManager {
             chest.getPersistentDataContainer().set(chestKey, PersistentDataType.BYTE, (byte) 1);
             chest.update(true, false);
         }
-    }
-
-    private void reassertDoubleChest() {
-        if (!active || chestWest == null || chestEast == null) {
-            return;
-        }
-        Block west = chestWest.getBlock();
-        Block east = chestEast.getBlock();
-        org.bukkit.block.data.type.Chest westData =
-                (org.bukkit.block.data.type.Chest) Material.TRAPPED_CHEST.createBlockData();
-        westData.setFacing(BlockFace.NORTH);
-        westData.setType(org.bukkit.block.data.type.Chest.Type.RIGHT);
-        west.setBlockData(westData, false);
-        org.bukkit.block.data.type.Chest eastData =
-                (org.bukkit.block.data.type.Chest) Material.TRAPPED_CHEST.createBlockData();
-        eastData.setFacing(BlockFace.NORTH);
-        eastData.setType(org.bukkit.block.data.type.Chest.Type.LEFT);
-        east.setBlockData(eastData, false);
-        markProtected(west);
-        markProtected(east);
-        tagChest(west);
-        tagChest(east);
     }
 
     private void tryUnlock(long now) {
@@ -384,31 +408,70 @@ public final class GravityHoardManager {
         }
         unlocked = true;
         fillEventChest();
+        keepLidOpen();
+        knockbackNearby();
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFДревний сундук открылся!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &f54 слота клада ждут. Успей забрать лут."));
-        if (chestWest != null && chestWest.getWorld() != null) {
-            chestWest.getWorld().playSound(chestWest, Sound.BLOCK_ENDER_CHEST_OPEN, 1.2f, 0.75f);
-            chestWest.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, chestWest.clone().add(1.0, 0.8, 0.5),
-                    28, 0.6, 0.4, 0.4, 0.02);
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЗабирай клад, пока руины не исчезли."));
+        if (chestLocation != null && chestLocation.getWorld() != null) {
+            World world = chestLocation.getWorld();
+            Location fx = chestLocation.clone().add(0.5, 0.8, 0.5);
+            world.playSound(fx, Sound.BLOCK_CHEST_OPEN, 1.35f, 0.85f);
+            world.playSound(fx, Sound.ENTITY_GENERIC_EXPLODE, 0.55f, 1.35f);
+            world.spawnParticle(Particle.SOUL_FIRE_FLAME, fx, 36, 0.45, 0.4, 0.45, 0.03);
+            world.spawnParticle(Particle.CLOUD, fx, 18, 0.5, 0.2, 0.5, 0.04);
+            world.spawnParticle(Particle.END_ROD, fx, 12, 0.3, 0.5, 0.3, 0.02);
+        }
+        refreshHolograms();
+        refreshBossBar();
+    }
+
+    private void keepLidOpen() {
+        if (chestLocation == null) {
+            return;
+        }
+        BlockState state = chestLocation.getBlock().getState();
+        if (state instanceof Lidded lid && !lid.isOpen()) {
+            lid.open();
+        }
+    }
+
+    private void knockbackNearby() {
+        if (chestLocation == null || chestLocation.getWorld() == null) {
+            return;
+        }
+        Location origin = chestLocation.clone().add(0.5, 0.2, 0.5);
+        double radius = ARENA_RADIUS + 2;
+        double radiusSq = radius * radius;
+        for (Player player : chestLocation.getWorld().getPlayers()) {
+            if (!plugin.getBedrockService().canParticipate(player) && !player.isOp()) {
+                continue;
+            }
+            if (player.getLocation().distanceSquared(origin) > radiusSq) {
+                continue;
+            }
+            Vector dir = player.getLocation().toVector().subtract(origin.toVector());
+            dir.setY(0);
+            if (dir.lengthSquared() < 0.04) {
+                dir = new Vector(random.nextGaussian(), 0, random.nextGaussian());
+                dir.setY(0);
+            }
+            if (dir.lengthSquared() < 0.0001) {
+                dir = new Vector(1, 0, 0);
+            }
+            dir.normalize().multiply(1.75).setY(0.48);
+            player.setVelocity(dir);
         }
     }
 
     private void fillEventChest() {
-        if (lootFilled || chestWest == null) {
+        if (lootFilled || chestLocation == null) {
             return;
         }
-        Block block = chestWest.getBlock();
+        Block block = chestLocation.getBlock();
         if (!(block.getState() instanceof Chest chest)) {
             return;
         }
-        Inventory inv = chest.getInventory();
-        fillInventory(inv);
-        if (chestEast != null) {
-            Block east = chestEast.getBlock();
-            if (east.getState() instanceof Chest other && other.getInventory() != inv) {
-                fillInventory(other.getInventory());
-            }
-        }
+        fillInventory(chest.getInventory());
         lootFilled = true;
     }
 
@@ -417,7 +480,7 @@ public final class GravityHoardManager {
         List<PluginConfig.AlienLootItem> loot = plugin.getPluginConfig().getAlienChestLoot();
         List<PluginConfig.AlienLootItem> base = plugin.getPluginConfig().getAlienChestBaseLoot();
         int slot = 0;
-        int size = inv.getSize();
+        int size = Math.min(27, inv.getSize());
         if (base != null) {
             for (PluginConfig.AlienLootItem item : base) {
                 if (slot >= size) {
@@ -427,15 +490,11 @@ public final class GravityHoardManager {
             }
         }
         if (loot == null || loot.isEmpty()) {
-            inv.addItem(new ItemStack(Material.ECHO_SHARD, 8 + random.nextInt(6)));
-            inv.addItem(new ItemStack(Material.DIAMOND, 4 + random.nextInt(5)));
-            inv.addItem(new ItemStack(Material.ANCIENT_DEBRIS, 1 + random.nextInt(2)));
+            inv.addItem(new ItemStack(Material.ECHO_SHARD, 4 + random.nextInt(4)));
+            inv.addItem(new ItemStack(Material.DIAMOND, 2 + random.nextInt(3)));
             return;
         }
         int rolls = plugin.getPluginConfig().getAlienChestItemsPerChest();
-        if (size >= 54) {
-            rolls *= 2;
-        }
         for (int i = 0; i < rolls && slot < size; i++) {
             PluginConfig.AlienLootItem item = loot.get(random.nextInt(loot.size()));
             if (random.nextDouble() * 100.0 > item.chancePercent()) {
@@ -501,9 +560,9 @@ public final class GravityHoardManager {
                 Material floor;
                 if (edge) {
                     floor = Material.COBBLED_DEEPSLATE;
-                } else if (adx <= 2 && adz <= 2) {
+                } else if (adx <= 1 && adz <= 1) {
                     floor = chiseled;
-                } else if (adx <= 4 && adz <= 4) {
+                } else if (adx <= 3 && adz <= 3) {
                     floor = polished;
                 } else if (((dx * 13 + dz * 7) & 5) == 0) {
                     floor = sculk;
@@ -514,7 +573,7 @@ public final class GravityHoardManager {
                 }
                 setProtected(world, cx + dx, cy, cz + dz, floor);
 
-                if (!edge && !gate && vein != Material.AIR && ((dx * dz) & 7) == 0 && (adx > 4 || adz > 4)) {
+                if (!edge && !gate && vein != Material.AIR && ((dx * dz) & 7) == 0 && (adx > 3 || adz > 3)) {
                     setProtected(world, cx + dx, cy + 1, cz + dz, vein);
                 }
 
@@ -550,17 +609,16 @@ public final class GravityHoardManager {
         placeShrine(world, cx - 8, cy, cz, catalyst, sensor, chiseled);
         placeShrine(world, cx, cy, cz - 8, catalyst, sensor, chiseled);
 
-        for (int dx = -1; dx <= 2; dx++) {
+        for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 setProtected(world, cx + dx, cy, cz + dz, chiseled);
             }
         }
         setProtected(world, cx, cy, cz, mat("LODESTONE", chiseled));
-        setProtected(world, cx + 1, cy, cz, mat("LODESTONE", chiseled));
-        setProtected(world, cx - 1, cy + 1, cz, Material.SOUL_LANTERN);
         setProtected(world, cx + 2, cy + 1, cz, Material.SOUL_LANTERN);
-        setProtected(world, cx, cy + 1, cz + 1, Material.SOUL_LANTERN);
-        setProtected(world, cx + 1, cy + 1, cz + 1, Material.SOUL_LANTERN);
+        setProtected(world, cx - 2, cy + 1, cz, Material.SOUL_LANTERN);
+        setProtected(world, cx, cy + 1, cz + 2, Material.SOUL_LANTERN);
+        setProtected(world, cx, cy + 1, cz - 2, Material.SOUL_LANTERN);
     }
 
     private void buildTower(World world, int x, int y, int z, Material bricks, Material chiseled) {
@@ -604,6 +662,93 @@ public final class GravityHoardManager {
     private static Material mat(String name, Material fallback) {
         Material material = Material.matchMaterial(name);
         return material != null ? material : fallback;
+    }
+
+    private void spawnHolograms() {
+        clearHolograms();
+        if (chestLocation == null || chestLocation.getWorld() == null) {
+            return;
+        }
+        Location base = chestLocation.clone().add(0.5, 1.35, 0.5);
+        String[] lines = hologramLines();
+        for (int i = 0; i < 3; i++) {
+            Location lineLoc = base.clone().add(0, 0.32 * (2 - i), 0);
+            String text = lines[i];
+            ArmorStand stand = chestLocation.getWorld().spawn(lineLoc, ArmorStand.class, s -> {
+                s.setVisible(false);
+                s.setGravity(false);
+                s.setMarker(true);
+                s.setSmall(true);
+                s.setBasePlate(false);
+                s.setArms(false);
+                s.setCustomNameVisible(true);
+                s.setInvulnerable(true);
+                s.setPersistent(false);
+                s.setCustomName(text);
+            });
+            hologramIds.add(stand.getUniqueId());
+        }
+    }
+
+    private void refreshHolograms() {
+        if (hologramIds.size() != 3 || !hologramsAlive()) {
+            if (active && chestLocation != null) {
+                spawnHolograms();
+            }
+            return;
+        }
+        String[] lines = hologramLines();
+        for (int i = 0; i < 3; i++) {
+            Entity entity = Bukkit.getEntity(hologramIds.get(i));
+            if (entity instanceof ArmorStand stand) {
+                stand.setCustomName(lines[i]);
+                stand.setCustomNameVisible(true);
+            }
+        }
+    }
+
+    private boolean hologramsAlive() {
+        for (UUID id : hologramIds) {
+            Entity entity = Bukkit.getEntity(id);
+            if (entity == null || !entity.isValid()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String[] hologramLines() {
+        if (!activated) {
+            int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 300));
+            return new String[]{
+                    ColorUtil.color("&#d6b85a&lДревний клад"),
+                    ColorUtil.color("&fКликни по сундуку"),
+                    ColorUtil.color("&7Таймер " + ColorUtil.formatDuration(wait))
+            };
+        }
+        if (!unlocked) {
+            long left = Math.max(0L, unlockAtEpoch - System.currentTimeMillis() / 1000L);
+            return new String[]{
+                    ColorUtil.color("&#d6b85a&lДревний клад"),
+                    ColorUtil.color("&eОткроется через " + ColorUtil.formatDuration(left)),
+                    ColorUtil.color("&7Не открывается, пока идёт таймер")
+            };
+        }
+        return new String[]{
+                ColorUtil.color("&#34D711&lКлад открыт"),
+                ColorUtil.color("&fЗабирай лут"),
+                ColorUtil.color("&7Осталось " + ColorUtil.formatDuration(getSecondsRemaining()))
+        };
+    }
+
+    private void clearHolograms() {
+        for (UUID id : hologramIds) {
+            Entity entity = Bukkit.getEntity(id);
+            if (entity != null) {
+                entity.remove();
+            }
+        }
+        hologramIds.clear();
     }
 
     private void createBossBar() {
@@ -651,8 +796,8 @@ public final class GravityHoardManager {
         }
         int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 300));
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFДревний город &fподнялся из скалка!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fВ центре — &#d6b85aдвойной древний сундук &f(54 слота)"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКликни по сундуку — запустится таймер &#E0C912"
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fВ центре — &#d6b85aодин древний сундук"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКликни по нему — таймер &#E0C912"
                 + ColorUtil.formatDuration(wait)));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fПока таймер идёт, сундук закрыт. Босса нет."));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"

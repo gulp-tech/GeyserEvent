@@ -841,6 +841,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mine <regen|spawn|set-here|remove> &8— &fУправление «Шахтой Древних»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation|cauldron|alien|wind] &8— &fЗапустить ивент в " + cfg.getWorldName()));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation|cauldron|alien|wind] &8— &fЗапустить на вашей позиции"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/klad &8(&#E0C912/klad here&8 / &#E0C912/klad stop&8) — &fОтдельная команда «Древний клад»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить временный ивент"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mineloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " cauldronloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
