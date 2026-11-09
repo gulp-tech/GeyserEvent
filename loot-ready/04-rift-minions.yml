@@ -1,0 +1,164 @@
+# Лут приспешников Адского Разлома (секция minions.loot)
+minions:
+  enabled: true
+  # Приспешники появляются только когда игрок подходит к боссу ближе чем на 20 блоков
+  trigger-radius: 20.0
+  summon-interval-seconds: 25
+  count-per-wave: 3
+  max-active: 8
+  entity-type: "PIGLIN_BRUTE"
+  name: "&cПриспешник Разлома &7[%hp% ❤]"
+  health: 60.0
+  damage: 7.0
+  scale: 0.92
+  weapon: "GOLDEN_AXE"
+
+  loot:
+    enabled: true
+    min-exp: 50
+    max-exp: 120
+    items:
+      magma_cream:
+        material: "MAGMA_CREAM"
+        chance: 65.0
+        min: 2
+        max: 5
+        rare: false
+      blaze_rod:
+        material: "BLAZE_ROD"
+        chance: 55.0
+        min: 1
+        max: 4
+        rare: false
+      blaze_powder:
+        material: "BLAZE_POWDER"
+        chance: 50.0
+        min: 2
+        max: 5
+        rare: false
+      quartz:
+        material: "QUARTZ"
+        chance: 60.0
+        min: 4
+        max: 10
+        rare: false
+      glowstone_dust:
+        material: "GLOWSTONE_DUST"
+        chance: 55.0
+        min: 3
+        max: 8
+        rare: false
+      nether_wart:
+        material: "NETHER_WART"
+        chance: 50.0
+        min: 3
+        max: 7
+        rare: false
+      ghast_tear:
+        material: "GHAST_TEAR"
+        chance: 35.0
+        min: 1
+        max: 2
+        rare: false
+      crying_obsidian:
+        material: "CRYING_OBSIDIAN"
+        chance: 40.0
+        min: 1
+        max: 3
+        rare: false
+      fire_charge:
+        material: "FIRE_CHARGE"
+        chance: 45.0
+        min: 2
+        max: 4
+        rare: false
+      gold_ingot:
+        material: "GOLD_INGOT"
+        chance: 65.0
+        min: 3
+        max: 8
+        rare: false
+      gold_block:
+        material: "GOLD_BLOCK"
+        chance: 25.0
+        min: 1
+        max: 2
+        rare: false
+      golden_apple:
+        material: "GOLDEN_APPLE"
+        chance: 30.0
+        min: 1
+        max: 2
+        rare: false
+      diamond:
+        material: "DIAMOND"
+        chance: 45.0
+        min: 2
+        max: 5
+        rare: false
+      diamond_block:
+        material: "DIAMOND_BLOCK"
+        chance: 12.0
+        min: 1
+        max: 1
+        rare: false
+      ancient_debris:
+        material: "ANCIENT_DEBRIS"
+        chance: 9.0
+        min: 1
+        max: 2
+        rare: true
+      netherite_scrap:
+        material: "NETHERITE_SCRAP"
+        chance: 8.0
+        min: 1
+        max: 2
+        rare: true
+      netherite_upgrade_template:
+        material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+        chance: 6.0
+        min: 1
+        max: 1
+        rare: true
+      netherite_ingot:
+        material: "NETHERITE_INGOT"
+        chance: 3.5
+        min: 1
+        max: 1
+        rare: true
+      netherite_sword:
+        material: "NETHERITE_SWORD"
+        chance: 1.5
+        min: 1
+        max: 1
+        rare: true
+      netherite_pickaxe:
+        material: "NETHERITE_PICKAXE"
+        chance: 1.5
+        min: 1
+        max: 1
+        rare: true
+      netherite_chestplate:
+        material: "NETHERITE_CHESTPLATE"
+        chance: 1.2
+        min: 1
+        max: 1
+        rare: true
+      netherite_leggings:
+        material: "NETHERITE_LEGGINGS"
+        chance: 1.2
+        min: 1
+        max: 1
+        rare: true
+      netherite_helmet:
+        material: "NETHERITE_HELMET"
+        chance: 1.5
+        min: 1
+        max: 1
+        rare: true
+      netherite_boots:
+        material: "NETHERITE_BOOTS"
+        chance: 1.5
+        min: 1
+        max: 1
+        rare: true

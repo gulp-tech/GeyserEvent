@@ -1,0 +1,268 @@
+# Лут сундуков пришельцев (секция alien.chests)
+  chests:
+    enabled: true
+    # Сколько секунд сундуки доступны после убийства босса (затем площадка откатывается)
+    loot-time-seconds: 180
+    # Сколько раз кидать кубик на предмет в каждом сундуке (помимо базы)
+    rolls-per-chest: 8
+    # Смещения сундуков от центра ивента (x y z) — 4 пьедестала схемы
+    offsets:
+      - "0 2 9"
+      - "9 2 0"
+      - "0 2 -9"
+      - "-9 2 0"
+    # ГАРАНТИРОВАННЫЙ базовый лут: эти предметы ВСЕГДА есть в каждом сундуке
+    # (не зависят от шансов и роллов). Хватит, чтобы лут никогда не был пустым.
+    # Гарантированный базовый лут: эти предметы ВСЕГДА есть в каждом сундуке
+    # (не зависят от шансов и роллов). Ключ — произвольное название.
+    base-loot:
+      iron:
+        material: "IRON_INGOT"
+        min: 3
+        max: 6
+      gold:
+        material: "GOLD_INGOT"
+        min: 2
+        max: 4
+      emerald:
+        material: "EMERALD"
+        min: 2
+        max: 4
+      diamond:
+        material: "DIAMOND"
+        min: 1
+        max: 2
+    # Обычный / эпический / легендарный лут сундуков (свой chance у каждого).
+    loot:
+      chorus:
+        material: CHORUS_FRUIT
+        min: 8
+        max: 16
+        chance: 75
+      pearls:
+        material: ENDER_PEARL
+        min: 4
+        max: 10
+        chance: 65
+      membrane:
+        material: PHANTOM_MEMBRANE
+        min: 3
+        max: 8
+        chance: 50
+      diamond:
+        material: DIAMOND
+        min: 3
+        max: 8
+        chance: 50
+      emerald:
+        material: EMERALD
+        min: 4
+        max: 8
+        chance: 45
+      shulker:
+        material: SHULKER_SHELL
+        min: 1
+        max: 3
+        chance: 32
+      end_crystal:
+        material: END_CRYSTAL
+        min: 1
+        max: 3
+        chance: 24
+      obsidian:
+        material: OBSIDIAN
+        min: 8
+        max: 16
+        chance: 40
+      ender_eye:
+        material: ENDER_EYE
+        min: 2
+        max: 6
+        chance: 35
+      elytra:
+        material: ELYTRA
+        min: 1
+        max: 1
+        chance: 8
+        rare: true
+        enchants:
+          unbreaking: 3
+          mending: 1
+      netherite:
+        material: NETHERITE_INGOT
+        min: 1
+        max: 1
+        chance: 16
+        rare: true
+      enchanted_apple:
+        material: ENCHANTED_GOLDEN_APPLE
+        min: 1
+        max: 1
+        chance: 12
+        rare: true
+      totem:
+        material: TOTEM_OF_UNDYING
+        min: 1
+        max: 1
+        chance: 20
+        rare: true
+      dragon_head:
+        material: DRAGON_HEAD
+        min: 1
+        max: 1
+        chance: 8
+        rare: true
+      netherite_helm:
+        material: NETHERITE_HELMET
+        min: 1
+        max: 1
+        chance: 10
+        rare: true
+        enchants:
+          protection: 4
+          unbreaking: 3
+          mending: 1
+          respiration: 3
+          aqua_affinity: 1
+      netherite_chest:
+        material: NETHERITE_CHESTPLATE
+        min: 1
+        max: 1
+        chance: 10
+        rare: true
+        enchants:
+          protection: 4
+          unbreaking: 3
+          mending: 1
+          thorns: 2
+      netherite_legs:
+        material: NETHERITE_LEGGINGS
+        min: 1
+        max: 1
+        chance: 10
+        rare: true
+        enchants:
+          protection: 4
+          unbreaking: 3
+          mending: 1
+          swift_sneak: 3
+      netherite_boots:
+        material: NETHERITE_BOOTS
+        min: 1
+        max: 1
+        chance: 10
+        rare: true
+        enchants:
+          protection: 4
+          unbreaking: 3
+          mending: 1
+          feather_falling: 4
+          depth_strider: 3
+          soul_speed: 3
+      netherite_sword:
+        material: NETHERITE_SWORD
+        min: 1
+        max: 1
+        chance: 10
+        rare: true
+        enchants:
+          sharpness: 5
+          unbreaking: 3
+          mending: 1
+          looting: 3
+          fire_aspect: 2
+          sweeping_edge: 3
+      diamond_chest:
+        material: DIAMOND_CHESTPLATE
+        min: 1
+        max: 1
+        chance: 16
+        rare: true
+        enchants:
+          protection: 4
+          unbreaking: 3
+          mending: 1
+      diamond_helm:
+        material: DIAMOND_HELMET
+        min: 1
+        max: 1
+        chance: 16
+        rare: true
+        enchants:
+          protection: 4
+          unbreaking: 3
+          mending: 1
+          respiration: 3
+          aqua_affinity: 1
+      diamond_legs:
+        material: DIAMOND_LEGGINGS
+        min: 1
+        max: 1
+        chance: 16
+        rare: true
+        enchants:
+          protection: 4
+          unbreaking: 3
+          mending: 1
+      diamond_boots:
+        material: DIAMOND_BOOTS
+        min: 1
+        max: 1
+        chance: 16
+        rare: true
+        enchants:
+          protection: 4
+          unbreaking: 3
+          mending: 1
+          feather_falling: 4
+          depth_strider: 3
+          soul_speed: 3
+      diamond_sword:
+        material: DIAMOND_SWORD
+        min: 1
+        max: 1
+        chance: 16
+        rare: true
+        enchants:
+          sharpness: 5
+          unbreaking: 3
+          mending: 1
+          looting: 3
+          fire_aspect: 2
+          sweeping_edge: 3
+      bow:
+        material: BOW
+        min: 1
+        max: 1
+        chance: 14
+        rare: true
+        enchants:
+          power: 5
+          unbreaking: 3
+          mending: 1
+          punch: 2
+          flame: 1
+      crossbow:
+        material: CROSSBOW
+        min: 1
+        max: 1
+        chance: 12
+        rare: true
+        enchants:
+          piercing: 4
+          quick_charge: 3
+          unbreaking: 3
+          mending: 1
+          multishot: 1
+      void_sphere:
+        material: PAPER
+        min: 1
+        max: 1
+        chance: 16
+        rare: true
+        name: "&aСфера пустоты"
+        lore:
+          - "&a+4 к урону"
+          - "&a+4 к защите"
+          - "&a+4 к здоровью"
+          - "&a+5% к скорости"

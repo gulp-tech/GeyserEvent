@@ -1,0 +1,230 @@
+# Вставить в plugins/GeyserEvent/config.yml  (секция mine.geodes)
+  geodes:
+
+    common:
+      chance: 35.0
+      loot:
+        - material: "COAL"
+          amount: 24
+          chance: 80.0
+        - material: "RAW_IRON"
+          amount: 14
+          chance: 75.0
+        - material: "RAW_COPPER"
+          amount: 18
+          chance: 70.0
+        - material: "RAW_GOLD"
+          amount: 8
+          chance: 55.0
+        - material: "REDSTONE"
+          amount: 24
+          chance: 60.0
+        - material: "LAPIS_LAZULI"
+          amount: 16
+          chance: 55.0
+        - material: "AMETHYST_SHARD"
+          amount: 12
+          chance: 45.0
+        - material: "QUARTZ"
+          amount: 12
+          chance: 40.0
+        - material: "IRON_INGOT"
+          amount: 8
+          chance: 50.0
+        - material: "GOLD_INGOT"
+          amount: 6
+          chance: 40.0
+        - material: "COPPER_INGOT"
+          amount: 12
+          chance: 50.0
+        - material: "FLINT"
+          amount: 16
+          chance: 40.0
+
+    epic:
+      chance: 40.0
+      loot:
+        - material: "DIAMOND"
+          amount: 6
+          chance: 60.0
+        - material: "EMERALD"
+          amount: 8
+          chance: 55.0
+        - material: "GOLD_BLOCK"
+          amount: 2
+          chance: 35.0
+        - material: "IRON_BLOCK"
+          amount: 3
+          chance: 40.0
+        - material: "ANCIENT_DEBRIS"
+          amount: 1
+          chance: 22.0
+        - material: "AMETHYST_BLOCK"
+          amount: 6
+          chance: 30.0
+        - material: "EXPERIENCE_BOTTLE"
+          amount: 20
+          chance: 45.0
+        - material: "DIAMOND_PICKAXE"
+          amount: 1
+          chance: 18.0
+          enchants:
+            efficiency: 4
+            unbreaking: 3
+            fortune: 2
+        - material: "DIAMOND_SHOVEL"
+          amount: 1
+          chance: 14.0
+          enchants:
+            efficiency: 4
+            unbreaking: 3
+        - material: "DIAMOND_AXE"
+          amount: 1
+          chance: 12.0
+          enchants:
+            efficiency: 4
+            unbreaking: 3
+            sharpness: 3
+        - material: "IRON_PICKAXE"
+          amount: 1
+          chance: 20.0
+          enchants:
+            efficiency: 4
+            unbreaking: 3
+            fortune: 2
+        - material: "GOLDEN_APPLE"
+          amount: 2
+          chance: 25.0
+
+    legendary:
+      chance: 25.0
+      loot:
+        - material: "NETHERITE_INGOT"
+          amount: 1
+          chance: 28.0
+        - material: "ANCIENT_DEBRIS"
+          amount: 3
+          chance: 42.0
+        - material: "DIAMOND_BLOCK"
+          amount: 2
+          chance: 35.0
+        - material: "EMERALD_BLOCK"
+          amount: 2
+          chance: 30.0
+        - material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+          amount: 1
+          chance: 22.0
+        - material: "ENCHANTED_GOLDEN_APPLE"
+          amount: 1
+          chance: 12.0
+        - material: "NETHERITE_PICKAXE"
+          amount: 1
+          chance: 14.0
+          enchants:
+            efficiency: 5
+            unbreaking: 3
+            mending: 1
+            fortune: 3
+        - material: "NETHERITE_PICKAXE"
+          amount: 1
+          chance: 8.0
+          enchants:
+            efficiency: 5
+            unbreaking: 3
+            mending: 1
+            silk_touch: 1
+        - material: "NETHERITE_SHOVEL"
+          amount: 1
+          chance: 10.0
+          enchants:
+            efficiency: 5
+            unbreaking: 3
+            mending: 1
+            fortune: 3
+        - material: "NETHERITE_AXE"
+          amount: 1
+          chance: 10.0
+          enchants:
+            sharpness: 5
+            unbreaking: 3
+            mending: 1
+            efficiency: 5
+        - material: "NETHERITE_HELMET"
+          amount: 1
+          chance: 10.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            respiration: 3
+            aqua_affinity: 1
+        - material: "NETHERITE_CHESTPLATE"
+          amount: 1
+          chance: 10.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+        - material: "NETHERITE_LEGGINGS"
+          amount: 1
+          chance: 10.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            swift_sneak: 3
+        - material: "NETHERITE_BOOTS"
+          amount: 1
+          chance: 10.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            feather_falling: 4
+            depth_strider: 3
+            soul_speed: 3
+        - material: "DIAMOND_PICKAXE"
+          amount: 1
+          chance: 18.0
+          enchants:
+            efficiency: 5
+            unbreaking: 3
+            mending: 1
+            fortune: 3
+        - material: "DIAMOND_CHESTPLATE"
+          amount: 1
+          chance: 16.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+        - material: "DIAMOND_HELMET"
+          amount: 1
+          chance: 16.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            respiration: 3
+            aqua_affinity: 1
+        - material: "DIAMOND_LEGGINGS"
+          amount: 1
+          chance: 16.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+        - material: "DIAMOND_BOOTS"
+          amount: 1
+          chance: 16.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            feather_falling: 4
+            depth_strider: 3
+            soul_speed: 3
+
+# ============================================================================
+# НПС ивентов и невидимость
+# ============================================================================

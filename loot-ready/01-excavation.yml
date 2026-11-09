@@ -1,0 +1,259 @@
+# Вставить в plugins/GeyserEvent/config.yml  (секция excavation.brushes)
+  brushes:
+
+    common:
+      name: "&aОбычная кисточка"
+      chance: 35.0
+      uses: 3
+      loot:
+        - material: "GOLD_NUGGET"
+          amount: 16
+          chance: 75.0
+        - material: "IRON_NUGGET"
+          amount: 20
+          chance: 75.0
+        - material: "PRISMARINE_SHARD"
+          amount: 10
+          chance: 60.0
+        - material: "PRISMARINE_CRYSTALS"
+          amount: 8
+          chance: 50.0
+        - material: "GOLD_INGOT"
+          amount: 6
+          chance: 55.0
+        - material: "IRON_INGOT"
+          amount: 8
+          chance: 55.0
+        - material: "COPPER_INGOT"
+          amount: 10
+          chance: 50.0
+        - material: "EMERALD"
+          amount: 4
+          chance: 40.0
+        - material: "NAUTILUS_SHELL"
+          amount: 1
+          chance: 20.0
+        - material: "INK_SAC"
+          amount: 12
+          chance: 45.0
+        - material: "KELP"
+          amount: 16
+          chance: 40.0
+        - material: "TROPICAL_FISH"
+          amount: 8
+          chance: 35.0
+        - material: "EXPERIENCE_BOTTLE"
+          amount: 10
+          chance: 45.0
+        - material: "GOLDEN_APPLE"
+          amount: 1
+          chance: 18.0
+
+    epic:
+      name: "&dЭпическая кисточка"
+      chance: 40.0
+      uses: 4
+      loot:
+        - material: "DIAMOND"
+          amount: 5
+          chance: 55.0
+        - material: "HEART_OF_THE_SEA"
+          amount: 1
+          chance: 25.0
+        - material: "TURTLE_SCUTE"
+          amount: 3
+          chance: 32.0
+        - material: "GOLDEN_APPLE"
+          amount: 3
+          chance: 40.0
+        - material: "GOLD_BLOCK"
+          amount: 2
+          chance: 30.0
+        - material: "EMERALD_BLOCK"
+          amount: 1
+          chance: 22.0
+        - material: "TRIDENT"
+          amount: 1
+          chance: 10.0
+        - material: "DIAMOND_SWORD"
+          amount: 1
+          chance: 14.0
+          enchants:
+            sharpness: 4
+            unbreaking: 3
+            looting: 2
+        - material: "DIAMOND_CHESTPLATE"
+          amount: 1
+          chance: 12.0
+          enchants:
+            protection: 3
+            unbreaking: 3
+        - material: "DIAMOND_HELMET"
+          amount: 1
+          chance: 12.0
+          enchants:
+            protection: 3
+            unbreaking: 3
+            respiration: 2
+        - material: "DIAMOND_LEGGINGS"
+          amount: 1
+          chance: 12.0
+          enchants:
+            protection: 3
+            unbreaking: 3
+        - material: "DIAMOND_BOOTS"
+          amount: 1
+          chance: 12.0
+          enchants:
+            protection: 3
+            feather_falling: 4
+            unbreaking: 3
+            depth_strider: 2
+        - material: "BOW"
+          amount: 1
+          chance: 16.0
+          enchants:
+            power: 4
+            unbreaking: 3
+            punch: 1
+        - material: "EXPERIENCE_BOTTLE"
+          amount: 20
+          chance: 40.0
+        - material: "TOTEM_OF_UNDYING"
+          amount: 1
+          chance: 12.0
+
+    legendary:
+      name: "&6Легендарная кисточка"
+      chance: 25.0
+      uses: 5
+      loot:
+        - material: "NETHERITE_INGOT"
+          amount: 1
+          chance: 22.0
+        - material: "CONDUIT"
+          amount: 1
+          chance: 18.0
+        - material: "ENCHANTED_GOLDEN_APPLE"
+          amount: 1
+          chance: 14.0
+        - material: "TOTEM_OF_UNDYING"
+          amount: 1
+          chance: 28.0
+        - material: "TRIDENT"
+          amount: 1
+          chance: 16.0
+          enchants:
+            loyalty: 3
+            impaling: 5
+            unbreaking: 3
+            mending: 1
+        - material: "HEART_OF_THE_SEA"
+          amount: 1
+          chance: 30.0
+        - material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+          amount: 1
+          chance: 20.0
+        - material: "NETHERITE_HELMET"
+          amount: 1
+          chance: 10.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            respiration: 3
+            aqua_affinity: 1
+        - material: "NETHERITE_CHESTPLATE"
+          amount: 1
+          chance: 10.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            thorns: 2
+        - material: "NETHERITE_LEGGINGS"
+          amount: 1
+          chance: 10.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            swift_sneak: 3
+        - material: "NETHERITE_BOOTS"
+          amount: 1
+          chance: 10.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            feather_falling: 4
+            depth_strider: 3
+            soul_speed: 3
+        - material: "NETHERITE_SWORD"
+          amount: 1
+          chance: 10.0
+          enchants:
+            sharpness: 5
+            unbreaking: 3
+            mending: 1
+            looting: 3
+            fire_aspect: 2
+            sweeping_edge: 3
+        - material: "DIAMOND_CHESTPLATE"
+          amount: 1
+          chance: 16.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+        - material: "DIAMOND_HELMET"
+          amount: 1
+          chance: 16.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            respiration: 3
+            aqua_affinity: 1
+        - material: "DIAMOND_LEGGINGS"
+          amount: 1
+          chance: 16.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            swift_sneak: 3
+        - material: "DIAMOND_BOOTS"
+          amount: 1
+          chance: 16.0
+          enchants:
+            protection: 4
+            unbreaking: 3
+            mending: 1
+            feather_falling: 4
+            depth_strider: 3
+            soul_speed: 3
+        - material: "DIAMOND_SWORD"
+          amount: 1
+          chance: 16.0
+          enchants:
+            sharpness: 5
+            unbreaking: 3
+            mending: 1
+            looting: 3
+            fire_aspect: 2
+            sweeping_edge: 3
+        - material: "PAPER"
+          amount: 1
+          chance: 18.0
+          name: "&aСфера пустоты"
+          lore:
+            - "&a+4 к урону"
+            - "&a+4 к защите"
+            - "&a+4 к здоровью"
+            - "&a+5% к скорости"
+
+# ============================================================================
+# Ивент 3: «Котёл Алхимика» (отдельные таблицы лута реагентов)
+# Настраиваются в игре через /rift menu (нижний ряд) или /rift cauldronloot
+# ============================================================================
