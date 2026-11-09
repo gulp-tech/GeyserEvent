@@ -1,0 +1,33 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "minecraft:ravager",
+      "min_engine_version": "1.8.0",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/skibidi_toilet"
+      },
+      "geometry": {
+        "default": "geometry.gojidraw_skibidi_toilet"
+      },
+      "scripts": {
+        "scale": "1.15",
+        "animate": [
+          "idle",
+          "look"
+        ]
+      },
+      "animations": {
+        "idle": "animation.skibiditoilet.idle",
+        "look": "animation.skibiditoilet.looking"
+      },
+      "render_controllers": [
+        "controller.render.skibidi_toilet"
+      ],
+      "enable_attachables": false
+    }
+  }
+}

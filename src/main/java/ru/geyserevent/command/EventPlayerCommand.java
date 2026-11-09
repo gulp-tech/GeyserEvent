@@ -64,6 +64,19 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
 
             case "delay", "time", "info" -> {
                 // Ивент «Вторжение Пришельцев» идёт в своём менеджере
+                if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()
+                        && plugin.getSkibidiToiletManager().getCenterLocation() != null) {
+                    var skibidi = plugin.getSkibidiToiletManager();
+                    sender.sendMessage(ColorUtil.color("&e┼ &f&lШкибиди Туалет &fактивен."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fДо конца: &#E0C912"
+                            + ColorUtil.formatDuration(skibidi.getSecondsRemaining())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
+                            + skibidi.getCenterLocation().getBlockX() + " "
+                            + skibidi.getCenterLocation().getBlockY() + " "
+                            + skibidi.getCenterLocation().getBlockZ()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Каждые 3 сек. из рта летят 2–3 ресурса"));
+                    return true;
+                }
                 if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()
                         && plugin.getGravityHoardManager().getCenterLocation() != null) {
                     var wind = plugin.getGravityHoardManager();

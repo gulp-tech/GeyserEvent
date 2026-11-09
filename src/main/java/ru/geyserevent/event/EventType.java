@@ -16,7 +16,8 @@ public enum EventType {
     BEACH_EXCAVATION("excavation", "Пляжные Раскопки"),
     ALCHEMIST_CAULDRON("cauldron", "Котёл Алхимика"),
     ALIEN_INVASION("alien", "Вторжение Пришельцев"),
-    GRAVITY_HOARD("wind", "Сердце Ветра");
+    GRAVITY_HOARD("wind", "Сердце Ветра"),
+    SKIBIDI("skibidi", "Шкибиди Туалет");
 
     private final String id;
     private final String displayName;
@@ -44,6 +45,7 @@ public enum EventType {
             case "cauldron", "alchemist", "alchemy", "котел", "котёл", "алхимик", "болото", "3" -> ALCHEMIST_CAULDRON;
             case "alien", "invasion", "пришелец", "пришельцы", "ufo", "4" -> ALIEN_INVASION;
             case "wind", "gravity", "hoard", "breeze", "ветер", "сердце", "клад", "5" -> GRAVITY_HOARD;
+            case "skibidi", "toilet", "туалет", "шкибиди", "6" -> SKIBIDI;
             default -> null;
         };
     }

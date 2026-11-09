@@ -213,7 +213,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     type = EventType.fromString(args[1]);
                     if (type == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912alien &cили &#E0C912wind &c(Сердце Ветра)."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912alien&c, &#E0C912wind &cили &#E0C912skibidi&c."));
                         return true;
                     }
                 }
@@ -235,7 +235,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     EventType parsed = EventType.fromString(args[1]);
                     if (parsed == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912alien &cили &#E0C912wind&c."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912alien&c, &#E0C912wind &cили &#E0C912skibidi&c."));
                         return true;
                     }
                     type = parsed;
@@ -250,7 +250,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                         && plugin.getAlienInvasionManager().isActive();
                 boolean windActive = plugin.getGravityHoardManager() != null
                         && plugin.getGravityHoardManager().isActive();
-                if (!riftActive && !alienActive && !windActive) {
+                boolean skibidiActive = plugin.getSkibidiToiletManager() != null
+                        && plugin.getSkibidiToiletManager().isActive();
+                if (!riftActive && !alienActive && !windActive && !skibidiActive) {
                     sender.sendMessage(ColorUtil.color("&e┠ &cИвент не активен."));
                     return true;
                 }
@@ -262,6 +264,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 }
                 if (windActive) {
                     plugin.getGravityHoardManager().stopEvent();
+                }
+                if (skibidiActive) {
+                    plugin.getSkibidiToiletManager().stopEvent();
                 }
                 sender.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент остановлен и схема откачена."));
                 return true;
@@ -839,8 +844,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/minemenu &8(&#E0C912/" + label + " minemenu&8) — &fGUI-меню лута «Шахты Древних (0 ~ 0)»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/cauldronmenu &8(&#E0C912/" + label + " cauldronmenu&8) — &fGUI-меню лута «Котла Алхимика»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mine <regen|spawn|set-here|remove> &8— &fУправление «Шахтой Древних»"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation|cauldron|alien|wind] &8— &fЗапустить ивент в " + cfg.getWorldName()));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation|cauldron|alien|wind] &8— &fЗапустить на вашей позиции"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation|cauldron|alien|wind|skibidi] &8— &fЗапустить ивент в " + cfg.getWorldName()));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation|cauldron|alien|wind|skibidi] &8— &fЗапустить на вашей позиции"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/skibidi &8(&#E0C912/skibidi here&8 / &#E0C912/skibidi stop&8) — &fШкибиди Туалет"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/klad &8(&#E0C912/klad here&8 / &#E0C912/klad stop&8) — &fОтдельная команда «Древний клад»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить временный ивент"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mineloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
@@ -1065,7 +1071,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return filterPrefix(Arrays.asList("regen", "spawn", "set-here", "remove", "menu", "status"), args[1]);
             }
             if (sub.equals("start") || sub.equals("start-here") || sub.equals("starthere")) {
-                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "alien", "wind"), args[1]);
+                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "alien", "wind", "skibidi"), args[1]);
             }
             if (sub.equals("menu") || sub.equals("gui") || sub.equals("cauldronmenu") || sub.equals("cmenu")
                     || sub.equals("minemenu") || sub.equals("mmenu") || sub.equals("excavationmenu")

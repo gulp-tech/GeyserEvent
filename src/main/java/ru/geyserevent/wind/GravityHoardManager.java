@@ -87,6 +87,9 @@ public final class GravityHoardManager {
         if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
             plugin.getAlienInvasionManager().stopEvent();
         }
+        if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
+            plugin.getSkibidiToiletManager().stopEvent();
+        }
         stopEvent();
 
         targetCenter.getChunk().load(true);

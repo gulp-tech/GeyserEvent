@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.21.20'
+version: '1.21.21'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
@@ -36,6 +36,11 @@ commands:
   klad:
     description: Запустить ивент «Древний клад» (один сундук в руинах)
     aliases: [drevniy, ancientklad]
+    usage: /<command> [here|stop]
+    permission: geyserevent.admin
+  skibidi:
+    description: Запустить ивент «Шкибиди Туалет»
+    aliases: [toilet, shkibid]
     usage: /<command> [here|stop]
     permission: geyserevent.admin
 

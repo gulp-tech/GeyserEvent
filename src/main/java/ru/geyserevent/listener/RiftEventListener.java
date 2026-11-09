@@ -849,6 +849,10 @@ public class RiftEventListener implements Listener {
             event.setCancelled(true);
             return;
         }
+        if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isToilet(victim)) {
+            event.setCancelled(true);
+            return;
+        }
         GravityHoardManager windMgr = plugin.getGravityHoardManager();
         if (windMgr != null && windMgr.isActive() && windMgr.isHoardEntity(victim)) {
             Player attacker = resolveAttackerPlayer(damager);
@@ -1114,6 +1118,12 @@ public class RiftEventListener implements Listener {
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
         }
+        if (plugin.getSkibidiToiletManager() != null
+                && plugin.getSkibidiToiletManager().isProtectedBlock(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
 
         if (!plugin.getRiftManager().isActive()) {
             return;
@@ -1160,6 +1170,12 @@ public class RiftEventListener implements Listener {
         }
         if (plugin.getGravityHoardManager() != null
                 && plugin.getGravityHoardManager().isProtectedBlock(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
+        if (plugin.getSkibidiToiletManager() != null
+                && plugin.getSkibidiToiletManager().isProtectedBlock(block.getLocation())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
@@ -1313,6 +1329,9 @@ public class RiftEventListener implements Listener {
             return true;
         }
         if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isProtectedBlock(loc)) {
+            return true;
+        }
+        if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isProtectedBlock(loc)) {
             return true;
         }
         if (plugin.getRiftManager() == null || !plugin.getRiftManager().isActive()) {

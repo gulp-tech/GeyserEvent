@@ -591,6 +591,11 @@ public class InfernalRiftManager {
                 && plugin.getGravityHoardManager().isActive()) {
             plugin.getGravityHoardManager().stopEvent();
         }
+        if (type != EventType.SKIBIDI
+                && plugin.getSkibidiToiletManager() != null
+                && plugin.getSkibidiToiletManager().isActive()) {
+            plugin.getSkibidiToiletManager().stopEvent();
+        }
         // Ивент «Вторжение Пришельцев» ведёт свой менеджер (своя схема и свой босс)
         if (type == EventType.ALIEN_INVASION) {
             if (plugin.getAlienInvasionManager() == null) {
@@ -615,6 +620,21 @@ public class InfernalRiftManager {
                 plugin.getAlienInvasionManager().stopEvent();
             }
             return plugin.getGravityHoardManager().startEvent(targetCenter, durationSecondsOverride);
+        }
+        if (type == EventType.SKIBIDI) {
+            if (plugin.getSkibidiToiletManager() == null) {
+                return false;
+            }
+            if (active) {
+                stopEvent(false);
+            }
+            if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
+                plugin.getAlienInvasionManager().stopEvent();
+            }
+            if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
+                plugin.getGravityHoardManager().stopEvent();
+            }
+            return plugin.getSkibidiToiletManager().startEvent(targetCenter, durationSecondsOverride);
         }
         if (active) {
             stopEvent(false);
@@ -1771,6 +1791,15 @@ public class InfernalRiftManager {
             Location windCenter = plugin.getGravityHoardManager().getCenterLocation();
             if (windCenter != null && windCenter.getWorld() != null) {
                 return windCenter;
+            }
+        }
+        if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
+            Location skibidi = plugin.getSkibidiToiletManager().getToiletLocation();
+            if (skibidi == null) {
+                skibidi = plugin.getSkibidiToiletManager().getCenterLocation();
+            }
+            if (skibidi != null && skibidi.getWorld() != null) {
+                return skibidi;
             }
         }
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()) {
