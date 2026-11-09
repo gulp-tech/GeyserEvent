@@ -17,7 +17,6 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -68,7 +67,6 @@ public final class GravityHoardManager {
     private BukkitRunnable animTask;
     private int shakeCounter;
     private Inventory lootInventory;
-    private UUID shakeEntityId;
 
     public GravityHoardManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -139,7 +137,6 @@ public final class GravityHoardManager {
             animTask = null;
         }
         clearHolograms();
-        removeShakeEntity();
         closeLootViewers();
         this.lootInventory = null;
         if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
@@ -203,7 +200,6 @@ public final class GravityHoardManager {
                 chestLocation.getWorld().playSound(chestLocation, Sound.BLOCK_ENDER_CHEST_CLOSE, 1.1f, 0.6f);
                 chestLocation.getWorld().playSound(chestLocation, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.9f, 0.7f);
             }
-            startChestShake();
             refreshBossBar();
             refreshHolograms();
             return true;
@@ -376,6 +372,8 @@ public final class GravityHoardManager {
                 if (!activated || unlocked) {
                     return;
                 }
+                ensureChestBlock();
+                keepLidClosed();
                 long leftMs = Math.max(0L, unlockAtEpoch * 1000L - System.currentTimeMillis());
                 int totalMs = Math.max(1, plugin.getConfig().getInt("wind.unlock-seconds", 300)) * 1000;
                 double progress = 1.0 - Math.min(1.0, leftMs / (double) totalMs);
@@ -390,67 +388,25 @@ public final class GravityHoardManager {
         animTask.runTaskTimer(plugin, 2L, 2L);
     }
 
-    private void startChestShake() {
+    private void ensureChestBlock() {
         if (chestLocation == null) {
             return;
         }
-        Block block = chestLocation.getBlock();
-        block.setType(Material.BARRIER, false);
-        markProtected(block);
-        spawnShakeEntity();
-    }
-
-    private void spawnShakeEntity() {
-        removeShakeEntity();
-        if (chestLocation == null || chestLocation.getWorld() == null) {
-            return;
+        if (chestLocation.getBlock().getType() != Material.ENDER_CHEST) {
+            placeEnderChestBlock();
         }
-        Location loc = chestLocation.clone().add(0.5, 0.0, 0.5);
-        FallingBlock falling = chestLocation.getWorld().spawnFallingBlock(
-                loc, Material.ENDER_CHEST.createBlockData());
-        falling.setGravity(false);
-        falling.setDropItem(false);
-        falling.setHurtEntities(false);
-        falling.setSilent(true);
-        falling.setInvulnerable(true);
-        falling.setPersistent(false);
-        falling.setTicksLived(1);
-        this.shakeEntityId = falling.getUniqueId();
-    }
-
-    private void removeShakeEntity() {
-        if (shakeEntityId == null) {
-            return;
-        }
-        Entity entity = Bukkit.getEntity(shakeEntityId);
-        if (entity != null) {
-            entity.remove();
-        }
-        shakeEntityId = null;
     }
 
     private void shakeChest(double progress) {
-        Entity entity = shakeEntityId == null ? null : Bukkit.getEntity(shakeEntityId);
-        if (!(entity instanceof FallingBlock) || !entity.isValid()) {
-            spawnShakeEntity();
-            entity = shakeEntityId == null ? null : Bukkit.getEntity(shakeEntityId);
-        }
-        if (entity != null) {
-            double amp = 0.08 + progress * 0.22;
-            double dx = (random.nextDouble() - 0.5) * 2.0 * amp;
-            double dz = (random.nextDouble() - 0.5) * 2.0 * amp;
-            double dy = random.nextDouble() * amp * 0.45;
-            Location loc = chestLocation.clone().add(0.5 + dx, dy, 0.5 + dz);
-            entity.teleport(loc);
-            entity.setTicksLived(1);
-        }
         World world = chestLocation.getWorld();
         Location fx = chestLocation.clone().add(0.5, 0.55, 0.5);
         float pitch = (float) (0.55 + progress * 1.1);
         world.playSound(fx, Sound.BLOCK_ENDER_CHEST_CLOSE, 0.35f + (float) progress * 0.45f, pitch);
-        world.playSound(fx, Sound.BLOCK_STONE_HIT, 0.2f + (float) progress * 0.35f, 0.45f);
-        world.spawnParticle(Particle.CRIT, fx, 2 + (int) (progress * 8), 0.22, 0.12, 0.22, 0.03);
-        world.spawnParticle(Particle.SMOKE, fx, 1 + (int) (progress * 4), 0.18, 0.1, 0.18, 0.01);
+        world.playSound(fx, Sound.BLOCK_STONE_HIT, 0.25f + (float) progress * 0.4f, 0.45f);
+        world.spawnParticle(Particle.CRIT, fx, 4 + (int) (progress * 10), 0.28, 0.18, 0.28, 0.04);
+        world.spawnParticle(Particle.SMOKE, fx, 2 + (int) (progress * 5), 0.2, 0.12, 0.2, 0.01);
+        world.spawnParticle(Particle.BLOCK, fx, 8 + (int) (progress * 12), 0.25, 0.2, 0.25, 0.03,
+                Material.ENDER_CHEST.createBlockData());
     }
 
     private void placeEventChest() {
@@ -490,7 +446,6 @@ public final class GravityHoardManager {
         }
         unlocked = true;
         fillEventChest();
-        removeShakeEntity();
         placeEnderChestBlock();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!active || !unlocked) {
