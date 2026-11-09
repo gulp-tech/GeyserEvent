@@ -165,6 +165,7 @@ public class PluginConfig {
     private String alienChestsLine;
     private String alienTimeoutLine;
     private final List<AlienLootItem> skibidiLoot = new ArrayList<>();
+    private final List<AlienLootItem> windLoot = new ArrayList<>();
 
     /** Предмет лута в сундуках пришельцев (ключ, материал, количество, шанс, rare, оформление). */
     public record AlienLootItem(
@@ -402,6 +403,7 @@ public class PluginConfig {
 
         loadAlienConfig(cfg);
         loadSkibidiLoot(cfg);
+        loadWindLoot(cfg);
 
         // NPCs & Invisibility (невидимость НЕ работает на НПС ивентов)
         this.npcsIgnoreInvisibility = cfg.getBoolean("npcs.ignore-invisibility", true);
@@ -924,16 +926,25 @@ public class PluginConfig {
     public String getAlienChestsLine() { return alienChestsLine; }
     public String getAlienTimeoutLine() { return alienTimeoutLine; }
     public List<AlienLootItem> getSkibidiLoot() { return skibidiLoot; }
+    public List<AlienLootItem> getWindLoot() { return windLoot; }
 
     private void loadSkibidiLoot(FileConfiguration cfg) {
         this.skibidiLoot.clear();
         this.skibidiLoot.addAll(readChanceLoot(cfg.getConfigurationSection("skibidi.loot")));
         if (this.skibidiLoot.isEmpty()) {
-            this.skibidiLoot.add(new AlienLootItem("iron", Material.IRON_INGOT, 2, 5, 80.0, false, null, List.of()));
-            this.skibidiLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 1, 3, 55.0, false, null, List.of()));
-            this.skibidiLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 2, 25.0, false, null, List.of()));
-            this.skibidiLoot.add(new AlienLootItem("emerald", Material.EMERALD, 1, 3, 35.0, false, null, List.of()));
-            this.skibidiLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 8.0, true, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("iron", Material.IRON_INGOT, 3, 8, 80.0, false, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 2, 5, 60.0, false, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 3, 30.0, false, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("emerald", Material.EMERALD, 1, 4, 35.0, false, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 10.0, true, null, List.of()));
+        }
+    }
+
+    private void loadWindLoot(FileConfiguration cfg) {
+        this.windLoot.clear();
+        this.windLoot.addAll(readChanceLoot(cfg.getConfigurationSection("wind.loot")));
+        if (this.windLoot.isEmpty()) {
+            this.windLoot.addAll(this.alienChestLoot);
         }
     }
 

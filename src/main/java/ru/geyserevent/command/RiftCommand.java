@@ -914,7 +914,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     }
 
     private enum CopyLootTarget {
-        EXCAVATION, CAULDRON, MINE, ALIEN, SKIBIDI
+        EXCAVATION, CAULDRON, MINE, ALIEN, SKIBIDI, WIND
     }
 
     private CopyLootTarget parseCopyLootTarget(String raw) {
@@ -934,11 +934,15 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         if (type == EventType.SKIBIDI) {
             return CopyLootTarget.SKIBIDI;
         }
+        if (type == EventType.GRAVITY_HOARD) {
+            return CopyLootTarget.WIND;
+        }
         return switch (raw.trim().toLowerCase(Locale.ROOT)) {
             case "mine", "шахта", "geode", "жеода", "minemenu" -> CopyLootTarget.MINE;
             case "brush", "excavationmenu" -> CopyLootTarget.EXCAVATION;
             case "reagent", "cauldronmenu" -> CopyLootTarget.CAULDRON;
             case "toilet", "шкибиди", "туалет" -> CopyLootTarget.SKIBIDI;
+            case "klad", "клад", "hoard" -> CopyLootTarget.WIND;
             default -> null;
         };
     }
@@ -950,6 +954,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             case MINE -> "Шахта Древних";
             case ALIEN -> "Пришельцы";
             case SKIBIDI -> "Шкибиди Туалет";
+            case WIND -> "Древний клад";
         };
     }
 
@@ -958,7 +963,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             case EXCAVATION -> LootCategory.EXCAVATION;
             case CAULDRON -> LootCategory.CAULDRON;
             case MINE -> LootCategory.MINE;
-            case ALIEN, SKIBIDI -> null;
+            case ALIEN, SKIBIDI, WIND -> null;
         };
     }
 
@@ -966,6 +971,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         return switch (target) {
             case ALIEN -> "alien.chests.loot";
             case SKIBIDI -> "skibidi.loot";
+            case WIND -> "wind.loot";
             default -> null;
         };
     }
@@ -974,17 +980,18 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         return switch (target) {
             case ALIEN -> plugin.getPluginConfig().getAlienChestLoot();
             case SKIBIDI -> plugin.getPluginConfig().getSkibidiLoot();
+            case WIND -> plugin.getPluginConfig().getWindLoot();
             default -> List.of();
         };
     }
 
     private static final List<String> COPY_LOOT_EVENTS = Arrays.asList(
-            "excavation", "cauldron", "mine", "alien", "skibidi");
+            "excavation", "cauldron", "mine", "alien", "skibidi", "wind");
 
     private void handleCopyLootSubcommand(CommandSender sender, String label, String[] args) {
         if (args.length < 3) {
             sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " copylot <откуда> <куда> [редкость]"));
-            sender.sendMessage(ColorUtil.color("&e┠ &7Ивенты: &#E0C912excavation&7, &#E0C912cauldron&7, &#E0C912mine&7, &#E0C912alien&7, &#E0C912skibidi"));
+            sender.sendMessage(ColorUtil.color("&e┠ &7Ивенты: &#E0C912excavation&7, &#E0C912cauldron&7, &#E0C912mine&7, &#E0C912alien&7, &#E0C912skibidi&7, &#E0C912wind"));
             sender.sendMessage(ColorUtil.color("&e┠ &7У каждого предмета свой шанс (chance). Пример: &#E0C912/" + label + " copylot excavation skibidi"));
             sender.sendMessage(ColorUtil.color("&e┠ &7Только легендарка: &#E0C912/" + label + " copylot mine excavation legendary"));
             return;
@@ -992,7 +999,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         CopyLootTarget from = parseCopyLootTarget(args[1]);
         CopyLootTarget to = parseCopyLootTarget(args[2]);
         if (from == null || to == null) {
-            sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивенты: &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912mine&c, &#E0C912alien&c, &#E0C912skibidi"));
+            sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивенты: &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912mine&c, &#E0C912alien&c, &#E0C912skibidi&c, &#E0C912wind"));
             return;
         }
         if (from == to) {

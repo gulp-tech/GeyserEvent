@@ -530,7 +530,10 @@ public final class GravityHoardManager {
 
     private void fillInventory(Inventory inv) {
         inv.clear();
-        List<PluginConfig.AlienLootItem> loot = plugin.getPluginConfig().getAlienChestLoot();
+        List<PluginConfig.AlienLootItem> loot = plugin.getPluginConfig().getWindLoot();
+        if (loot == null || loot.isEmpty()) {
+            loot = plugin.getPluginConfig().getAlienChestLoot();
+        }
         List<PluginConfig.AlienLootItem> base = plugin.getPluginConfig().getAlienChestBaseLoot();
         int slot = 0;
         int size = inv.getSize();

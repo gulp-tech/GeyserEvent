@@ -363,24 +363,27 @@ excavation:
       chance: 35.0
       uses: 3
       loot:
+        - material: "GOLD_NUGGET"
+          amount: 12
+          chance: 70.0
+        - material: "IRON_NUGGET"
+          amount: 16
+          chance: 70.0
+        - material: "PRISMARINE_SHARD"
+          amount: 8
+          chance: 55.0
+        - material: "PRISMARINE_CRYSTALS"
+          amount: 6
+          chance: 45.0
         - material: "GOLD_INGOT"
           amount: 4
-          chance: 45.0
-        - material: "IRON_INGOT"
-          amount: 6
           chance: 50.0
-        - material: "EMERALD"
-          amount: 3
-          chance: 40.0
-        - material: "DIAMOND"
-          amount: 2
-          chance: 25.0
-        - material: "GOLDEN_APPLE"
+        - material: "NAUTILUS_SHELL"
           amount: 1
-          chance: 20.0
+          chance: 18.0
         - material: "EXPERIENCE_BOTTLE"
           amount: 8
-          chance: 35.0
+          chance: 40.0
 
     epic:
       name: "&dЭпическая кисточка"
@@ -388,26 +391,26 @@ excavation:
       uses: 4
       loot:
         - material: "DIAMOND"
-          amount: 5
-          chance: 45.0
-        - material: "GOLD_BLOCK"
-          amount: 2
-          chance: 40.0
-        - material: "GOLDEN_APPLE"
-          amount: 3
-          chance: 35.0
-        - material: "EMERALD_BLOCK"
+          amount: 4
+          chance: 50.0
+        - material: "HEART_OF_THE_SEA"
+          amount: 1
+          chance: 22.0
+        - material: "TURTLE_SCUTE"
           amount: 2
           chance: 30.0
-        - material: "NETHERITE_SCRAP"
+        - material: "GOLDEN_APPLE"
+          amount: 2
+          chance: 35.0
+        - material: "GOLD_BLOCK"
           amount: 1
-          chance: 18.0
-        - material: "TOTEM_OF_UNDYING"
+          chance: 28.0
+        - material: "TRIDENT"
           amount: 1
-          chance: 15.0
+          chance: 8.0
         - material: "EXPERIENCE_BOTTLE"
           amount: 16
-          chance: 35.0
+          chance: 40.0
 
     legendary:
       name: "&6Легендарная кисточка"
@@ -416,25 +419,25 @@ excavation:
       loot:
         - material: "NETHERITE_INGOT"
           amount: 1
-          chance: 25.0
-        - material: "ANCIENT_DEBRIS"
-          amount: 2
-          chance: 35.0
-        - material: "DIAMOND_BLOCK"
-          amount: 2
-          chance: 40.0
+          chance: 22.0
+        - material: "CONDUIT"
+          amount: 1
+          chance: 18.0
         - material: "ENCHANTED_GOLDEN_APPLE"
           amount: 1
-          chance: 15.0
+          chance: 14.0
         - material: "TOTEM_OF_UNDYING"
+          amount: 1
+          chance: 28.0
+        - material: "TRIDENT"
+          amount: 1
+          chance: 16.0
+        - material: "HEART_OF_THE_SEA"
           amount: 1
           chance: 30.0
         - material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
           amount: 1
-          chance: 25.0
-        - material: "NETHERITE_PICKAXE"
-          amount: 1
-          chance: 10.0
+          chance: 20.0
         - material: "PAPER"
           amount: 1
           chance: 20.0
@@ -454,74 +457,77 @@ cauldron:
     common:
       chance: 35.0
       loot:
-        - material: "GOLD_INGOT"
-          amount: 4
-          chance: 45.0
-        - material: "IRON_INGOT"
+        - material: "NETHER_WART"
+          amount: 8
+          chance: 70.0
+        - material: "GLOWSTONE_DUST"
+          amount: 10
+          chance: 60.0
+        - material: "REDSTONE"
+          amount: 16
+          chance: 65.0
+        - material: "SUGAR"
+          amount: 12
+          chance: 55.0
+        - material: "SPIDER_EYE"
           amount: 6
           chance: 50.0
-        - material: "EMERALD"
-          amount: 3
+        - material: "BLAZE_POWDER"
+          amount: 4
           chance: 40.0
-        - material: "DIAMOND"
-          amount: 2
-          chance: 25.0
-        - material: "GOLDEN_APPLE"
-          amount: 1
-          chance: 20.0
-        - material: "EXPERIENCE_BOTTLE"
+        - material: "GLASS_BOTTLE"
           amount: 8
-          chance: 35.0
+          chance: 45.0
 
     epic:
       chance: 40.0
       loot:
-        - material: "DIAMOND"
+        - material: "GHAST_TEAR"
+          amount: 3
+          chance: 45.0
+        - material: "BLAZE_ROD"
+          amount: 4
+          chance: 50.0
+        - material: "FERMENTED_SPIDER_EYE"
+          amount: 3
+          chance: 40.0
+        - material: "MAGMA_CREAM"
           amount: 5
           chance: 45.0
-        - material: "GOLD_BLOCK"
-          amount: 2
+        - material: "GOLDEN_CARROT"
+          amount: 6
           chance: 40.0
         - material: "GOLDEN_APPLE"
-          amount: 3
-          chance: 35.0
-        - material: "EMERALD_BLOCK"
           amount: 2
-          chance: 30.0
-        - material: "NETHERITE_SCRAP"
-          amount: 1
-          chance: 18.0
-        - material: "TOTEM_OF_UNDYING"
-          amount: 1
-          chance: 15.0
+          chance: 28.0
         - material: "EXPERIENCE_BOTTLE"
-          amount: 16
+          amount: 12
           chance: 35.0
 
     legendary:
       chance: 25.0
       loot:
+        - material: "DRAGON_BREATH"
+          amount: 2
+          chance: 30.0
         - material: "NETHERITE_INGOT"
           amount: 1
-          chance: 25.0
-        - material: "ANCIENT_DEBRIS"
-          amount: 2
-          chance: 35.0
-        - material: "DIAMOND_BLOCK"
-          amount: 2
-          chance: 40.0
+          chance: 20.0
         - material: "ENCHANTED_GOLDEN_APPLE"
           amount: 1
-          chance: 15.0
+          chance: 12.0
         - material: "TOTEM_OF_UNDYING"
           amount: 1
-          chance: 30.0
+          chance: 25.0
+        - material: "BREWING_STAND"
+          amount: 1
+          chance: 35.0
+        - material: "NETHER_STAR"
+          amount: 1
+          chance: 8.0
         - material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
           amount: 1
-          chance: 25.0
-        - material: "NETHERITE_PICKAXE"
-          amount: 1
-          chance: 10.0
+          chance: 18.0
 
 # ============================================================================
 # Ивент 4 (ПОСТОЯННЫЙ): «Шахта Древних (Жила Жеод)» на координатах 0 ~ 0
@@ -542,72 +548,75 @@ mine:
     common:
       chance: 35.0
       loot:
-        - material: "GOLD_INGOT"
-          amount: 4
-          chance: 45.0
-        - material: "IRON_INGOT"
+        - material: "COAL"
+          amount: 16
+          chance: 75.0
+        - material: "RAW_IRON"
+          amount: 10
+          chance: 70.0
+        - material: "RAW_COPPER"
+          amount: 14
+          chance: 65.0
+        - material: "RAW_GOLD"
           amount: 6
           chance: 50.0
-        - material: "EMERALD"
-          amount: 3
-          chance: 40.0
-        - material: "DIAMOND"
-          amount: 2
-          chance: 25.0
-        - material: "GOLDEN_APPLE"
-          amount: 1
-          chance: 20.0
-        - material: "EXPERIENCE_BOTTLE"
+        - material: "REDSTONE"
+          amount: 20
+          chance: 55.0
+        - material: "LAPIS_LAZULI"
+          amount: 12
+          chance: 50.0
+        - material: "AMETHYST_SHARD"
           amount: 8
-          chance: 35.0
+          chance: 40.0
 
     epic:
       chance: 40.0
       loot:
         - material: "DIAMOND"
           amount: 5
-          chance: 45.0
+          chance: 55.0
+        - material: "EMERALD"
+          amount: 6
+          chance: 50.0
         - material: "GOLD_BLOCK"
           amount: 2
-          chance: 40.0
-        - material: "GOLDEN_APPLE"
-          amount: 3
           chance: 35.0
-        - material: "EMERALD_BLOCK"
-          amount: 2
+        - material: "IRON_BLOCK"
+          amount: 3
+          chance: 40.0
+        - material: "ANCIENT_DEBRIS"
+          amount: 1
+          chance: 20.0
+        - material: "AMETHYST_BLOCK"
+          amount: 4
           chance: 30.0
-        - material: "NETHERITE_SCRAP"
-          amount: 1
-          chance: 18.0
-        - material: "TOTEM_OF_UNDYING"
-          amount: 1
-          chance: 15.0
         - material: "EXPERIENCE_BOTTLE"
           amount: 16
-          chance: 35.0
+          chance: 40.0
 
     legendary:
       chance: 25.0
       loot:
         - material: "NETHERITE_INGOT"
           amount: 1
-          chance: 25.0
+          chance: 28.0
         - material: "ANCIENT_DEBRIS"
-          amount: 2
-          chance: 35.0
+          amount: 3
+          chance: 40.0
         - material: "DIAMOND_BLOCK"
           amount: 2
-          chance: 40.0
-        - material: "ENCHANTED_GOLDEN_APPLE"
-          amount: 1
-          chance: 15.0
-        - material: "TOTEM_OF_UNDYING"
-          amount: 1
+          chance: 35.0
+        - material: "EMERALD_BLOCK"
+          amount: 2
           chance: 30.0
+        - material: "NETHERITE_PICKAXE"
+          amount: 1
+          chance: 12.0
         - material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
           amount: 1
-          chance: 25.0
-        - material: "NETHERITE_PICKAXE"
+          chance: 22.0
+        - material: "ENCHANTED_GOLDEN_APPLE"
           amount: 1
           chance: 10.0
 
@@ -776,134 +785,74 @@ alien:
         material: "DIAMOND"
         min: 1
         max: 2
-    # Лут скопирован с «Пляжных Раскопок» (все три кисточки).
-    # Обновить с сервера: /rift copylot excavation alien
+    # Обычный / эпический / легендарный лут сундуков (свой chance у каждого).
     loot:
-      common_item1:
-        material: "GOLD_INGOT"
-        min: 4
-        max: 4
-        chance: 45.0
-        rare: false
-      common_item2:
-        material: "IRON_INGOT"
+      chorus:
+        material: "CHORUS_FRUIT"
         min: 6
-        max: 6
-        chance: 50.0
-        rare: false
-      common_item3:
-        material: "EMERALD"
-        min: 3
-        max: 3
-        chance: 40.0
-        rare: false
-      common_item4:
-        material: "DIAMOND"
-        min: 2
-        max: 2
-        chance: 25.0
-        rare: false
-      common_item5:
-        material: "GOLDEN_APPLE"
-        min: 1
-        max: 1
-        chance: 20.0
-        rare: false
-      common_item6:
-        material: "EXPERIENCE_BOTTLE"
-        min: 8
+        max: 12
+        chance: 70.0
+      pearls:
+        material: "ENDER_PEARL"
+        min: 4
         max: 8
-        chance: 35.0
-        rare: false
-      epic_item7:
-        material: "DIAMOND"
-        min: 5
+        chance: 60.0
+      membrane:
+        material: "PHANTOM_MEMBRANE"
+        min: 2
         max: 5
         chance: 45.0
-        rare: false
-      epic_item8:
-        material: "GOLD_BLOCK"
+      diamond:
+        material: "DIAMOND"
         min: 2
-        max: 2
+        max: 5
         chance: 40.0
-        rare: false
-      epic_item9:
-        material: "GOLDEN_APPLE"
-        min: 3
-        max: 3
-        chance: 35.0
-        rare: false
-      epic_item10:
-        material: "EMERALD_BLOCK"
-        min: 2
+      shulker:
+        material: "SHULKER_SHELL"
+        min: 1
         max: 2
-        chance: 30.0
+        chance: 28.0
+      end_crystal:
+        material: "END_CRYSTAL"
+        min: 1
+        max: 2
+        chance: 22.0
         rare: false
-      epic_item11:
-        material: "NETHERITE_SCRAP"
+      elytra:
+        material: "ELYTRA"
         min: 1
         max: 1
-        chance: 18.0
-        rare: false
-      epic_item12:
-        material: "TOTEM_OF_UNDYING"
-        min: 1
-        max: 1
-        chance: 15.0
-        rare: false
-      epic_item13:
-        material: "EXPERIENCE_BOTTLE"
-        min: 16
-        max: 16
-        chance: 35.0
-        rare: false
-      legendary_item14:
+        chance: 6.0
+        rare: true
+      netherite:
         material: "NETHERITE_INGOT"
         min: 1
         max: 1
-        chance: 25.0
+        chance: 14.0
         rare: true
-      legendary_item15:
-        material: "ANCIENT_DEBRIS"
-        min: 2
-        max: 2
-        chance: 35.0
-        rare: true
-      legendary_item16:
-        material: "DIAMOND_BLOCK"
-        min: 2
-        max: 2
-        chance: 40.0
-        rare: true
-      legendary_item17:
+      enchanted_apple:
         material: "ENCHANTED_GOLDEN_APPLE"
         min: 1
         max: 1
-        chance: 15.0
+        chance: 10.0
         rare: true
-      legendary_item18:
+      totem:
         material: "TOTEM_OF_UNDYING"
         min: 1
         max: 1
-        chance: 30.0
+        chance: 18.0
         rare: true
-      legendary_item19:
-        material: "NETHERITE_UPGRADE_SMITHING_TEMPLATE"
+      dragon_head:
+        material: "DRAGON_HEAD"
         min: 1
         max: 1
-        chance: 25.0
-        rare: true
-      legendary_item20:
-        material: "NETHERITE_PICKAXE"
-        min: 1
-        max: 1
-        chance: 10.0
+        chance: 8.0
         rare: true
       void_sphere:
         material: "PAPER"
         min: 1
         max: 1
-        chance: 20.0
+        chance: 16.0
         rare: true
         name: "&aСфера пустоты"
         lore:
@@ -937,7 +886,7 @@ alien:
 
 # ============================================================================
 # Ивент 5: «Древний клад» — квадратные руины, один ванильный сундук-ловушка.
-# Старт: /klad  или  /rift start wind. Лут из alien.chests.
+# Старт: /klad  или  /rift start wind.
 # ============================================================================
 wind:
   enabled: true
@@ -946,6 +895,63 @@ wind:
   unlock-seconds: 300
   # Сколько секунд руины живут после открытия сундука.
   loot-seconds: 600
+  loot:
+    gold:
+      material: GOLD_INGOT
+      min: 6
+      max: 12
+      chance: 80
+    emerald:
+      material: EMERALD
+      min: 4
+      max: 8
+      chance: 65
+    diamond:
+      material: DIAMOND
+      min: 3
+      max: 6
+      chance: 55
+    echo:
+      material: ECHO_SHARD
+      min: 4
+      max: 10
+      chance: 50
+    debris:
+      material: ANCIENT_DEBRIS
+      min: 1
+      max: 2
+      chance: 28
+      rare: true
+    netherite:
+      material: NETHERITE_INGOT
+      min: 1
+      max: 1
+      chance: 16
+      rare: true
+    enchanted_apple:
+      material: ENCHANTED_GOLDEN_APPLE
+      min: 1
+      max: 1
+      chance: 12
+      rare: true
+    totem:
+      material: TOTEM_OF_UNDYING
+      min: 1
+      max: 1
+      chance: 20
+      rare: true
+    template:
+      material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+      min: 1
+      max: 1
+      chance: 18
+      rare: true
+    netherite_chest:
+      material: NETHERITE_CHESTPLATE
+      min: 1
+      max: 1
+      chance: 6
+      rare: true
 
 # ============================================================================
 # Ивент 6: «Шкибиди Туалет» — схема + волны 3D-туалетов (ravager → skibidi).
@@ -969,33 +975,60 @@ skibidi:
   loot:
     iron:
       material: IRON_INGOT
-      min: 2
-      max: 5
+      min: 3
+      max: 8
       chance: 80
     gold:
       material: GOLD_INGOT
-      min: 1
-      max: 3
-      chance: 55
+      min: 2
+      max: 5
+      chance: 60
     copper:
       material: COPPER_INGOT
-      min: 2
-      max: 6
+      min: 4
+      max: 10
       chance: 70
+    coal:
+      material: COAL
+      min: 8
+      max: 16
+      chance: 65
+    redstone:
+      material: REDSTONE
+      min: 8
+      max: 20
+      chance: 50
     diamond:
       material: DIAMOND
       min: 1
-      max: 2
-      chance: 25
+      max: 3
+      chance: 30
     emerald:
       material: EMERALD
       min: 1
-      max: 3
+      max: 4
       chance: 35
+    golden_apple:
+      material: GOLDEN_APPLE
+      min: 1
+      max: 2
+      chance: 18
     netherite:
       material: NETHERITE_INGOT
       min: 1
       max: 1
+      chance: 10
+      rare: true
+    totem:
+      material: TOTEM_OF_UNDYING
+      min: 1
+      max: 1
       chance: 8
+      rare: true
+    enchanted_apple:
+      material: ENCHANTED_GOLDEN_APPLE
+      min: 1
+      max: 1
+      chance: 5
       rare: true
 
