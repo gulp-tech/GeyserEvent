@@ -18,6 +18,7 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.inventory.Inventory;
@@ -38,8 +39,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * «Древний клад» — квадратные руины, один ванильный trapped chest, голограмма,
- * таймер по клику, дрожь крышки и откидывание при открытии.
+ * «Древний клад» — один trapped chest с кастомной текстурой, голограмма,
+ * таймер по клику, дрожь, крышка открывается только в конце, GUI на 54 слота.
  */
 public final class GravityHoardManager {
 
@@ -66,6 +67,7 @@ public final class GravityHoardManager {
     private BukkitRunnable tickTask;
     private BukkitRunnable animTask;
     private int shakeCounter;
+    private Inventory lootInventory;
 
     public GravityHoardManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -94,6 +96,7 @@ public final class GravityHoardManager {
         this.unlocked = false;
         this.lootFilled = false;
         this.shakeCounter = 0;
+        this.lootInventory = Bukkit.createInventory(null, 54, ColorUtil.color("&6&lДревний клад"));
         this.center = snapToSurface(targetCenter);
         this.startEpochSeconds = System.currentTimeMillis() / 1000L;
 
@@ -135,6 +138,8 @@ public final class GravityHoardManager {
             animTask = null;
         }
         clearHolograms();
+        closeLootViewers();
+        this.lootInventory = null;
         if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
             plugin.getWorldGuardHook().removeRegion(center.getWorld(), REGION_ID);
         }
@@ -207,11 +212,38 @@ public final class GravityHoardManager {
                     + ColorUtil.formatDuration(left)));
             return true;
         }
-        if (chestLocation != null && chestLocation.getWorld() != null) {
-            player.playSound(chestLocation, Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+        openLootGui(player);
+        return true;
+    }
+
+    public boolean isLootGui(Inventory inventory) {
+        return lootInventory != null && inventory == lootInventory;
+    }
+
+    private void openLootGui(Player player) {
+        if (lootInventory == null) {
+            return;
         }
-        keepLidOpen();
-        return false;
+        if (!lootFilled) {
+            fillEventChest();
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!active || !unlocked || lootInventory == null || !player.isOnline()) {
+                return;
+            }
+            player.openInventory(lootInventory);
+            player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+            keepLidOpen();
+        });
+    }
+
+    private void closeLootViewers() {
+        if (lootInventory == null) {
+            return;
+        }
+        for (HumanEntity viewer : new ArrayList<>(lootInventory.getViewers())) {
+            viewer.closeInventory();
+        }
     }
 
     public boolean isProtectedBlock(Location loc) {
@@ -341,10 +373,10 @@ public final class GravityHoardManager {
                 if (!activated || unlocked) {
                     return;
                 }
+                keepLidClosed();
                 long leftMs = Math.max(0L, unlockAtEpoch * 1000L - System.currentTimeMillis());
                 int totalMs = Math.max(1, plugin.getConfig().getInt("wind.unlock-seconds", 300)) * 1000;
                 double progress = 1.0 - Math.min(1.0, leftMs / (double) totalMs);
-                // Чем ближе к открытию, тем чаще дрожь: от ~1.6с до каждого тика анимации.
                 int period = (int) Math.max(1, Math.round(16.0 - progress * 15.0));
                 shakeCounter++;
                 if (shakeCounter % period != 0) {
@@ -357,21 +389,17 @@ public final class GravityHoardManager {
     }
 
     private void shakeChest(double progress) {
-        Block block = chestLocation.getBlock();
-        if (block.getState() instanceof Lidded lid) {
-            if (lid.isOpen()) {
-                lid.close();
-            } else {
-                lid.open();
-            }
-        }
         World world = chestLocation.getWorld();
         Location fx = chestLocation.clone().add(0.5, 0.55, 0.5);
-        float pitch = (float) (0.7 + progress * 0.9);
-        world.playSound(fx, Sound.BLOCK_CHEST_LOCKED, 0.35f + (float) progress * 0.45f, pitch);
-        int count = 2 + (int) (progress * 8);
-        world.spawnParticle(Particle.CRIT, fx, count, 0.22, 0.12, 0.22, 0.02);
-        world.spawnParticle(Particle.SMOKE, fx, 1 + (int) (progress * 3), 0.15, 0.1, 0.15, 0.01);
+        float pitch = (float) (0.55 + progress * 1.1);
+        world.playSound(fx, Sound.BLOCK_CHEST_LOCKED, 0.4f + (float) progress * 0.5f, pitch);
+        world.playSound(fx, Sound.BLOCK_STONE_HIT, 0.25f + (float) progress * 0.4f, 0.5f);
+        int count = 3 + (int) (progress * 12);
+        world.spawnParticle(Particle.CRIT, fx, count, 0.28, 0.18, 0.28, 0.04);
+        world.spawnParticle(Particle.SMOKE, fx, 2 + (int) (progress * 5), 0.2, 0.12, 0.2, 0.01);
+        world.spawnParticle(Particle.BLOCK, fx, 6 + (int) (progress * 10), 0.25, 0.15, 0.25, 0.02,
+                Material.TRAPPED_CHEST.createBlockData());
+        jitterHolograms(progress);
     }
 
     private void placeEventChest() {
@@ -408,19 +436,25 @@ public final class GravityHoardManager {
         }
         unlocked = true;
         fillEventChest();
-        keepLidOpen();
-        knockbackNearby();
+        keepLidClosed();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!active || !unlocked) {
+                return;
+            }
+            keepLidOpen();
+            knockbackNearby();
+            if (chestLocation != null && chestLocation.getWorld() != null) {
+                World world = chestLocation.getWorld();
+                Location fx = chestLocation.clone().add(0.5, 0.8, 0.5);
+                world.playSound(fx, Sound.BLOCK_CHEST_OPEN, 1.4f, 0.9f);
+                world.playSound(fx, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.4f);
+                world.spawnParticle(Particle.SOUL_FIRE_FLAME, fx, 40, 0.45, 0.4, 0.45, 0.03);
+                world.spawnParticle(Particle.CLOUD, fx, 20, 0.5, 0.2, 0.5, 0.04);
+                world.spawnParticle(Particle.END_ROD, fx, 16, 0.3, 0.55, 0.3, 0.02);
+            }
+        }, 4L);
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFДревний сундук открылся!"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЗабирай клад, пока руины не исчезли."));
-        if (chestLocation != null && chestLocation.getWorld() != null) {
-            World world = chestLocation.getWorld();
-            Location fx = chestLocation.clone().add(0.5, 0.8, 0.5);
-            world.playSound(fx, Sound.BLOCK_CHEST_OPEN, 1.35f, 0.85f);
-            world.playSound(fx, Sound.ENTITY_GENERIC_EXPLODE, 0.55f, 1.35f);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, fx, 36, 0.45, 0.4, 0.45, 0.03);
-            world.spawnParticle(Particle.CLOUD, fx, 18, 0.5, 0.2, 0.5, 0.04);
-            world.spawnParticle(Particle.END_ROD, fx, 12, 0.3, 0.5, 0.3, 0.02);
-        }
         refreshHolograms();
         refreshBossBar();
     }
@@ -432,6 +466,16 @@ public final class GravityHoardManager {
         BlockState state = chestLocation.getBlock().getState();
         if (state instanceof Lidded lid && !lid.isOpen()) {
             lid.open();
+        }
+    }
+
+    private void keepLidClosed() {
+        if (chestLocation == null) {
+            return;
+        }
+        BlockState state = chestLocation.getBlock().getState();
+        if (state instanceof Lidded lid && lid.isOpen()) {
+            lid.close();
         }
     }
 
@@ -464,14 +508,10 @@ public final class GravityHoardManager {
     }
 
     private void fillEventChest() {
-        if (lootFilled || chestLocation == null) {
+        if (lootFilled || lootInventory == null) {
             return;
         }
-        Block block = chestLocation.getBlock();
-        if (!(block.getState() instanceof Chest chest)) {
-            return;
-        }
-        fillInventory(chest.getInventory());
+        fillInventory(lootInventory);
         lootFilled = true;
     }
 
@@ -480,7 +520,7 @@ public final class GravityHoardManager {
         List<PluginConfig.AlienLootItem> loot = plugin.getPluginConfig().getAlienChestLoot();
         List<PluginConfig.AlienLootItem> base = plugin.getPluginConfig().getAlienChestBaseLoot();
         int slot = 0;
-        int size = Math.min(27, inv.getSize());
+        int size = inv.getSize();
         if (base != null) {
             for (PluginConfig.AlienLootItem item : base) {
                 if (slot >= size) {
@@ -490,11 +530,12 @@ public final class GravityHoardManager {
             }
         }
         if (loot == null || loot.isEmpty()) {
-            inv.addItem(new ItemStack(Material.ECHO_SHARD, 4 + random.nextInt(4)));
-            inv.addItem(new ItemStack(Material.DIAMOND, 2 + random.nextInt(3)));
+            inv.addItem(new ItemStack(Material.ECHO_SHARD, 8 + random.nextInt(6)));
+            inv.addItem(new ItemStack(Material.DIAMOND, 4 + random.nextInt(5)));
+            inv.addItem(new ItemStack(Material.ANCIENT_DEBRIS, 1 + random.nextInt(2)));
             return;
         }
-        int rolls = plugin.getPluginConfig().getAlienChestItemsPerChest();
+        int rolls = plugin.getPluginConfig().getAlienChestItemsPerChest() * 2;
         for (int i = 0; i < rolls && slot < size; i++) {
             PluginConfig.AlienLootItem item = loot.get(random.nextInt(loot.size()));
             if (random.nextDouble() * 100.0 > item.chancePercent()) {
@@ -669,10 +710,10 @@ public final class GravityHoardManager {
         if (chestLocation == null || chestLocation.getWorld() == null) {
             return;
         }
-        Location base = chestLocation.clone().add(0.5, 1.35, 0.5);
+        Location base = chestLocation.clone().add(0.5, 1.55, 0.5);
         String[] lines = hologramLines();
-        for (int i = 0; i < 3; i++) {
-            Location lineLoc = base.clone().add(0, 0.32 * (2 - i), 0);
+        for (int i = 0; i < lines.length; i++) {
+            Location lineLoc = base.clone().add(0, 0.32 * (lines.length - 1 - i), 0);
             String text = lines[i];
             ArmorStand stand = chestLocation.getWorld().spawn(lineLoc, ArmorStand.class, s -> {
                 s.setVisible(false);
@@ -691,19 +732,33 @@ public final class GravityHoardManager {
     }
 
     private void refreshHolograms() {
-        if (hologramIds.size() != 3 || !hologramsAlive()) {
+        String[] lines = hologramLines();
+        if (hologramIds.size() != lines.length || !hologramsAlive()) {
             if (active && chestLocation != null) {
                 spawnHolograms();
             }
             return;
         }
-        String[] lines = hologramLines();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < lines.length; i++) {
             Entity entity = Bukkit.getEntity(hologramIds.get(i));
             if (entity instanceof ArmorStand stand) {
                 stand.setCustomName(lines[i]);
                 stand.setCustomNameVisible(true);
             }
+        }
+    }
+
+    private void jitterHolograms(double progress) {
+        double amp = 0.03 + progress * 0.08;
+        for (UUID id : hologramIds) {
+            Entity entity = Bukkit.getEntity(id);
+            if (!(entity instanceof ArmorStand stand) || chestLocation == null) {
+                continue;
+            }
+            Location loc = stand.getLocation();
+            loc.setX(chestLocation.getX() + 0.5 + (random.nextDouble() - 0.5) * amp);
+            loc.setZ(chestLocation.getZ() + 0.5 + (random.nextDouble() - 0.5) * amp);
+            stand.teleport(loc);
         }
     }
 
@@ -719,25 +774,21 @@ public final class GravityHoardManager {
 
     private String[] hologramLines() {
         if (!activated) {
-            int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 300));
             return new String[]{
                     ColorUtil.color("&#d6b85a&lДревний клад"),
-                    ColorUtil.color("&fКликни по сундуку"),
-                    ColorUtil.color("&7Таймер " + ColorUtil.formatDuration(wait))
+                    ColorUtil.color("&fКликни по сундуку")
             };
         }
         if (!unlocked) {
             long left = Math.max(0L, unlockAtEpoch - System.currentTimeMillis() / 1000L);
             return new String[]{
                     ColorUtil.color("&#d6b85a&lДревний клад"),
-                    ColorUtil.color("&eОткроется через " + ColorUtil.formatDuration(left)),
-                    ColorUtil.color("&7Не открывается, пока идёт таймер")
+                    ColorUtil.color("&eОткроется через " + ColorUtil.formatDuration(left))
             };
         }
         return new String[]{
                 ColorUtil.color("&#34D711&lКлад открыт"),
-                ColorUtil.color("&fЗабирай лут"),
-                ColorUtil.color("&7Осталось " + ColorUtil.formatDuration(getSecondsRemaining()))
+                ColorUtil.color("&fЗабирай лут")
         };
     }
 
