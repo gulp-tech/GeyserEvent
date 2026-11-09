@@ -11,13 +11,13 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
 import org.bukkit.block.Lidded;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -39,8 +39,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * «Древний клад» — один trapped chest с кастомной текстурой, голограмма,
- * таймер по клику, дрожь, крышка открывается только в конце, GUI на 54 слота.
+ * «Древний клад» — один эндер-сундук с текстурой ancient-chest, голограмма,
+ * таймер по клику, дрожь самого сундука, крышка только в конце, GUI на 54 слота.
  */
 public final class GravityHoardManager {
 
@@ -68,6 +68,7 @@ public final class GravityHoardManager {
     private BukkitRunnable animTask;
     private int shakeCounter;
     private Inventory lootInventory;
+    private UUID shakeEntityId;
 
     public GravityHoardManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -138,6 +139,7 @@ public final class GravityHoardManager {
             animTask = null;
         }
         clearHolograms();
+        removeShakeEntity();
         closeLootViewers();
         this.lootInventory = null;
         if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
@@ -198,9 +200,10 @@ public final class GravityHoardManager {
             player.sendMessage(ColorUtil.color("&e┠ &fТы запустил отсчёт. Жди &#E0C912"
                     + ColorUtil.formatDuration(wait) + "&f."));
             if (chestLocation != null && chestLocation.getWorld() != null) {
-                chestLocation.getWorld().playSound(chestLocation, Sound.BLOCK_CHEST_LOCKED, 1.1f, 0.6f);
+                chestLocation.getWorld().playSound(chestLocation, Sound.BLOCK_ENDER_CHEST_CLOSE, 1.1f, 0.6f);
                 chestLocation.getWorld().playSound(chestLocation, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.9f, 0.7f);
             }
+            startChestShake();
             refreshBossBar();
             refreshHolograms();
             return true;
@@ -232,7 +235,7 @@ public final class GravityHoardManager {
                 return;
             }
             player.openInventory(lootInventory);
-            player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+            player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 1.0f, 1.0f);
             keepLidOpen();
         });
     }
@@ -373,11 +376,10 @@ public final class GravityHoardManager {
                 if (!activated || unlocked) {
                     return;
                 }
-                keepLidClosed();
                 long leftMs = Math.max(0L, unlockAtEpoch * 1000L - System.currentTimeMillis());
                 int totalMs = Math.max(1, plugin.getConfig().getInt("wind.unlock-seconds", 300)) * 1000;
                 double progress = 1.0 - Math.min(1.0, leftMs / (double) totalMs);
-                int period = (int) Math.max(1, Math.round(16.0 - progress * 15.0));
+                int period = (int) Math.max(1, Math.round(10.0 - progress * 9.0));
                 shakeCounter++;
                 if (shakeCounter % period != 0) {
                     return;
@@ -388,18 +390,67 @@ public final class GravityHoardManager {
         animTask.runTaskTimer(plugin, 2L, 2L);
     }
 
+    private void startChestShake() {
+        if (chestLocation == null) {
+            return;
+        }
+        Block block = chestLocation.getBlock();
+        block.setType(Material.BARRIER, false);
+        markProtected(block);
+        spawnShakeEntity();
+    }
+
+    private void spawnShakeEntity() {
+        removeShakeEntity();
+        if (chestLocation == null || chestLocation.getWorld() == null) {
+            return;
+        }
+        Location loc = chestLocation.clone().add(0.5, 0.0, 0.5);
+        FallingBlock falling = chestLocation.getWorld().spawnFallingBlock(
+                loc, Material.ENDER_CHEST.createBlockData());
+        falling.setGravity(false);
+        falling.setDropItem(false);
+        falling.setHurtEntities(false);
+        falling.setSilent(true);
+        falling.setInvulnerable(true);
+        falling.setPersistent(false);
+        falling.setTicksLived(1);
+        this.shakeEntityId = falling.getUniqueId();
+    }
+
+    private void removeShakeEntity() {
+        if (shakeEntityId == null) {
+            return;
+        }
+        Entity entity = Bukkit.getEntity(shakeEntityId);
+        if (entity != null) {
+            entity.remove();
+        }
+        shakeEntityId = null;
+    }
+
     private void shakeChest(double progress) {
+        Entity entity = shakeEntityId == null ? null : Bukkit.getEntity(shakeEntityId);
+        if (!(entity instanceof FallingBlock) || !entity.isValid()) {
+            spawnShakeEntity();
+            entity = shakeEntityId == null ? null : Bukkit.getEntity(shakeEntityId);
+        }
+        if (entity != null) {
+            double amp = 0.08 + progress * 0.22;
+            double dx = (random.nextDouble() - 0.5) * 2.0 * amp;
+            double dz = (random.nextDouble() - 0.5) * 2.0 * amp;
+            double dy = random.nextDouble() * amp * 0.45;
+            Location loc = chestLocation.clone().add(0.5 + dx, dy, 0.5 + dz);
+            entity.teleport(loc);
+            entity.setTicksLived(1);
+        }
         World world = chestLocation.getWorld();
         Location fx = chestLocation.clone().add(0.5, 0.55, 0.5);
         float pitch = (float) (0.55 + progress * 1.1);
-        world.playSound(fx, Sound.BLOCK_CHEST_LOCKED, 0.4f + (float) progress * 0.5f, pitch);
-        world.playSound(fx, Sound.BLOCK_STONE_HIT, 0.25f + (float) progress * 0.4f, 0.5f);
-        int count = 3 + (int) (progress * 12);
-        world.spawnParticle(Particle.CRIT, fx, count, 0.28, 0.18, 0.28, 0.04);
-        world.spawnParticle(Particle.SMOKE, fx, 2 + (int) (progress * 5), 0.2, 0.12, 0.2, 0.01);
-        world.spawnParticle(Particle.BLOCK, fx, 6 + (int) (progress * 10), 0.25, 0.15, 0.25, 0.02,
-                Material.TRAPPED_CHEST.createBlockData());
-        jitterHolograms(progress);
+        world.playSound(fx, Sound.BLOCK_ENDER_CHEST_CLOSE, 0.35f + (float) progress * 0.45f, pitch);
+        world.playSound(fx, Sound.BLOCK_STONE_HIT, 0.2f + (float) progress * 0.35f, 0.45f);
+        world.spawnParticle(Particle.CRIT, fx, 2 + (int) (progress * 8), 0.22, 0.12, 0.22, 0.03);
+        world.spawnParticle(Particle.SMOKE, fx, 1 + (int) (progress * 4), 0.18, 0.1, 0.18, 0.01);
     }
 
     private void placeEventChest() {
@@ -407,23 +458,26 @@ public final class GravityHoardManager {
             return;
         }
         Block block = center.getBlock().getRelative(0, 1, 0);
-        org.bukkit.block.data.type.Chest data =
-                (org.bukkit.block.data.type.Chest) Material.TRAPPED_CHEST.createBlockData();
-        data.setFacing(BlockFace.SOUTH);
-        data.setType(org.bukkit.block.data.type.Chest.Type.SINGLE);
-        block.setBlockData(data, false);
-        markProtected(block);
         this.chestLocation = block.getLocation();
-        tagChest(block);
+        placeEnderChestBlock();
         World world = block.getWorld();
-        world.playSound(block.getLocation(), Sound.BLOCK_CHEST_CLOSE, 0.8f, 0.7f);
+        world.playSound(block.getLocation(), Sound.BLOCK_ENDER_CHEST_CLOSE, 0.8f, 0.7f);
         world.spawnParticle(Particle.SCULK_SOUL, block.getLocation().add(0.5, 0.8, 0.5), 16, 0.3, 0.25, 0.3, 0.02);
     }
 
-    private void tagChest(Block block) {
-        if (block.getState() instanceof Chest chest) {
-            chest.getPersistentDataContainer().set(chestKey, PersistentDataType.BYTE, (byte) 1);
-            chest.update(true, false);
+    private void placeEnderChestBlock() {
+        if (chestLocation == null) {
+            return;
+        }
+        Block block = chestLocation.getBlock();
+        org.bukkit.block.data.type.EnderChest data =
+                (org.bukkit.block.data.type.EnderChest) Material.ENDER_CHEST.createBlockData();
+        data.setFacing(BlockFace.SOUTH);
+        block.setBlockData(data, false);
+        markProtected(block);
+        if (block.getState() instanceof org.bukkit.block.TileState state) {
+            state.getPersistentDataContainer().set(chestKey, PersistentDataType.BYTE, (byte) 1);
+            state.update(true, false);
         }
     }
 
@@ -436,7 +490,8 @@ public final class GravityHoardManager {
         }
         unlocked = true;
         fillEventChest();
-        keepLidClosed();
+        removeShakeEntity();
+        placeEnderChestBlock();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!active || !unlocked) {
                 return;
@@ -446,7 +501,7 @@ public final class GravityHoardManager {
             if (chestLocation != null && chestLocation.getWorld() != null) {
                 World world = chestLocation.getWorld();
                 Location fx = chestLocation.clone().add(0.5, 0.8, 0.5);
-                world.playSound(fx, Sound.BLOCK_CHEST_OPEN, 1.4f, 0.9f);
+                world.playSound(fx, Sound.BLOCK_ENDER_CHEST_OPEN, 1.4f, 0.9f);
                 world.playSound(fx, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.4f);
                 world.spawnParticle(Particle.SOUL_FIRE_FLAME, fx, 40, 0.45, 0.4, 0.45, 0.03);
                 world.spawnParticle(Particle.CLOUD, fx, 20, 0.5, 0.2, 0.5, 0.04);
@@ -745,20 +800,6 @@ public final class GravityHoardManager {
                 stand.setCustomName(lines[i]);
                 stand.setCustomNameVisible(true);
             }
-        }
-    }
-
-    private void jitterHolograms(double progress) {
-        double amp = 0.03 + progress * 0.08;
-        for (UUID id : hologramIds) {
-            Entity entity = Bukkit.getEntity(id);
-            if (!(entity instanceof ArmorStand stand) || chestLocation == null) {
-                continue;
-            }
-            Location loc = stand.getLocation();
-            loc.setX(chestLocation.getX() + 0.5 + (random.nextDouble() - 0.5) * amp);
-            loc.setZ(chestLocation.getZ() + 0.5 + (random.nextDouble() - 0.5) * amp);
-            stand.teleport(loc);
         }
     }
 

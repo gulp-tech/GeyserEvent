@@ -12,6 +12,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
+import org.bukkit.block.EnderChest;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -395,6 +396,8 @@ public class RiftEventListener implements Listener {
             Block chestBlock = null;
             if (holder instanceof Chest chest) {
                 chestBlock = chest.getBlock();
+            } else if (holder instanceof EnderChest enderChest) {
+                chestBlock = enderChest.getBlock();
             } else if (holder instanceof DoubleChest doubleChest) {
                 InventoryHolder left = doubleChest.getLeftSide();
                 if (left instanceof Chest leftChest) {
