@@ -1049,7 +1049,7 @@ public class RiftEventListener implements Listener {
         }
         if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isToilet(entity)) {
             event.getDrops().clear();
-            event.setDroppedExp(plugin.getSkibidiToiletManager().rollDeathXp());
+            event.setDroppedExp(0);
             plugin.getSkibidiToiletManager().handleToiletDeath(entity);
             return;
         }

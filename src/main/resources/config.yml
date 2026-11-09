@@ -948,8 +948,8 @@ wind:
   loot-seconds: 600
 
 # ============================================================================
-# Ивент 6: «Шкибиди Туалет» — схема + волны 3D-туалетов (ravager → skibidi).
-# Старт: /skibidi  или  /rift start skibidi
+# Ивент 6: «Шкибиди Туалет» — схема + волны 3D-туалетов (hoglin → skibidi).
+# Разоритель НЕ подменяется. Старт: /skibidi  или  /rift start skibidi
 # Лут: /rift copylot excavation skibidi   (у каждого предмета свой chance)
 # ============================================================================
 skibidi:
@@ -959,10 +959,15 @@ skibidi:
   wave-min: 2
   wave-max: 5
   health: 600
-  damage: 20
-  xp-min: 30
-  xp-max: 50
-  scale: 1.25
+  damage: 30
+  scale: 1.2
+  big-health: 600
+  big-damage: 40
+  big-scale: 1.85
+  levels-min: 1
+  levels-max: 2
+  big-levels-min: 2
+  big-levels-max: 3
   loot:
     iron:
       material: IRON_INGOT
