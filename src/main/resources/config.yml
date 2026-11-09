@@ -948,12 +948,51 @@ wind:
   loot-seconds: 600
 
 # ============================================================================
-# Ивент 6: «Шкибиди Туалет» — схема + 3D-модель, ресурсы изо рта каждые 3 сек.
+# Ивент 6: «Шкибиди Туалет» — схема + волны 3D-туалетов (ravager → skibidi).
 # Старт: /skibidi  или  /rift start skibidi
+# Лут: /rift copylot excavation skibidi   (у каждого предмета свой chance)
 # ============================================================================
 skibidi:
   enabled: true
-  duration-seconds: 180
-  spit-interval-ticks: 60
+  duration-minutes: 20
+  wave-interval-seconds: 300
+  wave-min: 2
+  wave-max: 5
+  health: 600
+  damage: 20
+  xp-min: 30
+  xp-max: 50
   scale: 1.25
+  loot:
+    iron:
+      material: IRON_INGOT
+      min: 2
+      max: 5
+      chance: 80
+    gold:
+      material: GOLD_INGOT
+      min: 1
+      max: 3
+      chance: 55
+    copper:
+      material: COPPER_INGOT
+      min: 2
+      max: 6
+      chance: 70
+    diamond:
+      material: DIAMOND
+      min: 1
+      max: 2
+      chance: 25
+    emerald:
+      material: EMERALD
+      min: 1
+      max: 3
+      chance: 35
+    netherite:
+      material: NETHERITE_INGOT
+      min: 1
+      max: 1
+      chance: 8
+      rare: true
 

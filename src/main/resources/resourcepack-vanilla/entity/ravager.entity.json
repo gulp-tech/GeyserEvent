@@ -20,6 +20,14 @@
           "look"
         ]
       },
+      "sound_effects": {
+        "ambient": "skibidi_ambient",
+        "hurt": "skibidi_chase",
+        "death": "skibidi_death",
+        "roar": "skibidi_boss",
+        "attack": "skibidi_chase",
+        "step": "skibidi_chase"
+      },
       "animations": {
         "idle": "animation.skibiditoilet.idle",
         "look": "animation.skibiditoilet.looking"

@@ -164,6 +164,7 @@ public class PluginConfig {
     private final List<String> alienDefeatedLines = new ArrayList<>();
     private String alienChestsLine;
     private String alienTimeoutLine;
+    private final List<AlienLootItem> skibidiLoot = new ArrayList<>();
 
     /** Предмет лута в сундуках пришельцев (ключ, материал, количество, шанс, rare, оформление). */
     public record AlienLootItem(
@@ -400,6 +401,7 @@ public class PluginConfig {
         this.summonPylonBlock4 = material(cfg.getString("summon.pylon-4-block", "BUDDING_AMETHYST"), Material.BUDDING_AMETHYST);
 
         loadAlienConfig(cfg);
+        loadSkibidiLoot(cfg);
 
         // NPCs & Invisibility (невидимость НЕ работает на НПС ивентов)
         this.npcsIgnoreInvisibility = cfg.getBoolean("npcs.ignore-invisibility", true);
@@ -919,6 +921,47 @@ public class PluginConfig {
     public List<String> getAlienDefeatedLines() { return alienDefeatedLines; }
     public String getAlienChestsLine() { return alienChestsLine; }
     public String getAlienTimeoutLine() { return alienTimeoutLine; }
+    public List<AlienLootItem> getSkibidiLoot() { return skibidiLoot; }
+
+    private void loadSkibidiLoot(FileConfiguration cfg) {
+        this.skibidiLoot.clear();
+        this.skibidiLoot.addAll(readChanceLoot(cfg.getConfigurationSection("skibidi.loot")));
+        if (this.skibidiLoot.isEmpty()) {
+            this.skibidiLoot.add(new AlienLootItem("iron", Material.IRON_INGOT, 2, 5, 80.0, false, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 1, 3, 55.0, false, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 2, 25.0, false, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("emerald", Material.EMERALD, 1, 3, 35.0, false, null, List.of()));
+            this.skibidiLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 8.0, true, null, List.of()));
+        }
+    }
+
+    private List<AlienLootItem> readChanceLoot(ConfigurationSection lootSec) {
+        List<AlienLootItem> list = new ArrayList<>();
+        if (lootSec == null) {
+            return list;
+        }
+        for (String key : lootSec.getKeys(false)) {
+            ConfigurationSection itemSec = lootSec.getConfigurationSection(key);
+            if (itemSec == null) {
+                continue;
+            }
+            Material mat = material(itemSec.getString("material", "IRON_INGOT"), Material.IRON_INGOT);
+            if (mat == null || mat.isAir()) {
+                continue;
+            }
+            int min = Math.max(1, itemSec.getInt("min", 1));
+            int max = Math.max(min, itemSec.getInt("max", min));
+            double chance = Math.max(0.0, Math.min(100.0, itemSec.getDouble("chance", 25.0)));
+            boolean rare = itemSec.getBoolean("rare", false);
+            String name = itemSec.getString("name") != null ? ColorUtil.color(itemSec.getString("name")) : null;
+            List<String> lore = new ArrayList<>();
+            for (String loreLine : itemSec.getStringList("lore")) {
+                lore.add(ColorUtil.color(loreLine));
+            }
+            list.add(new AlienLootItem(key, mat, min, max, chance, rare, name, lore));
+        }
+        return list;
+    }
 
     /** Материал из конфига: если ошиблись названием — берём запасной вариант. */
     private static Material material(String raw, Material fallback) {

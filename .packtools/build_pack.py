@@ -19,7 +19,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 11]
+VERSION = [1, 21, 12]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -62,7 +62,7 @@ manifest = {
         "name": "GeyserEvent Pack v" + VERSION_STR,
         "description": (
         "3D-рюкзак шахтёра, блоки призыва, 3D-пришелец (vindicator), "
-                            "тарелка (гаст), древний сундук ивента. Обычные сундуки не тронуты."
+                            "тарелка (гаст), древний сундук, шкибиди-туалет (ravager)."
         ),
         "uuid": PACK_UUID,
         "version": VERSION,
@@ -137,6 +137,17 @@ for key in ("alien_growl", "alien_screech", "alien_ambient", "alien_transmit", "
         "category": "hostile" if key != "alien_ambient" else "ambient",
         "max_distance": 64 if key != "alien_death" else 80,
         "sounds": [{"name": "sounds/alien/" + key, "volume": 1.0}],
+    }
+for key, file, dist in (
+        ("skibidi_boss", "boss", 80),
+        ("skibidi_ambient", "ambient", 48),
+        ("skibidi_chase", "chase", 48),
+        ("skibidi_death", "death", 64),
+):
+    sound_defs["sound_definitions"][key] = {
+        "category": "hostile",
+        "max_distance": dist,
+        "sounds": [{"name": "sounds/skibidi/" + file, "volume": 1.0}],
     }
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))

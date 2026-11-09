@@ -43,5 +43,41 @@
     "volume": 1.5,
     "pitch": 1.0,
     "attenuation_distance": 80
+  },
+  "skibidi_boss": {
+    "sounds": [
+      {"name": "skibidi/boss", "stream": true}
+    ],
+    "category": "hostile",
+    "volume": 1.4,
+    "pitch": 1.0,
+    "attenuation_distance": 80
+  },
+  "skibidi_ambient": {
+    "sounds": [
+      {"name": "skibidi/ambient", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 0.8,
+    "pitch": 1.0,
+    "attenuation_distance": 48
+  },
+  "skibidi_chase": {
+    "sounds": [
+      {"name": "skibidi/chase", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.0,
+    "pitch": 1.0,
+    "attenuation_distance": 48
+  },
+  "skibidi_death": {
+    "sounds": [
+      {"name": "skibidi/death", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.3,
+    "pitch": 1.0,
+    "attenuation_distance": 64
   }
 }

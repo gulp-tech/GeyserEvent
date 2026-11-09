@@ -62,6 +62,7 @@ public final class SkibidiCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " &8— &fзапустить в мире ивентов"));
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " here &8— &fна своей позиции"));
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop"));
+                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/rift copylot excavation skibidi &8— &fлут со своим шансом"));
                 return true;
             }
             default -> {

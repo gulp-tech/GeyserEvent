@@ -74,7 +74,9 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
                             + skibidi.getCenterLocation().getBlockX() + " "
                             + skibidi.getCenterLocation().getBlockY() + " "
                             + skibidi.getCenterLocation().getBlockZ()));
-                    sender.sendMessage(ColorUtil.color("&e┠ &7Каждые 3 сек. из рта летят 2–3 ресурса"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fСледующая волна: &#E0C912"
+                            + ColorUtil.formatDuration(skibidi.getSecondsToNextWave())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Волны 2–5 туалетов каждые 5 мин. HP 600, урон 20"));
                     return true;
                 }
                 if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()

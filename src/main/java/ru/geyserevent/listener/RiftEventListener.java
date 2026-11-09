@@ -40,6 +40,7 @@ import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -751,7 +752,8 @@ public class RiftEventListener implements Listener {
     private boolean isEventMob(Entity entity) {
         return plugin.getRiftManager().isBoss(entity)
                 || plugin.getRiftManager().isExcavationVillager(entity)
-                || plugin.getAbilityController().isMinion(entity);
+                || plugin.getAbilityController().isMinion(entity)
+                || (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isToilet(entity));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -788,6 +790,13 @@ public class RiftEventListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onToiletChangeBlock(EntityChangeBlockEvent event) {
+        if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isToilet(event.getEntity())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTarget(EntityTargetLivingEntityEvent event) {
         Entity source = event.getEntity();
         LivingEntity target = event.getTarget();
@@ -815,6 +824,20 @@ public class RiftEventListener implements Listener {
 
         if (sourceIsRiftMob && target instanceof Player player && !plugin.getBedrockService().canParticipate(player)) {
             event.setCancelled(true);
+            return;
+        }
+
+        var skibidi = plugin.getSkibidiToiletManager();
+        if (skibidi != null && skibidi.isActive()) {
+            boolean sourceToilet = skibidi.isToilet(source);
+            boolean targetToilet = skibidi.isToilet(target);
+            if (sourceToilet && targetToilet) {
+                event.setCancelled(true);
+                return;
+            }
+            if (sourceToilet && !(target instanceof Player)) {
+                event.setCancelled(true);
+            }
         }
     }
 
@@ -849,7 +872,8 @@ public class RiftEventListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isToilet(victim)) {
+        var skibidiDmg = plugin.getSkibidiToiletManager();
+        if (skibidiDmg != null && skibidiDmg.isToilet(victim) && skibidiDmg.isToilet(damager)) {
             event.setCancelled(true);
             return;
         }
@@ -1021,6 +1045,12 @@ public class RiftEventListener implements Listener {
             event.getDrops().clear();
             event.setDroppedExp(15);
             windDeath.handleShulkerDeath(entity);
+            return;
+        }
+        if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isToilet(entity)) {
+            event.getDrops().clear();
+            event.setDroppedExp(plugin.getSkibidiToiletManager().rollDeathXp());
+            plugin.getSkibidiToiletManager().handleToiletDeath(entity);
             return;
         }
         if (alienDeath != null && alienDeath.isAlienBoss(entity)) {
