@@ -154,6 +154,9 @@ public final class GeyserEventPlugin extends JavaPlugin {
             if (this.ancientMineManager != null) {
                 this.ancientMineManager.initializePermanentMine();
             }
+            if (this.skibidiToiletManager != null) {
+                this.skibidiToiletManager.cleanupOrphanSchematic();
+            }
         }, 20L);
 
         getLogger().info("==================================================");
@@ -226,6 +229,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
         if (this.gravityHoardManager != null && this.gravityHoardManager.isActive()) {
             getLogger().info("Завершение ивента «Сердце Ветра» и откат схемы...");
             this.gravityHoardManager.stopEvent();
+        }
+        if (this.skibidiToiletManager != null && this.skibidiToiletManager.isActive()) {
+            getLogger().info("Завершение ивента «Шкибиди Туалет» и откат схемы...");
+            this.skibidiToiletManager.stopEvent();
+        } else if (this.skibidiToiletManager != null) {
+            this.skibidiToiletManager.cleanupOrphanSchematic();
         }
         if (this.riftManager != null && this.riftManager.isActive()) {
             getLogger().info("Завершение активного ивента и откат схемы...");

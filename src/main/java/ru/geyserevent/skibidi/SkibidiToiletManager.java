@@ -18,8 +18,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
-import org.bukkit.entity.Hoglin;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Ravager;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -33,6 +33,7 @@ import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.schematic.RiftSchematicManager;
 import ru.geyserevent.util.ColorUtil;
 
+import java.io.File;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,9 +45,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Ивент «Шкибиди Туалет»: схема + волны 3D-моделей (hoglin → skibidi).
- * Разоритель в паке больше не подменяется — /summon ravager снова обычный.
- * Малые: урон 30; большой на схеме: урон 40. Прыжки выключены.
+ * Ивент «Шкибиди Туалет»: схема + волны 3D-моделей (ravager → skibidi на Bedrock).
+ * Малые: урон 30, 30 ур.; большой: урон 40, 50 ур. Прыжки выключены.
  */
 public final class SkibidiToiletManager {
 
@@ -125,6 +125,7 @@ public final class SkibidiToiletManager {
         if (this.toiletHome == null) {
             this.toiletHome = this.center.clone().add(0.5, 8, 0.5);
         }
+        schematicManager.persistRestoreState(restoreSnapshotFile());
         spawnHologram();
         createBossBar();
         broadcastSpawn();
@@ -157,6 +158,7 @@ public final class SkibidiToiletManager {
         removeToilets();
         removeHologram();
         schematicManager.restoreSchematic();
+        schematicManager.restorePersistedState(restoreSnapshotFile());
         if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
             plugin.getWorldGuardHook().removeRegion(center.getWorld(), REGION_ID);
         }
@@ -248,11 +250,22 @@ public final class SkibidiToiletManager {
     }
 
     public int rollDeathLevels(boolean big) {
-        String minKey = big ? "skibidi.big-levels-min" : "skibidi.levels-min";
-        String maxKey = big ? "skibidi.big-levels-max" : "skibidi.levels-max";
-        int min = Math.max(1, plugin.getConfig().getInt(minKey, big ? 2 : 1));
-        int max = Math.max(min, plugin.getConfig().getInt(maxKey, big ? 3 : 2));
-        return min + random.nextInt(max - min + 1);
+        int value = big
+                ? plugin.getConfig().getInt("skibidi.big-levels", 50)
+                : plugin.getConfig().getInt("skibidi.levels", 30);
+        return Math.max(1, value);
+    }
+
+    public void cleanupOrphanSchematic() {
+        File snapshot = restoreSnapshotFile();
+        if (snapshot.exists()) {
+            plugin.getLogger().info("Откат схемы «Шкибиди Туалет», оставшейся после рестарта...");
+            schematicManager.restorePersistedState(snapshot);
+        }
+    }
+
+    private File restoreSnapshotFile() {
+        return new File(plugin.getDataFolder(), "skibidi-restore.yml");
     }
 
     private void grantKillLevels(LivingEntity entity, boolean big) {
@@ -317,7 +330,7 @@ public final class SkibidiToiletManager {
             return null;
         }
         loc.getChunk().load(true);
-        Hoglin hoglin = world.spawn(loc, Hoglin.class, spawned -> {
+        Ravager ravager = world.spawn(loc, Ravager.class, spawned -> {
             spawned.setSilent(true);
             spawned.setRemoveWhenFarAway(false);
             spawned.setPersistent(false);
@@ -329,17 +342,12 @@ public final class SkibidiToiletManager {
             spawned.setAware(true);
             spawned.setCollidable(true);
             spawned.setInvulnerable(false);
-            spawned.setAdult();
-            spawned.setAgeLock(true);
-            spawned.setImmuneToZombification(true);
-            spawned.setIsAbleToBeHunted(false);
-            spawned.setConversionTime(Integer.MAX_VALUE);
             spawned.getPersistentDataContainer().set(toiletKey, PersistentDataType.BYTE, big ? (byte) 2 : (byte) 1);
         });
-        if (hoglin == null || !hoglin.isValid()) {
+        if (ravager == null || !ravager.isValid()) {
             return null;
         }
-        hoglin.setSilent(true);
+        ravager.setSilent(true);
         boolean legacy = isLegacySpitConfig();
         double health = Math.max(1.0, plugin.getConfig().getDouble(
                 big ? "skibidi.big-health" : "skibidi.health", 600.0));
@@ -351,22 +359,18 @@ public final class SkibidiToiletManager {
         }
         double scale = plugin.getConfig().getDouble(
                 big ? "skibidi.big-scale" : "skibidi.scale", big ? 1.85 : 1.2);
-        BossAbilityController.applyEntityScale(hoglin, scale);
-        BossAbilityController.setEntityAttribute(hoglin, "MAX_HEALTH", "generic.max_health", health);
-        BossAbilityController.setEntityAttribute(hoglin, "ATTACK_DAMAGE", "generic.attack_damage", damage);
-        BossAbilityController.setEntityAttribute(hoglin, "FOLLOW_RANGE", "generic.follow_range", 48.0);
-        BossAbilityController.setEntityAttribute(hoglin, "KNOCKBACK_RESISTANCE", "generic.knockback_resistance", 0.85);
-        BossAbilityController.setEntityAttribute(hoglin, "JUMP_STRENGTH", "generic.jump_strength", 0.0);
-        BossAbilityController.setEntityAttribute(hoglin, "JUMP_STRENGTH", "jump_strength", 0.0);
-        hoglin.setHealth(Math.min(health, hoglin.getMaxHealth()));
-        if (big) {
-            hoglin.setAI(true);
-            hoglin.setAware(true);
-        }
-        acquireTarget(hoglin);
+        BossAbilityController.applyEntityScale(ravager, scale);
+        BossAbilityController.setEntityAttribute(ravager, "MAX_HEALTH", "generic.max_health", health);
+        BossAbilityController.setEntityAttribute(ravager, "ATTACK_DAMAGE", "generic.attack_damage", damage);
+        BossAbilityController.setEntityAttribute(ravager, "FOLLOW_RANGE", "generic.follow_range", 48.0);
+        BossAbilityController.setEntityAttribute(ravager, "KNOCKBACK_RESISTANCE", "generic.knockback_resistance", 0.85);
+        BossAbilityController.setEntityAttribute(ravager, "JUMP_STRENGTH", "generic.jump_strength", 0.0);
+        BossAbilityController.setEntityAttribute(ravager, "JUMP_STRENGTH", "jump_strength", 0.0);
+        ravager.setHealth(Math.min(health, ravager.getMaxHealth()));
+        acquireTarget(ravager);
         world.spawnParticle(Particle.CLOUD, loc.clone().add(0, 1.4, 0), 18, 0.45, 0.4, 0.45, 0.03);
         playCustomSound(loc, "skibidi_chase", 1.1f, 1.0f);
-        return hoglin;
+        return ravager;
     }
 
     private void startTickLoop() {
@@ -695,8 +699,8 @@ public final class SkibidiToiletManager {
         }
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &f&lШкибиди Туалет &fприехал на карту!"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fВолны каждые &#E0C9125 мин&f: &#E0C9122–5 туалетов"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fМалые: урон &#E0C91230&f · большой: урон &#E0C91240"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЗа убийство: &#E0C912уровни&f, не опыт"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fМалые: урон &#E0C91230&f, &#E0C91230 ур."));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fБольшой: урон &#E0C91240&f, &#E0C91250 ур."));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                 + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЛокатор: &#34D711/event gps"));

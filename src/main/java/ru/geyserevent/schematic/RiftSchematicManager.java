@@ -1,6 +1,7 @@
 package ru.geyserevent.schematic;
 
 import org.bukkit.Axis;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -306,6 +307,80 @@ public class RiftSchematicManager {
         schematicBlockKeys.clear();
         portalBlockKeys.clear();
         activeCenter = null;
+    }
+
+    public void persistRestoreState(File file) {
+        if (file == null || savedBlocks.isEmpty()) {
+            return;
+        }
+        YamlConfiguration yaml = new YamlConfiguration();
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (SavedBlock saved : savedBlocks) {
+            if (saved.world() == null) {
+                continue;
+            }
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("world", saved.world().getName());
+            row.put("x", saved.x());
+            row.put("y", saved.y());
+            row.put("z", saved.z());
+            row.put("data", saved.blockData().getAsString());
+            list.add(row);
+        }
+        yaml.set("blocks", list);
+        try {
+            file.getParentFile().mkdirs();
+            yaml.save(file);
+        } catch (IOException ex) {
+            plugin.getLogger().warning("Не удалось сохранить откат схемы: " + ex.getMessage());
+        }
+    }
+
+    public boolean restorePersistedState(File file) {
+        if (file == null || !file.exists()) {
+            return false;
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        List<?> raw = yaml.getList("blocks");
+        if (raw == null || raw.isEmpty()) {
+            file.delete();
+            return false;
+        }
+        List<SavedBlock> snapshot = new ArrayList<>();
+        for (Object entry : raw) {
+            if (!(entry instanceof Map<?, ?> map)) {
+                continue;
+            }
+            String worldName = String.valueOf(map.get("world"));
+            World world = Bukkit.getWorld(worldName);
+            if (world == null) {
+                continue;
+            }
+            int x = toInt(map.get("x"), 0);
+            int y = toInt(map.get("y"), 0);
+            int z = toInt(map.get("z"), 0);
+            Object dataObj = map.get("data");
+            if (dataObj == null) {
+                continue;
+            }
+            try {
+                BlockData data = Bukkit.createBlockData(String.valueOf(dataObj));
+                snapshot.add(new SavedBlock(world, x, y, z, data));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        if (!snapshot.isEmpty()) {
+            List<SavedBlock> reverse = new ArrayList<>(snapshot);
+            Collections.reverse(reverse);
+            for (SavedBlock saved : reverse) {
+                Block b = saved.world().getBlockAt(saved.x(), saved.y(), saved.z());
+                b.setBlockData(saved.blockData(), false);
+            }
+        }
+        if (!file.delete()) {
+            file.deleteOnExit();
+        }
+        return !snapshot.isEmpty();
     }
 
     public Location getBossSpawnLocation() {
