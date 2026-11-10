@@ -121,7 +121,7 @@ public final class SkibidiToiletManager {
         this.secondsToNextWave = 0;
 
         setChunksForceLoaded(this.center, true);
-        schematicManager.pasteSchematic(this.center, ARENA_RADIUS + 2, 36);
+        schematicManager.pasteSchematic(this.center, ARENA_RADIUS, 8);
         this.toiletHome = bigToiletSpawnLocation();
         if (this.toiletHome == null) {
             this.toiletHome = this.center.clone().add(0.5, 1.0, -18.0);
@@ -159,7 +159,7 @@ public final class SkibidiToiletManager {
         removeToilets();
         removeHologram();
         schematicManager.restoreSchematic();
-        schematicManager.restorePersistedState(restoreSnapshotFile());
+        schematicManager.discardPersistedState(restoreSnapshotFile());
         if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
             plugin.getWorldGuardHook().removeRegion(center.getWorld(), REGION_ID);
         }

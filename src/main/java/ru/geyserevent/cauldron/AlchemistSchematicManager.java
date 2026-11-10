@@ -548,18 +548,20 @@ public class AlchemistSchematicManager {
 
         this.activeCenterOrigin = new Location(world, ox + 0.5, oy, oz + 0.5);
 
-        // 1. Очищаем пространство над болотом 31x31 (радиус 15, высота -2..10) и сохраняем блоки для отката
+        // 1. Сносим только реальные препятствия — воздух не пишем в откат.
         for (int dx = -15; dx <= 15; dx++) {
             for (int dz = -15; dz <= 15; dz++) {
                 if (dx * dx + dz * dz > 225) {
                     continue;
                 }
-                for (int dy = -2; dy <= 10; dy++) {
+                for (int dy = 1; dy <= 10; dy++) {
                     Block b = world.getBlockAt(ox + dx, oy + dy, oz + dz);
-                    recordBlockIfNotSaved(b);
-                    if (dy >= 1 && !b.getType().isAir()) {
-                        b.setType(Material.AIR, false);
+                    Material type = b.getType();
+                    if (type.isAir() || type == Material.CAVE_AIR || type == Material.VOID_AIR) {
+                        continue;
                     }
+                    recordBlockIfNotSaved(b);
+                    b.setType(Material.AIR, false);
                 }
             }
         }
@@ -771,8 +773,10 @@ public class AlchemistSchematicManager {
 
     private void placeSchematicBlock(World world, int bx, int by, int bz, Material mat) {
         Block block = world.getBlockAt(bx, by, bz);
-        recordBlockIfNotSaved(block);
-        block.setType(mat, false);
+        if (block.getType() != mat) {
+            recordBlockIfNotSaved(block);
+            block.setType(mat, false);
+        }
 
         if (block.getBlockData() instanceof Leaves leaves) {
             leaves.setPersistent(true);

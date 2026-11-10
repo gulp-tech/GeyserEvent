@@ -217,33 +217,49 @@ public class RiftSchematicManager {
         this.activeCenter = new Location(world, cx + 0.5, cy, cz + 0.5);
 
         Set<String> capturedCoords = new HashSet<>();
-
-        // Очищаем пространство под схему и запоминаем блоки для отката
-        int clearLimit = clearRadius * clearRadius;
-        for (int dx = -clearRadius; dx <= clearRadius; dx++) {
-            for (int dz = -clearRadius; dz <= clearRadius; dz++) {
-                if (dx * dx + dz * dz > clearLimit) {
+        Set<String> occupy = new HashSet<>(Math.max(16, loadedBlocks.size() * 2));
+        int minDx = 0;
+        int maxDx = 0;
+        int minDz = 0;
+        int maxDz = 0;
+        int maxDy = 0;
+        for (RelativeBlock rel : loadedBlocks) {
+            occupy.add(blockKey(world.getName(), cx + rel.dx(), cy + rel.dy(), cz + rel.dz()));
+            minDx = Math.min(minDx, rel.dx());
+            maxDx = Math.max(maxDx, rel.dx());
+            minDz = Math.min(minDz, rel.dz());
+            maxDz = Math.max(maxDz, rel.dz());
+            maxDy = Math.max(maxDy, rel.dy());
+        }
+        // Только реальные препятствия в контуре схемы — без цилиндра на десятки тысяч блоков.
+        int airHeight = Math.max(1, Math.min(maxDy, Math.max(1, clearHeight)));
+        int airRadius = Math.max(Math.abs(minDx), Math.max(Math.abs(maxDx), Math.max(Math.abs(minDz), Math.abs(maxDz))));
+        if (clearRadius > 0) {
+            airRadius = Math.min(airRadius, clearRadius);
+        }
+        for (int dx = minDx; dx <= maxDx; dx++) {
+            for (int dz = minDz; dz <= maxDz; dz++) {
+                if (dx * dx + dz * dz > airRadius * airRadius) {
                     continue;
                 }
-                for (int dy = 0; dy <= clearHeight; dy++) {
+                for (int dy = 1; dy <= airHeight; dy++) {
                     int bx = cx + dx;
                     int by = cy + dy;
                     int bz = cz + dz;
-                    String key = blockKey(world.getName(), bx, by, bz);
+                    if (occupy.contains(blockKey(world.getName(), bx, by, bz))) {
+                        continue;
+                    }
                     Block block = world.getBlockAt(bx, by, bz);
-                    if (capturedCoords.add(key)) {
-                        savedBlocks.add(new SavedBlock(world, bx, by, bz, block.getBlockData().clone()));
+                    Material type = block.getType();
+                    if (type.isAir() || type == Material.CAVE_AIR || type == Material.VOID_AIR) {
+                        continue;
                     }
-                    schematicBlockKeys.add(key);
-                    if (dy >= 1 && !block.getType().isAir()) {
-                        block.setType(Material.AIR, false);
-                    }
+                    captureAndSet(world, bx, by, bz, Material.AIR, capturedCoords);
                 }
             }
         }
 
         List<RelativeBlock> deferredPortalAndFire = new ArrayList<>();
-
         for (RelativeBlock rel : loadedBlocks) {
             if (rel.material() == Material.NETHER_PORTAL
                     || rel.material() == Material.SOUL_FIRE
@@ -252,30 +268,30 @@ public class RiftSchematicManager {
                 deferredPortalAndFire.add(rel);
                 continue;
             }
-            placeSingleBlock(world, cx + rel.dx(), cy + rel.dy(), cz + rel.dz(), rel.material(), capturedCoords);
+            captureAndSet(world, cx + rel.dx(), cy + rel.dy(), cz + rel.dz(), rel.material(), capturedCoords);
         }
-
         for (RelativeBlock rel : deferredPortalAndFire) {
-            placeSingleBlock(world, cx + rel.dx(), cy + rel.dy(), cz + rel.dz(), rel.material(), capturedCoords);
+            captureAndSet(world, cx + rel.dx(), cy + rel.dy(), cz + rel.dz(), rel.material(), capturedCoords);
         }
 
         return getBossSpawnLocation();
     }
 
-    private void placeSingleBlock(World world, int bx, int by, int bz, Material material, Set<String> capturedCoords) {
+    private void captureAndSet(World world, int bx, int by, int bz, Material material, Set<String> capturedCoords) {
         String key = blockKey(world.getName(), bx, by, bz);
         Block block = world.getBlockAt(bx, by, bz);
-        if (capturedCoords.add(key)) {
-            savedBlocks.add(new SavedBlock(world, bx, by, bz, block.getBlockData().clone()));
-        }
         schematicBlockKeys.add(key);
-
+        Material current = block.getType();
+        if (current == material && material != Material.NETHER_PORTAL) {
+            return;
+        }
         if (material == Material.SOUL_FIRE && block.getRelative(0, -1, 0).getType().isAir()) {
             return;
         }
-
+        if (capturedCoords.add(key)) {
+            savedBlocks.add(new SavedBlock(world, bx, by, bz, block.getBlockData().clone()));
+        }
         block.setType(material, false);
-
         if (material == Material.NETHER_PORTAL) {
             portalBlockKeys.add(key);
             BlockData data = block.getBlockData();
@@ -288,18 +304,16 @@ public class RiftSchematicManager {
 
     public void restoreSchematic() {
         if (!savedBlocks.isEmpty() && plugin.getPluginConfig().isRestoreBlocksOnEnd()) {
-            for (SavedBlock saved : savedBlocks) {
-                Block b = saved.world().getBlockAt(saved.x(), saved.y(), saved.z());
-                if (b.getType() == Material.NETHER_PORTAL
-                        || b.getType() == Material.SOUL_FIRE
-                        || b.getType() == Material.FIRE) {
-                    b.setType(Material.AIR, false);
-                }
-            }
             List<SavedBlock> reverse = new ArrayList<>(savedBlocks);
             Collections.reverse(reverse);
             for (SavedBlock saved : reverse) {
+                if (saved.world() == null) {
+                    continue;
+                }
                 Block b = saved.world().getBlockAt(saved.x(), saved.y(), saved.z());
+                if (b.getBlockData().matches(saved.blockData())) {
+                    continue;
+                }
                 b.setBlockData(saved.blockData(), false);
             }
         }
@@ -307,6 +321,13 @@ public class RiftSchematicManager {
         schematicBlockKeys.clear();
         portalBlockKeys.clear();
         activeCenter = null;
+    }
+
+    /** Удаляет файл отката без повторной установки блоков (память уже восстановлена). */
+    public void discardPersistedState(File file) {
+        if (file != null && file.exists() && !file.delete()) {
+            file.deleteOnExit();
+        }
     }
 
     public void persistRestoreState(File file) {
@@ -374,7 +395,9 @@ public class RiftSchematicManager {
             Collections.reverse(reverse);
             for (SavedBlock saved : reverse) {
                 Block b = saved.world().getBlockAt(saved.x(), saved.y(), saved.z());
-                b.setBlockData(saved.blockData(), false);
+                if (!b.getBlockData().matches(saved.blockData())) {
+                    b.setBlockData(saved.blockData(), false);
+                }
             }
         }
         if (!file.delete()) {

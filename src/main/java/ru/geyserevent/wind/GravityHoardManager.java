@@ -12,6 +12,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Lidded;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -31,6 +32,7 @@ import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.util.ColorUtil;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -49,7 +51,11 @@ public final class GravityHoardManager {
     private final GeyserEventPlugin plugin;
     private final NamespacedKey chestKey;
     private final Random random = new Random();
-    private final List<BlockState> savedBlocks = new ArrayList<>();
+    private record SavedBlock(World world, int x, int y, int z, BlockData data) {
+    }
+
+    private final List<SavedBlock> savedBlocks = new ArrayList<>();
+    private final Set<String> savedKeys = new HashSet<>();
     private final Set<String> protectedKeys = ConcurrentHashMap.newKeySet();
     private final List<UUID> hologramIds = new ArrayList<>();
 
@@ -593,12 +599,14 @@ public final class GravityHoardManager {
 
         for (int dx = -r; dx <= r; dx++) {
             for (int dz = -r; dz <= r; dz++) {
-                for (int dy = -1; dy <= 8; dy++) {
+                for (int dy = 1; dy <= 8; dy++) {
                     Block block = world.getBlockAt(cx + dx, cy + dy, cz + dz);
-                    savedBlocks.add(block.getState());
-                    if (dy >= 1) {
-                        block.setType(Material.AIR, false);
+                    Material type = block.getType();
+                    if (type.isAir() || type == Material.CAVE_AIR || type == Material.VOID_AIR) {
+                        continue;
                     }
+                    saveOnce(block);
+                    block.setType(Material.AIR, false);
                 }
                 setProtected(world, cx + dx, cy - 1, cz + dz, Material.DEEPSLATE);
 
@@ -692,8 +700,24 @@ public final class GravityHoardManager {
 
     private void setProtected(World world, int x, int y, int z, Material material) {
         Block block = world.getBlockAt(x, y, z);
-        block.setType(material, false);
+        if (block.getType() != material) {
+            saveOnce(block);
+            block.setType(material, false);
+        }
         markProtected(block);
+    }
+
+    private void saveOnce(Block block) {
+        String key = blockKey(block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
+        if (savedKeys.add(key)) {
+            savedBlocks.add(new SavedBlock(
+                    block.getWorld(),
+                    block.getX(),
+                    block.getY(),
+                    block.getZ(),
+                    block.getBlockData().clone()
+            ));
+        }
     }
 
     private void markProtected(Block block) {
@@ -702,9 +726,17 @@ public final class GravityHoardManager {
 
     private void restoreArena() {
         for (int i = savedBlocks.size() - 1; i >= 0; i--) {
-            savedBlocks.get(i).update(true, false);
+            SavedBlock saved = savedBlocks.get(i);
+            if (saved.world() == null) {
+                continue;
+            }
+            Block block = saved.world().getBlockAt(saved.x(), saved.y(), saved.z());
+            if (!block.getBlockData().matches(saved.data())) {
+                block.setBlockData(saved.data(), false);
+            }
         }
         savedBlocks.clear();
+        savedKeys.clear();
         protectedKeys.clear();
     }
 

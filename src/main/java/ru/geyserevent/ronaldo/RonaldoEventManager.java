@@ -151,7 +151,7 @@ public final class RonaldoEventManager {
         this.chargingFreeKick = false;
 
         setChunksForceLoaded(this.center, true);
-        schematicManager.pasteSchematic(this.center, 28, 16);
+        schematicManager.pasteSchematic(this.center, 19, 5);
         schematicManager.persistRestoreState(restoreSnapshotFile());
         spawnHologram();
         createBossBar();
@@ -193,7 +193,7 @@ public final class RonaldoEventManager {
         removeClones();
         removeHologram();
         schematicManager.restoreSchematic();
-        schematicManager.restorePersistedState(restoreSnapshotFile());
+        schematicManager.discardPersistedState(restoreSnapshotFile());
         if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
             plugin.getWorldGuardHook().removeRegion(center.getWorld(), REGION_ID);
         }

@@ -1370,7 +1370,11 @@ public class AncientMineManager {
             for (int dz = -MINE_RADIUS - 1; dz <= MINE_RADIUS + 1; dz++) {
                 if (Math.hypot(dx, dz) <= MINE_RADIUS + 1.5) {
                     for (int dy = 1; dy <= 14; dy++) {
-                        w.getBlockAt(ox + dx, oy + dy, oz + dz).setType(Material.AIR, false);
+                        Block air = w.getBlockAt(ox + dx, oy + dy, oz + dz);
+                        Material type = air.getType();
+                        if (!type.isAir() && type != Material.CAVE_AIR && type != Material.VOID_AIR) {
+                            air.setType(Material.AIR, false);
+                        }
                     }
                 }
             }
