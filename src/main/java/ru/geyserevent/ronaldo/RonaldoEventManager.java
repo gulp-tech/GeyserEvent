@@ -1206,6 +1206,10 @@ public final class RonaldoEventManager {
             return true;
         } catch (Throwable t) {
             Throwable cause = t.getCause() != null ? t.getCause() : t;
+            String msg = String.valueOf(cause).toLowerCase();
+            if (!set && (msg.contains("не существует") || msg.contains("not exist") || msg.contains("invalidwarp"))) {
+                return false;
+            }
             plugin.getLogger().warning("Essentials " + (set ? "setwarp" : "delwarp") + " " + name + ": " + cause);
             return false;
         }
