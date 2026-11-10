@@ -105,7 +105,7 @@ public final class RonaldoEventManager {
         if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
             plugin.getSkibidiToiletManager().stopEvent();
         }
-        stopEvent();
+        stopEvent(false);
 
         targetCenter.getChunk().load(true);
         this.active = true;
@@ -150,11 +150,17 @@ public final class RonaldoEventManager {
     }
 
     public void stopEvent() {
+        stopEvent(true);
+    }
+
+    private void stopEvent(boolean clearWarp) {
         if (tickTask != null) {
             tickTask.cancel();
             tickTask = null;
         }
-        deleteEventWarp();
+        if (clearWarp) {
+            deleteEventWarp();
+        }
         removeClones();
         removeHologram();
         schematicManager.restoreSchematic();
@@ -708,9 +714,12 @@ public final class RonaldoEventManager {
         Location warpLoc = snapToSurface(center.clone());
         warpLoc.setY(warpLoc.getY() + 1.0);
         if (essentialsWarp(true, name, warpLoc)) {
-            plugin.getLogger().info("Essentials: /setwarp " + name);
+            plugin.getLogger().info("Essentials: /setwarp " + name + " @ "
+                    + warpLoc.getBlockX() + " " + warpLoc.getBlockY() + " " + warpLoc.getBlockZ());
+        } else {
+            plugin.getLogger().warning("Не удалось /setwarp " + name
+                    + " — консоль Essentials setwarp не умеет. Нужен плагин Essentials.");
         }
-        dispatchEssentials("setwarp " + name);
     }
 
     private void deleteEventWarp() {
@@ -718,7 +727,6 @@ public final class RonaldoEventManager {
         if (essentialsWarp(false, name, null)) {
             plugin.getLogger().info("Essentials: /delwarp " + name);
         }
-        dispatchEssentials("delwarp " + name);
         this.activeWarpName = null;
     }
 
@@ -740,34 +748,45 @@ public final class RonaldoEventManager {
     private boolean essentialsWarp(boolean set, String name, Location loc) {
         Plugin ess = findEssentials();
         if (ess == null) {
+            plugin.getLogger().warning("Essentials не найден — варп " + name + " не выставлен.");
             return false;
         }
         try {
             Object warps = ess.getClass().getMethod("getWarps").invoke(ess);
             if (set) {
-                warps.getClass().getMethod("setWarp", String.class, Location.class).invoke(warps, name, loc);
+                invokeNamed(warps, name, loc, "setWarp");
             } else {
-                warps.getClass().getMethod("delWarp", String.class).invoke(warps, name);
+                try {
+                    invokeNamed(warps, name, null, "removeWarp", "delWarp", "remove");
+                } catch (NoSuchMethodException missing) {
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "delwarp " + name);
+                    return true;
+                }
             }
             return true;
         } catch (Throwable t) {
-            plugin.getLogger().warning("Essentials " + (set ? "setwarp" : "delwarp") + " " + name + ": " + t.getMessage());
+            Throwable cause = t.getCause() != null ? t.getCause() : t;
+            plugin.getLogger().warning("Essentials " + (set ? "setwarp" : "delwarp") + " " + name + ": " + cause);
             return false;
         }
     }
 
-    private void dispatchEssentials(String command) {
-        if (command == null || command.isBlank()) {
-            return;
+    private static void invokeNamed(Object warps, String name, Location loc, String... methods) throws Exception {
+        NoSuchMethodException last = null;
+        for (String method : methods) {
+            try {
+                if (loc != null) {
+                    warps.getClass().getMethod(method, String.class, Location.class).invoke(warps, name, loc);
+                } else {
+                    warps.getClass().getMethod(method, String.class).invoke(warps, name);
+                }
+                return;
+            } catch (NoSuchMethodException ex) {
+                last = ex;
+            }
         }
-        try {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
-        } catch (Throwable t) {
-            plugin.getLogger().warning("Команда не выполнилась: /" + command + " (" + t.getMessage() + ")");
-        }
-        try {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "essentials:" + command);
-        } catch (Throwable ignored) {
+        if (last != null) {
+            throw last;
         }
     }
 
