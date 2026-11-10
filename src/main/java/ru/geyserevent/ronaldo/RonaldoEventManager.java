@@ -23,7 +23,9 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.SmallFireball;
+import org.bukkit.entity.Snowball;
 import org.bukkit.entity.Spellcaster;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -78,8 +80,12 @@ public final class RonaldoEventManager {
     private int shootTicks;
     private int dashTicks;
     private int celebrateTicks;
+    private int stepTicks;
+    private int freeKickTicks;
+    private int trapTicks;
     private long lastKickMs;
     private boolean jumping;
+    private boolean chargingFreeKick;
     private BossBar bossBar;
     private BukkitRunnable tickTask;
     private final List<UUID> hologramIds = new ArrayList<>();
@@ -135,8 +141,12 @@ public final class RonaldoEventManager {
         this.shootTicks = 2;
         this.dashTicks = 5;
         this.celebrateTicks = 10;
+        this.stepTicks = 2;
+        this.freeKickTicks = 8;
+        this.trapTicks = 3;
         this.lastKickMs = 0L;
         this.jumping = false;
+        this.chargingFreeKick = false;
 
         setChunksForceLoaded(this.center, true);
         schematicManager.pasteSchematic(this.center, ARENA_RADIUS + 2, 16);
@@ -272,6 +282,11 @@ public final class RonaldoEventManager {
         grantKillLevels(entity, boss);
         if (boss) {
             playKeyed(loc, "ronaldo_siuu", 2.2f, 0.9f, true);
+            spawnBurst(loc, Color.RED, Color.GREEN);
+            if (loc.getWorld() != null) {
+                loc.getWorld().strikeLightningEffect(loc);
+            }
+            dropTrophy(loc);
             Bukkit.getScheduler().runTaskLater(plugin, this::stopCustomSounds, 100L);
         }
         if (loc.getWorld() != null) {
@@ -407,7 +422,10 @@ public final class RonaldoEventManager {
                     tickJump(boss);
                     tickShoot(boss);
                     tickDash(boss);
+                    tickStepOver(boss);
+                    tickFreeKick(boss);
                     tickCelebrate(boss);
+                    tickNetTrap(boss);
                     tickVoices(boss);
                 }
                 refreshHologram();
@@ -543,11 +561,136 @@ public final class RonaldoEventManager {
             }
             Location at = live.getLocation();
             at.getWorld().createExplosion(at, 1.7f, false, false, live);
+            at.getWorld().strikeLightningEffect(at);
             launchNearby(at, 6.5, 1.25, 0.7);
             spawnBurst(at, Color.YELLOW, Color.RED);
             playKeyed(at, "ronaldo_siuu", 2.0f, 1.0f);
-            Bukkit.broadcastMessage(ColorUtil.color("&e┼ &e&lGOOOOL &f— SIUUUUU"));
+            double max = live.getMaxHealth();
+            live.setHealth(Math.min(max, live.getHealth() + Math.max(40.0, max * 0.12)));
+            shoutGoal();
         }, 14L);
+    }
+
+    private void tickStepOver(LivingEntity boss) {
+        stepTicks++;
+        if (stepTicks < 7 || jumping) {
+            return;
+        }
+        Player target = currentTarget(boss);
+        if (target == null) {
+            return;
+        }
+        stepTicks = 0;
+        Vector to = target.getLocation().toVector().subtract(boss.getLocation().toVector());
+        to.setY(0);
+        if (to.lengthSquared() < 2.0) {
+            return;
+        }
+        to.normalize();
+        Vector side = new Vector(-to.getZ(), 0.22, to.getX()).multiply(random.nextBoolean() ? 1.05 : -1.05);
+        boss.setVelocity(side);
+        Location loc = boss.getLocation();
+        loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.9f, 1.4f);
+        loc.getWorld().spawnParticle(Particle.CLOUD, loc, 6, 0.25, 0.05, 0.25, 0.01);
+    }
+
+    private void tickFreeKick(LivingEntity boss) {
+        freeKickTicks++;
+        Location loc = boss.getLocation();
+        if (chargingFreeKick) {
+            chargingFreeKick = false;
+            Player target = currentTarget(boss);
+            if (target == null) {
+                return;
+            }
+            Vector dir = target.getEyeLocation().toVector().subtract(boss.getEyeLocation().toVector());
+            if (dir.lengthSquared() < 0.04) {
+                return;
+            }
+            Snowball ball = boss.launchProjectile(Snowball.class, dir.normalize().multiply(1.65));
+            ball.getPersistentDataContainer().set(cloneKey, PersistentDataType.BYTE, (byte) 4);
+            try {
+                ball.setItem(new ItemStack(Material.SLIME_BALL));
+            } catch (Throwable ignored) {
+            }
+            homeBall(ball, target);
+            loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.4f);
+            loc.getWorld().playSound(loc, Sound.ENTITY_BLAZE_SHOOT, 1.3f, 0.7f);
+            loc.getWorld().strikeLightningEffect(loc.clone().add(dir.clone().multiply(2)));
+            return;
+        }
+        int every = enraged(boss) ? 12 : 16;
+        if (freeKickTicks < every || jumping) {
+            return;
+        }
+        freeKickTicks = 0;
+        chargingFreeKick = true;
+        loc.getWorld().spawnParticle(Particle.CRIT, loc.clone().add(0, 1.2, 0), 18, 0.4, 0.5, 0.4, 0.05);
+        loc.getWorld().spawnParticle(Particle.END_ROD, loc.clone().add(0, 1.4, 0), 10, 0.3, 0.4, 0.3, 0.02);
+        loc.getWorld().playSound(loc, Sound.BLOCK_NOTE_BLOCK_BELL, 1.2f, 0.8f);
+    }
+
+    private void tickNetTrap(LivingEntity boss) {
+        trapTicks++;
+        if (trapTicks < 6 || center == null || center.getWorld() == null) {
+            return;
+        }
+        trapTicks = 0;
+        boolean hit = false;
+        Location[] goals = {
+                center.clone().add(0.0, 1.0, -17.0),
+                center.clone().add(0.0, 1.0, 17.0)
+        };
+        for (Location goal : goals) {
+            for (Player player : center.getWorld().getPlayers()) {
+                if (!plugin.getBedrockService().canParticipate(player) || player.isDead()) {
+                    continue;
+                }
+                if (player.getLocation().distanceSquared(goal) > 16.0) {
+                    continue;
+                }
+                Vector out = center.toVector().subtract(player.getLocation().toVector());
+                out.setY(0);
+                if (out.lengthSquared() < 0.01) {
+                    out = new Vector(0, 0, 1);
+                }
+                player.setVelocity(out.normalize().multiply(1.15).setY(0.95));
+                player.sendMessage(ColorUtil.color("&e┠ &cСетки ворот! &fCR7 тебя вытащил."));
+                hit = true;
+            }
+        }
+        if (hit) {
+            playKeyed(boss.getLocation(), "ronaldo_siuu", 1.4f, 1.15f);
+        }
+    }
+
+    private void shoutGoal() {
+        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &e&lGOOOOL &f— SIUUUUU"));
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!plugin.getBedrockService().canParticipate(player)) {
+                continue;
+            }
+            try {
+                player.sendTitle(ColorUtil.color("&e&lGOOOOL"), ColorUtil.color("&fSIUUUUU"), 5, 28, 8);
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    private void dropTrophy(Location loc) {
+        if (loc == null || loc.getWorld() == null) {
+            return;
+        }
+        ItemStack ball = new ItemStack(Material.SLIME_BALL, 1);
+        var meta = ball.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ColorUtil.color("&e&lМяч CR7"));
+            ball.setItemMeta(meta);
+        }
+        Item dropped = loc.getWorld().dropItemNaturally(loc, ball);
+        dropped.setPickupDelay(10);
+        dropped.setCustomName(ColorUtil.color("&e&lМяч CR7"));
+        dropped.setCustomNameVisible(true);
     }
 
     private void tickEnrage(LivingEntity boss) {
@@ -644,7 +787,7 @@ public final class RonaldoEventManager {
         Bukkit.getScheduler().runTaskLater(plugin, firework::detonate, 2L);
     }
 
-    private void homeBall(SmallFireball ball, Player target) {
+    private void homeBall(Projectile ball, Player target) {
         new BukkitRunnable() {
             int n = 0;
 
@@ -877,7 +1020,10 @@ public final class RonaldoEventManager {
         int left = getSecondsRemaining();
         int total = Math.max(1, plugin.getConfig().getInt("ronaldo.duration-minutes", 8) * 60);
         bossBar.setProgress(Math.max(0.0, Math.min(1.0, left / (double) total)));
-        bossBar.setTitle(ColorUtil.color("&e&lCR7 &8| &fдо конца &#E0C912"
+        LivingEntity boss = livingBoss();
+        String mood = (boss != null && enraged(boss)) ? "&c&lCR7 ЗЛИТСЯ" : "&e&lCR7";
+        bossBar.setColor((boss != null && enraged(boss)) ? BarColor.RED : BarColor.YELLOW);
+        bossBar.setTitle(ColorUtil.color(mood + " &8| &fдо конца &#E0C912"
                 + ColorUtil.formatDuration(left)));
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (plugin.getBedrockService().canParticipate(player)) {
@@ -903,7 +1049,7 @@ public final class RonaldoEventManager {
         }
         String warp = plugin.getConfig().getString("ronaldo.warp-name", "ronaldo");
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &e&lSIUUUUU &f— Роналду вышел на стадион!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fCR7: ножницы, удар-гол, рывок, файерболы. 8 мин."));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fCR7: ножницы, штрафной, мяч, рывок, сетка ворот."));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fВарп: &#E0C912/warp " + warp + " &8(снимется после ивента)"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                 + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
@@ -981,7 +1127,22 @@ public final class RonaldoEventManager {
             return false;
         }
         Byte tag = entity.getPersistentDataContainer().get(cloneKey, PersistentDataType.BYTE);
-        return tag != null && tag == (byte) 3;
+        return tag != null && (tag == (byte) 3 || tag == (byte) 4);
+    }
+
+    public void handleProjectileHit(Entity projectile, Location hit) {
+        if (projectile == null || hit == null || hit.getWorld() == null) {
+            return;
+        }
+        Byte tag = projectile.getPersistentDataContainer().get(cloneKey, PersistentDataType.BYTE);
+        projectile.remove();
+        boolean ball = tag != null && tag == (byte) 4;
+        hit.getWorld().createExplosion(hit, ball ? 1.45f : 1.15f, false, false, projectile);
+        hit.getWorld().playSound(hit, Sound.ENTITY_GENERIC_EXPLODE, 1.1f, ball ? 0.9f : 1.15f);
+        hit.getWorld().spawnParticle(Particle.EXPLOSION, hit, ball ? 4 : 2, 0.25, 0.25, 0.25, 0.01);
+        if (ball) {
+            launchNearby(hit, 4.5, 1.2, 0.55);
+        }
     }
 
     private void createEventWarp() {

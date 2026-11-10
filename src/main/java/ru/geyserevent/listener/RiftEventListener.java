@@ -1046,13 +1046,7 @@ public class RiftEventListener implements Listener {
         }
         var ronaldo = plugin.getRonaldoEventManager();
         if (ronaldo != null && ronaldo.isActive() && ronaldo.isRonaldoProjectile(event.getEntity())) {
-            Location hit = event.getEntity().getLocation();
-            event.getEntity().remove();
-            if (hit.getWorld() != null) {
-                hit.getWorld().createExplosion(hit, 1.15f, false, false, event.getEntity());
-                hit.getWorld().playSound(hit, Sound.ENTITY_GENERIC_EXPLODE, 1.1f, 1.15f);
-                hit.getWorld().spawnParticle(Particle.EXPLOSION, hit, 2, 0.2, 0.2, 0.2, 0.01);
-            }
+            ronaldo.handleProjectileHit(event.getEntity(), event.getEntity().getLocation());
         }
     }
 
