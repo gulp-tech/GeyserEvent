@@ -1172,7 +1172,7 @@ wind:
 # ============================================================================
 skibidi:
   enabled: true
-  duration-minutes: 20
+  duration-minutes: 8
   wave-interval-seconds: 300
   wave-min: 2
   wave-max: 5
@@ -1389,26 +1389,23 @@ skibidi:
         flame: 1
 
 # ============================================================================
-# Ивент 7: «Роналду SIUU» — большой стадион, босс CR7, волны клонов.
+# Ивент 7: «Роналду SIUU» — стадион, один босс CR7 (illusioner), без клонов.
 # Старт: /ronaldo  или  /rift start ronaldo
-# Варп: старт Essentials /setwarp ronaldo, конец /delwarp ronaldo.
+# Варп: Essentials API setWarp / removeWarp (имя ronaldo).
 # Лут: /rift copylot excavation ronaldo
 # ============================================================================
 ronaldo:
   enabled: true
-  duration-minutes: 20
-  wave-interval-seconds: 180
-  wave-min: 3
-  wave-max: 6
-  health: 220
-  damage: 30
-  scale: 1.0
+  duration-minutes: 8
   boss-health: 900
   boss-damage: 40
   boss-scale: 1.35
   levels: 30
   boss-levels: 50
+  jump-interval-seconds: 6
+  shoot-interval-seconds: 4
   siuu-interval-seconds: 8
+  talk-interval-seconds: 14
   warp-name: ronaldo
   # Essentials: старт /setwarp ronaldo, конец /delwarp ronaldo
   warp-set-command: "setwarp ronaldo"

@@ -767,16 +767,16 @@ public final class SkibidiToiletManager {
 
     private int resolveDurationSeconds() {
         if (plugin.getConfig().isSet("skibidi.duration-minutes")) {
-            return Math.max(60, plugin.getConfig().getInt("skibidi.duration-minutes", 20) * 60);
+            return Math.max(60, plugin.getConfig().getInt("skibidi.duration-minutes", 8) * 60);
         }
         if (isLegacySpitConfig()) {
-            return 20 * 60;
+            return 8 * 60;
         }
         int seconds = plugin.getConfig().getInt("skibidi.duration-seconds", 0);
         if (seconds >= 30) {
             return seconds;
         }
-        return 20 * 60;
+        return 8 * 60;
     }
 
     private void playCustomSound(Location loc, String key, float volume, float pitch) {

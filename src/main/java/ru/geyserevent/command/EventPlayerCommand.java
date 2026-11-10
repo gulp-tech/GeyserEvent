@@ -74,9 +74,7 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
                             + ronaldo.getCenterLocation().getBlockX() + " "
                             + ronaldo.getCenterLocation().getBlockY() + " "
                             + ronaldo.getCenterLocation().getBlockZ()));
-                    sender.sendMessage(ColorUtil.color("&e┠ &fСледующая волна: &#E0C912"
-                            + ColorUtil.formatDuration(ronaldo.getSecondsToNextWave())));
-                    sender.sendMessage(ColorUtil.color("&e┠ &7Варп: &#E0C912/warp ronaldo &7· SIUU на арене"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Варп: &#E0C912/warp ronaldo &7· 8 мин · без клонов"));
                     return true;
                 }
                 if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()

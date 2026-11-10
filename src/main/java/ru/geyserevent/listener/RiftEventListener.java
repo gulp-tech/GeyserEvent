@@ -33,6 +33,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntitySpellCastEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -1038,6 +1039,24 @@ public class RiftEventListener implements Listener {
         GravityHoardManager wind = plugin.getGravityHoardManager();
         if (wind != null && wind.isActive()) {
             wind.handleChargeHit(event);
+        }
+        var ronaldo = plugin.getRonaldoEventManager();
+        if (ronaldo != null && ronaldo.isActive() && ronaldo.isRonaldoProjectile(event.getEntity())) {
+            Location hit = event.getEntity().getLocation();
+            event.getEntity().remove();
+            if (hit.getWorld() != null) {
+                hit.getWorld().createExplosion(hit, 1.15f, false, false, event.getEntity());
+                hit.getWorld().playSound(hit, Sound.ENTITY_GENERIC_EXPLODE, 1.1f, 1.15f);
+                hit.getWorld().spawnParticle(Particle.EXPLOSION, hit, 2, 0.2, 0.2, 0.2, 0.01);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onRonaldoSpell(EntitySpellCastEvent event) {
+        var ronaldo = plugin.getRonaldoEventManager();
+        if (ronaldo != null && ronaldo.isRonaldo(event.getEntity())) {
+            event.setCancelled(true);
         }
     }
 

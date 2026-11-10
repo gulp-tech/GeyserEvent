@@ -82,11 +82,20 @@
   },
   "ronaldo_siuu": {
     "sounds": [
-      {"name": "ronaldo/siuu", "stream": true}
+      {"name": "ronaldo/siuu", "stream": false}
     ],
     "category": "hostile",
     "volume": 1.8,
     "pitch": 1.0,
-    "attenuation_distance": 80
+    "attenuation_distance": 48
+  },
+  "ronaldo_talk": {
+    "sounds": [
+      {"name": "ronaldo/talk", "stream": true}
+    ],
+    "category": "hostile",
+    "volume": 1.5,
+    "pitch": 1.0,
+    "attenuation_distance": 48
   }
 }

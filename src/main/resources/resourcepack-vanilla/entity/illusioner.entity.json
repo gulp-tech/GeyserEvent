@@ -2,7 +2,7 @@
   "format_version": "1.10.0",
   "minecraft:client_entity": {
     "description": {
-      "identifier": "minecraft:husk",
+      "identifier": "minecraft:illusioner",
       "min_engine_version": "1.8.0",
       "materials": {
         "default": "entity_alphatest"
@@ -14,7 +14,7 @@
         "default": "geometry.humanoid.custom"
       },
       "scripts": {
-        "scale": "1.08",
+        "scale": "1.15",
         "initialize": [
           "variable.gliding_speed_value = 1.0;"
         ],
@@ -33,11 +33,6 @@
         "move": "animation.humanoid.move",
         "attack": "animation.humanoid.attack.rotations",
         "bob": "animation.humanoid.bob"
-      },
-      "sound_effects": {
-        "ambient": "ronaldo_siuu",
-        "hurt": "ronaldo_siuu",
-        "death": "ronaldo_siuu"
       },
       "render_controllers": [
         "controller.render.default"

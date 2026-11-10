@@ -8,6 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
@@ -15,13 +16,14 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Husk;
+import org.bukkit.entity.Illusioner;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.SmallFireball;
+import org.bukkit.entity.Spellcaster;
 import org.bukkit.entity.TextDisplay;
-import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
@@ -29,6 +31,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Transformation;
+import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.config.PluginConfig;
@@ -47,14 +50,14 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Ивент «Роналду SIUU»: большой стадион, босс CR7 (husk → скин на Bedrock),
- * волны клонов, крик SIUU, варп на старте и удаление варпа в конце.
+ * Ивент «Роналду SIUU»: стадион, один босс CR7 (illusioner → скин только на нём),
+ * прыжки, файерболы, SIUU + голос. Варп на старте, удаление в конце.
  */
 public final class RonaldoEventManager {
 
     public static final String REGION_ID = "geyserevent_ronaldo";
     public static final String SCHEMATIC_FILE = "ronaldo_stadium.schem.yml";
-    public static final int ARENA_RADIUS = 34;
+    public static final int ARENA_RADIUS = 26;
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -68,9 +71,11 @@ public final class RonaldoEventManager {
     private long eventEndEpochSeconds;
     private long eventStartEpochSeconds;
     private String openedAtClock = "--:--";
-    private int secondsToNextWave;
-    private int waveNumber;
     private int siuuTicks;
+    private int talkTicks;
+    private int jumpTicks;
+    private int shootTicks;
+    private boolean jumping;
     private BossBar bossBar;
     private BukkitRunnable tickTask;
     private UUID hologramUuid;
@@ -113,16 +118,18 @@ public final class RonaldoEventManager {
         this.cloneIds.clear();
         this.bossUuid = null;
         this.bossDefeated = false;
-        this.waveNumber = 0;
-        this.siuuTicks = 0;
         this.eventStartEpochSeconds = System.currentTimeMillis() / 1000L;
         this.openedAtClock = LocalTime.now().format(CLOCK);
 
         int duration = (durationSecondsOverride != null && durationSecondsOverride > 0)
                 ? durationSecondsOverride
-                : Math.max(60, plugin.getConfig().getInt("ronaldo.duration-minutes", 20) * 60);
+                : Math.max(60, plugin.getConfig().getInt("ronaldo.duration-minutes", 8) * 60);
         this.eventEndEpochSeconds = this.eventStartEpochSeconds + duration;
-        this.secondsToNextWave = 0;
+        this.siuuTicks = 0;
+        this.talkTicks = 4;
+        this.jumpTicks = 3;
+        this.shootTicks = 2;
+        this.jumping = false;
 
         setChunksForceLoaded(this.center, true);
         schematicManager.pasteSchematic(this.center, ARENA_RADIUS + 2, 16);
@@ -132,8 +139,10 @@ public final class RonaldoEventManager {
         createEventWarp();
         broadcastSpawn();
         spawnBoss();
-        spawnWave();
-        shoutSiuu(this.center, 2.6f, 1.0f);
+        LivingEntity boss = livingBoss();
+        if (boss != null) {
+            playKeyed(boss.getLocation(), "ronaldo_siuu", 2.2f, 1.0f);
+        }
 
         if (plugin.getWorldGuardHook() != null) {
             plugin.getWorldGuardHook().syncProtectionRegion(
@@ -161,6 +170,7 @@ public final class RonaldoEventManager {
         if (clearWarp) {
             deleteEventWarp();
         }
+        stopCustomSounds();
         removeClones();
         removeHologram();
         schematicManager.restoreSchematic();
@@ -179,8 +189,6 @@ public final class RonaldoEventManager {
         this.center = null;
         this.bossUuid = null;
         this.bossDefeated = false;
-        this.waveNumber = 0;
-        this.secondsToNextWave = 0;
         this.activeWarpName = null;
     }
 
@@ -214,7 +222,7 @@ public final class RonaldoEventManager {
     }
 
     public int getSecondsToNextWave() {
-        return Math.max(0, secondsToNextWave);
+        return getSecondsRemaining();
     }
 
     public boolean isRonaldo(Entity entity) {
@@ -255,7 +263,10 @@ public final class RonaldoEventManager {
         Location loc = entity.getLocation();
         dropLoot(loc);
         grantKillLevels(entity, boss);
-        shoutSiuu(loc, 2.2f, boss ? 0.85f : 1.15f);
+        if (boss) {
+            playKeyed(loc, "ronaldo_siuu", 2.2f, 0.9f, true);
+            Bukkit.getScheduler().runTaskLater(plugin, this::stopCustomSounds, 100L);
+        }
         if (loc.getWorld() != null) {
             loc.getWorld().spawnParticle(Particle.CLOUD, loc.clone().add(0, 1.2, 0), 24, 0.4, 0.6, 0.4, 0.02);
         }
@@ -288,36 +299,7 @@ public final class RonaldoEventManager {
         }
         int levels = rollDeathLevels(boss);
         killer.giveExpLevels(levels);
-        killer.sendMessage(ColorUtil.color("&e┠ &f+" + levels + " &aур. &7за "
-                + (boss ? "&eCR7" : "&fклона Роналду")));
-    }
-
-    private void spawnWave() {
-        if (!active || center == null || center.getWorld() == null) {
-            return;
-        }
-        int min = Math.max(1, plugin.getConfig().getInt("ronaldo.wave-min", 3));
-        int max = Math.max(min, plugin.getConfig().getInt("ronaldo.wave-max", 6));
-        int count = min + random.nextInt(max - min + 1);
-        waveNumber++;
-        secondsToNextWave = Math.max(30, plugin.getConfig().getInt("ronaldo.wave-interval-seconds", 180));
-        int spawned = 0;
-        for (int i = 0; i < count; i++) {
-            Location loc = randomPitchSpawn();
-            if (loc == null) {
-                continue;
-            }
-            LivingEntity clone = spawnClone(loc, false);
-            if (clone != null) {
-                cloneIds.add(clone.getUniqueId());
-                spawned++;
-            }
-        }
-        shoutSiuu(center, 2.4f, 1.05f);
-        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &e&lSIUUU &f— волна клонов &#E0C912#" + waveNumber
-                + " &f(&#E0C912" + spawned + "&f)"));
-        refreshHologram();
-        refreshBossBar();
+        killer.sendMessage(ColorUtil.color("&e┠ &f+" + levels + " &aур. &7за &eCR7"));
     }
 
     private void spawnBoss() {
@@ -332,64 +314,65 @@ public final class RonaldoEventManager {
         }
         Location loc = snapToSurface(center.clone());
         loc.setY(loc.getY() + 1.0);
-        LivingEntity boss = spawnClone(loc, true);
+        LivingEntity boss = spawnBossEntity(loc);
         if (boss != null) {
             cloneIds.add(boss.getUniqueId());
             bossUuid = boss.getUniqueId();
         }
     }
 
-    private LivingEntity spawnClone(Location loc, boolean boss) {
+    private LivingEntity spawnBossEntity(Location loc) {
         World world = loc.getWorld();
         if (world == null) {
             return null;
         }
         loc.getChunk().load(true);
-        Husk husk = world.spawn(loc, Husk.class, spawned -> {
+        Illusioner mob = world.spawn(loc, Illusioner.class, spawned -> {
             spawned.setSilent(true);
             spawned.setRemoveWhenFarAway(false);
             spawned.setPersistent(false);
             spawned.setCanPickupItems(false);
             spawned.setCustomNameVisible(true);
-            spawned.setCustomName(ColorUtil.color(boss ? "&e&lCR7 &6SIUU" : "&eКлон CR7"));
+            spawned.setCustomName(ColorUtil.color("&e&lCR7"));
             spawned.setGravity(true);
             spawned.setAI(true);
             spawned.setAware(true);
             spawned.setCollidable(true);
             spawned.setInvulnerable(false);
-            spawned.setAdult();
-            spawned.setShouldBurnInDay(false);
-            spawned.getPersistentDataContainer().set(cloneKey, PersistentDataType.BYTE, boss ? (byte) 2 : (byte) 1);
-        });
-        if (husk == null || !husk.isValid()) {
-            return null;
-        }
-        husk.setSilent(true);
-        if (husk instanceof Zombie zombie) {
-            zombie.setShouldBurnInDay(false);
+            spawned.getPersistentDataContainer().set(cloneKey, PersistentDataType.BYTE, (byte) 2);
             try {
-                zombie.setConversionTime(-1);
+                spawned.setSpell(Spellcaster.Spell.NONE);
             } catch (Throwable ignored) {
             }
+        });
+        if (mob == null || !mob.isValid()) {
+            return null;
         }
-        husk.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 2000000, 0, false, false));
-        double health = Math.max(1.0, plugin.getConfig().getDouble(
-                boss ? "ronaldo.boss-health" : "ronaldo.health", boss ? 900.0 : 220.0));
-        double damage = Math.max(1.0, plugin.getConfig().getDouble(
-                boss ? "ronaldo.boss-damage" : "ronaldo.damage", boss ? 40.0 : 30.0));
-        double scale = plugin.getConfig().getDouble(
-                boss ? "ronaldo.boss-scale" : "ronaldo.scale", boss ? 1.35 : 1.0);
-        scale = Math.min(scale, boss ? 1.5 : 1.15);
-        BossAbilityController.applyEntityScale(husk, scale);
-        BossAbilityController.setEntityAttribute(husk, "MAX_HEALTH", "generic.max_health", health);
-        BossAbilityController.setEntityAttribute(husk, "ATTACK_DAMAGE", "generic.attack_damage", damage);
-        BossAbilityController.setEntityAttribute(husk, "FOLLOW_RANGE", "generic.follow_range", 48.0);
-        BossAbilityController.setEntityAttribute(husk, "MOVEMENT_SPEED", "generic.movement_speed",
-                boss ? 0.32 : 0.28);
-        husk.setHealth(Math.min(health, husk.getMaxHealth()));
-        acquireTarget(husk);
+        mob.setSilent(true);
+        mob.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 2000000, 0, false, false));
+        double health = Math.max(1.0, plugin.getConfig().getDouble("ronaldo.boss-health", 900.0));
+        double damage = Math.max(1.0, plugin.getConfig().getDouble("ronaldo.boss-damage", 40.0));
+        double scale = Math.min(1.5, plugin.getConfig().getDouble("ronaldo.boss-scale", 1.35));
+        BossAbilityController.applyEntityScale(mob, scale);
+        BossAbilityController.setEntityAttribute(mob, "MAX_HEALTH", "generic.max_health", health);
+        BossAbilityController.setEntityAttribute(mob, "ATTACK_DAMAGE", "generic.attack_damage", damage);
+        BossAbilityController.setEntityAttribute(mob, "FOLLOW_RANGE", "generic.follow_range", 48.0);
+        BossAbilityController.setEntityAttribute(mob, "MOVEMENT_SPEED", "generic.movement_speed", 0.34);
+        mob.setHealth(Math.min(health, mob.getMaxHealth()));
+        acquireTarget(mob);
         world.spawnParticle(Particle.CLOUD, loc.clone().add(0, 1.2, 0), 16, 0.4, 0.5, 0.4, 0.02);
-        return husk;
+        return mob;
+    }
+
+    private LivingEntity livingBoss() {
+        if (bossUuid == null) {
+            return null;
+        }
+        Entity entity = Bukkit.getEntity(bossUuid);
+        if (entity instanceof LivingEntity living && living.isValid() && !living.isDead()) {
+            return living;
+        }
+        return null;
     }
 
     private void startTickLoop() {
@@ -410,21 +393,100 @@ public final class RonaldoEventManager {
                 if (!bossDefeated) {
                     spawnBoss();
                 }
-                secondsToNextWave--;
-                if (secondsToNextWave <= 0) {
-                    spawnWave();
-                }
-                siuuTicks++;
-                int every = Math.max(4, plugin.getConfig().getInt("ronaldo.siuu-interval-seconds", 8));
-                if (siuuTicks >= every) {
-                    siuuTicks = 0;
-                    shoutSiuu(getBossLocation() != null ? getBossLocation() : center, 2.0f, 1.0f);
+                LivingEntity boss = livingBoss();
+                if (boss != null) {
+                    suppressSpells(boss);
+                    tickJump(boss);
+                    tickShoot(boss);
+                    tickVoices(boss);
                 }
                 refreshHologram();
                 refreshBossBar();
             }
         };
         tickTask.runTaskTimer(plugin, 20L, 20L);
+    }
+
+    private void suppressSpells(LivingEntity boss) {
+        if (boss instanceof Spellcaster caster) {
+            try {
+                caster.setSpell(Spellcaster.Spell.NONE);
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    private void tickJump(LivingEntity boss) {
+        jumpTicks++;
+        if (jumping && boss.isOnGround()) {
+            jumping = false;
+            Location loc = boss.getLocation();
+            loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.4f, 0.85f);
+            loc.getWorld().spawnParticle(Particle.EXPLOSION, loc.clone().add(0, 0.2, 0), 3, 0.4, 0.1, 0.4, 0.01);
+            loc.getWorld().spawnParticle(Particle.CLOUD, loc.clone().add(0, 0.4, 0), 18, 0.7, 0.2, 0.7, 0.04);
+            loc.getWorld().createExplosion(loc, 1.4f, false, false, boss);
+            playKeyed(loc, "ronaldo_siuu", 1.6f, 1.05f);
+            return;
+        }
+        int every = Math.max(4, plugin.getConfig().getInt("ronaldo.jump-interval-seconds", 6));
+        if (jumpTicks >= every && boss.isOnGround()) {
+            jumpTicks = 0;
+            jumping = true;
+            Vector dir = new Vector(0, 1.05, 0);
+            if (boss instanceof Mob mob && mob.getTarget() != null) {
+                Vector to = mob.getTarget().getLocation().toVector().subtract(boss.getLocation().toVector());
+                to.setY(0);
+                if (to.lengthSquared() > 0.01) {
+                    to.normalize().multiply(0.55);
+                    dir.add(to);
+                }
+            }
+            boss.setVelocity(dir);
+            Location loc = boss.getLocation();
+            loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_ATTACK_STRONG, 1.2f, 0.7f);
+            loc.getWorld().spawnParticle(Particle.CLOUD, loc, 10, 0.3, 0.1, 0.3, 0.02);
+        }
+    }
+
+    private void tickShoot(LivingEntity boss) {
+        shootTicks++;
+        int every = Math.max(2, plugin.getConfig().getInt("ronaldo.shoot-interval-seconds", 4));
+        if (shootTicks < every) {
+            return;
+        }
+        shootTicks = 0;
+        Player target = null;
+        if (boss instanceof Mob mob && mob.getTarget() instanceof Player player) {
+            target = player;
+        }
+        if (target == null || target.isDead()) {
+            return;
+        }
+        Vector dir = target.getEyeLocation().toVector().subtract(boss.getEyeLocation().toVector());
+        if (dir.lengthSquared() < 0.04) {
+            return;
+        }
+        dir.normalize();
+        SmallFireball ball = boss.launchProjectile(SmallFireball.class, dir.multiply(1.15));
+        ball.getPersistentDataContainer().set(cloneKey, PersistentDataType.BYTE, (byte) 3);
+        ball.setIsIncendiary(false);
+        boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.1f, 0.9f);
+    }
+
+    private void tickVoices(LivingEntity boss) {
+        siuuTicks++;
+        talkTicks++;
+        int siuuEvery = Math.max(6, plugin.getConfig().getInt("ronaldo.siuu-interval-seconds", 10));
+        int talkEvery = Math.max(8, plugin.getConfig().getInt("ronaldo.talk-interval-seconds", 14));
+        Location loc = boss.getLocation();
+        if (siuuTicks >= siuuEvery) {
+            siuuTicks = 0;
+            playKeyed(loc, "ronaldo_siuu", 1.8f, 1.0f);
+        }
+        if (talkTicks >= talkEvery) {
+            talkTicks = 0;
+            playKeyed(loc, "ronaldo_talk", 1.6f, 1.0f);
+        }
     }
 
     private void pruneDead() {
@@ -558,21 +620,18 @@ public final class RonaldoEventManager {
         if (center == null) {
             return null;
         }
-        Location loc = new Location(center.getWorld(), center.getX(), center.getY() + 3.2, center.getZ() - 28.5);
+        Location loc = new Location(center.getWorld(), center.getX(), center.getY() + 3.0, center.getZ() - 20.5);
         loc.setYaw(180f);
         loc.setPitch(0f);
         return loc;
     }
 
     private String hologramText() {
-        String next = secondsToNextWave <= 0
-                ? "сейчас"
-                : ColorUtil.formatDuration(secondsToNextWave);
         String warp = plugin.getConfig().getString("ronaldo.warp-name", "ronaldo");
         return ColorUtil.color("&e&lSIUU  Роналду\n"
                 + "&7Открытие: &#E0C912" + openedAtClock + "\n"
-                + "&7Следующая волна: &#E0C912" + next + "\n"
-                + "&7Варп: &#E0C912/" + "warp " + warp);
+                + "&7До конца: &#E0C912" + ColorUtil.formatDuration(getSecondsRemaining()) + "\n"
+                + "&7Варп: &#E0C912/warp " + warp);
     }
 
     private void enlargeDisplay(Display display, float scale) {
@@ -620,11 +679,10 @@ public final class RonaldoEventManager {
             return;
         }
         int left = getSecondsRemaining();
-        int total = Math.max(1, plugin.getConfig().getInt("ronaldo.duration-minutes", 20) * 60);
+        int total = Math.max(1, plugin.getConfig().getInt("ronaldo.duration-minutes", 8) * 60);
         bossBar.setProgress(Math.max(0.0, Math.min(1.0, left / (double) total)));
-        bossBar.setTitle(ColorUtil.color("&e&lSIUU &8| &fволна &#E0C912"
-                + ColorUtil.formatDuration(Math.max(0, secondsToNextWave))
-                + " &8| &fна поле &#E0C912" + aliveCount()));
+        bossBar.setTitle(ColorUtil.color("&e&lCR7 &8| &fдо конца &#E0C912"
+                + ColorUtil.formatDuration(left)));
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (plugin.getBedrockService().canParticipate(player)) {
                 bossBar.addPlayer(player);
@@ -649,7 +707,7 @@ public final class RonaldoEventManager {
         }
         String warp = plugin.getConfig().getString("ronaldo.warp-name", "ronaldo");
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &e&lSIUUUUU &f— Роналду вышел на стадион!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fБольшая арена, босс &#E0C912CR7 &fи волны клонов."));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fБосс &#E0C912CR7&f: прыжки, файерболы, 8 минут."));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fВарп: &#E0C912/warp " + warp + " &8(снимется после ивента)"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                 + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
@@ -693,16 +751,41 @@ public final class RonaldoEventManager {
         return new Location(world, x + 0.5, y, z + 0.5);
     }
 
-    private void shoutSiuu(Location loc, float volume, float pitch) {
+    private void playKeyed(Location loc, String key, float volume, float pitch) {
+        playKeyed(loc, key, volume, pitch, false);
+    }
+
+    private void playKeyed(Location loc, String key, float volume, float pitch, boolean force) {
         if (loc == null || loc.getWorld() == null) {
             return;
         }
-        loc.getWorld().playSound(loc, "ronaldo_siuu", volume, pitch);
+        if (!force && livingBoss() == null) {
+            return;
+        }
+        loc.getWorld().playSound(loc, key, volume, pitch);
         for (Player player : loc.getWorld().getPlayers()) {
-            if (player.getLocation().distanceSquared(loc) <= 80 * 80) {
-                player.playSound(player.getLocation(), "ronaldo_siuu", volume, pitch);
+            if (player.getLocation().distanceSquared(loc) <= 48 * 48) {
+                player.playSound(player.getLocation(), key, volume, pitch);
             }
         }
+    }
+
+    private void stopCustomSounds() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            try {
+                player.stopSound("ronaldo_siuu");
+                player.stopSound("ronaldo_talk");
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    public boolean isRonaldoProjectile(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+        Byte tag = entity.getPersistentDataContainer().get(cloneKey, PersistentDataType.BYTE);
+        return tag != null && tag == (byte) 3;
     }
 
     private void createEventWarp() {

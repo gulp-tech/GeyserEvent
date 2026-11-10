@@ -19,7 +19,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 17]
+VERSION = [1, 21, 18]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -62,7 +62,7 @@ manifest = {
         "name": "GeyserEvent Pack v" + VERSION_STR,
         "description": (
         "3D-рюкзак шахтёра, блоки призыва, 3D-пришелец (vindicator), "
-                            "тарелка (гаст), древний сундук, шкибиди-туалет (ravager), Роналду (husk)."
+                            "тарелка (гаст), древний сундук, шкибиди-туалет (ravager), Роналду (illusioner)."
         ),
         "uuid": PACK_UUID,
         "version": VERSION,
@@ -151,8 +151,13 @@ for key, file, dist in (
     }
 sound_defs["sound_definitions"]["ronaldo_siuu"] = {
     "category": "hostile",
-    "max_distance": 80,
+    "max_distance": 64,
     "sounds": [{"name": "sounds/ronaldo/siuu", "volume": 1.6}],
+}
+sound_defs["sound_definitions"]["ronaldo_talk"] = {
+    "category": "hostile",
+    "max_distance": 64,
+    "sounds": [{"name": "sounds/ronaldo/talk", "volume": 1.4}],
 }
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))
