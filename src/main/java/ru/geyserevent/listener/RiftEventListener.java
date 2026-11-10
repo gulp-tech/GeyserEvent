@@ -899,6 +899,10 @@ public class RiftEventListener implements Listener {
             event.setCancelled(true);
             return;
         }
+        if (ronaldoDmg != null && ronaldoDmg.isActive() && ronaldoDmg.isRonaldo(damager)
+                && victim instanceof Player kicked) {
+            ronaldoDmg.handleMeleeHit(kicked);
+        }
         GravityHoardManager windMgr = plugin.getGravityHoardManager();
         if (windMgr != null && windMgr.isActive() && windMgr.isHoardEntity(victim)) {
             Player attacker = resolveAttackerPlayer(damager);
