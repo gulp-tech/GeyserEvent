@@ -2,19 +2,21 @@
   "format_version": "1.10.0",
   "minecraft:client_entity": {
     "description": {
-      "identifier": "minecraft:illusioner",
+      "identifier": "minecraft:evocation_illager",
       "min_engine_version": "1.8.0",
       "materials": {
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/ronaldo"
+        "default": "textures/entity/illager/evoker",
+        "ronaldo": "textures/entity/ronaldo"
       },
       "geometry": {
-        "default": "geometry.humanoid.custom"
+        "default": "geometry.evoker.v1.8",
+        "ronaldo": "geometry.humanoid.custom"
       },
       "scripts": {
-        "scale": "1.15",
+        "scale": "query.is_bribed ? 1.15 : 0.9375",
         "initialize": [
           "variable.gliding_speed_value = 1.0;"
         ],
@@ -22,20 +24,26 @@
           "variable.tcos0 = (Math.cos(query.modified_distance_moved * 38.17) * query.modified_move_speed / variable.gliding_speed_value) * 57.3;"
         ],
         "animate": [
-          "look_at_target",
-          "move",
-          "attack",
-          "bob"
+          { "controller_general": "!query.is_bribed" },
+          { "controller_move": "!query.is_bribed" },
+          { "look_at_target": "query.is_bribed" },
+          { "move": "query.is_bribed" },
+          { "attack": "query.is_bribed" },
+          { "bob": "query.is_bribed" }
         ]
       },
       "animations": {
+        "general": "animation.evoker.general",
+        "casting": "animation.evoker.casting",
+        "controller_general": "controller.animation.evoker.general",
+        "controller_move": "controller.animation.villager.move",
         "look_at_target": "animation.humanoid.look_at_target.default",
         "move": "animation.humanoid.move",
         "attack": "animation.humanoid.attack.rotations",
         "bob": "animation.humanoid.bob"
       },
       "render_controllers": [
-        "controller.render.default"
+        "controller.render.evoker_ronaldo"
       ],
       "enable_attachables": false
     }

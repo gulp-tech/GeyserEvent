@@ -19,7 +19,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 18]
+VERSION = [1, 21, 19]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -62,7 +62,7 @@ manifest = {
         "name": "GeyserEvent Pack v" + VERSION_STR,
         "description": (
         "3D-рюкзак шахтёра, блоки призыва, 3D-пришелец (vindicator), "
-                            "тарелка (гаст), древний сундук, шкибиди-туалет (ravager), Роналду (illusioner)."
+                            "тарелка (гаст), древний сундук, шкибиди-туалет (ravager), Роналду (evoker/illusioner)."
         ),
         "uuid": PACK_UUID,
         "version": VERSION,

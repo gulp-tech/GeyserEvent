@@ -2,7 +2,6 @@ package ru.geyserevent.ronaldo;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.Color;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -14,7 +13,7 @@ import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.entity.Display;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Illusioner;
 import org.bukkit.entity.Item;
@@ -23,14 +22,12 @@ import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.SmallFireball;
 import org.bukkit.entity.Spellcaster;
-import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
@@ -78,7 +75,7 @@ public final class RonaldoEventManager {
     private boolean jumping;
     private BossBar bossBar;
     private BukkitRunnable tickTask;
-    private UUID hologramUuid;
+    private final List<UUID> hologramIds = new ArrayList<>();
     private UUID bossUuid;
     private boolean bossDefeated;
     private final Set<UUID> cloneIds = new HashSet<>();
@@ -579,40 +576,58 @@ public final class RonaldoEventManager {
         if (center == null || center.getWorld() == null) {
             return;
         }
-        Location loc = hologramLocation();
-        loc.getChunk().load(true);
-        TextDisplay display = center.getWorld().spawn(loc, TextDisplay.class, d -> {
-            d.setPersistent(false);
-            d.setGravity(false);
-            d.setInvulnerable(true);
-            d.setBillboard(Display.Billboard.CENTER);
-            d.setAlignment(TextDisplay.TextAlignment.CENTER);
-            d.setLineWidth(280);
-            d.setShadowed(true);
-            d.setSeeThrough(false);
-            d.setDefaultBackground(false);
-            d.setBackgroundColor(Color.fromARGB(170, 24, 16, 0));
-            d.setText(hologramText());
-        });
-        enlargeDisplay(display, 3.6f);
-        hologramUuid = display.getUniqueId();
+        Location base = hologramLocation();
+        if (base == null) {
+            return;
+        }
+        base.getChunk().load(true);
+        String[] lines = hologramLines();
+        for (int i = 0; i < lines.length; i++) {
+            Location loc = base.clone().add(0, -0.28 * i, 0);
+            final String line = lines[i];
+            ArmorStand stand = center.getWorld().spawn(loc, ArmorStand.class, s -> {
+                s.setPersistent(false);
+                s.setGravity(false);
+                s.setInvulnerable(true);
+                s.setInvisible(true);
+                s.setBasePlate(false);
+                s.setArms(false);
+                s.setSmall(true);
+                s.setCollidable(false);
+                s.setCustomNameVisible(true);
+                s.setCustomName(line);
+                s.setSilent(true);
+            });
+            hologramIds.add(stand.getUniqueId());
+        }
     }
 
     private void refreshHologram() {
         if (!active) {
             return;
         }
-        Entity entity = hologramUuid == null ? null : Bukkit.getEntity(hologramUuid);
-        if (!(entity instanceof TextDisplay display) || !display.isValid()) {
+        String[] lines = hologramLines();
+        if (hologramIds.size() != lines.length) {
             spawnHologram();
             return;
         }
-        display.setText(hologramText());
-        display.setBillboard(Display.Billboard.CENTER);
-        display.setGravity(false);
-        Location home = hologramLocation();
-        if (home != null && display.getLocation().distanceSquared(home) > 0.25) {
-            display.teleport(home);
+        Location base = hologramLocation();
+        for (int i = 0; i < lines.length; i++) {
+            Entity entity = Bukkit.getEntity(hologramIds.get(i));
+            if (!(entity instanceof ArmorStand stand) || !stand.isValid()) {
+                spawnHologram();
+                return;
+            }
+            stand.setCustomName(lines[i]);
+            stand.setCustomNameVisible(true);
+            stand.setInvisible(true);
+            stand.setGravity(false);
+            if (base != null) {
+                Location home = base.clone().add(0, -0.28 * i, 0);
+                if (stand.getLocation().distanceSquared(home) > 0.25) {
+                    stand.teleport(home);
+                }
+            }
         }
     }
 
@@ -620,39 +635,27 @@ public final class RonaldoEventManager {
         if (center == null) {
             return null;
         }
-        Location loc = new Location(center.getWorld(), center.getX(), center.getY() + 3.0, center.getZ() - 20.5);
-        loc.setYaw(180f);
-        loc.setPitch(0f);
-        return loc;
+        return new Location(center.getWorld(), center.getX(), center.getY() + 3.2, center.getZ() - 19.5);
     }
 
-    private String hologramText() {
+    private String[] hologramLines() {
         String warp = plugin.getConfig().getString("ronaldo.warp-name", "ronaldo");
-        return ColorUtil.color("&e&lSIUU  Роналду\n"
-                + "&7Открытие: &#E0C912" + openedAtClock + "\n"
-                + "&7До конца: &#E0C912" + ColorUtil.formatDuration(getSecondsRemaining()) + "\n"
-                + "&7Варп: &#E0C912/warp " + warp);
-    }
-
-    private void enlargeDisplay(Display display, float scale) {
-        try {
-            Transformation transformation = display.getTransformation();
-            Object vec = transformation.getClass().getMethod("getScale").invoke(transformation);
-            vec.getClass().getMethod("set", float.class, float.class, float.class)
-                    .invoke(vec, scale, scale, scale);
-            display.setTransformation(transformation);
-        } catch (Throwable ignored) {
-        }
+        return new String[]{
+                ColorUtil.color("&e&lSIUU  Роналду"),
+                ColorUtil.color("&7Открытие: &#E0C912" + openedAtClock),
+                ColorUtil.color("&7До конца: &#E0C912" + ColorUtil.formatDuration(getSecondsRemaining())),
+                ColorUtil.color("&7Варп: &#E0C912/warp " + warp)
+        };
     }
 
     private void removeHologram() {
-        if (hologramUuid != null) {
-            Entity entity = Bukkit.getEntity(hologramUuid);
+        for (UUID id : hologramIds) {
+            Entity entity = Bukkit.getEntity(id);
             if (entity != null) {
                 entity.remove();
             }
-            hologramUuid = null;
         }
+        hologramIds.clear();
     }
 
     private void removeClones() {
