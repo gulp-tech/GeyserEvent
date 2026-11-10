@@ -1404,9 +1404,13 @@ ronaldo:
   boss-levels: 50
   jump-interval-seconds: 6
   shoot-interval-seconds: 4
-  siuu-interval-seconds: 8
-  talk-interval-seconds: 14
+  siuu-interval-seconds: 45
+  talk-interval-seconds: 35
   warp-name: ronaldo
+  rewards:
+    1: 500
+    2: 300
+    3: 100
   # Essentials: старт /setwarp ronaldo, конец /delwarp ronaldo
   warp-set-command: "setwarp ronaldo"
   warp-delete-command: "delwarp ronaldo"

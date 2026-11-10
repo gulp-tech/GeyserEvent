@@ -1,30 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Стадион CR7 51×51: поле, нормальные ворота (стойки+перекладина+сетка), террасы, прожекторы."""
+"""Компактное поле CR7 37×37: газон, разметка, низкие бордюры, простые ворота. Без огромной полки."""
 from pathlib import Path
 
-N = 51
-CX = CZ = 25
-# Поле 35×29, запас за лицевой под сетку и трибуны
-Z0, Z1 = 8, 42
-X0, X1 = 11, 39
+N = 37
+CX = CZ = 18
+Z0, Z1 = 5, 31
+X0, X1 = 7, 29
 
 PALETTE = {
-    "N": "black_concrete",
-    "Q": "smooth_quartz",
-    "P": "quartz_pillar",
-    "S": "stone_bricks",
-    "R": "red_concrete",
-    "V": "green_terracotta",
-    "Y": "yellow_concrete",
-    "B": "blue_concrete",
     "G": "green_concrete",
     "D": "lime_concrete",
     "W": "white_concrete",
-    "O": "orange_concrete",
-    "F": "iron_bars",
-    "A": "sea_lantern",
-    "L": "glowstone",
-    "U": "end_rod",
+    "S": "stone_bricks",
+    "Y": "yellow_concrete",
+    "N": "white_stained_glass_pane",
     "X": "red_wool",
 }
 
@@ -44,11 +33,6 @@ def setc(g, x, z, ch):
 
 def hline(g, x0, x1, z, ch):
     for x in range(min(x0, x1), max(x0, x1) + 1):
-        setc(g, x, z, ch)
-
-
-def vline(g, x, z0, z1, ch):
-    for z in range(min(z0, z1), max(z0, z1) + 1):
         setc(g, x, z, ch)
 
 
@@ -77,140 +61,65 @@ def in_pitch(x, z):
     return X0 <= x <= X1 and Z0 <= z <= Z1
 
 
-def dist_to_pitch(x, z):
-    if in_pitch(x, z):
-        return 0
-    dx = 0 if X0 <= x <= X1 else min(abs(x - X0), abs(x - X1))
-    dz = 0 if Z0 <= z <= Z1 else min(abs(z - Z0), abs(z - Z1))
-    if X0 <= x <= X1:
-        return dz
-    if Z0 <= z <= Z1:
-        return dx
-    return min(dx, dz)
-
-
-def in_goal_mouth(x, z):
-    if not (CX - 3 <= x <= CX + 3):
-        return False
-    return (Z0 - 2 <= z <= Z0) or (Z1 <= z <= Z1 + 2)
-
-
-layers = {y: grid(".") for y in range(7)}
-
-# --- y=0 ground ---
+layers = {y: grid(".") for y in range(5)}
 g0 = layers[0]
 for z in range(N):
     for x in range(N):
-        ring = min(x, z, N - 1 - x, N - 1 - z)
-        d = dist_to_pitch(x, z)
-        if ring <= 1:
-            setc(g0, x, z, "N")
-        elif in_pitch(x, z):
-            stripe = "D" if ((z - Z0) // 2) % 2 == 0 else "G"
-            setc(g0, x, z, stripe)
-        elif d == 1:
-            setc(g0, x, z, "O")
-        elif ring == 2:
-            setc(g0, x, z, "Q")
-        else:
+        if in_pitch(x, z):
+            setc(g0, x, z, "D" if ((z - Z0) // 2) % 2 == 0 else "G")
+        elif X0 - 1 <= x <= X1 + 1 and Z0 - 1 <= z <= Z1 + 1:
             setc(g0, x, z, "S")
 
 rect(g0, X0, Z0, X1, Z1, "W", fill=False)
 hline(g0, X0, X1, CZ, "W")
-circle(g0, CX, CZ, 5, "W")
+circle(g0, CX, CZ, 4, "W")
 setc(g0, CX, CZ, "W")
-
-box_w, box_d = 9, 7
-goal_w, goal_d = 4, 3
-spot_d = 5
+box_w, box_d = 7, 5
+goal_w, goal_d = 3, 2
 for z_goal, inward in ((Z0, 1), (Z1, -1)):
     rect(g0, CX - box_w, z_goal, CX + box_w, z_goal + inward * box_d, "W", fill=False)
     rect(g0, CX - goal_w, z_goal, CX + goal_w, z_goal + inward * goal_d, "W", fill=False)
-    setc(g0, CX, z_goal + inward * spot_d, "W")
-for x, z, dx, dz in (
-    (X0, Z0, 1, 1), (X1, Z0, -1, 1), (X0, Z1, 1, -1), (X1, Z1, -1, -1)
-):
-    setc(g0, x + dx, z, "W")
-    setc(g0, x, z + dz, "W")
-    setc(g0, x + dx, z + dz, "W")
+    setc(g0, CX, z_goal + inward * 4, "W")
 
-# --- seats / walls y=1..4 ---
-for y in range(1, 5):
-    g = layers[y]
-    for z in range(N):
-        for x in range(N):
-            ring = min(x, z, N - 1 - x, N - 1 - z)
-            d = dist_to_pitch(x, z)
-            if in_pitch(x, z) or in_goal_mouth(x, z):
-                continue
-            if ring <= 1:
-                if y <= 3:
-                    setc(g, x, z, "N")
-                continue
-            if ring == 2 and y <= 4:
-                setc(g, x, z, "Q")
-                continue
-            # террасы: ближе к полю — ниже, сзади — выше
-            if d == 1:
-                continue
-            max_y = 1 if d == 2 else (2 if d == 3 else (3 if d == 4 else 4))
-            if y > max_y:
-                continue
-            if y == max_y:
-                # сиденья: красные с юга, зелёные с севера, жёлтая кромка
-                if d == 2:
-                    setc(g, x, z, "Y")
-                elif z < CZ:
-                    setc(g, x, z, "R")
-                else:
-                    setc(g, x, z, "V")
-            else:
-                setc(g, x, z, "S")
+# низкий бордюр сидений — один ряд, без террас в гору
+g1 = layers[1]
+for z in range(N):
+    for x in range(N):
+        if in_pitch(x, z):
+            continue
+        if X0 - 1 <= x <= X1 + 1 and Z0 - 1 <= z <= Z1 + 1:
+            setc(g1, x, z, "Y")
 
-# --- ворота: стойки + перекладина + сетка НАЗАД, рот открыт ---
+# ворота: стойки + перекладина на y=3, сетка сзади (не коробка)
 def build_goal(z_line, net_dir):
-    left, right = CX - 3, CX + 3
+    left, right = CX - 2, CX + 2
     for y in (1, 2, 3):
-        setc(layers[y], left, z_line, "P")
-        setc(layers[y], right, z_line, "P")
-    hline(layers[4], left, right, z_line, "P")
-    for step in (1, 2):
-        z = z_line + net_dir * step
-        for y in (1, 2, 3, 4):
-            hline(layers[y], left, right, z, "F")
-            setc(layers[y], left, z, "F")
-            setc(layers[y], right, z, "F")
-    # боковые стойки сетки к линии ворот
-    for y in (1, 2, 3):
-        setc(layers[y], left, z_line + net_dir, "F")
-        setc(layers[y], right, z_line + net_dir, "F")
+        setc(layers[y], left, z_line, "W")
+        setc(layers[y], right, z_line, "W")
+    hline(layers[3], left, right, z_line, "W")
+    zb = z_line + net_dir
+    for x in range(left, right + 1):
+        for y in (1, 2, 3):
+            setc(layers[y], x, zb, "N")
+    for y in (1, 2):
+        setc(layers[y], left, zb, "N")
+        setc(layers[y], right, zb, "N")
 
 
 build_goal(Z0, -1)
 build_goal(Z1, 1)
 
-# угловые флаги
 for x, z in ((X0, Z0), (X1, Z0), (X0, Z1), (X1, Z1)):
-    setc(layers[1], x, z, "U")
-    setc(layers[2], x, z, "X")
+    setc(layers[1], x, z, "X")
 
-# прожекторы-башни
-for x, z in ((2, 2), (48, 2), (2, 48), (48, 48), (2, CX), (48, CX), (CX, 2), (CX, 48)):
-    for y in range(1, 5):
-        setc(layers[y], x, z, "P")
-    setc(layers[5], x, z, "A")
-    setc(layers[6], x, z, "L")
-
-# sanity
-assert dump(g0)[Z0][X0] == "W"
-assert dump(layers[1])[Z0][CX] == "."  # рот ворот открыт
-assert dump(layers[1])[Z0][CX - 3] == "P"
-assert dump(layers[4])[Z0][CX] == "P"
-assert len(dump(g0)) == N
+assert dump(layers[1])[Z0][CX] == ".", dump(layers[1])[Z0]
+assert dump(layers[1])[Z0][CX - 2] == "W"
+assert dump(layers[2])[Z0][CX] == ".", "рот ворот не должен быть стеной"
+assert dump(layers[3])[Z0][CX] == "W"
 
 out = Path(__file__).resolve().parents[1] / "src/main/resources/schematics/ronaldo_stadium.schem.yml"
 lines = [
-    "# Стадион CR7 51×51 — поле, открытые ворота (стойки/перекладина/сетка), террасы, прожекторы.",
+    "# Поле CR7 37×37 — газон, разметка, простые ворота. Без внешней полки.",
     "boss-spawn-offset:",
     "  x: 0.5",
     "  y: 1.0",
@@ -224,14 +133,14 @@ for k, v in PALETTE.items():
     lines.append(f"  {k}: {v}")
 lines.append("")
 lines.append("layers:")
-for key in range(7):
+for key in range(5):
     lines.append(f'  "{key}":')
     for row in dump(layers[key]):
         lines.append(f'    - "{row}"')
     lines.append("")
 out.write_text("\n".join(lines), encoding="utf-8")
 print("wrote", out, out.stat().st_size)
-print("goal line y1:", dump(layers[1])[Z0][CX - 5: CX + 6])
-print("crossbar y4:", dump(layers[4])[Z0][CX - 5: CX + 6])
-print("net back y2:", dump(layers[2])[Z0 - 2][CX - 5: CX + 6])
-print("pitch mid:", dump(g0)[CZ][X0 - 1: X1 + 2])
+print("goal y1", dump(layers[1])[Z0][CX - 4: CX + 5])
+print("goal y2", dump(layers[2])[Z0][CX - 4: CX + 5])
+print("goal y3", dump(layers[3])[Z0][CX - 4: CX + 5])
+print("net  y1", dump(layers[1])[Z0 - 1][CX - 4: CX + 5])

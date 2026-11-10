@@ -38,6 +38,7 @@ import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.config.PluginConfig;
+import ru.geyserevent.event.DamageLeaderboard;
 import ru.geyserevent.schematic.RiftSchematicManager;
 import ru.geyserevent.util.ColorUtil;
 
@@ -60,7 +61,7 @@ public final class RonaldoEventManager {
 
     public static final String REGION_ID = "geyserevent_ronaldo";
     public static final String SCHEMATIC_FILE = "ronaldo_stadium.schem.yml";
-    public static final int ARENA_RADIUS = 26;
+    public static final int ARENA_RADIUS = 19;
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -92,6 +93,7 @@ public final class RonaldoEventManager {
     private UUID bossUuid;
     private boolean bossDefeated;
     private final Set<UUID> cloneIds = new HashSet<>();
+    private final DamageLeaderboard leaderboard = new DamageLeaderboard();
     private String activeWarpName;
 
     public RonaldoEventManager(GeyserEventPlugin plugin) {
@@ -149,7 +151,7 @@ public final class RonaldoEventManager {
         this.chargingFreeKick = false;
 
         setChunksForceLoaded(this.center, true);
-        schematicManager.pasteSchematic(this.center, ARENA_RADIUS + 2, 16);
+        schematicManager.pasteSchematic(this.center, 28, 16);
         schematicManager.persistRestoreState(restoreSnapshotFile());
         spawnHologram();
         createBossBar();
@@ -278,7 +280,6 @@ public final class RonaldoEventManager {
             bossDefeated = true;
         }
         Location loc = entity.getLocation();
-        dropLoot(loc);
         grantKillLevels(entity, boss);
         if (boss) {
             playKeyed(loc, "ronaldo_siuu", 2.2f, 0.9f, true);
@@ -286,7 +287,8 @@ public final class RonaldoEventManager {
             if (loc.getWorld() != null) {
                 loc.getWorld().strikeLightningEffect(loc);
             }
-            dropTrophy(loc);
+            fountainLoot();
+            distributeRewards();
             Bukkit.getScheduler().runTaskLater(plugin, this::stopCustomSounds, 100L);
         }
         if (loc.getWorld() != null) {
@@ -455,7 +457,6 @@ public final class RonaldoEventManager {
             loc.getWorld().createExplosion(loc, 1.55f, false, false, boss);
             launchNearby(loc, 5.5, 1.15, 0.55);
             spawnBurst(loc, Color.RED, Color.GREEN);
-            playKeyed(loc, "ronaldo_siuu", 1.6f, 1.05f);
             return;
         }
         int every = Math.max(4, plugin.getConfig().getInt("ronaldo.jump-interval-seconds", 6));
@@ -564,10 +565,8 @@ public final class RonaldoEventManager {
             at.getWorld().strikeLightningEffect(at);
             launchNearby(at, 6.5, 1.25, 0.7);
             spawnBurst(at, Color.YELLOW, Color.RED);
-            playKeyed(at, "ronaldo_siuu", 2.0f, 1.0f);
             double max = live.getMaxHealth();
             live.setHealth(Math.min(max, live.getHealth() + Math.max(40.0, max * 0.12)));
-            shoutGoal();
         }, 14L);
     }
 
@@ -638,8 +637,8 @@ public final class RonaldoEventManager {
         trapTicks = 0;
         boolean hit = false;
         Location[] goals = {
-                center.clone().add(0.0, 1.0, -17.0),
-                center.clone().add(0.0, 1.0, 17.0)
+                center.clone().add(0.0, 1.0, -13.0),
+                center.clone().add(0.0, 1.0, 13.0)
         };
         for (Location goal : goals) {
             for (Player player : center.getWorld().getPlayers()) {
@@ -655,25 +654,11 @@ public final class RonaldoEventManager {
                     out = new Vector(0, 0, 1);
                 }
                 player.setVelocity(out.normalize().multiply(1.15).setY(0.95));
-                player.sendMessage(ColorUtil.color("&e┠ &cСетки ворот! &fCR7 тебя вытащил."));
                 hit = true;
             }
         }
         if (hit) {
-            playKeyed(boss.getLocation(), "ronaldo_siuu", 1.4f, 1.15f);
-        }
-    }
-
-    private void shoutGoal() {
-        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &e&lGOOOOL &f— SIUUUUU"));
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!plugin.getBedrockService().canParticipate(player)) {
-                continue;
-            }
-            try {
-                player.sendTitle(ColorUtil.color("&e&lGOOOOL"), ColorUtil.color("&fSIUUUUU"), 5, 28, 8);
-            } catch (Throwable ignored) {
-            }
+            boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.8f, 1.2f);
         }
     }
 
@@ -724,7 +709,6 @@ public final class RonaldoEventManager {
         Location loc = player.getLocation();
         loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_ATTACK_STRONG, 1.4f, 0.65f);
         loc.getWorld().spawnParticle(Particle.CLOUD, loc, 10, 0.2, 0.2, 0.2, 0.03);
-        player.sendMessage(ColorUtil.color("&e┠ &fCR7 тебя &eвыбил с поля!"));
     }
 
     private boolean enraged(LivingEntity boss) {
@@ -739,8 +723,8 @@ public final class RonaldoEventManager {
     }
 
     private Location nearestGoal(Location from) {
-        Location a = center.clone().add(0.0, 1.0, -17.0);
-        Location b = center.clone().add(0.0, 1.0, 17.0);
+        Location a = center.clone().add(0.0, 1.0, -13.0);
+        Location b = center.clone().add(0.0, 1.0, 13.0);
         return from.distanceSquared(a) <= from.distanceSquared(b) ? a : b;
     }
 
@@ -809,8 +793,8 @@ public final class RonaldoEventManager {
     private void tickVoices(LivingEntity boss) {
         siuuTicks++;
         talkTicks++;
-        int siuuEvery = Math.max(6, plugin.getConfig().getInt("ronaldo.siuu-interval-seconds", 10));
-        int talkEvery = Math.max(8, plugin.getConfig().getInt("ronaldo.talk-interval-seconds", 14));
+        int siuuEvery = Math.max(25, plugin.getConfig().getInt("ronaldo.siuu-interval-seconds", 45));
+        int talkEvery = Math.max(20, plugin.getConfig().getInt("ronaldo.talk-interval-seconds", 35));
         Location loc = boss.getLocation();
         if (siuuTicks >= siuuEvery) {
             siuuTicks = 0;
@@ -882,13 +866,28 @@ public final class RonaldoEventManager {
         mob.setTarget(best);
     }
 
-    private void dropLoot(Location loc) {
+    public void recordDamage(Player attacker, double amount) {
+        if (attacker == null || amount <= 0 || !active) {
+            return;
+        }
+        leaderboard.addDamage(attacker.getUniqueId(), attacker.getName(), amount);
+    }
+
+    private void fountainLoot() {
+        Location origin = center != null ? center.clone().add(0.5, 1.4, 0.5) : null;
+        burstLoot(origin);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> burstLoot(origin), 10L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> burstLoot(origin), 20L);
+        dropTrophy(origin);
+    }
+
+    private void burstLoot(Location loc) {
         if (loc == null || loc.getWorld() == null) {
             return;
         }
         List<PluginConfig.AlienLootItem> loot = plugin.getPluginConfig().getRonaldoLoot();
         if (loot == null || loot.isEmpty()) {
-            loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GOLD_INGOT, 1 + random.nextInt(3)));
+            launchDrop(loc, new ItemStack(Material.GOLD_INGOT, 1 + random.nextInt(4)));
             return;
         }
         for (PluginConfig.AlienLootItem item : loot) {
@@ -901,9 +900,51 @@ public final class RonaldoEventManager {
             int min = Math.max(1, item.minAmount());
             int max = Math.max(min, item.maxAmount());
             int amount = min + random.nextInt(max - min + 1);
-            ItemStack stack = ru.geyserevent.util.LootStacks.fromAlien(item, amount);
-            Item dropped = loc.getWorld().dropItemNaturally(loc, stack);
-            dropped.setPickupDelay(5);
+            launchDrop(loc, ru.geyserevent.util.LootStacks.fromAlien(item, amount));
+        }
+    }
+
+    private void launchDrop(Location loc, ItemStack stack) {
+        Item dropped = loc.getWorld().dropItem(loc, stack);
+        dropped.setPickupDelay(12);
+        dropped.setVelocity(new Vector(
+                (random.nextDouble() - 0.5) * 0.55,
+                0.45 + random.nextDouble() * 0.35,
+                (random.nextDouble() - 0.5) * 0.55
+        ));
+    }
+
+    private void distributeRewards() {
+        List<DamageLeaderboard.DamageEntry> top = leaderboard.getTop(3);
+        if (top.isEmpty()) {
+            return;
+        }
+        int[] prizes = {
+                plugin.getConfig().getInt("ronaldo.rewards.1", 500),
+                plugin.getConfig().getInt("ronaldo.rewards.2", 300),
+                plugin.getConfig().getInt("ronaldo.rewards.3", 100)
+        };
+        String[] labels = {"&61 место", "&f2 место", "&c3 место"};
+        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &eТоп урона по CR7:"));
+        for (int i = 0; i < top.size(); i++) {
+            DamageLeaderboard.DamageEntry entry = top.get(i);
+            int reward = prizes[i];
+            Bukkit.broadcastMessage(ColorUtil.color(String.format(
+                    "&e┠ %s: &#E0C912%s &8(&c%d ❤&8) &7+&a%d осколков",
+                    labels[i], entry.playerName(), (int) Math.round(entry.damage()), reward)));
+            if (reward > 0 && plugin.getPlayerPointsHook() != null) {
+                plugin.getPlayerPointsHook().giveShards(entry.uuid(), entry.playerName(), reward);
+            }
+            Player online = Bukkit.getPlayer(entry.uuid());
+            if (online != null && online.isOnline()) {
+                try {
+                    online.sendTitle(
+                            ColorUtil.color("&6&l" + (i + 1) + " МЕСТО"),
+                            ColorUtil.color("&a+" + reward + " осколков"),
+                            8, 50, 12);
+                } catch (Throwable ignored) {
+                }
+            }
         }
     }
 
@@ -971,14 +1012,13 @@ public final class RonaldoEventManager {
         if (center == null) {
             return null;
         }
-        return new Location(center.getWorld(), center.getX(), center.getY() + 3.2, center.getZ() - 19.5);
+        return new Location(center.getWorld(), center.getX(), center.getY() + 2.8, center.getZ());
     }
 
     private String[] hologramLines() {
         String warp = plugin.getConfig().getString("ronaldo.warp-name", "ronaldo");
         return new String[]{
-                ColorUtil.color("&e&lSIUU  Роналду"),
-                ColorUtil.color("&7Открытие: &#E0C912" + openedAtClock),
+                ColorUtil.color("&e&lУбейте Роналду"),
                 ColorUtil.color("&7До конца: &#E0C912" + ColorUtil.formatDuration(getSecondsRemaining())),
                 ColorUtil.color("&7Варп: &#E0C912/warp " + warp)
         };
@@ -1048,12 +1088,8 @@ public final class RonaldoEventManager {
             return;
         }
         String warp = plugin.getConfig().getString("ronaldo.warp-name", "ronaldo");
-        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &e&lSIUUUUU &f— Роналду вышел на стадион!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fCR7: ножницы, штрафной, мяч, рывок, сетка ворот."));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fВарп: &#E0C912/warp " + warp + " &8(снимется после ивента)"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
-                + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЛокатор: &#34D711/event gps"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &eРоналду на стадионе. &#E0C912/warp " + warp
+                + " &7· убейте босса."));
     }
 
     private Location randomPitchSpawn() {

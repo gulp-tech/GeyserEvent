@@ -2,7 +2,6 @@ package ru.geyserevent.skibidi;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.Color;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,19 +12,17 @@ import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.entity.Display;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Ravager;
-import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
@@ -72,7 +69,7 @@ public final class SkibidiToiletManager {
     private BossBar bossBar;
     private BukkitRunnable tickTask;
     private BukkitRunnable jumpTask;
-    private UUID hologramUuid;
+    private final List<UUID> hologramIds = new ArrayList<>();
     private UUID bigToiletUuid;
     private Location toiletHome;
     private boolean bigDefeated;
@@ -557,98 +554,103 @@ public final class SkibidiToiletManager {
         }
     }
 
-    private void spawnHologram() {
-        removeHologram();
-        if (center == null || center.getWorld() == null) {
-            return;
-        }
-        Location loc = hologramLocation();
-        loc.getChunk().load(true);
-        TextDisplay display = center.getWorld().spawn(loc, TextDisplay.class, d -> {
-            d.setPersistent(false);
-            d.setGravity(false);
-            d.setInvulnerable(true);
-            d.setBillboard(Display.Billboard.CENTER);
-            d.setAlignment(TextDisplay.TextAlignment.CENTER);
-            d.setLineWidth(280);
-            d.setShadowed(true);
-            d.setSeeThrough(false);
-            d.setDefaultBackground(false);
-            d.setBackgroundColor(Color.fromARGB(170, 8, 8, 12));
-            d.setText(hologramText());
-        });
-        enlargeDisplay(display, 3.6f);
-        hologramUuid = display.getUniqueId();
-    }
-
-    private void refreshHologram() {
-        if (!active) {
-            return;
-        }
-        Entity entity = hologramUuid == null ? null : Bukkit.getEntity(hologramUuid);
-        if (!(entity instanceof TextDisplay display) || !display.isValid()) {
-            spawnHologram();
-            return;
-        }
-        display.setText(hologramText());
-        display.setBillboard(Display.Billboard.CENTER);
-        display.setGravity(false);
-        Location home = hologramLocation();
-        if (home != null && display.getLocation().distanceSquared(home) > 0.25) {
-            display.teleport(home);
-        }
-    }
-
     private Location bigToiletSpawnLocation() {
         if (center == null || center.getWorld() == null) {
             return null;
         }
-        Location loc = snapToSurface(center.clone().add(0, 0, -18));
+        Location loc = snapToSurface(center.clone().add(0, 0, -12));
         loc.setY(loc.getY() + 1.0);
         loc.setYaw(180f);
         loc.setPitch(0f);
         return loc;
     }
 
+    private void spawnHologram() {
+        removeHologram();
+        if (center == null || center.getWorld() == null) {
+            return;
+        }
+        Location base = hologramLocation();
+        if (base == null) {
+            return;
+        }
+        base.getChunk().load(true);
+        String[] lines = hologramLines();
+        for (int i = 0; i < lines.length; i++) {
+            Location loc = base.clone().add(0, -0.28 * i, 0);
+            final String line = lines[i];
+            ArmorStand stand = center.getWorld().spawn(loc, ArmorStand.class, s -> {
+                s.setPersistent(false);
+                s.setGravity(false);
+                s.setInvulnerable(true);
+                s.setInvisible(true);
+                s.setBasePlate(false);
+                s.setArms(false);
+                s.setSmall(true);
+                s.setCollidable(false);
+                s.setCustomNameVisible(true);
+                s.setCustomName(line);
+                s.setSilent(true);
+            });
+            hologramIds.add(stand.getUniqueId());
+        }
+    }
+
+    private void refreshHologram() {
+        if (!active) {
+            return;
+        }
+        String[] lines = hologramLines();
+        if (hologramIds.size() != lines.length) {
+            spawnHologram();
+            return;
+        }
+        Location base = hologramLocation();
+        for (int i = 0; i < lines.length; i++) {
+            Entity entity = Bukkit.getEntity(hologramIds.get(i));
+            if (!(entity instanceof ArmorStand stand) || !stand.isValid()) {
+                spawnHologram();
+                return;
+            }
+            stand.setCustomName(lines[i]);
+            stand.setCustomNameVisible(true);
+            stand.setInvisible(true);
+            stand.setGravity(false);
+            if (base != null) {
+                Location home = base.clone().add(0, -0.28 * i, 0);
+                if (stand.getLocation().distanceSquared(home) > 0.25) {
+                    stand.teleport(home);
+                }
+            }
+        }
+    }
+
     private Location hologramLocation() {
         if (center == null) {
             return null;
         }
-        // Перед северной гранью схемы (z=-17), внизу, не внутри блоков.
-        Location loc = new Location(center.getWorld(), center.getX(), center.getY() + 1.85, center.getZ() - 19.5);
-        loc.setYaw(180f);
-        loc.setPitch(0f);
-        return loc;
+        return new Location(center.getWorld(), center.getX(), center.getY() + 2.8, center.getZ());
     }
 
-    private String hologramText() {
+    private String[] hologramLines() {
         String next = secondsToNextWave <= 0
                 ? "сейчас"
                 : ColorUtil.formatDuration(secondsToNextWave);
-        return ColorUtil.color("&f&lШкибиди Туалет\n"
-                + "&7Открытие: &#E0C912" + openedAtClock + "\n"
-                + "&7Следующая волна: &#E0C912" + next);
-    }
-
-    private void enlargeDisplay(Display display, float scale) {
-        try {
-            Transformation transformation = display.getTransformation();
-            Object vec = transformation.getClass().getMethod("getScale").invoke(transformation);
-            vec.getClass().getMethod("set", float.class, float.class, float.class)
-                    .invoke(vec, scale, scale, scale);
-            display.setTransformation(transformation);
-        } catch (Throwable ignored) {
-        }
+        return new String[]{
+                ColorUtil.color("&f&lУбейте Шкибиди"),
+                ColorUtil.color("&7До конца: &#E0C912" + ColorUtil.formatDuration(getSecondsRemaining())),
+                ColorUtil.color("&7Волна: &#E0C912" + next)
+        };
     }
 
     private void removeHologram() {
-        if (hologramUuid != null) {
-            Entity entity = Bukkit.getEntity(hologramUuid);
+        for (UUID id : hologramIds) {
+            Entity entity = Bukkit.getEntity(id);
             if (entity != null) {
                 entity.remove();
             }
-            hologramUuid = null;
         }
+        hologramIds.clear();
     }
 
     private void removeToilets() {
