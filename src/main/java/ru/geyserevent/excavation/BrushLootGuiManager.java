@@ -3,6 +3,7 @@ package ru.geyserevent.excavation;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -104,7 +105,20 @@ public class BrushLootGuiManager {
         }
     }
 
-    public static class AlienMenuHolder implements InventoryHolder {
+    public static class FlatLootHolder implements InventoryHolder {
+        private final String path;
+        private final String title;
+        private final Material icon;
+        private final boolean yamlList;
+        private final List<String> keys = new ArrayList<>();
+
+        public FlatLootHolder(String path, String title, Material icon, boolean yamlList) {
+            this.path = path;
+            this.title = title;
+            this.icon = icon;
+            this.yamlList = yamlList;
+        }
+
         @Override
         public Inventory getInventory() {
             return null;
@@ -183,23 +197,39 @@ public class BrushLootGuiManager {
         inv.setItem(31, createTierSelectIcon(BrushTier.EPIC, LootCategory.MINE));
         inv.setItem(33, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.MINE));
 
-        // Ряд 4: «Пришельцы» (36)
+        // Ряд 4: плоский лут — пришельцы, скибиди, клад, Роналду
         inv.setItem(36, createButton(
                 Material.ENDER_EYE,
-                "&#A020FF&lПришельцы — Настройка лута",
+                "&#A020FF&lПришельцы",
                 List.of(
-                        "&7Лут из сундуков посадочной площадки",
-                        "&7пришельцев (alien.chests.loot).",
+                        "&7Лут сундуков посадочной площадки.",
+                        "",
+                        "&eНажмите, чтобы открыть меню лута"
+                )
+        ));
+        inv.setItem(38, createButton(
+                Material.HOPPER,
+                "&f&lШкибиди Туалет",
+                List.of(
+                        "&7Лут с туалетов (skibidi.loot).",
                         "",
                         "&eНажмите, чтобы открыть меню лута"
                 )
         ));
         inv.setItem(40, createButton(
-                Material.WIND_CHARGE,
-                "&#7DF9FF&lДревний клад — Настройка лута",
+                Material.ENDER_CHEST,
+                "&#7DF9FF&lДревний клад",
                 List.of(
-                        "&7Лут сундука в руинах древнего города.",
-                        "&7Тот же список, что у пришельцев.",
+                        "&7Лут сундука в руинах (wind.loot).",
+                        "",
+                        "&eНажмите, чтобы открыть меню лута"
+                )
+        ));
+        inv.setItem(42, createButton(
+                Material.GOLDEN_HELMET,
+                "&e&lРоналду SIUU",
+                List.of(
+                        "&7Лут с CR7 (ronaldo.loot).",
                         "",
                         "&eНажмите, чтобы открыть меню лута"
                 )
@@ -209,120 +239,202 @@ public class BrushLootGuiManager {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
     }
 
-    /**
-     * Открывает 27-слотовое GUI-меню настройки лута Пришельцев (alien.chests.loot).
-     * Лут — flat-список (без tiers): материал, min, max, chance.
-     */
-    @SuppressWarnings("deprecation")
     public void openAlienMenu(Player player) {
-        Inventory inv = Bukkit.createInventory(
-                new AlienMenuHolder(),
-                27,
-                ColorUtil.color("&8Лут: Пришельцы")
-        );
+        openFlatLootMenu(player, "alien.chests.loot", "Пришельцы", Material.ENDER_EYE, true);
+    }
 
+    @SuppressWarnings("deprecation")
+    public void openFlatLootMenu(Player player, String path, String title, Material icon, boolean yamlList) {
+        FlatLootHolder holder = new FlatLootHolder(path, title, icon, yamlList);
+        Inventory inv = Bukkit.createInventory(
+                holder,
+                54,
+                ColorUtil.color("&8Лут: " + title)
+        );
         ItemStack border = createButton(Material.PURPLE_STAINED_GLASS_PANE, "&5", List.of());
         ItemStack filler = createButton(Material.GRAY_STAINED_GLASS_PANE, "&7", List.of());
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, (i < 9 || i >= 18) ? border : filler);
+        for (int i = 0; i < 54; i++) {
+            inv.setItem(i, (i < 9 || i >= 45) ? border : filler);
         }
-
         inv.setItem(4, createButton(
-                Material.ENDER_EYE,
-                "&#A020FF&lПришельцы — Настройка лута",
+                icon,
+                "&d&l" + title + " — лут",
                 List.of(
-                        "&7Лут из сундуков посадочной площадки.",
-                        "&7LEFT click: +5% &8| &7RIGHT click: -5%",
+                        "&7LEFT: +5%  &8|&7  RIGHT: -5%",
                         "&7SHIFT+LEFT: удалить предмет",
                         "",
-                        "&fНажмите на предмет в инвентаре,",
-                        "&fчтобы добавить новый лут-предмет."
+                        "&fНажмите предмет в инвентаре,",
+                        "&fчтобы добавить его в лут."
                 )
         ));
 
-        // Показываем существующий лут (максимум 14 слотов: 2 ряда × 7)
-        List<Map<?, ?>> lootList = plugin.getConfig().getMapList("alien.chests.loot");
-        int slot = 10;
-        for (int i = 0; i < Math.min(lootList.size(), 14); i++) {
-            Map<?, ?> entry = lootList.get(i);
-            String matName = String.valueOf(entry.get("material"));
-            Material mat = Material.matchMaterial(matName);
-            if (mat == null || mat == Material.AIR) mat = Material.STONE;
-            double chance = entry.get("chance") instanceof Number n ? n.doubleValue() : 25.0;
-            int min = entry.get("min") instanceof Number n ? n.intValue() : 1;
-            int max = entry.get("max") instanceof Number n ? n.intValue() : min;
-
-            ItemStack item = new ItemStack(mat);
+        List<FlatLootEntry> entries = readFlatLoot(holder);
+        holder.keys.clear();
+        for (FlatLootEntry e : entries) {
+            holder.keys.add(e.key);
+        }
+        int max = Math.min(entries.size(), 36);
+        for (int i = 0; i < max; i++) {
+            FlatLootEntry e = entries.get(i);
+            ItemStack item = new ItemStack(e.material == null ? Material.STONE : e.material);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                meta.setDisplayName(ColorUtil.color("&f" + matName + " &7[" + (int) chance + "%]"));
+                meta.setDisplayName(ColorUtil.color("&f" + e.material.name() + " &7[" + (int) e.chance + "%]"));
                 meta.setLore(List.of(
-                        ColorUtil.color("&7Мин: &f" + min + " &7Макс: &f" + max),
+                        ColorUtil.color("&7Мин: &f" + e.min + " &7Макс: &f" + e.max),
                         ColorUtil.color("&7LEFT: +5% &7RIGHT: -5%"),
                         ColorUtil.color("&7SHIFT+LEFT: удалить")
                 ));
                 item.setItemMeta(meta);
             }
-            inv.setItem(slot, item);
-            slot++;
-            if (slot == 17) slot = 19;
+            inv.setItem(9 + i, item);
         }
 
-        // Кнопки управления
-        inv.setItem(18, createButton(
+        inv.setItem(45, createButton(
                 Material.ARROW,
                 "&e« Все ивенты (/rift menu)",
                 List.of("&7Перейти в общее меню всех ивентов")
         ));
-        inv.setItem(26, createButton(
+        inv.setItem(53, createButton(
                 Material.BARRIER,
                 "&cЗакрыть",
                 List.of("&7Закрыть меню")
         ));
-
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.7f, 1.2f);
     }
 
-    /**
-     * Обрабатывает клик на лут-предмет в меню Пришельцев.
-     * LEFT: +5% &nbsp;|&nbsp; RIGHT: -5% &nbsp;|&nbsp; SHIFT+LEFT: удалить
-     */
-    private void handleAlienLootClick(InventoryClickEvent event, Player player, List<Map<?, ?>> lootList, int index) {
-        if (index < 0 || index >= lootList.size()) {
+    private record FlatLootEntry(String key, Material material, int min, int max, double chance) {
+    }
+
+    private List<FlatLootEntry> readFlatLoot(FlatLootHolder holder) {
+        List<FlatLootEntry> out = new ArrayList<>();
+        if (holder.yamlList) {
+            List<Map<?, ?>> lootList = plugin.getConfig().getMapList(holder.path);
+            for (int i = 0; i < lootList.size(); i++) {
+                Map<?, ?> entry = lootList.get(i);
+                String matName = String.valueOf(entry.get("material"));
+                Material mat = Material.matchMaterial(matName);
+                if (mat == null || mat.isAir()) {
+                    mat = Material.STONE;
+                }
+                double chance = entry.get("chance") instanceof Number n ? n.doubleValue() : 25.0;
+                int min = entry.get("min") instanceof Number n ? n.intValue() : 1;
+                int max = entry.get("max") instanceof Number n ? n.intValue() : min;
+                out.add(new FlatLootEntry(String.valueOf(i), mat, min, max, chance));
+            }
+            return out;
+        }
+        ConfigurationSection sec = plugin.getConfig().getConfigurationSection(holder.path);
+        if (sec == null) {
+            return out;
+        }
+        for (String key : sec.getKeys(false)) {
+            ConfigurationSection item = sec.getConfigurationSection(key);
+            if (item == null) {
+                continue;
+            }
+            Material mat = Material.matchMaterial(item.getString("material", "STONE"));
+            if (mat == null || mat.isAir()) {
+                mat = Material.STONE;
+            }
+            out.add(new FlatLootEntry(
+                    key,
+                    mat,
+                    Math.max(1, item.getInt("min", 1)),
+                    Math.max(1, item.getInt("max", 1)),
+                    item.getDouble("chance", 25.0)
+            ));
+        }
+        return out;
+    }
+
+    private void handleFlatLootClick(InventoryClickEvent event, Player player, FlatLootHolder holder, int index) {
+        List<FlatLootEntry> entries = readFlatLoot(holder);
+        if (index < 0 || index >= entries.size()) {
             return;
         }
-        Map<?, ?> entry = lootList.get(index);
-        double chance = entry.get("chance") instanceof Number n ? n.doubleValue() : 25.0;
-
-        if (event.isShiftClick()) {
-            lootList.remove(index);
-            plugin.getConfig().set("alien.chests.loot", lootList);
-            plugin.saveConfig();
-            player.sendMessage(ColorUtil.color("&cУдалён предмет из лута Пришельцев."));
+        FlatLootEntry entry = entries.get(index);
+        if (event.isShiftClick() && event.isLeftClick()) {
+            removeFlatLoot(holder, index, entry.key);
+            player.sendMessage(ColorUtil.color("&cУдалён предмет из лута «" + holder.title + "»."));
             player.playSound(player.getLocation(), Sound.BLOCK_STONE_BREAK, 0.8f, 1.0f);
-            openAlienMenu(player);
-        } else if (event.isRightClick()) {
+            openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList);
+            return;
+        }
+        double chance = entry.chance;
+        if (event.isRightClick()) {
             chance = Math.max(0, chance - 5.0);
-            setAlienLootChance(lootList, index, chance);
-            player.sendMessage(ColorUtil.color("&eШанс: " + (int) chance + "%"));
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
-            openAlienMenu(player);
         } else {
             chance = Math.min(100, chance + 5.0);
-            setAlienLootChance(lootList, index, chance);
-            player.sendMessage(ColorUtil.color("&aШанс: " + (int) chance + "%"));
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.1f);
-            openAlienMenu(player);
         }
+        setFlatLootChance(holder, index, entry.key, chance);
+        player.sendMessage(ColorUtil.color("&eШанс: " + (int) chance + "%"));
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, event.isRightClick() ? 0.9f : 1.1f);
+        openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList);
     }
 
     @SuppressWarnings("unchecked")
-    private void setAlienLootChance(List<Map<?, ?>> lootList, int index, double chance) {
-        Map<String, Object> entry = (Map<String, Object>) lootList.get(index);
-        entry.put("chance", chance);
-        plugin.getConfig().set("alien.chests.loot", lootList);
+    private void setFlatLootChance(FlatLootHolder holder, int index, String key, double chance) {
+        if (holder.yamlList) {
+            List<Map<?, ?>> lootList = plugin.getConfig().getMapList(holder.path);
+            if (index >= 0 && index < lootList.size()) {
+                ((Map<String, Object>) lootList.get(index)).put("chance", chance);
+                plugin.getConfig().set(holder.path, lootList);
+            }
+        } else {
+            plugin.getConfig().set(holder.path + "." + key + ".chance", chance);
+        }
         plugin.saveConfig();
+        plugin.getPluginConfig().reload();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removeFlatLoot(FlatLootHolder holder, int index, String key) {
+        if (holder.yamlList) {
+            List<Map<?, ?>> lootList = plugin.getConfig().getMapList(holder.path);
+            if (index >= 0 && index < lootList.size()) {
+                lootList.remove(index);
+                plugin.getConfig().set(holder.path, lootList);
+            }
+        } else {
+            plugin.getConfig().set(holder.path + "." + key, null);
+        }
+        plugin.saveConfig();
+        plugin.getPluginConfig().reload();
+    }
+
+    private void addFlatLoot(Player player, FlatLootHolder holder, ItemStack clickedItem) {
+        if (holder.yamlList) {
+            List<Map<?, ?>> lootList = plugin.getConfig().getMapList(holder.path);
+            if (lootList.size() >= 36) {
+                player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум 36 слотов)."));
+                return;
+            }
+            Map<String, Object> newEntry = new HashMap<>();
+            newEntry.put("material", clickedItem.getType().name());
+            newEntry.put("min", Math.max(1, clickedItem.getAmount()));
+            newEntry.put("max", Math.max(1, clickedItem.getAmount()));
+            newEntry.put("chance", 25.0);
+            lootList.add(newEntry);
+            plugin.getConfig().set(holder.path, lootList);
+        } else {
+            ConfigurationSection sec = plugin.getConfig().getConfigurationSection(holder.path);
+            if (sec != null && sec.getKeys(false).size() >= 36) {
+                player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум 36 слотов)."));
+                return;
+            }
+            String key = "gui_" + Integer.toHexString((int) System.nanoTime());
+            plugin.getConfig().set(holder.path + "." + key + ".material", clickedItem.getType().name());
+            plugin.getConfig().set(holder.path + "." + key + ".min", Math.max(1, clickedItem.getAmount()));
+            plugin.getConfig().set(holder.path + "." + key + ".max", Math.max(1, clickedItem.getAmount()));
+            plugin.getConfig().set(holder.path + "." + key + ".chance", 25.0);
+        }
+        plugin.saveConfig();
+        plugin.getPluginConfig().reload();
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.3f);
+        player.sendMessage(ColorUtil.color("&a# " + clickedItem.getType().name() + " добавлен в лут «" + holder.title + "» (25%)."));
+        openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList);
     }
 
     /**
@@ -724,73 +836,46 @@ public class BrushLootGuiManager {
                 case 29 -> openTierMenu(player, BrushTier.COMMON, LootCategory.MINE);
                 case 31 -> openTierMenu(player, BrushTier.EPIC, LootCategory.MINE);
                 case 33 -> openTierMenu(player, BrushTier.LEGENDARY, LootCategory.MINE);
-                case 36, 40 -> openAlienMenu(player);
+                case 36 -> openFlatLootMenu(player, "alien.chests.loot", "Пришельцы", Material.ENDER_EYE, true);
+                case 38 -> openFlatLootMenu(player, "skibidi.loot", "Шкибиди Туалет", Material.HOPPER, false);
+                case 40 -> openFlatLootMenu(player, "wind.loot", "Древний клад", Material.ENDER_CHEST, false);
+                case 42 -> openFlatLootMenu(player, "ronaldo.loot", "Роналду SIUU", Material.GOLDEN_HELMET, false);
                 default -> {
                 }
             }
             return true;
         }
 
-        if (holder instanceof AlienMenuHolder) {
+        if (holder instanceof FlatLootHolder flatHolder) {
             event.setCancelled(true);
             if (event.getClickedInventory() != top) {
-                // Клик в инвентаре игрока — добавляем новый предмет в лут
                 if (event.getClickedInventory() == player.getInventory()) {
                     ItemStack clickedItem = event.getCurrentItem();
                     if (clickedItem == null || clickedItem.getType().isAir()) {
                         return true;
                     }
-                    // Проверяем, не является ли предмет "кисточкой/реагентом/жеодой"
                     BrushLootManager mgr = plugin.getBrushLootManager();
                     if (mgr.getBrushTier(clickedItem) != null) {
-                        player.sendMessage(ColorUtil.color("&e┠ &cСам предмет ивента нельзя добавить в лут Пришельцев."));
+                        player.sendMessage(ColorUtil.color("&e┠ &cСам предмет ивента нельзя добавить в лут."));
                         return true;
                     }
-                    // Добавляем новый лут-преdmet
-                    List<Map<?, ?>> lootList = plugin.getConfig().getMapList("alien.chests.loot");
-                    if (lootList.size() >= 36) {
-                        player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум 36 слотов)."));
-                        return true;
-                    }
-                    Map<String, Object> newEntry = new HashMap<>();
-                    newEntry.put("material", clickedItem.getType().name());
-                    newEntry.put("min", 1);
-                    newEntry.put("max", 3);
-                    newEntry.put("chance", 25.0);
-                    lootList.add(newEntry);
-                    plugin.getConfig().set("alien.chests.loot", lootList);
-                    plugin.saveConfig();
-                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.3f);
-                    player.sendMessage(ColorUtil.color("&a# " + clickedItem.getType().name() + " добавлен в лут Пришельцев (25%)."));
-                    openAlienMenu(player);
+                    addFlatLoot(player, flatHolder, clickedItem);
                     return true;
                 }
                 return true;
             }
 
             int slot = event.getSlot();
-            List<Map<?, ?>> lootList = plugin.getConfig().getMapList("alien.chests.loot");
-
-            // Управление кнопками
-            if (slot == 18) {
+            if (slot == 45) {
                 openMainMenu(player);
                 return true;
             }
-            if (slot == 26) {
+            if (slot == 53) {
                 player.closeInventory();
                 return true;
             }
-
-            // Редактирование лут-предметов (слоты 10-16, 19-25)
-            if (slot >= 10 && slot <= 16) {
-                int idx = slot - 10;
-                handleAlienLootClick(event, player, lootList, idx);
-                return true;
-            }
-            if (slot >= 19 && slot <= 25) {
-                int idx = slot - 19 + 7;
-                handleAlienLootClick(event, player, lootList, idx);
-                return true;
+            if (slot >= 9 && slot <= 44) {
+                handleFlatLootClick(event, player, flatHolder, slot - 9);
             }
             return true;
         }
@@ -933,7 +1018,8 @@ public class BrushLootGuiManager {
 
     public boolean handleInventoryDrag(InventoryDragEvent event) {
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
-        if (holder instanceof MainMenuHolder || holder instanceof EventMenuHolder || holder instanceof TierMenuHolder) {
+        if (holder instanceof MainMenuHolder || holder instanceof EventMenuHolder
+                || holder instanceof TierMenuHolder || holder instanceof FlatLootHolder) {
             event.setCancelled(true);
             return true;
         }
