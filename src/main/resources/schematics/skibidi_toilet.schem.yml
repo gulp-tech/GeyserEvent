@@ -90,12 +90,14 @@ blocks:
   - {x: 3, y: 0, z: 11, material: WHITE_WOOL}
   - {x: 4, y: 0, z: 11, material: WHITE_WOOL}
   - {x: 5, y: 0, z: 11, material: WHITE_WOOL}
+  - {x: -4, y: 1, z: -12, material: WALL_TORCH}
   - {x: -3, y: 1, z: -12, material: WHITE_WOOL}
   - {x: -2, y: 1, z: -12, material: WHITE_WOOL}
   - {x: -1, y: 1, z: -12, material: WHITE_WOOL}
   - {x: 0, y: 1, z: -12, material: WHITE_WOOL}
   - {x: 1, y: 1, z: -12, material: WHITE_WOOL}
   - {x: 2, y: 1, z: -12, material: WHITE_WOOL}
+  - {x: 3, y: 1, z: -12, material: WALL_TORCH}
   - {x: -4, y: 1, z: -11, material: WHITE_WOOL}
   - {x: 3, y: 1, z: -11, material: WHITE_WOOL}
   - {x: -4, y: 1, z: -10, material: WHITE_WOOL}
@@ -163,6 +165,8 @@ blocks:
   - {x: 3, y: 1, z: 11, material: WHITE_WOOL}
   - {x: 4, y: 1, z: 11, material: WHITE_WOOL}
   - {x: 5, y: 1, z: 11, material: WHITE_WOOL}
+  - {x: -2, y: 2, z: -13, material: WALL_TORCH}
+  - {x: 1, y: 2, z: -13, material: WALL_TORCH}
   - {x: -2, y: 2, z: -12, material: WHITE_WOOL}
   - {x: -1, y: 2, z: -12, material: WHITE_WOOL}
   - {x: 0, y: 2, z: -12, material: WHITE_WOOL}
@@ -174,12 +178,18 @@ blocks:
   - {x: -3, y: 2, z: -10, material: WHITE_WOOL}
   - {x: 2, y: 2, z: -10, material: WHITE_WOOL}
   - {x: -4, y: 2, z: -9, material: WHITE_WOOL}
+  - {x: -3, y: 2, z: -9, material: WALL_TORCH}
+  - {x: 2, y: 2, z: -9, material: WALL_TORCH}
   - {x: 3, y: 2, z: -9, material: WHITE_WOOL}
   - {x: -4, y: 2, z: -8, material: WHITE_WOOL}
   - {x: 3, y: 2, z: -8, material: WHITE_WOOL}
   - {x: -5, y: 2, z: -7, material: WHITE_WOOL}
+  - {x: -4, y: 2, z: -7, material: WALL_TORCH}
+  - {x: 3, y: 2, z: -7, material: WALL_TORCH}
   - {x: 4, y: 2, z: -7, material: WHITE_WOOL}
   - {x: -6, y: 2, z: -6, material: WHITE_WOOL}
+  - {x: -5, y: 2, z: -6, material: WALL_TORCH}
+  - {x: 4, y: 2, z: -6, material: WALL_TORCH}
   - {x: 5, y: 2, z: -6, material: WHITE_WOOL}
   - {x: -6, y: 2, z: -5, material: WHITE_WOOL}
   - {x: 5, y: 2, z: -5, material: WHITE_WOOL}
@@ -188,6 +198,8 @@ blocks:
   - {x: -6, y: 2, z: -3, material: WHITE_WOOL}
   - {x: 5, y: 2, z: -3, material: WHITE_WOOL}
   - {x: -6, y: 2, z: -2, material: WHITE_WOOL}
+  - {x: -5, y: 2, z: -2, material: WALL_TORCH}
+  - {x: 4, y: 2, z: -2, material: WALL_TORCH}
   - {x: 5, y: 2, z: -2, material: WHITE_WOOL}
   - {x: -6, y: 2, z: -1, material: WHITE_WOOL}
   - {x: 5, y: 2, z: -1, material: WHITE_WOOL}
@@ -196,6 +208,8 @@ blocks:
   - {x: -6, y: 2, z: 1, material: WHITE_WOOL}
   - {x: 5, y: 2, z: 1, material: WHITE_WOOL}
   - {x: -6, y: 2, z: 2, material: WHITE_WOOL}
+  - {x: -5, y: 2, z: 2, material: WALL_TORCH}
+  - {x: 4, y: 2, z: 2, material: WALL_TORCH}
   - {x: 5, y: 2, z: 2, material: WHITE_WOOL}
   - {x: -6, y: 2, z: 3, material: WHITE_WOOL}
   - {x: -1, y: 2, z: 3, material: WHITE_WOOL}
@@ -206,7 +220,9 @@ blocks:
   - {x: -2, y: 2, z: 5, material: WHITE_WOOL}
   - {x: 5, y: 2, z: 5, material: WHITE_WOOL}
   - {x: -6, y: 2, z: 6, material: WHITE_WOOL}
+  - {x: -5, y: 2, z: 6, material: WALL_TORCH}
   - {x: 0, y: 2, z: 6, material: WHITE_WOOL}
+  - {x: 4, y: 2, z: 6, material: WALL_TORCH}
   - {x: 5, y: 2, z: 6, material: WHITE_WOOL}
   - {x: -6, y: 2, z: 7, material: WHITE_WOOL}
   - {x: 5, y: 2, z: 7, material: WHITE_WOOL}
@@ -215,6 +231,9 @@ blocks:
   - {x: -6, y: 2, z: 9, material: WHITE_WOOL}
   - {x: 5, y: 2, z: 9, material: WHITE_WOOL}
   - {x: -6, y: 2, z: 10, material: WHITE_WOOL}
+  - {x: -5, y: 2, z: 10, material: WALL_TORCH}
+  - {x: -2, y: 2, z: 10, material: WALL_TORCH}
+  - {x: 2, y: 2, z: 10, material: WALL_TORCH}
   - {x: 3, y: 2, z: 10, material: WHITE_WOOL}
   - {x: 4, y: 2, z: 10, material: WHITE_WOOL}
   - {x: 5, y: 2, z: 10, material: WHITE_WOOL}
@@ -412,6 +431,7 @@ blocks:
   - {x: -6, y: 4, z: 5, material: WHITE_WOOL}
   - {x: 5, y: 4, z: 5, material: WHITE_WOOL}
   - {x: -6, y: 4, z: 6, material: WHITE_WOOL}
+  - {x: 0, y: 4, z: 6, material: TORCH}
   - {x: 5, y: 4, z: 6, material: WHITE_WOOL}
   - {x: -6, y: 4, z: 7, material: WHITE_WOOL}
   - {x: 5, y: 4, z: 7, material: WHITE_WOOL}
@@ -747,6 +767,7 @@ blocks:
   - {x: 1, y: 7, z: -7, material: WHITE_TERRACOTTA}
   - {x: 6, y: 7, z: -7, material: WHITE_WOOL}
   - {x: -7, y: 7, z: -6, material: WHITE_WOOL}
+  - {x: -6, y: 7, z: -6, material: TORCH}
   - {x: -3, y: 7, z: -6, material: WHITE_TERRACOTTA}
   - {x: 2, y: 7, z: -6, material: WHITE_TERRACOTTA}
   - {x: 6, y: 7, z: -6, material: WHITE_WOOL}
@@ -757,6 +778,7 @@ blocks:
   - {x: -8, y: 7, z: -4, material: WHITE_WOOL}
   - {x: -3, y: 7, z: -4, material: WHITE_TERRACOTTA}
   - {x: 2, y: 7, z: -4, material: WHITE_TERRACOTTA}
+  - {x: 3, y: 7, z: -4, material: WALL_TORCH}
   - {x: 7, y: 7, z: -4, material: WHITE_WOOL}
   - {x: -8, y: 7, z: -3, material: WHITE_WOOL}
   - {x: -3, y: 7, z: -3, material: WHITE_TERRACOTTA}
@@ -889,6 +911,7 @@ blocks:
   - {x: 5, y: 8, z: 3, material: WHITE_WOOL}
   - {x: -6, y: 8, z: 4, material: WHITE_WOOL}
   - {x: -5, y: 8, z: 4, material: WHITE_WOOL}
+  - {x: -2, y: 8, z: 4, material: TORCH}
   - {x: 4, y: 8, z: 4, material: WHITE_WOOL}
   - {x: 5, y: 8, z: 4, material: WHITE_WOOL}
   - {x: -6, y: 8, z: 5, material: WHITE_WOOL}
@@ -941,6 +964,7 @@ blocks:
   - {x: 2, y: 9, z: -14, material: WHITE_WOOL}
   - {x: 3, y: 9, z: -14, material: WHITE_WOOL}
   - {x: -5, y: 9, z: -13, material: WHITE_WOOL}
+  - {x: -3, y: 9, z: -13, material: TORCH}
   - {x: 4, y: 9, z: -13, material: WHITE_WOOL}
   - {x: -6, y: 9, z: -12, material: WHITE_WOOL}
   - {x: 5, y: 9, z: -12, material: WHITE_WOOL}
@@ -949,6 +973,7 @@ blocks:
   - {x: -8, y: 9, z: -10, material: WHITE_WOOL}
   - {x: 7, y: 9, z: -10, material: WHITE_WOOL}
   - {x: -8, y: 9, z: -9, material: WHITE_WOOL}
+  - {x: 6, y: 9, z: -9, material: TORCH}
   - {x: 7, y: 9, z: -9, material: WHITE_WOOL}
   - {x: -8, y: 9, z: -8, material: WHITE_WOOL}
   - {x: 7, y: 9, z: -8, material: WHITE_WOOL}
@@ -987,6 +1012,7 @@ blocks:
   - {x: -8, y: 9, z: 0, material: WHITE_WOOL}
   - {x: 7, y: 9, z: 0, material: WHITE_WOOL}
   - {x: -8, y: 9, z: 1, material: WHITE_WOOL}
+  - {x: -7, y: 9, z: 1, material: WALL_TORCH}
   - {x: 7, y: 9, z: 1, material: WHITE_WOOL}
   - {x: -8, y: 9, z: 2, material: WHITE_WOOL}
   - {x: 7, y: 9, z: 2, material: WHITE_WOOL}
@@ -1105,6 +1131,7 @@ blocks:
   - {x: -7, y: 10, z: 4, material: WHITE_WOOL}
   - {x: 6, y: 10, z: 4, material: WHITE_WOOL}
   - {x: -6, y: 10, z: 5, material: WHITE_WOOL}
+  - {x: 4, y: 10, z: 5, material: WALL_TORCH}
   - {x: 5, y: 10, z: 5, material: WHITE_WOOL}
   - {x: -6, y: 10, z: 6, material: WHITE_WOOL}
   - {x: -5, y: 10, z: 6, material: WHITE_WOOL}
@@ -1152,6 +1179,7 @@ blocks:
   - {x: 2, y: 11, z: -15, material: WHITE_WOOL}
   - {x: 3, y: 11, z: -15, material: WHITE_WOOL}
   - {x: -5, y: 11, z: -14, material: WHITE_WOOL}
+  - {x: 3, y: 11, z: -14, material: WALL_TORCH}
   - {x: 4, y: 11, z: -14, material: WHITE_WOOL}
   - {x: -6, y: 11, z: -13, material: WHITE_WOOL}
   - {x: 5, y: 11, z: -13, material: WHITE_WOOL}
@@ -1198,6 +1226,7 @@ blocks:
   - {x: 1, y: 11, z: -1, material: WHITE_TERRACOTTA}
   - {x: 8, y: 11, z: -1, material: WHITE_WOOL}
   - {x: -9, y: 11, z: 0, material: WHITE_WOOL}
+  - {x: 7, y: 11, z: 0, material: WALL_TORCH}
   - {x: 8, y: 11, z: 0, material: WHITE_WOOL}
   - {x: -9, y: 11, z: 1, material: WHITE_WOOL}
   - {x: 8, y: 11, z: 1, material: WHITE_WOOL}
@@ -1418,14 +1447,17 @@ blocks:
   - {x: -9, y: 12, z: -10, material: WHITE_WOOL}
   - {x: 8, y: 12, z: -10, material: WHITE_WOOL}
   - {x: -9, y: 12, z: -9, material: WHITE_WOOL}
+  - {x: -8, y: 12, z: -9, material: WALL_TORCH}
   - {x: 8, y: 12, z: -9, material: WHITE_WOOL}
   - {x: -9, y: 12, z: -8, material: WHITE_WOOL}
   - {x: 8, y: 12, z: -8, material: WHITE_WOOL}
   - {x: -10, y: 12, z: -7, material: WHITE_WOOL}
+  - {x: -3, y: 12, z: -7, material: WALL_TORCH}
   - {x: -2, y: 12, z: -7, material: WHITE_TERRACOTTA}
   - {x: -1, y: 12, z: -7, material: WHITE_TERRACOTTA}
   - {x: 0, y: 12, z: -7, material: WHITE_TERRACOTTA}
   - {x: 1, y: 12, z: -7, material: WHITE_TERRACOTTA}
+  - {x: 2, y: 12, z: -7, material: WALL_TORCH}
   - {x: 9, y: 12, z: -7, material: WHITE_WOOL}
   - {x: -10, y: 12, z: -6, material: WHITE_WOOL}
   - {x: -3, y: 12, z: -6, material: WHITE_TERRACOTTA}
@@ -1448,10 +1480,12 @@ blocks:
   - {x: 2, y: 12, z: -2, material: WHITE_TERRACOTTA}
   - {x: 9, y: 12, z: -2, material: WHITE_WOOL}
   - {x: -10, y: 12, z: -1, material: WHITE_WOOL}
+  - {x: -3, y: 12, z: -1, material: WALL_TORCH}
   - {x: -2, y: 12, z: -1, material: WHITE_TERRACOTTA}
   - {x: -1, y: 12, z: -1, material: WHITE_TERRACOTTA}
   - {x: 0, y: 12, z: -1, material: WHITE_TERRACOTTA}
   - {x: 1, y: 12, z: -1, material: WHITE_TERRACOTTA}
+  - {x: 2, y: 12, z: -1, material: WALL_TORCH}
   - {x: 9, y: 12, z: -1, material: WHITE_WOOL}
   - {x: -9, y: 12, z: 0, material: WHITE_WOOL}
   - {x: 8, y: 12, z: 0, material: WHITE_WOOL}
@@ -2034,6 +2068,8 @@ blocks:
   - {x: -6, y: 14, z: -14, material: WHITE_WOOL}
   - {x: -5, y: 14, z: -14, material: WHITE_WOOL}
   - {x: -4, y: 14, z: -14, material: WHITE_WOOL}
+  - {x: -2, y: 14, z: -14, material: WALL_TORCH}
+  - {x: 1, y: 14, z: -14, material: WALL_TORCH}
   - {x: 3, y: 14, z: -14, material: WHITE_WOOL}
   - {x: 4, y: 14, z: -14, material: WHITE_WOOL}
   - {x: 5, y: 14, z: -14, material: WHITE_WOOL}
@@ -2053,6 +2089,8 @@ blocks:
   - {x: -9, y: 14, z: -11, material: WHITE_WOOL}
   - {x: -8, y: 14, z: -11, material: WHITE_WOOL}
   - {x: -7, y: 14, z: -11, material: WHITE_WOOL}
+  - {x: -6, y: 14, z: -11, material: WALL_TORCH}
+  - {x: 5, y: 14, z: -11, material: WALL_TORCH}
   - {x: 6, y: 14, z: -11, material: WHITE_WOOL}
   - {x: 7, y: 14, z: -11, material: WHITE_WOOL}
   - {x: 8, y: 14, z: -11, material: WHITE_WOOL}
@@ -2071,6 +2109,8 @@ blocks:
   - {x: -10, y: 14, z: -8, material: WHITE_WOOL}
   - {x: -9, y: 14, z: -8, material: WHITE_WOOL}
   - {x: -8, y: 14, z: -8, material: WHITE_WOOL}
+  - {x: -7, y: 14, z: -8, material: WALL_TORCH}
+  - {x: 6, y: 14, z: -8, material: WALL_TORCH}
   - {x: 7, y: 14, z: -8, material: WHITE_WOOL}
   - {x: 8, y: 14, z: -8, material: WHITE_WOOL}
   - {x: 9, y: 14, z: -8, material: WHITE_WOOL}
@@ -2111,12 +2151,14 @@ blocks:
   - {x: -11, y: 14, z: -4, material: WHITE_WOOL}
   - {x: -10, y: 14, z: -4, material: WHITE_WOOL}
   - {x: -9, y: 14, z: -4, material: WHITE_WOOL}
+  - {x: -8, y: 14, z: -4, material: WALL_TORCH}
   - {x: -3, y: 14, z: -4, material: WHITE_TERRACOTTA}
   - {x: -2, y: 14, z: -4, material: BLACK_CONCRETE}
   - {x: -1, y: 14, z: -4, material: BLACK_CONCRETE}
   - {x: 0, y: 14, z: -4, material: BLACK_CONCRETE}
   - {x: 1, y: 14, z: -4, material: BLACK_CONCRETE}
   - {x: 2, y: 14, z: -4, material: WHITE_TERRACOTTA}
+  - {x: 7, y: 14, z: -4, material: WALL_TORCH}
   - {x: 8, y: 14, z: -4, material: WHITE_WOOL}
   - {x: 9, y: 14, z: -4, material: WHITE_WOOL}
   - {x: 10, y: 14, z: -4, material: WHITE_WOOL}
@@ -2157,6 +2199,8 @@ blocks:
   - {x: -10, y: 14, z: 0, material: WHITE_WOOL}
   - {x: -9, y: 14, z: 0, material: WHITE_WOOL}
   - {x: -8, y: 14, z: 0, material: WHITE_WOOL}
+  - {x: -7, y: 14, z: 0, material: WALL_TORCH}
+  - {x: 6, y: 14, z: 0, material: WALL_TORCH}
   - {x: 7, y: 14, z: 0, material: WHITE_WOOL}
   - {x: 8, y: 14, z: 0, material: WHITE_WOOL}
   - {x: 9, y: 14, z: 0, material: WHITE_WOOL}
@@ -2181,12 +2225,15 @@ blocks:
   - {x: -9, y: 14, z: 4, material: WHITE_WOOL}
   - {x: -8, y: 14, z: 4, material: WHITE_WOOL}
   - {x: -7, y: 14, z: 4, material: WHITE_WOOL}
+  - {x: -6, y: 14, z: 4, material: WALL_TORCH}
   - {x: 6, y: 14, z: 4, material: WHITE_WOOL}
   - {x: 7, y: 14, z: 4, material: WHITE_WOOL}
   - {x: 8, y: 14, z: 4, material: WHITE_WOOL}
   - {x: -8, y: 14, z: 5, material: WHITE_WOOL}
   - {x: -7, y: 14, z: 5, material: WHITE_WOOL}
   - {x: -6, y: 14, z: 5, material: WHITE_WOOL}
+  - {x: -2, y: 14, z: 5, material: WALL_TORCH}
+  - {x: 1, y: 14, z: 5, material: WALL_TORCH}
   - {x: 5, y: 14, z: 5, material: WHITE_WOOL}
   - {x: 6, y: 14, z: 5, material: WHITE_WOOL}
   - {x: 7, y: 14, z: 5, material: WHITE_WOOL}
@@ -3774,6 +3821,9 @@ blocks:
   - {x: 8, y: 30, z: 17, material: WHITE_WOOL}
   - {x: 9, y: 30, z: 17, material: WHITE_WOOL}
   - {x: 10, y: 30, z: 17, material: WHITE_WOOL}
+  - {x: -9, y: 31, z: 7, material: TORCH}
+  - {x: 8, y: 31, z: 7, material: TORCH}
+  - {x: -10, y: 31, z: 8, material: TORCH}
   - {x: -9, y: 31, z: 8, material: WHITE_WOOL}
   - {x: -8, y: 31, z: 8, material: WHITE_WOOL}
   - {x: -7, y: 31, z: 8, material: WHITE_WOOL}
@@ -3792,6 +3842,8 @@ blocks:
   - {x: 6, y: 31, z: 8, material: WHITE_WOOL}
   - {x: 7, y: 31, z: 8, material: WHITE_WOOL}
   - {x: 8, y: 31, z: 8, material: WHITE_WOOL}
+  - {x: 9, y: 31, z: 8, material: TORCH}
+  - {x: -11, y: 31, z: 9, material: TORCH}
   - {x: -10, y: 31, z: 9, material: WHITE_WOOL}
   - {x: 9, y: 31, z: 9, material: WHITE_WOOL}
   - {x: -10, y: 31, z: 10, material: WHITE_WOOL}
@@ -3856,6 +3908,7 @@ blocks:
   - {x: 6, y: 31, z: 14, material: WHITE_WOOL}
   - {x: 7, y: 31, z: 14, material: WHITE_WOOL}
   - {x: 9, y: 31, z: 14, material: WHITE_WOOL}
+  - {x: -11, y: 31, z: 15, material: TORCH}
   - {x: -10, y: 31, z: 15, material: WHITE_WOOL}
   - {x: 0, y: 31, z: 15, material: WHITE_WOOL}
   - {x: 1, y: 31, z: 15, material: WHITE_WOOL}
@@ -3880,6 +3933,7 @@ blocks:
   - {x: 7, y: 31, z: 16, material: WHITE_WOOL}
   - {x: 8, y: 31, z: 16, material: WHITE_WOOL}
   - {x: 9, y: 31, z: 16, material: WHITE_WOOL}
+  - {x: -9, y: 31, z: 17, material: TORCH}
   - {x: -9, y: 32, z: 8, material: WHITE_WOOL}
   - {x: -8, y: 32, z: 8, material: WHITE_WOOL}
   - {x: -7, y: 32, z: 8, material: WHITE_WOOL}
