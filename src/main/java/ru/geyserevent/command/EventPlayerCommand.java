@@ -63,6 +63,19 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
             }
 
             case "delay", "time", "info" -> {
+                if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()
+                        && plugin.getFishingEventManager().getCenterLocation() != null) {
+                    var fishing = plugin.getFishingEventManager();
+                    sender.sendMessage(ColorUtil.color("&e┼ &b&lРыбалка &fактивна."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fДо конца: &#E0C912"
+                            + ColorUtil.formatDuration(fishing.getSecondsRemaining())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
+                            + fishing.getCenterLocation().getBlockX() + " "
+                            + fishing.getCenterLocation().getBlockY() + " "
+                            + fishing.getCenterLocation().getBlockZ()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Варп: &#E0C912/warp fishing &7· возьмите удочку у рыбака"));
+                    return true;
+                }
                 // Ивент «Вторжение Пришельцев» идёт в своём менеджере
                 if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()
                         && plugin.getRonaldoEventManager().getCenterLocation() != null) {

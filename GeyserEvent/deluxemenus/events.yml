@@ -183,6 +183,28 @@ items:
       - '[close]'
       - '[player] event gps'
 
+  'fishing_pond':
+    material: FISHING_ROD
+    slot: 28
+    item_flags:
+      - HIDE_ATTRIBUTES
+    display_name: '&b&lРыбалка'
+    lore:
+      - '&8Пруд и рыбак'
+      - ''
+      - '&e┠ &fВозьми удочку у NPC: обычная / эпик / легенда'
+      - '&e┠ &fЛут настраивается в &#E0C912/rift menu'
+      - '&e┠ &fСтарт: &#E0C912/fishing &f· &#E0C9128 мин'
+      - ''
+      - '&#34D711» ЛКМ — /event delay'
+      - '&#E0C912» ПКМ — /event gps'
+    left_click_commands:
+      - '[close]'
+      - '[player] event delay'
+    right_click_commands:
+      - '[close]'
+      - '[player] event gps'
+
   'event_delay':
     material: CLOCK
     slot: 38

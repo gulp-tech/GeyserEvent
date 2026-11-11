@@ -213,7 +213,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     type = EventType.fromString(args[1]);
                     if (type == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912alien&c, &#E0C912wind&c, &#E0C912skibidi &cили &#E0C912ronaldo&c."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912alien&c, &#E0C912wind&c, &#E0C912skibidi&c, &#E0C912ronaldo &cили &#E0C912fishing&c."));
                         return true;
                     }
                 }
@@ -235,7 +235,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     EventType parsed = EventType.fromString(args[1]);
                     if (parsed == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912alien&c, &#E0C912wind&c, &#E0C912skibidi &cили &#E0C912ronaldo&c."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912alien&c, &#E0C912wind&c, &#E0C912skibidi&c, &#E0C912ronaldo &cили &#E0C912fishing&c."));
                         return true;
                     }
                     type = parsed;
@@ -254,7 +254,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                         && plugin.getSkibidiToiletManager().isActive();
                 boolean ronaldoActive = plugin.getRonaldoEventManager() != null
                         && plugin.getRonaldoEventManager().isActive();
-                if (!riftActive && !alienActive && !windActive && !skibidiActive && !ronaldoActive) {
+                boolean fishingActive = plugin.getFishingEventManager() != null
+                        && plugin.getFishingEventManager().isActive();
+                if (!riftActive && !alienActive && !windActive && !skibidiActive && !ronaldoActive && !fishingActive) {
                     sender.sendMessage(ColorUtil.color("&e┠ &cИвент не активен."));
                     return true;
                 }
@@ -272,6 +274,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 }
                 if (ronaldoActive) {
                     plugin.getRonaldoEventManager().stopEvent();
+                }
+                if (fishingActive) {
+                    plugin.getFishingEventManager().stopEvent();
                 }
                 sender.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент остановлен и схема откачена."));
                 return true;
@@ -560,6 +565,16 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                                 + " &8(&fосталось " + ronaldo.getSecondsRemaining() + " сек.&8)"));
                     }
                 }
+                if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
+                    var fishing = plugin.getFishingEventManager();
+                    Location fLoc = fishing.getCenterLocation();
+                    sender.sendMessage(ColorUtil.color("&e┼ &fИвент: &#55CFFFРыбалка"));
+                    if (fLoc != null) {
+                        sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
+                                + fLoc.getBlockX() + " " + fLoc.getBlockY() + " " + fLoc.getBlockZ()
+                                + " &8(&fосталось " + fishing.getSecondsRemaining() + " сек.&8)"));
+                    }
+                }
                 if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
                     AlienInvasionManager alien = plugin.getAlienInvasionManager();
                     Location aLoc = alien.getCenterLocation();
@@ -713,11 +728,13 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             case EXCAVATION -> "brushloot";
             case CAULDRON -> "cauldronloot";
             case MINE -> "mineloot";
+            case FISHING -> "fishingloot";
         };
         String eventTitle = switch (category) {
             case EXCAVATION -> "«Пляжные Раскопки»";
             case CAULDRON -> "«Котёл Алхимика»";
             case MINE -> "«Шахта Древних»";
+            case FISHING -> "«Рыбалка»";
         };
         if (args.length < 3) {
             sender.sendMessage(ColorUtil.color("&e┠ &fНастройка лута (" + eventTitle + "):"));
@@ -820,6 +837,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 case EXCAVATION -> "givebrush";
                 case CAULDRON -> "givereagent";
                 case MINE -> "givegeode";
+                case FISHING -> "giverod";
             };
             sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " " + cmdName + " <обычная|эпическая|легендарная> [игрок]"));
             return;
@@ -849,6 +867,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             case EXCAVATION -> mgr.createBrushItem(tier);
             case CAULDRON -> mgr.createReagentItem(tier);
             case MINE -> mgr.createGeodeItem(tier);
+            case FISHING -> mgr.createFishingRod(tier);
         };
         target.getInventory().addItem(stack);
         sender.sendMessage(ColorUtil.color("&e┠ &fВыдан " + mgr.getCategoryItemTitle(tier, category) + " &fигроку &#E0C912" + target.getName() + "&f."));
@@ -859,10 +878,11 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/minemenu &8(&#E0C912/" + label + " minemenu&8) — &fGUI-меню лута «Шахты Древних (0 ~ 0)»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/cauldronmenu &8(&#E0C912/" + label + " cauldronmenu&8) — &fGUI-меню лута «Котла Алхимика»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mine <regen|spawn|set-here|remove> &8— &fУправление «Шахтой Древних»"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation|cauldron|alien|wind|skibidi|ronaldo] &8— &fЗапустить ивент в " + cfg.getWorldName()));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation|cauldron|alien|wind|skibidi|ronaldo] &8— &fЗапустить на вашей позиции"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start [rift|excavation|cauldron|alien|wind|skibidi|ronaldo|fishing] &8— &fЗапустить ивент в " + cfg.getWorldName()));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " start-here [rift|excavation|cauldron|alien|wind|skibidi|ronaldo|fishing] &8— &fЗапустить на вашей позиции"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/skibidi &8(&#E0C912/skibidi here&8 / &#E0C912/skibidi stop&8) — &fШкибиди Туалет"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/ronaldo &8(&#E0C912/ronaldo here&8 / &#E0C912/ronaldo stop&8) — &fРоналду SIUU"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/fishing &8(&#E0C912/fishing here&8 / &#E0C912/fishing stop&8) — &fРыбалка"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/klad &8(&#E0C912/klad here&8 / &#E0C912/klad stop&8) — &fОтдельная команда «Древний клад»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fОстановить временный ивент"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mineloot <add|list|remove|clear> <обычная|эпическая|легендарная>"));
@@ -930,7 +950,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     }
 
     private enum CopyLootTarget {
-        EXCAVATION, CAULDRON, MINE, ALIEN, SKIBIDI, WIND, RONALDO
+        EXCAVATION, CAULDRON, MINE, ALIEN, SKIBIDI, WIND, RONALDO, FISHING
     }
 
     private CopyLootTarget parseCopyLootTarget(String raw) {
@@ -956,6 +976,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         if (type == EventType.RONALDO) {
             return CopyLootTarget.RONALDO;
         }
+        if (type == EventType.FISHING) {
+            return CopyLootTarget.FISHING;
+        }
         return switch (raw.trim().toLowerCase(Locale.ROOT)) {
             case "mine", "шахта", "geode", "жеода", "minemenu" -> CopyLootTarget.MINE;
             case "brush", "excavationmenu" -> CopyLootTarget.EXCAVATION;
@@ -963,6 +986,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             case "toilet", "шкибиди", "туалет" -> CopyLootTarget.SKIBIDI;
             case "klad", "клад", "hoard" -> CopyLootTarget.WIND;
             case "cr7", "siuu", "роналду" -> CopyLootTarget.RONALDO;
+            case "fish", "рыбалка", "удочка", "rybalka" -> CopyLootTarget.FISHING;
             default -> null;
         };
     }
@@ -976,6 +1000,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             case SKIBIDI -> "Шкибиди Туалет";
             case WIND -> "Древний клад";
             case RONALDO -> "Роналду SIUU";
+            case FISHING -> "Рыбалка";
         };
     }
 
@@ -984,6 +1009,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             case EXCAVATION -> LootCategory.EXCAVATION;
             case CAULDRON -> LootCategory.CAULDRON;
             case MINE -> LootCategory.MINE;
+            case FISHING -> LootCategory.FISHING;
             case ALIEN, SKIBIDI, WIND, RONALDO -> null;
         };
     }
@@ -1009,12 +1035,12 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     }
 
     private static final List<String> COPY_LOOT_EVENTS = Arrays.asList(
-            "excavation", "cauldron", "mine", "alien", "skibidi", "wind", "ronaldo");
+            "excavation", "cauldron", "mine", "alien", "skibidi", "wind", "ronaldo", "fishing");
 
     private void handleCopyLootSubcommand(CommandSender sender, String label, String[] args) {
         if (args.length < 3) {
             sender.sendMessage(ColorUtil.color("&e┠ &fИспользование: &#E0C912/" + label + " copylot <откуда> <куда> [редкость]"));
-            sender.sendMessage(ColorUtil.color("&e┠ &7Ивенты: &#E0C912excavation&7, &#E0C912cauldron&7, &#E0C912mine&7, &#E0C912alien&7, &#E0C912skibidi&7, &#E0C912wind&7, &#E0C912ronaldo"));
+            sender.sendMessage(ColorUtil.color("&e┠ &7Ивенты: &#E0C912excavation&7, &#E0C912cauldron&7, &#E0C912mine&7, &#E0C912alien&7, &#E0C912skibidi&7, &#E0C912wind&7, &#E0C912ronaldo&7, &#E0C912fishing"));
             sender.sendMessage(ColorUtil.color("&e┠ &7У каждого предмета свой шанс (chance). Пример: &#E0C912/" + label + " copylot excavation skibidi"));
             sender.sendMessage(ColorUtil.color("&e┠ &7Только легендарка: &#E0C912/" + label + " copylot mine excavation legendary"));
             return;
@@ -1022,7 +1048,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         CopyLootTarget from = parseCopyLootTarget(args[1]);
         CopyLootTarget to = parseCopyLootTarget(args[2]);
         if (from == null || to == null) {
-            sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивенты: &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912mine&c, &#E0C912alien&c, &#E0C912skibidi&c, &#E0C912wind&c, &#E0C912ronaldo"));
+            sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивенты: &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912mine&c, &#E0C912alien&c, &#E0C912skibidi&c, &#E0C912wind&c, &#E0C912ronaldo&c, &#E0C912fishing"));
             return;
         }
         if (from == to) {
@@ -1160,7 +1186,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return filterPrefix(Arrays.asList("regen", "spawn", "set-here", "remove", "menu", "status"), args[1]);
             }
             if (sub.equals("start") || sub.equals("start-here") || sub.equals("starthere")) {
-                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "alien", "wind", "skibidi", "ronaldo"), args[1]);
+                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "alien", "wind", "skibidi", "ronaldo", "fishing"), args[1]);
             }
             if (sub.equals("menu") || sub.equals("gui") || sub.equals("cauldronmenu") || sub.equals("cmenu")
                     || sub.equals("minemenu") || sub.equals("mmenu") || sub.equals("excavationmenu")
@@ -1178,7 +1204,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return filterPrefix(COPY_LOOT_EVENTS, args[1]);
             }
             if (sub.equals("minplayers") || sub.equals("minplayer") || sub.equals("игроки") || sub.equals("players")) {
-                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "alien", "wind", "skibidi", "ronaldo", "all"), args[1]);
+                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "alien", "wind", "skibidi", "ronaldo", "fishing", "all"), args[1]);
             }
             if (sub.equals("ability") || sub.equals("cast")) {
                 return filterPrefix(Arrays.asList("pull", "push", "gather", "minions"), args[1]);

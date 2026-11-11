@@ -1516,3 +1516,27 @@ ronaldo:
         mending: 1
         looting: 3
         fire_aspect: 2
+
+ «Рыбалка» — пруд, рыбак выдаёт удочки 3 редкостей (PDC).
+# Старт: /fishing  или  /rift start fishing
+# Лут: /rift menu → Рыбалка  или  /rift copylot excavation fishing
+# Ванильная удочка без метки не меняется.
+# ============================================================================
+fishing:
+  enabled: true
+  duration-minutes: 8
+  warp-name: fishing
+  max-rods: 3
+  rods:
+    common:
+      chance: 35
+      uses: 5
+      name: "&aОбычная удочка"
+    epic:
+      chance: 40
+      uses: 6
+      name: "&dЭпическая удочка"
+    legendary:
+      chance: 25
+      uses: 8
+      name: "&6Легендарная удочка"

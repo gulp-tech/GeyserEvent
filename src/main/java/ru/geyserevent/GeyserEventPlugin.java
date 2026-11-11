@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.geyserevent.alien.AlienInvasionManager;
+import ru.geyserevent.fishing.FishingEventManager;
 import ru.geyserevent.ronaldo.RonaldoEventManager;
 import ru.geyserevent.skibidi.SkibidiToiletManager;
 import ru.geyserevent.wind.GravityHoardManager;
@@ -11,6 +12,7 @@ import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.boss.MinionLootManager;
 import ru.geyserevent.cauldron.AlchemistSchematicManager;
 import ru.geyserevent.command.EventPlayerCommand;
+import ru.geyserevent.command.FishingCommand;
 import ru.geyserevent.command.KladCommand;
 import ru.geyserevent.command.RiftCommand;
 import ru.geyserevent.command.RonaldoCommand;
@@ -64,6 +66,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private GravityHoardManager gravityHoardManager;
     private SkibidiToiletManager skibidiToiletManager;
     private RonaldoEventManager ronaldoEventManager;
+    private FishingEventManager fishingEventManager;
 
     @Override
     public void onLoad() {
@@ -107,6 +110,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         this.gravityHoardManager = new GravityHoardManager(this);
         this.skibidiToiletManager = new SkibidiToiletManager(this);
         this.ronaldoEventManager = new RonaldoEventManager(this);
+        this.fishingEventManager = new FishingEventManager(this);
 
         // 5. Регистрация слушателей событий
         getServer().getPluginManager().registerEvents(new RiftEventListener(this), this);
@@ -154,6 +158,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
             ronaldoCmd.setExecutor(ronaldoExecutor);
             ronaldoCmd.setTabCompleter(ronaldoExecutor);
         }
+        PluginCommand fishingCmd = getCommand("fishing");
+        if (fishingCmd != null) {
+            FishingCommand fishingExecutor = new FishingCommand(this);
+            fishingCmd.setExecutor(fishingExecutor);
+            fishingCmd.setTabCompleter(fishingExecutor);
+        }
 
         // 8. Экспорт и автоматическая перезапись меню DeluxeMenus (events.yml) и текстурпака (GeyserEvent-Pack.mcpack)
         exportDeluxeMenusConfig();
@@ -170,11 +180,14 @@ public final class GeyserEventPlugin extends JavaPlugin {
             if (this.ronaldoEventManager != null) {
                 this.ronaldoEventManager.cleanupOrphanSchematic();
             }
+            if (this.fishingEventManager != null) {
+                this.fishingEventManager.cleanupOrphanSchematic();
+            }
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.40 успешно запущен! (Purpur 1.21–26.63)");
-        getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Пришельцы, Клад, Шкибиди, Роналду");
+        getLogger().info(" GeyserEvent v1.21.41 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Пришельцы, Клад, Шкибиди, Роналду, Рыбалка");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");
     }
@@ -255,6 +268,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
         } else if (this.ronaldoEventManager != null) {
             this.ronaldoEventManager.cleanupOrphanSchematic();
         }
+        if (this.fishingEventManager != null && this.fishingEventManager.isActive()) {
+            getLogger().info("Завершение ивента «Рыбалка» и откат схемы...");
+            this.fishingEventManager.stopEvent();
+        } else if (this.fishingEventManager != null) {
+            this.fishingEventManager.cleanupOrphanSchematic();
+        }
         if (this.riftManager != null && this.riftManager.isActive()) {
             getLogger().info("Завершение активного ивента и откат схемы...");
             this.riftManager.stopEvent(false);
@@ -326,6 +345,8 @@ public final class GeyserEventPlugin extends JavaPlugin {
     public SkibidiToiletManager getSkibidiToiletManager() { return skibidiToiletManager; }
 
     public RonaldoEventManager getRonaldoEventManager() { return ronaldoEventManager; }
+
+    public FishingEventManager getFishingEventManager() { return fishingEventManager; }
 
     public TopRightHudManager getTopRightHudManager() {
         return topRightHudManager;

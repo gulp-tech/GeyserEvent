@@ -162,7 +162,10 @@ public class InfernalRiftManager {
                 if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
                     return;
                 }
-                if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
+        if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
+            return;
+        }
+                if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
                     return;
                 }
                 long now = System.currentTimeMillis() / 1000L;
@@ -607,6 +610,11 @@ public class InfernalRiftManager {
                 && plugin.getRonaldoEventManager().isActive()) {
             plugin.getRonaldoEventManager().stopEvent();
         }
+        if (type != EventType.FISHING
+                && plugin.getFishingEventManager() != null
+                && plugin.getFishingEventManager().isActive()) {
+            plugin.getFishingEventManager().stopEvent();
+        }
         // Ивент «Вторжение Пришельцев» ведёт свой менеджер (своя схема и свой босс)
         if (type == EventType.ALIEN_INVASION) {
             if (plugin.getAlienInvasionManager() == null) {
@@ -667,6 +675,27 @@ public class InfernalRiftManager {
                 plugin.getSkibidiToiletManager().stopEvent();
             }
             return plugin.getRonaldoEventManager().startEvent(targetCenter, durationSecondsOverride);
+        }
+        if (type == EventType.FISHING) {
+            if (plugin.getFishingEventManager() == null) {
+                return false;
+            }
+            if (active) {
+                stopEvent(false);
+            }
+            if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
+                plugin.getAlienInvasionManager().stopEvent();
+            }
+            if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
+                plugin.getGravityHoardManager().stopEvent();
+            }
+            if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
+                plugin.getSkibidiToiletManager().stopEvent();
+            }
+            if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
+                plugin.getRonaldoEventManager().stopEvent();
+            }
+            return plugin.getFishingEventManager().startEvent(targetCenter, durationSecondsOverride);
         }
         if (active) {
             stopEvent(false);
@@ -1841,6 +1870,12 @@ public class InfernalRiftManager {
             }
             if (ronaldo != null && ronaldo.getWorld() != null) {
                 return ronaldo;
+            }
+        }
+        if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
+            Location fishing = plugin.getFishingEventManager().getCenterLocation();
+            if (fishing != null && fishing.getWorld() != null) {
+                return fishing;
             }
         }
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()) {

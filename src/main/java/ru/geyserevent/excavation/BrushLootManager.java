@@ -39,7 +39,8 @@ public class BrushLootManager {
     public enum LootCategory {
         EXCAVATION("excavation.brushes."),
         CAULDRON("cauldron.reagents."),
-        MINE("mine.geodes.");
+        MINE("mine.geodes."),
+        FISHING("fishing.rods.");
 
         private final String configPrefix;
 
@@ -60,6 +61,8 @@ public class BrushLootManager {
     private final NamespacedKey usesKey;
     private final NamespacedKey reagentKey;
     private final NamespacedKey geodeKey;
+    private final NamespacedKey fishingKey;
+    private final NamespacedKey fishingUsesKey;
 
     // 1. Таблицы лута и шансов для «Пляжных Раскопок» (Кисточки)
     private final Map<BrushTier, List<BrushLootEntry>> lootByTier = new EnumMap<>(BrushTier.class);
@@ -73,6 +76,9 @@ public class BrushLootManager {
     // 3. Отдельные таблицы лута и шансов для постоянного ивента «Шахта Древних» (Древние жеоды)
     private final Map<BrushTier, List<BrushLootEntry>> mineLootByTier = new EnumMap<>(BrushTier.class);
     private final Map<BrushTier, Double> geodeWeights = new EnumMap<>(BrushTier.class);
+    private final Map<BrushTier, List<BrushLootEntry>> fishingLootByTier = new EnumMap<>(BrushTier.class);
+    private final Map<BrushTier, Double> fishingWeights = new EnumMap<>(BrushTier.class);
+    private final Map<BrushTier, Integer> fishingUses = new EnumMap<>(BrushTier.class);
 
     public BrushLootManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -80,6 +86,8 @@ public class BrushLootManager {
         this.usesKey = new NamespacedKey(plugin, "brush_uses");
         this.reagentKey = new NamespacedKey(plugin, "alchemist_reagent");
         this.geodeKey = new NamespacedKey(plugin, "ancient_geode");
+        this.fishingKey = new NamespacedKey(plugin, "fishing_rod");
+        this.fishingUsesKey = new NamespacedKey(plugin, "fishing_uses");
         reload();
     }
 
@@ -88,6 +96,7 @@ public class BrushLootManager {
         lootByTier.clear();
         cauldronLootByTier.clear();
         mineLootByTier.clear();
+        fishingLootByTier.clear();
 
         // Авто-обновление старых шансов (65/25/10 -> 35/40/25)
         double cChance = cfg.getDouble("excavation.brushes.common.chance", 35.0);
@@ -137,6 +146,15 @@ public class BrushLootManager {
                 mineEntries.addAll(getDefaultLootForTier(tier));
             }
             mineLootByTier.put(tier, mineEntries);
+
+            String fishingBasePath = "fishing.rods." + tier.getConfigKey();
+            fishingWeights.put(tier, Math.max(1.0, cfg.getDouble(fishingBasePath + ".chance", defaultWeight)));
+            fishingUses.put(tier, Math.max(1, cfg.getInt(fishingBasePath + ".uses", tier.getDefaultUses() + 2)));
+            List<BrushLootEntry> fishingEntries = loadLootListFromConfig(cfg, fishingBasePath + ".loot");
+            if (fishingEntries.isEmpty()) {
+                fishingEntries.addAll(getDefaultFishingLootForTier(tier));
+            }
+            fishingLootByTier.put(tier, fishingEntries);
         }
     }
 
@@ -237,6 +255,7 @@ public class BrushLootManager {
             case EXCAVATION -> lootByTier;
             case CAULDRON -> cauldronLootByTier;
             case MINE -> mineLootByTier;
+            case FISHING -> fishingLootByTier;
         };
     }
 
@@ -245,6 +264,7 @@ public class BrushLootManager {
             case EXCAVATION -> brushWeights;
             case CAULDRON -> reagentWeights;
             case MINE -> geodeWeights;
+            case FISHING -> fishingWeights;
         };
     }
 
@@ -417,7 +437,190 @@ public class BrushLootManager {
             case EXCAVATION -> tier.getItemTitle();
             case CAULDRON -> getReagentDisplayName(tier);
             case MINE -> getGeodeDisplayName(tier);
+            case FISHING -> getFishingRodTitle(tier);
         };
+    }
+
+    public String getFishingRodTitle(BrushTier tier) {
+        return switch (tier) {
+            case COMMON -> "&aОбычная удочка";
+            case EPIC -> "&dЭпическая удочка";
+            case LEGENDARY -> "&6Легендарная удочка";
+        };
+    }
+
+    public BrushTier rollRandomFishingRodTier() {
+        return rollRandomTierFromMap(fishingWeights);
+    }
+
+    /**
+     * Ванильная удочка + PDC. Модель не подменяется: обычная удочка без метки остаётся ванильной.
+     */
+    @SuppressWarnings("deprecation")
+    public ItemStack createFishingRod(BrushTier tier) {
+        ItemStack stack = new ItemStack(Material.FISHING_ROD, 1);
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null) {
+            int uses = fishingUses.getOrDefault(tier, tier.getDefaultUses() + 2);
+            String title = plugin.getConfig().getString(
+                    "fishing.rods." + tier.getConfigKey() + ".name",
+                    getFishingRodTitle(tier)
+            );
+            meta.setDisplayName(ColorUtil.color(title));
+            meta.setLore(List.of(
+                    ColorUtil.color("&7Редкость: " + getFishingRodTitle(tier)),
+                    ColorUtil.color("&7Поклёвок: &e" + uses),
+                    ColorUtil.color("&8Ловите в пруду ивента")
+            ));
+            if (tier == BrushTier.EPIC || tier == BrushTier.LEGENDARY) {
+                Enchantment unb = Registry.ENCHANTMENT.get(NamespacedKey.minecraft("unbreaking"));
+                if (unb != null) {
+                    meta.addEnchant(unb, 1, true);
+                }
+                Enchantment luck = Registry.ENCHANTMENT.get(NamespacedKey.minecraft("luck_of_the_sea"));
+                if (luck != null) {
+                    meta.addEnchant(luck, tier == BrushTier.LEGENDARY ? 3 : 1, true);
+                }
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            }
+            PersistentDataContainer pdc = meta.getPersistentDataContainer();
+            pdc.set(fishingKey, PersistentDataType.STRING, tier.name());
+            pdc.set(fishingUsesKey, PersistentDataType.INTEGER, uses);
+            stack.setItemMeta(meta);
+        }
+        return stack;
+    }
+
+    public boolean isFishingRod(ItemStack item) {
+        if (item == null || item.getType() != Material.FISHING_ROD || !item.hasItemMeta()) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        return meta != null && meta.getPersistentDataContainer().has(fishingKey, PersistentDataType.STRING);
+    }
+
+    public BrushTier getFishingRodTier(ItemStack item) {
+        if (!isFishingRod(item)) {
+            return null;
+        }
+        String raw = item.getItemMeta().getPersistentDataContainer().get(fishingKey, PersistentDataType.STRING);
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return BrushTier.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    public int countPlayerFishingRods(Player player) {
+        if (player == null) {
+            return 0;
+        }
+        int count = 0;
+        PlayerInventory inv = player.getInventory();
+        for (ItemStack item : inv.getStorageContents()) {
+            if (isFishingRod(item)) {
+                count += item.getAmount();
+            }
+        }
+        if (isFishingRod(inv.getItemInOffHand())) {
+            count += inv.getItemInOffHand().getAmount();
+        }
+        if (isFishingRod(player.getItemOnCursor())) {
+            count += player.getItemOnCursor().getAmount();
+        }
+        return count;
+    }
+
+    public boolean removeAllFishingRods(Player player) {
+        if (player == null) {
+            return false;
+        }
+        boolean removed = false;
+        PlayerInventory inv = player.getInventory();
+        ItemStack[] contents = inv.getContents();
+        for (int i = 0; i < contents.length; i++) {
+            if (isFishingRod(contents[i])) {
+                inv.setItem(i, null);
+                removed = true;
+            }
+        }
+        if (isFishingRod(inv.getItemInOffHand())) {
+            inv.setItemInOffHand(null);
+            removed = true;
+        }
+        if (isFishingRod(player.getItemOnCursor())) {
+            player.setItemOnCursor(null);
+            removed = true;
+        }
+        return removed;
+    }
+
+    public void removeAllFishingRodsFromOnlinePlayers() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            removeAllFishingRods(player);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    public void consumeFishingRodUse(Player player, ItemStack rod) {
+        if (rod == null || !rod.hasItemMeta()) {
+            return;
+        }
+        ItemMeta meta = rod.getItemMeta();
+        if (meta == null) {
+            return;
+        }
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        int remaining = pdc.getOrDefault(fishingUsesKey, PersistentDataType.INTEGER, 1) - 1;
+        BrushTier tier = getFishingRodTier(rod);
+        if (remaining <= 0) {
+            rod.setAmount(rod.getAmount() - 1);
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
+        } else {
+            pdc.set(fishingUsesKey, PersistentDataType.INTEGER, remaining);
+            if (tier != null) {
+                meta.setLore(List.of(
+                        ColorUtil.color("&7Редкость: " + getFishingRodTitle(tier)),
+                        ColorUtil.color("&7Поклёвок: &e" + remaining),
+                        ColorUtil.color("&8Ловите в пруду ивента")
+                ));
+            }
+            rod.setItemMeta(meta);
+        }
+    }
+
+    public ItemStack rollLootForFishing(BrushTier tier) {
+        return rollLootFromList(fishingLootByTier.get(tier));
+    }
+
+    private List<BrushLootEntry> getDefaultFishingLootForTier(BrushTier tier) {
+        List<BrushLootEntry> list = new ArrayList<>();
+        switch (tier) {
+            case COMMON -> {
+                list.add(new BrushLootEntry(new ItemStack(Material.COD, 3), 45.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.SALMON, 2), 35.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.IRON_INGOT, 3), 25.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.PRISMARINE_SHARD, 2), 20.0));
+            }
+            case EPIC -> {
+                list.add(new BrushLootEntry(new ItemStack(Material.SALMON, 4), 35.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.GOLD_INGOT, 4), 40.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.PRISMARINE_CRYSTALS, 3), 30.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.DIAMOND, 1), 18.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.NAUTILUS_SHELL, 1), 12.0));
+            }
+            case LEGENDARY -> {
+                list.add(new BrushLootEntry(new ItemStack(Material.GOLDEN_APPLE, 1), 25.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.DIAMOND, 2), 35.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.HEART_OF_THE_SEA, 1), 15.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.EMERALD, 6), 30.0));
+                list.add(new BrushLootEntry(new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1), 6.0));
+            }
+        }
+        return list;
     }
 
     public boolean isReagentItem(ItemStack item) {
@@ -519,7 +722,7 @@ public class BrushLootManager {
      * Проверяет, относится ли предмет к временному ивенту (Кисточка или Реагент, но не Жеода Шахты).
      */
     public boolean isTemporaryEventItem(ItemStack item) {
-        return getBrushTier(item) != null && !isGeodeItem(item);
+        return (getBrushTier(item) != null && !isGeodeItem(item)) || isFishingRod(item);
     }
 
     /**

@@ -101,6 +101,9 @@ public final class SkibidiToiletManager {
         if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
             plugin.getRonaldoEventManager().stopEvent();
         }
+        if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
+            plugin.getFishingEventManager().stopEvent();
+        }
         stopEvent();
 
         targetCenter.getChunk().load(true);

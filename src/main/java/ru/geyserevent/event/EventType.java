@@ -18,7 +18,8 @@ public enum EventType {
     ALIEN_INVASION("alien", "Вторжение Пришельцев"),
     GRAVITY_HOARD("wind", "Сердце Ветра"),
     SKIBIDI("skibidi", "Шкибиди Туалет"),
-    RONALDO("ronaldo", "Роналду SIUU");
+    RONALDO("ronaldo", "Роналду SIUU"),
+    FISHING("fishing", "Рыбалка");
 
     private final String id;
     private final String displayName;
@@ -48,6 +49,7 @@ public enum EventType {
             case "wind", "gravity", "hoard", "breeze", "ветер", "сердце", "клад", "5" -> GRAVITY_HOARD;
             case "skibidi", "toilet", "туалет", "шкибиди", "6" -> SKIBIDI;
             case "ronaldo", "cr7", "siuu", "siu", "роналду", "рональдо", "7" -> RONALDO;
+            case "fishing", "fish", "рыбалка", "удочка", "rybalka", "8" -> FISHING;
             default -> null;
         };
     }

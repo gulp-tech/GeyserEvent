@@ -122,6 +122,9 @@ public final class RonaldoEventManager {
         if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
             plugin.getSkibidiToiletManager().stopEvent();
         }
+        if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
+            plugin.getFishingEventManager().stopEvent();
+        }
         stopEvent(false);
 
         targetCenter.getChunk().load(true);

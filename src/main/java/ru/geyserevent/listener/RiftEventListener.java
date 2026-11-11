@@ -294,6 +294,9 @@ public class RiftEventListener implements Listener {
         boolean restricted = plugin.getBrushLootManager().getBrushTier(current) != null
                 || plugin.getBrushLootManager().getBrushTier(cursor) != null
                 || plugin.getBrushLootManager().getBrushTier(hotbar) != null
+                || plugin.getBrushLootManager().isFishingRod(current)
+                || plugin.getBrushLootManager().isFishingRod(cursor)
+                || plugin.getBrushLootManager().isFishingRod(hotbar)
                 || (plugin.getMinerBackpackManager() != null && (
                         plugin.getMinerBackpackManager().isMineOreOrGeode(current)
                         || plugin.getMinerBackpackManager().isMineOreOrGeode(cursor)
@@ -318,6 +321,7 @@ public class RiftEventListener implements Listener {
         }
         ItemStack oldCursor = event.getOldCursor();
         if (plugin.getBrushLootManager().getBrushTier(oldCursor) != null
+                || plugin.getBrushLootManager().isFishingRod(oldCursor)
                 || (plugin.getMinerBackpackManager() != null && plugin.getMinerBackpackManager().isMineOreOrGeode(oldCursor))) {
             event.setCancelled(true);
         }
@@ -334,6 +338,9 @@ public class RiftEventListener implements Listener {
         boolean holdingEventItem = plugin.getBrushLootManager().getBrushTier(mainHand) != null
                 || plugin.getBrushLootManager().getBrushTier(offHand) != null
                 || plugin.getBrushLootManager().hasAnyEventBrush(player)
+                || plugin.getBrushLootManager().isFishingRod(mainHand)
+                || plugin.getBrushLootManager().isFishingRod(offHand)
+                || plugin.getBrushLootManager().countPlayerFishingRods(player) > 0
                 || (plugin.getMinerBackpackManager() != null
                 && plugin.getMinerBackpackManager().countCarriedMineItems(player) > 0);
 
@@ -424,6 +431,11 @@ public class RiftEventListener implements Listener {
         if (plugin.getRiftManager().isExcavationVillager(clicked)) {
             event.setCancelled(true);
             triggerVillagerClickDebounced(event.getPlayer());
+            return;
+        }
+        if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isFisherman(clicked)) {
+            event.setCancelled(true);
+            plugin.getFishingEventManager().handleNpcClick(event.getPlayer());
         }
     }
 
@@ -438,6 +450,11 @@ public class RiftEventListener implements Listener {
         if (plugin.getRiftManager().isExcavationVillager(clicked)) {
             event.setCancelled(true);
             triggerVillagerClickDebounced(event.getPlayer());
+            return;
+        }
+        if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isFisherman(clicked)) {
+            event.setCancelled(true);
+            plugin.getFishingEventManager().handleNpcClick(event.getPlayer());
         }
     }
 
@@ -788,6 +805,10 @@ public class RiftEventListener implements Listener {
         Entity caught = event.getCaught();
         if (caught != null && (isAlienMob(caught) || isEventMob(caught))) {
             event.setCancelled(true);
+            return;
+        }
+        if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
+            plugin.getFishingEventManager().handleFishCatch(event);
         }
     }
 

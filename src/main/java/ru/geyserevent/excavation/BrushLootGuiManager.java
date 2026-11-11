@@ -234,6 +234,16 @@ public class BrushLootGuiManager {
                         "&eНажмите, чтобы открыть меню лута"
                 )
         ));
+        inv.setItem(44, createButton(
+                Material.FISHING_ROD,
+                "&b&lРыбалка",
+                List.of(
+                        "&7Удочки обычная / эпик / легенда.",
+                        "&7Лут настраивается по редкости.",
+                        "",
+                        "&eНажмите, чтобы открыть меню лута"
+                )
+        ));
 
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
@@ -587,6 +597,46 @@ public class BrushLootGuiManager {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
     }
 
+    @SuppressWarnings("deprecation")
+    public void openFishingMenu(Player player) {
+        Inventory inv = Bukkit.createInventory(
+                new EventMenuHolder(LootCategory.FISHING),
+                27,
+                ColorUtil.color("&8Лут: Рыбалка")
+        );
+        ItemStack border = createButton(Material.LIGHT_BLUE_STAINED_GLASS_PANE, "&b", List.of());
+        ItemStack filler = createButton(Material.GRAY_STAINED_GLASS_PANE, "&7", List.of());
+        for (int i = 0; i < 27; i++) {
+            inv.setItem(i, (i < 9 || i >= 18) ? border : filler);
+        }
+        inv.setItem(4, createButton(
+                Material.FISHING_ROD,
+                "&b&lРыбалка — лут удочек",
+                List.of(
+                        "&7Рыбак выдаёт обычную, эпическую",
+                        "&7или легендарную удочку.",
+                        "&7Поклёвка в пруду даёт лут этой редкости.",
+                        "",
+                        "&fВыберите редкость ниже!"
+                )
+        ));
+        inv.setItem(11, createTierSelectIcon(BrushTier.COMMON, LootCategory.FISHING));
+        inv.setItem(13, createTierSelectIcon(BrushTier.EPIC, LootCategory.FISHING));
+        inv.setItem(15, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.FISHING));
+        inv.setItem(18, createButton(
+                Material.ARROW,
+                "&e« Все ивенты (/rift menu)",
+                List.of("&7Перейти в общее меню всех ивентов")
+        ));
+        inv.setItem(26, createButton(
+                Material.SAND,
+                "&#FFD614Перейти к раскопкам »",
+                List.of("&7Открыть меню кисточек")
+        ));
+        player.openInventory(inv);
+        player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_THROW, 0.8f, 1.2f);
+    }
+
     private ItemStack createTierSelectIcon(BrushTier tier, LootCategory category) {
         BrushLootManager mgr = plugin.getBrushLootManager();
         double weight = mgr.getTierWeight(tier, category);
@@ -632,6 +682,17 @@ public class BrushLootGuiManager {
                         )
                 );
             }
+            case FISHING -> createButton(
+                    Material.FISHING_ROD,
+                    mgr.getFishingRodTitle(tier),
+                    List.of(
+                            "&7Ивент: &bРыбалка",
+                            "&7Предметов в луте: &e" + count + " шт.",
+                            "&7Шанс удочки у рыбака: &#34D711" + weight + "%",
+                            "",
+                            "&eНажмите, чтобы настроить лут удочки!"
+                    )
+            );
             case EXCAVATION -> {
                 Material iconMat = Material.matchMaterial("BRUSH");
                 if (iconMat == null) {
@@ -708,6 +769,7 @@ public class BrushLootGuiManager {
             case EXCAVATION -> "Пляжных Раскопок";
             case CAULDRON -> "Котла Алхимика";
             case MINE -> "Шахты Древних";
+            case FISHING -> "Рыбалки";
         };
         inv.setItem(45, createButton(
                 Material.ARROW,
@@ -723,6 +785,7 @@ public class BrushLootGuiManager {
             case EXCAVATION -> "кисточки";
             case CAULDRON -> "реагента";
             case MINE -> "жеоды";
+            case FISHING -> "удочки";
         };
         inv.setItem(47, createButton(
                 Material.RED_STAINED_GLASS_PANE,
@@ -751,6 +814,7 @@ public class BrushLootGuiManager {
                 Material b = Material.matchMaterial("BRUSH");
                 yield b != null ? b : Material.FEATHER;
             }
+            case FISHING -> Material.FISHING_ROD;
         };
 
         inv.setItem(48, createButton(
@@ -840,6 +904,7 @@ public class BrushLootGuiManager {
                 case 38 -> openFlatLootMenu(player, "skibidi.loot", "Шкибиди Туалет", Material.HOPPER, false);
                 case 40 -> openFlatLootMenu(player, "wind.loot", "Древний клад", Material.ENDER_CHEST, false);
                 case 42 -> openFlatLootMenu(player, "ronaldo.loot", "Роналду SIUU", Material.GOLDEN_HELMET, false);
+                case 44 -> openFishingMenu(player);
                 default -> {
                 }
             }
@@ -896,7 +961,8 @@ public class BrushLootGuiManager {
                     switch (category) {
                         case EXCAVATION -> openCauldronMenu(player);
                         case CAULDRON -> openMineMenu(player);
-                        case MINE -> openCauldronMenu(player);
+                        case MINE -> openFishingMenu(player);
+                        case FISHING -> openExcavationMenu(player);
                     }
                 }
                 default -> {
@@ -943,6 +1009,7 @@ public class BrushLootGuiManager {
                         case EXCAVATION -> openExcavationMenu(player);
                         case CAULDRON -> openCauldronMenu(player);
                         case MINE -> openMineMenu(player);
+                        case FISHING -> openFishingMenu(player);
                     }
                 }
                 return true;

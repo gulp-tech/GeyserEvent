@@ -1,0 +1,86 @@
+# Пруд рыбалки 21×21. NPC на пирсе (юг).
+boss-spawn-offset:
+  x: 0.5
+  y: 1.0
+  z: 8.5
+  yaw: 180.0
+  pitch: 0.0
+
+palette:
+  W: water
+  S: sand
+  G: grass_block
+  O: oak_planks
+  K: oak_log
+  L: lantern
+  F: oak_fence
+
+layers:
+  "0":
+    - "GGGGGGGGGGGGGGGGGGGGG"
+    - "GGGGGGGGGGGGGGGGGGGGG"
+    - "GGGGGGGGGGSGGGGGGGGGG"
+    - "GGGGGGGSSSSSSSGGGGGGG"
+    - "GGGGGSSSSSWSSSSSGGGGG"
+    - "GGGGSSSWWWWWWWSSSGGGG"
+    - "GGGGSSWWWWWWWWWSSGGGG"
+    - "GGGSSWWWWWWWWWWWSSGGG"
+    - "GGGSSWWWWWWWWWWWSSGGG"
+    - "GGGSSWWWWWWWWWWWSSGGG"
+    - "GGSSWWWWWOOOWWWWWSSGG"
+    - "GGGSSWWWWOOOWWWWSSGGG"
+    - "GGGSSWWWWOOOWWWWSSGGG"
+    - "GGGSSWWWWOOOWWWWSSGGG"
+    - "GGGGSSWWWOOOWWWSSGGGG"
+    - "GGGGSSSWWOOOWWSSSGGGG"
+    - "GGGGGSSSSOOOSSSSGGGGG"
+    - "GGGGGGGSSOOOSSGGGGGGG"
+    - "GGGGGGGGGOOOGGGGGGGGG"
+    - "GGGGGGGGOOOOOGGGGGGGG"
+    - "GGGGGGGGOOOOOGGGGGGGG"
+
+  "1":
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "........F...F........"
+    - "........F...F........"
+    - "........F...F........"
+    - "........F...F........"
+    - "........F...F........"
+    - "........F...F........"
+    - "........F...F........"
+    - "........F...F........"
+    - "....................."
+
+  "2":
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "........L...L........"
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "....................."
+    - "........L...L........"
+    - "....................."

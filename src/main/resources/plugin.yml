@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.21.40'
+version: '1.21.41'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
@@ -48,6 +48,11 @@ commands:
   ronaldo:
     description: Запустить ивент «Роналду SIUU»
     aliases: [cr7, siuu, ronaldu]
+    usage: /<command> [here|stop]
+    permission: geyserevent.admin
+  fishing:
+    description: Запустить ивент «Рыбалка»
+    aliases: [rybalka, fish]
     usage: /<command> [here|stop]
     permission: geyserevent.admin
 
