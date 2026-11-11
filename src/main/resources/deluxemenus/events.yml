@@ -96,27 +96,6 @@ items:
       - '[close]'
       - '[player] event gps'
 
-  'alien_invasion':
-    material: ENDER_EYE
-    slot: 19
-    item_flags:
-      - HIDE_ATTRIBUTES
-    display_name: '&#A020FF&lВторжение Пришельцев'
-    lore:
-      - '&8Посадочная площадка и босс'
-      - ''
-      - '&e┠ &fПришелец, миньоны, тарелка, сундуки'
-      - '&e┠ &fСтарт: &#E0C912/rift start alien'
-      - '&e┠ &fДлительность: &#E0C91215 мин'
-      - ''
-      - '&#34D711» ЛКМ — /event delay'
-      - '&#E0C912» ПКМ — /event gps'
-    left_click_commands:
-      - '[close]'
-      - '[player] event delay'
-    right_click_commands:
-      - '[close]'
-      - '[player] event gps'
 
   'wind_heart':
     material: ENDER_CHEST
@@ -139,49 +118,7 @@ items:
       - '[close]'
       - '[player] event gps'
 
-  'skibidi_toilet':
-    material: HOPPER
-    slot: 23
-    item_flags:
-      - HIDE_ATTRIBUTES
-    display_name: '&f&lШкибиди Туалет'
-    lore:
-      - '&8Волны 3D-туалетов'
-      - ''
-      - '&e┠ &fВолны 2–5, урон 30 / 40, за убийство 30 / 50 ур.'
-      - '&e┠ &fСтарт: &#E0C912/skibidi &f· &#E0C9128 мин'
-      - ''
-      - '&#34D711» ЛКМ — /event delay'
-      - '&#E0C912» ПКМ — /event gps'
-    left_click_commands:
-      - '[close]'
-      - '[player] event delay'
-    right_click_commands:
-      - '[close]'
-      - '[player] event gps'
 
-  'ronaldo_siuu':
-    material: GOLDEN_HELMET
-    slot: 25
-    item_flags:
-      - HIDE_ATTRIBUTES
-      - HIDE_ENCHANTS
-    display_name: '&e&lРоналду SIUU'
-    lore:
-      - '&8Стадион и босс CR7'
-      - ''
-      - '&e┠ &fНожницы, штрафной, мяч, рывок, сетка ворот'
-      - '&e┠ &fВарп &#E0C912/warp ronaldo &fна время ивента'
-      - '&e┠ &fСтарт: &#E0C912/ronaldo &f· &#E0C9128 мин'
-      - ''
-      - '&#34D711» ЛКМ — /event delay'
-      - '&#E0C912» ПКМ — /event gps'
-    left_click_commands:
-      - '[close]'
-      - '[player] event delay'
-    right_click_commands:
-      - '[close]'
-      - '[player] event gps'
 
   'fishing_pond':
     material: FISHING_ROD

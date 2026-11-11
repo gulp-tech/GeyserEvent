@@ -173,6 +173,9 @@ public class InfernalRiftManager {
                     int online = plugin.getBedrockService().getOnlineBedrockCount();
                     List<EventType> eligible = new ArrayList<>();
                     for (EventType type : EventType.values()) {
+                        if (!isEventEnabledInConfig(type)) {
+                            continue;
+                        }
                         if (online >= plugin.getPluginConfig().getAutoMinPlayers(type)) {
                             eligible.add(type);
                         }
@@ -547,9 +550,34 @@ public class InfernalRiftManager {
     }
 
     public boolean startEventRandomInConfiguredWorld() {
-        EventType[] types = EventType.values();
-        EventType randomType = types[ThreadLocalRandom.current().nextInt(types.length)];
+        List<EventType> types = new ArrayList<>();
+        for (EventType type : EventType.values()) {
+            if (isEventEnabledInConfig(type)) {
+                types.add(type);
+            }
+        }
+        if (types.isEmpty()) {
+            return false;
+        }
+        EventType randomType = types.get(ThreadLocalRandom.current().nextInt(types.size()));
         return startEventRandomInConfiguredWorld(randomType);
+    }
+
+    private boolean isEventEnabledInConfig(EventType type) {
+        if (type == null) {
+            return true;
+        }
+        String path = switch (type) {
+            case ALIEN_INVASION -> "alien.enabled";
+            case SKIBIDI -> "skibidi.enabled";
+            case RONALDO -> "ronaldo.enabled";
+            case FISHING -> "fishing.enabled";
+            default -> null;
+        };
+        if (path == null) {
+            return true;
+        }
+        return plugin.getConfig().getBoolean(path, true);
     }
 
     public boolean startEventRandomInConfiguredWorld(EventType type) {

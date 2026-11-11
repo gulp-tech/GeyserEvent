@@ -1151,7 +1151,7 @@ messages:
 # Эвокер/векс/гаст в обычном мире почти не встречаются, поэтому обычный геймплей не ломается.
 # ============================================================================
 alien:
-  enabled: true
+  enabled: false
   # Длительность ивента в минутах (после этого пришелец улетает)
   duration-minutes: 15
   # Радиус защиты постройки: внутри неё блоки не ломаются и не ставятся
@@ -1714,7 +1714,7 @@ wind:
 # Лут: /rift copylot excavation skibidi   (у каждого предмета свой chance)
 # ============================================================================
 skibidi:
-  enabled: true
+  enabled: false
   duration-minutes: 8
   wave-interval-seconds: 300
   wave-min: 2
@@ -1938,7 +1938,7 @@ skibidi:
 # Лут: /rift copylot excavation ronaldo
 # ============================================================================
 ronaldo:
-  enabled: true
+  enabled: false
   duration-minutes: 8
   boss-health: 900
   boss-damage: 40

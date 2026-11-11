@@ -19,7 +19,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 20]
+VERSION = [1, 21, 21]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -33,10 +33,40 @@ EMBED = os.path.join(ROOT, "src", "main", "resources", "resourcepack", "GeyserEv
 entries = {}
 
 
+# Не пакуем оверрайды ванильных сущностей/текстур. Исходники остаются в resourcepack-vanilla.
+SKIP_PREFIXES = (
+    "entity/",
+    "textures/entity/chest/",
+    "textures/entity/ghast/",
+)
+SKIP_FILES = {
+    "textures/entity/vindicator.png",
+    "models/entity/vindicator.geo.json",
+    "models/entity/ghast.geo.json",
+    "render_controllers/ghast.json",
+    "render_controllers/vindicator.json",
+    "render_controllers/evoker_ronaldo.json",
+    "render_controllers/skibidi_toilet.json",
+    "render_controllers/skeleton.json",
+    "render_controllers/default.json",
+}
+
+
+def skip_pack(arcname):
+    name = arcname.replace("\\", "/")
+    if name in SKIP_FILES:
+        return True
+    return any(name.startswith(prefix) for prefix in SKIP_PREFIXES)
+
+
 def add_file(arcname, path):
+    name = arcname.replace("\\", "/")
+    if skip_pack(name):
+        print(" skip vanilla override", name)
+        return
     with open(path, "rb") as fh:
-        entries[arcname.replace("\\", "/")] = fh.read()
-        print(" +", arcname, len(entries[arcname.replace("\\", "/")]), "bytes")
+        entries[name] = fh.read()
+        print(" +", name, len(entries[name]), "bytes")
 
 
 def add_tree(rel_dir, allowed_ext=None):
@@ -60,10 +90,7 @@ manifest = {
     "format_version": 2,
     "header": {
         "name": "GeyserEvent Pack v" + VERSION_STR,
-        "description": (
-        "3D-рюкзак шахтёра, блоки призыва, 3D-пришелец (vindicator), "
-                            "тарелка (гаст), древний сундук, шкибиди-туалет (ravager), Роналду (evoker/illusioner)."
-        ),
+        "description": "3D-рюкзак шахтёра и блоки призыва. Ванильные мобы и эндер-сундук не подменяются.",
         "uuid": PACK_UUID,
         "version": VERSION,
         "min_engine_version": [1, 19, 80],
@@ -85,7 +112,7 @@ add_tree("models", (".json",))
 add_tree("animations", (".json",))
 add_tree("animation_controllers", (".json",))
 add_tree("render_controllers", (".json",))
-add_tree("entity", (".json",))
+# entity/ не пакуем — оверрайд minecraft:ravager/ghast/vindicator/evoker ломает ваниль.
 add_tree("particles", (".json",))
 add_tree("textures", (".png", ".tga", ".json"))
 add_tree("sounds", (".wav", ".ogg", ".fsb"))
@@ -108,8 +135,8 @@ ALIEN_BLOCKS = {
     "conduit": "geyserevent_alien_core",
     "end_stone_bricks": "geyserevent_alien_bio",
 }
+# ALIEN_BLOCKS не кладём в пак — иначе ванильные призмарин/пурпур/конуит меняют текстуру у всех.
 ALL_BLOCKS = dict(SUMMON_BLOCKS)
-ALL_BLOCKS.update(ALIEN_BLOCKS)
 
 entries["blocks.json"] = json.dumps({
     "format_version": [1, 1, 0],
@@ -162,14 +189,14 @@ sound_defs["sound_definitions"]["ronaldo_talk"] = {
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))
 
-# sanity: vanilla identifiers only in entity files
-for name, data in list(entries.items()):
-    if name.startswith("entity/") and name.endswith(".json"):
-        text = data.decode("utf-8")
-        if "ale:" in text:
-            raise SystemExit("ОШИБКА: в %s остался идентификатор ale:* — Geyser его не заспавнит" % name)
-        if "minecraft:" not in text:
-            raise SystemExit("ОШИБКА: в %s нет ванильного идентификатора minecraft:*" % name)
+# sanity: никаких оверрайдов ванильных мобов/эндер-сундука
+for name in list(entries):
+    if name.startswith("entity/"):
+        raise SystemExit("ОШИБКА: в паке entity/ ломает ванильных мобов: " + name)
+    if name.startswith("textures/entity/chest/") or name.startswith("textures/entity/ghast/"):
+        raise SystemExit("ОШИБКА: ванильная текстура в паке: " + name)
+    if name in SKIP_FILES:
+        raise SystemExit("ОШИБКА: запрещённый оверрайд в паке: " + name)
 
 for target in (DST, EMBED):
     os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
