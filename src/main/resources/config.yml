@@ -2075,12 +2075,12 @@ fishing:
     common:
       chance: 35
       uses: 5
-      name: "&aОбычная удочка"
+      name: "&aМедная удочка удачи"
     epic:
       chance: 40
       uses: 6
-      name: "&dЭпическая удочка"
+      name: "&dЗолотая удочка удачи"
     legendary:
       chance: 25
       uses: 8
-      name: "&6Легендарная удочка"
+      name: "&6Кристальная удочка удачи"

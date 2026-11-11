@@ -186,7 +186,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.42 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" GeyserEvent v1.21.43 успешно запущен! (Purpur 1.21–26.63)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Клад, Рыбалка (пришельцы/скибиди/CR7 выключены)");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");
@@ -228,10 +228,29 @@ public final class GeyserEventPlugin extends JavaPlugin {
                             File targetPack = new File(packsDir, "GeyserEvent-Pack.mcpack");
                             Files.copy(exported.toPath(), targetPack.toPath(), StandardCopyOption.REPLACE_EXISTING);
                             getLogger().info("Текстурпак GeyserEvent-Pack.mcpack автоматически перезаписан в " + targetPack.getPath());
+                            exportGeyserCustomItems(geyserDir);
                         }
                     }
                 }
             }
+        } catch (Exception ignored) {
+        }
+    }
+
+    /** Маппинг CustomModelData удочек Lucky Waters. Ванильная удочка без CMD не трогается. */
+    private void exportGeyserCustomItems(File geyserDir) {
+        try {
+            saveResource("geyser/custom-items.json", true);
+            File exported = new File(getDataFolder(), "geyser/custom-items.json");
+            if (!exported.exists()) {
+                return;
+            }
+            Files.copy(exported.toPath(), new File(geyserDir, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+            File mappings = new File(geyserDir, "custom-mappings");
+            if (!mappings.exists()) {
+                mappings.mkdirs();
+            }
+            Files.copy(exported.toPath(), new File(mappings, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception ignored) {
         }
     }

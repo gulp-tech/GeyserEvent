@@ -1,0 +1,22 @@
+{
+  "format_version": 1,
+  "items": {
+    "minecraft:fishing_rod": [
+      {
+        "name": "copper_luck_rod",
+        "custom_model_data": 27101,
+        "display_name": "Copper Luck Rod"
+      },
+      {
+        "name": "golden_luck_rod",
+        "custom_model_data": 27102,
+        "display_name": "Golden Luck Rod"
+      },
+      {
+        "name": "crystal_luck_rod",
+        "custom_model_data": 27103,
+        "display_name": "Crystal Luck Rod"
+      }
+    ]
+  }
+}

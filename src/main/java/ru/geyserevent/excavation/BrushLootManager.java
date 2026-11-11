@@ -441,11 +441,23 @@ public class BrushLootManager {
         };
     }
 
+    public static final int FISHING_ROD_CMD_COMMON = 27101;
+    public static final int FISHING_ROD_CMD_EPIC = 27102;
+    public static final int FISHING_ROD_CMD_LEGENDARY = 27103;
+
     public String getFishingRodTitle(BrushTier tier) {
         return switch (tier) {
-            case COMMON -> "&aОбычная удочка";
-            case EPIC -> "&dЭпическая удочка";
-            case LEGENDARY -> "&6Легендарная удочка";
+            case COMMON -> "&aМедная удочка удачи";
+            case EPIC -> "&dЗолотая удочка удачи";
+            case LEGENDARY -> "&6Кристальная удочка удачи";
+        };
+    }
+
+    public int fishingRodCustomModelData(BrushTier tier) {
+        return switch (tier) {
+            case COMMON -> FISHING_ROD_CMD_COMMON;
+            case EPIC -> FISHING_ROD_CMD_EPIC;
+            case LEGENDARY -> FISHING_ROD_CMD_LEGENDARY;
         };
     }
 
@@ -486,6 +498,10 @@ public class BrushLootManager {
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
             pdc.set(fishingKey, PersistentDataType.STRING, tier.name());
             pdc.set(fishingUsesKey, PersistentDataType.INTEGER, uses);
+            try {
+                meta.setCustomModelData(fishingRodCustomModelData(tier));
+            } catch (Throwable ignored) {
+            }
             stack.setItemMeta(meta);
         }
         return stack;
