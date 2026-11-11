@@ -618,11 +618,9 @@ public class InfernalRiftManager {
      * Старт ивента. {@code fromSummonAltar} = true, если алтарь призыва:
      * тогда при таймауте босса в чат уйдёт сообщение summon.timeout-message.
      */
-    /** Скибиди, CR7 и пришельцы выключены в коде: не спавним ванильных мобов как подмену модели. */
+    /** Скибиди и CR7 выключены в коде. Пришельцы снова можно стартовать (отдельная модель, ваниль не трогаем). */
     public static boolean isTemporarilyDisabled(EventType type) {
-        return type == EventType.SKIBIDI
-                || type == EventType.RONALDO
-                || type == EventType.ALIEN_INVASION;
+        return type == EventType.SKIBIDI || type == EventType.RONALDO;
     }
 
     public boolean startEventAt(Location targetCenter, EventType type, Integer durationSecondsOverride,

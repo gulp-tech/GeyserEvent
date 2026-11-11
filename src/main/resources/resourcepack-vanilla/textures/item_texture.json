@@ -4,6 +4,12 @@
   "texture_data": {
     "b": {
       "textures": "textures/items/b"
+    },
+    "alien_display": {
+      "textures": "textures/entity/alien"
+    },
+    "nave_display": {
+      "textures": "textures/entity/nave"
     }
   }
 }

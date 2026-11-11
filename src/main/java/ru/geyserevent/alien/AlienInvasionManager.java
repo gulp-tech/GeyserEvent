@@ -13,12 +13,15 @@ import org.bukkit.block.Chest;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Evoker;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Spellcaster;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -36,6 +39,7 @@ import ru.geyserevent.schematic.RiftSchematicManager;
 import ru.geyserevent.util.ColorUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -66,6 +70,8 @@ public final class AlienInvasionManager {
     private final NamespacedKey alienMinionKey;
     private final NamespacedKey alienChestKey;
     private final NamespacedKey alienUfoKey;
+    private final NamespacedKey alienVisualKey;
+    private final Map<UUID, UUID> visualByHost = new ConcurrentHashMap<>();
     private final DamageLeaderboard leaderboard = new DamageLeaderboard();
     private final Random random = new Random();
 
@@ -99,6 +105,109 @@ public final class AlienInvasionManager {
         this.alienMinionKey = new NamespacedKey(plugin, "alien_minion");
         this.alienChestKey = new NamespacedKey(plugin, "alien_chest");
         this.alienUfoKey = new NamespacedKey(plugin, "alien_ufo");
+        this.alienVisualKey = new NamespacedKey(plugin, "alien_visual");
+    }
+
+    private static final int ALIEN_MODEL_CMD = 28001;
+    private static final int UFO_MODEL_CMD = 28002;
+
+    /** Хитбокс — невидимый husk. Модель — отдельный предмет, ванильный поборник не трогаем. */
+    private void hideVanillaBody(LivingEntity entity) {
+        if (entity == null) {
+            return;
+        }
+        entity.setInvisible(true);
+        entity.setSilent(true);
+        entity.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, PotionEffect.INFINITE_DURATION, 0, false, false, false));
+        EntityEquipment equip = entity.getEquipment();
+        if (equip != null) {
+            equip.clear();
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private ItemStack displayItem(boolean ufo) {
+        ItemStack item = new ItemStack(Material.STICK, 1);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            try {
+                meta.setCustomModelData(ufo ? UFO_MODEL_CMD : ALIEN_MODEL_CMD);
+            } catch (Throwable ignored) {
+            }
+            meta.setDisplayName(ufo ? "nave" : "alien");
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private void attachAlienVisual(LivingEntity host, boolean ufo) {
+        if (host == null || host.getWorld() == null) {
+            return;
+        }
+        removeVisual(host.getUniqueId());
+        Location loc = host.getLocation().clone();
+        ArmorStand stand = host.getWorld().spawn(loc, ArmorStand.class, s -> {
+            s.setPersistent(false);
+            s.setGravity(false);
+            s.setInvulnerable(true);
+            s.setInvisible(true);
+            s.setMarker(true);
+            s.setBasePlate(false);
+            s.setArms(false);
+            s.setSmall(false);
+            s.setCollidable(false);
+            s.setSilent(true);
+            s.setCustomNameVisible(false);
+            s.getPersistentDataContainer().set(alienVisualKey, PersistentDataType.BYTE, (byte) 1);
+            EntityEquipment eq = s.getEquipment();
+            if (eq != null) {
+                eq.setHelmet(displayItem(ufo));
+                eq.setHelmetDropChance(0.0f);
+            }
+        });
+        visualByHost.put(host.getUniqueId(), stand.getUniqueId());
+        try {
+            host.addPassenger(stand);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void removeVisual(UUID hostId) {
+        UUID standId = visualByHost.remove(hostId);
+        if (standId == null) {
+            return;
+        }
+        Entity stand = Bukkit.getEntity(standId);
+        if (stand != null) {
+            stand.remove();
+        }
+    }
+
+    private void syncVisuals() {
+        visualByHost.entrySet().removeIf(entry -> {
+            Entity host = Bukkit.getEntity(entry.getKey());
+            Entity stand = Bukkit.getEntity(entry.getValue());
+            if (host == null || host.isDead() || stand == null || stand.isDead()) {
+                if (stand != null) {
+                    stand.remove();
+                }
+                return true;
+            }
+            if (!host.getPassengers().contains(stand)) {
+                Location loc = host.getLocation().clone().add(0, ufoVisualOffset(host), 0);
+                loc.setYaw(host.getLocation().getYaw());
+                stand.teleport(loc);
+            }
+            return false;
+        });
+    }
+
+    private double ufoVisualOffset(Entity host) {
+        return isAlienUfo(host) ? 0.0 : 0.0;
+    }
+
+    public boolean isAlienVisual(Entity entity) {
+        return entity != null && entity.getPersistentDataContainer().has(alienVisualKey, PersistentDataType.BYTE);
     }
 
     // ------------------------------------------------------------------ запуск
@@ -195,10 +304,18 @@ public final class AlienInvasionManager {
         World world = center.getWorld();
         Location loc = center.clone().add(0.0, cfg.getAlienUfoHeight(), 0.0);
         loc.getChunk().load(true);
-        Entity spawned = world.spawnEntity(loc, cfg.getAlienUfoType());
+        Entity spawned = world.spawn(loc, ArmorStand.class, s -> {
+            s.setMarker(true);
+            s.setGravity(false);
+            s.setInvisible(true);
+            s.setInvulnerable(true);
+            s.setBasePlate(false);
+            s.setArms(false);
+            s.setSilent(true);
+        });
         if (!(spawned instanceof LivingEntity ufo)) {
             spawned.remove();
-            plugin.getLogger().warning("Тип тарелки " + cfg.getAlienUfoType() + " не является живым существом.");
+            plugin.getLogger().warning("Не удалось создать тарелку.");
             return;
         }
         ufo.getPersistentDataContainer().set(alienUfoKey, PersistentDataType.BYTE, (byte) 1);
@@ -215,9 +332,12 @@ public final class AlienInvasionManager {
         if (ufo instanceof Mob mob) {
             mob.setTarget(null);
         }
-        BossAbilityController.applyEntityScale(ufo, cfg.getAlienUfoScale());
-        BossAbilityController.setEntityAttribute(ufo, "MAX_HEALTH", "generic.max_health", 2048.0);
-        ufo.setHealth(ufo.getMaxHealth());
+        hideVanillaBody(ufo);
+        EntityEquipment ufoEq = ufo.getEquipment();
+        if (ufoEq != null) {
+            ufoEq.setHelmet(displayItem(true));
+            ufoEq.setHelmetDropChance(0.0f);
+        }
         this.ufoUuid = ufo.getUniqueId();
         this.ufoHome = loc.clone();
         world.playSound(loc, "alien_transmit", 1.4f, 0.7f);
@@ -250,7 +370,7 @@ public final class AlienInvasionManager {
             throw new IllegalStateException("Мир ивента пришельцев не найден");
         }
 
-        Entity spawned = world.spawnEntity(loc, cfg.getAlienBossType());
+        Entity spawned = world.spawnEntity(loc, EntityType.HUSK);
         if (!(spawned instanceof LivingEntity boss)) {
             throw new IllegalStateException("Тип босса " + cfg.getAlienBossType() + " не является живым существом");
         }
@@ -303,7 +423,8 @@ public final class AlienInvasionManager {
         }
 
         updateBossName(boss);
-        silenceEvoker(boss);
+        hideVanillaBody(boss);
+        attachAlienVisual(boss, false);
 
         // Страшные звуки пришельцев (v1.20.3)
         world.playSound(loc, "alien_growl", 2.0f, 0.8f);
@@ -381,11 +502,13 @@ public final class AlienInvasionManager {
             double radius = 2.0 + random.nextDouble() * 1.5;
             Location spawnLoc = bossLoc.clone().add(Math.cos(angle) * radius, 0.3, Math.sin(angle) * radius);
             LivingEntity minion = plugin.getAbilityController().spawnAlienMinion(
-                    cfg.getAlienMinionType(), spawnLoc, cfg.getAlienMinionHealth(), cfg.getAlienMinionDamage(),
-                    cfg.getAlienMinionScale(), cfg.getAlienMinionName(), cfg.getAlienMinionWeapon(),
+                    EntityType.HUSK, spawnLoc, cfg.getAlienMinionHealth(), cfg.getAlienMinionDamage(),
+                    cfg.getAlienMinionScale(), cfg.getAlienMinionName(), Material.AIR,
                     nearby, alienMinionKey);
             if (minion != null) {
                 minion.setAI(true);
+                hideVanillaBody(minion);
+                attachAlienVisual(minion, false);
                 BossAbilityController.setEntityAttribute(minion, "FOLLOW_RANGE", "generic.follow_range", 40.0);
                 alienMinions.add(minion.getUniqueId());
                 spawned++;
@@ -695,7 +818,7 @@ public final class AlienInvasionManager {
         if (center != null && center.getWorld() != null) {
             World w = center.getWorld();
             for (Entity entity : w.getNearbyEntities(center, 64, 48, 64)) {
-                if (isAlienBoss(entity) || isAlienMinion(entity) || isAlienUfo(entity)) {
+                if (isAlienBoss(entity) || isAlienMinion(entity) || isAlienUfo(entity) || isAlienVisual(entity)) {
                     entity.remove();
                 }
             }
@@ -749,7 +872,8 @@ public final class AlienInvasionManager {
         // Тик каждые 5 ванильных тиков (0.25 с): движение и парение тарелки — плавные,
         // а секундные кулдауны способностей/волн считаются через subSecondTicks.
         updateNativeAi(boss, cfg);
-        silenceEvoker(boss);
+        hideVanillaBody(boss);
+        syncVisuals();
         hoverUfo();
 
         this.subSecondTicks++;

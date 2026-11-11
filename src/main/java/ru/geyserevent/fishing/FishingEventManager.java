@@ -47,7 +47,7 @@ public final class FishingEventManager {
 
     public static final String REGION_ID = "geyserevent_fishing";
     public static final String SCHEMATIC_FILE = "fishing_pond.schem.yml";
-    public static final int ARENA_RADIUS = 14;
+    public static final int ARENA_RADIUS = 16;
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -113,7 +113,7 @@ public final class FishingEventManager {
         } catch (IllegalArgumentException ignored) {
         }
         setChunksForceLoaded(this.center, true);
-        schematicManager.pasteSchematic(this.center, ARENA_RADIUS, 7);
+        schematicManager.pasteSchematic(this.center, ARENA_RADIUS, 8);
         schematicManager.persistRestoreState(restoreSnapshotFile());
         spawnNpc();
         spawnHologram();
@@ -200,7 +200,7 @@ public final class FishingEventManager {
         }
         BrushLootManager loot = plugin.getBrushLootManager();
         long now = System.currentTimeMillis();
-        long cooldownMs = Math.max(1, plugin.getConfig().getInt("fishing.rod-cooldown-seconds", 4)) * 1000L;
+        long cooldownMs = Math.max(1, plugin.getConfig().getInt("fishing.rod-cooldown-seconds", 30)) * 1000L;
         Long last = rodTakeCooldown.get(player.getUniqueId());
         if (last != null && now - last < cooldownMs) {
             long left = (cooldownMs - (now - last) + 999L) / 1000L;
@@ -270,7 +270,7 @@ public final class FishingEventManager {
         if (loc == null) {
             loc = center.clone().add(0.5, 1.0, 9.5);
         }
-        loc.setYaw(0f);
+        loc.setYaw(180f);
         Villager npc = (Villager) center.getWorld().spawnEntity(loc, EntityType.VILLAGER);
         npc.getPersistentDataContainer().set(npcKey, PersistentDataType.BYTE, (byte) 1);
         npc.setAdult();
@@ -287,7 +287,7 @@ public final class FishingEventManager {
         npc.setCustomNameVisible(true);
         npc.setCustomName(ColorUtil.color("&b&lРыбак"));
         npc.setGlowing(false);
-        BossAbilityController.applyEntityScale(npc, 1.15);
+        BossAbilityController.applyEntityScale(npc, 1.0);
         EntityEquipment equip = npc.getEquipment();
         if (equip != null) {
             equip.setItemInMainHand(new ItemStack(Material.FISHING_ROD, 1));

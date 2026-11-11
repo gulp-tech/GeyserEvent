@@ -186,7 +186,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.45 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" GeyserEvent v1.21.46 успешно запущен! (Purpur 1.21–26.63)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Клад, Рыбалка (пришельцы/скибиди/CR7 выключены)");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");
@@ -242,8 +242,10 @@ public final class GeyserEventPlugin extends JavaPlugin {
         try {
             saveResource("geyser/custom-items.json", true);
             saveResource("geyser/Geyser-fishing-rods-mapping.json", true);
+            saveResource("geyser/Geyser-alien-display-mapping.json", true);
             File exported = new File(getDataFolder(), "geyser/custom-items.json");
             File mappingFile = new File(getDataFolder(), "geyser/Geyser-fishing-rods-mapping.json");
+            File alienMapping = new File(getDataFolder(), "geyser/Geyser-alien-display-mapping.json");
             if (exported.exists()) {
                 Files.copy(exported.toPath(), new File(geyserDir, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
                 File mappings = new File(geyserDir, "custom-mappings");
@@ -264,8 +266,18 @@ public final class GeyserEventPlugin extends JavaPlugin {
                     if (bedrockMappings.exists() || new File(pluginsDir.getParentFile(), "bedrock").isDirectory()) {
                         bedrockMappings.mkdirs();
                         Files.copy(mappingFile.toPath(), new File(bedrockMappings, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        if (alienMapping.exists()) {
+                            Files.copy(alienMapping.toPath(), new File(bedrockMappings, "Geyser-alien-display-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        }
                     }
                 }
+            }
+            if (alienMapping.exists()) {
+                File underscore = new File(geyserDir, "custom_mappings");
+                if (!underscore.exists()) {
+                    underscore.mkdirs();
+                }
+                Files.copy(alienMapping.toPath(), new File(underscore, "Geyser-alien-display-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (Exception ignored) {
         }

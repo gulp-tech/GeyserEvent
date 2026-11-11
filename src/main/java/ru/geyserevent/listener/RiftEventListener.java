@@ -754,7 +754,8 @@ public class RiftEventListener implements Listener {
     /** Мобы ивента пришельцев. */
     private boolean isAlienMob(Entity entity) {
         AlienInvasionManager alien = plugin.getAlienInvasionManager();
-        return alien != null && (alien.isAlienBoss(entity) || alien.isAlienMinion(entity) || alien.isAlienUfo(entity));
+        return alien != null && (alien.isAlienBoss(entity) || alien.isAlienMinion(entity)
+                || alien.isAlienUfo(entity) || alien.isAlienVisual(entity));
     }
 
     /**

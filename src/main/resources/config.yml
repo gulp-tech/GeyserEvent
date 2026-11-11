@@ -2071,7 +2071,7 @@ fishing:
   duration-minutes: 8
   warp-name: fishing
   max-rods: 1
-  rod-cooldown-seconds: 4
+  rod-cooldown-seconds: 30
   rods:
     common:
       chance: 35

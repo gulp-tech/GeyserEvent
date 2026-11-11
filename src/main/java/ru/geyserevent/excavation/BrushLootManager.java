@@ -484,17 +484,6 @@ public class BrushLootManager {
                     ColorUtil.color("&7Поклёвок: &e" + uses),
                     ColorUtil.color("&8Ловите в пруду ивента")
             ));
-            if (tier == BrushTier.EPIC || tier == BrushTier.LEGENDARY) {
-                Enchantment unb = Registry.ENCHANTMENT.get(NamespacedKey.minecraft("unbreaking"));
-                if (unb != null) {
-                    meta.addEnchant(unb, 1, true);
-                }
-                Enchantment luck = Registry.ENCHANTMENT.get(NamespacedKey.minecraft("luck_of_the_sea"));
-                if (luck != null) {
-                    meta.addEnchant(luck, tier == BrushTier.LEGENDARY ? 3 : 1, true);
-                }
-                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-            }
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
             pdc.set(fishingKey, PersistentDataType.STRING, tier.name());
             pdc.set(fishingUsesKey, PersistentDataType.INTEGER, uses);

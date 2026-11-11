@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Пруд 25×25: вода, пирс, будка рыбака, камыш, кусты."""
+"""Пруд 31×31: широкая будка, забор по пирсу, камыш и кусты."""
 from pathlib import Path
 
-N = 25
-CX = CZ = 12
+N = 31
+CX = CZ = 15
 
 PALETTE = {
     "W": "water",
@@ -43,71 +43,71 @@ def h(x, z, mod):
     return (x * 17 + z * 31 + 9) % mod == 0
 
 
-layers = {y: grid(".") for y in range(5)}
-g0, g1, g2, g3, g4 = layers[0], layers[1], layers[2], layers[3], layers[4]
+layers = {y: grid(".") for y in range(6)}
+g0, g1, g2, g3, g4, g5 = (layers[y] for y in range(6))
 
 for z in range(N):
     for x in range(N):
         dx, dz = x - CX, z - CZ
         d2 = dx * dx + dz * dz
-        if d2 <= 42:
+        if d2 <= 80:
             setc(g0, x, z, "W")
-        elif d2 <= 72:
+        elif d2 <= 120:
             setc(g0, x, z, "S")
         else:
             setc(g0, x, z, "G")
 
-# пирс с юга к воде
-for z in range(CZ, N - 1):
-    for x in range(CX - 1, CX + 2):
+# широкий пирс
+for z in range(CZ + 1, N - 6):
+    for x in range(CX - 2, CX + 3):
         setc(g0, x, z, "O")
+
+# площадка будки
+HX0, HX1 = CX - 4, CX + 4
+HZ0, HZ1 = N - 7, N - 2
+for z in range(HZ0, HZ1 + 1):
+    for x in range(HX0, HX1 + 1):
+        setc(g0, x, z, "O")
+
+# забор вдоль пирса (смыкается сам)
+for z in range(CZ + 2, HZ0):
+    setc(g1, CX - 3, z, "F")
+    setc(g1, CX + 3, z, "F")
 for x in range(CX - 3, CX + 4):
-    setc(g0, x, N - 4, "O")
-    setc(g0, x, N - 3, "O")
-    setc(g0, x, N - 2, "O")
+    if x not in range(CX - 2, CX + 3):
+        setc(g1, x, CZ + 2, "F")
 
-# перила пирса
-for z in range(CZ + 2, N - 4):
-    setc(g1, CX - 2, z, "F")
-    setc(g1, CX + 2, z, "F")
-
-# фонари на пирсе
-for x, z in ((CX - 2, CZ + 3), (CX + 2, CZ + 3)):
+# столбы-фонари по забору
+for x, z in ((CX - 3, CZ + 3), (CX + 3, CZ + 3), (CX - 3, HZ0 - 1), (CX + 3, HZ0 - 1)):
     setc(g1, x, z, "K")
     setc(g2, x, z, "L")
 
-# будка рыбака на южном конце пирса (вход на север, к воде)
-HX0, HX1 = CX - 2, CX + 2
-HZ0, HZ1 = N - 5, N - 2
-for z in range(HZ0, HZ1 + 1):
-    for x in range(HX0, HX1 + 1):
-        setc(g0, x, z, "O")
-
+# будка 9×6, стены в 3 блока, дверь 3 блока на север (к воде)
 for z in range(HZ0, HZ1 + 1):
     for x in range(HX0, HX1 + 1):
         edge = x in (HX0, HX1) or z in (HZ0, HZ1)
-        door = z == HZ0 and x == CX
+        door = z == HZ0 and CX - 1 <= x <= CX + 1
         if edge and not door:
-            setc(g1, x, z, "K" if x in (HX0, HX1) and z in (HZ0, HZ1) else "I")
-            setc(g2, x, z, "I")
-        elif not edge:
-            setc(g1, x, z, ".")
-            setc(g2, x, z, ".")
+            corner = x in (HX0, HX1) and z in (HZ0, HZ1)
+            wall = "K" if corner else "I"
+            setc(g1, x, z, wall)
+            setc(g2, x, z, wall)
+            setc(g3, x, z, wall)
 
-setc(g1, HX0 + 1, HZ1 - 1, "B")
-setc(g1, HX1 - 1, HZ1 - 1, "B")
-setc(g2, CX, HZ1, "L")
+setc(g1, HX0 + 2, HZ1 - 1, "B")
+setc(g1, HX1 - 2, HZ1 - 1, "B")
+setc(g2, HX0 + 2, HZ1 - 1, "L")
+setc(g2, HX1 - 2, HZ1 - 1, "L")
 
-# крыша
 for z in range(HZ0, HZ1 + 1):
     for x in range(HX0, HX1 + 1):
-        setc(g3, x, z, "O")
-for x in range(HX0 + 1, HX1):
-    setc(g4, x, HZ0 + 1, "V")
-    setc(g4, x, HZ0 + 2, "V")
-setc(g4, CX, HZ0 + 1, "L")
+        setc(g4, x, z, "O")
+for z in range(HZ0 + 1, HZ1):
+    for x in range(HX0 + 1, HX1):
+        setc(g5, x, z, "V")
+setc(g5, CX, HZ0 + 2, "L")
 
-# камыш на песке у кромки
+# камыш
 for z in range(N):
     for x in range(N):
         if g0[z][x] != "S":
@@ -120,15 +120,13 @@ for z in range(N):
 # кувшинки
 for z in range(N):
     for x in range(N):
-        if g0[z][x] == "W" and h(x, z + 2, 5) and abs(x - CX) > 1:
+        if g0[z][x] == "W" and h(x, z + 2, 5) and abs(x - CX) > 2:
             setc(g1, x, z, "P")
 
-# трава, папоротник, кусты, мох
+# трава и кусты
 for z in range(N):
     for x in range(N):
-        if g0[z][x] != "G":
-            continue
-        if g1[z][x] != ".":
+        if g0[z][x] != "G" or g1[z][x] != ".":
             continue
         if h(x, z, 4):
             setc(g1, x, z, "T")
@@ -143,12 +141,12 @@ for z in range(N):
 
 out = Path(__file__).resolve().parents[1] / "src/main/resources/schematics/fishing_pond.schem.yml"
 lines = [
-    "# Пруд рыбалки 25×25. Будка рыбака на юге пирса, камыш и кусты.",
+    "# Пруд рыбалки 31×31. Большая будка, забор по пирсу.",
     "boss-spawn-offset:",
     "  x: 0.5",
     "  y: 1.0",
-    "  z: 9.5",
-    "  yaw: 0.0",
+    "  z: 11.5",
+    "  yaw: 180.0",
     "  pitch: 0.0",
     "",
     "palette:",
@@ -157,7 +155,7 @@ for k, v in PALETTE.items():
     lines.append(f"  {k}: {v}")
 lines.append("")
 lines.append("layers:")
-for key in range(5):
+for key in range(6):
     lines.append(f'  "{key}":')
     for row in dump(layers[key]):
         lines.append(f'    - "{row}"')
