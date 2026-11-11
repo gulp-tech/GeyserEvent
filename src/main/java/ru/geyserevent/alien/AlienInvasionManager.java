@@ -303,18 +303,10 @@ public final class AlienInvasionManager {
         World world = center.getWorld();
         Location loc = center.clone().add(0.0, cfg.getAlienUfoHeight(), 0.0);
         loc.getChunk().load(true);
-        Entity spawned = world.spawn(loc, ArmorStand.class, s -> {
-            s.setMarker(true);
-            s.setGravity(false);
-            s.setInvisible(true);
-            s.setInvulnerable(true);
-            s.setBasePlate(false);
-            s.setArms(false);
-            s.setSilent(true);
-        });
+        Entity spawned = world.spawnEntity(loc, cfg.getAlienUfoType());
         if (!(spawned instanceof LivingEntity ufo)) {
             spawned.remove();
-            plugin.getLogger().warning("Не удалось создать тарелку.");
+            plugin.getLogger().warning("Тип тарелки " + cfg.getAlienUfoType() + " не является живым существом.");
             return;
         }
         ufo.getPersistentDataContainer().set(alienUfoKey, PersistentDataType.BYTE, (byte) 1);
@@ -331,11 +323,7 @@ public final class AlienInvasionManager {
         if (ufo instanceof Mob mob) {
             mob.setTarget(null);
         }
-        hideVanillaBody(ufo);
-        EntityEquipment ufoEq = ufo.getEquipment();
-        if (ufoEq != null) {
-            ufoEq.setHelmet(displayItem(true));
-        }
+        BossAbilityController.applyEntityScale(ufo, cfg.getAlienUfoScale());
         this.ufoUuid = ufo.getUniqueId();
         this.ufoHome = loc.clone();
         world.playSound(loc, "alien_transmit", 1.4f, 0.7f);
@@ -368,7 +356,7 @@ public final class AlienInvasionManager {
             throw new IllegalStateException("Мир ивента пришельцев не найден");
         }
 
-        Entity spawned = world.spawnEntity(loc, EntityType.HUSK);
+        Entity spawned = world.spawnEntity(loc, cfg.getAlienBossType());
         if (!(spawned instanceof LivingEntity boss)) {
             throw new IllegalStateException("Тип босса " + cfg.getAlienBossType() + " не является живым существом");
         }
@@ -421,8 +409,8 @@ public final class AlienInvasionManager {
         }
 
         updateBossName(boss);
-        hideVanillaBody(boss);
-        attachAlienVisual(boss, false);
+        boss.setSilent(true);
+        boss.setGravity(true);
 
         // Страшные звуки пришельцев (v1.20.3)
         world.playSound(loc, "alien_growl", 2.0f, 0.8f);
@@ -500,13 +488,13 @@ public final class AlienInvasionManager {
             double radius = 2.0 + random.nextDouble() * 1.5;
             Location spawnLoc = bossLoc.clone().add(Math.cos(angle) * radius, 0.3, Math.sin(angle) * radius);
             LivingEntity minion = plugin.getAbilityController().spawnAlienMinion(
-                    EntityType.HUSK, spawnLoc, cfg.getAlienMinionHealth(), cfg.getAlienMinionDamage(),
-                    cfg.getAlienMinionScale(), cfg.getAlienMinionName(), Material.AIR,
+                    cfg.getAlienMinionType(), spawnLoc, cfg.getAlienMinionHealth(), cfg.getAlienMinionDamage(),
+                    cfg.getAlienMinionScale(), cfg.getAlienMinionName(), cfg.getAlienMinionWeapon(),
                     nearby, alienMinionKey);
             if (minion != null) {
                 minion.setAI(true);
-                hideVanillaBody(minion);
-                attachAlienVisual(minion, false);
+                minion.setSilent(true);
+                minion.setGravity(true);
                 BossAbilityController.setEntityAttribute(minion, "FOLLOW_RANGE", "generic.follow_range", 40.0);
                 alienMinions.add(minion.getUniqueId());
                 spawned++;
@@ -870,8 +858,7 @@ public final class AlienInvasionManager {
         // Тик каждые 5 ванильных тиков (0.25 с): движение и парение тарелки — плавные,
         // а секундные кулдауны способностей/волн считаются через subSecondTicks.
         updateNativeAi(boss, cfg);
-        hideVanillaBody(boss);
-        syncVisuals();
+        silenceEvoker(boss);
         hoverUfo();
 
         this.subSecondTicks++;

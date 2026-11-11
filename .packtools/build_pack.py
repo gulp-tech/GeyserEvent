@@ -19,7 +19,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 25]
+VERSION = [1, 21, 26]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -35,23 +35,19 @@ entries = {}
 
 # Не пакуем оверрайды ванильных сущностей/текстур. Исходники остаются в resourcepack-vanilla.
 SKIP_PREFIXES = (
-    "entity/",
     "textures/entity/chest/",
     "textures/entity/ghast/",
 )
 SKIP_FILES = {
+    "entity/evocation_illager.entity.json",
+    "entity/ravager.entity.json",
     "textures/entity/vindicator.png",
     "models/entity/vindicator.geo.json",
     "models/entity/ghast.geo.json",
-    "render_controllers/ghast.json",
-    "render_controllers/vindicator.json",
     "render_controllers/evoker_ronaldo.json",
     "render_controllers/skibidi_toilet.json",
     "render_controllers/skeleton.json",
     "render_controllers/default.json",
-    "textures/items/copper_luck_rod.png",
-    "textures/items/golden_luck_rod.png",
-    "textures/items/crystal_luck_rod.png",
 }
 
 
@@ -115,7 +111,7 @@ add_tree("models", (".json",))
 add_tree("animations", (".json",))
 add_tree("animation_controllers", (".json",))
 add_tree("render_controllers", (".json",))
-# entity/ не пакуем — оверрайд minecraft:ravager/ghast/vindicator/evoker ломает ваниль.
+add_tree("entity", (".json",))
 add_tree("particles", (".json",))
 add_tree("textures", (".png", ".tga", ".json"))
 add_tree("sounds", (".wav", ".ogg", ".fsb"))
@@ -192,9 +188,13 @@ sound_defs["sound_definitions"]["ronaldo_talk"] = {
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))
 
-# sanity: никаких оверрайдов ванильных мобов/эндер-сундука
+# sanity: никаких оверрайдов ванильных мобов/эндер-сундука, кроме модели пришельца/тарелки
+ALLOWED_ENTITY = {
+    "entity/vindicator.entity.json",
+    "entity/ghast.entity.json",
+}
 for name in list(entries):
-    if name.startswith("entity/"):
+    if name.startswith("entity/") and name not in ALLOWED_ENTITY:
         raise SystemExit("ОШИБКА: в паке entity/ ломает ванильных мобов: " + name)
     if name.startswith("textures/entity/chest/") or name.startswith("textures/entity/ghast/"):
         raise SystemExit("ОШИБКА: ванильная текстура в паке: " + name)

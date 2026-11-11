@@ -487,6 +487,10 @@ public class BrushLootManager {
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
             pdc.set(fishingKey, PersistentDataType.STRING, tier.name());
             pdc.set(fishingUsesKey, PersistentDataType.INTEGER, uses);
+            try {
+                meta.setCustomModelData(fishingRodCustomModelData(tier));
+            } catch (Throwable ignored) {
+            }
             stack.setItemMeta(meta);
         }
         return stack;

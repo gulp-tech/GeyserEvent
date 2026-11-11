@@ -11,23 +11,15 @@
         "shooting": "textures/entity/nave"
       },
       "geometry": {
-        "default": "geometry.ghast"
+        "default": "geometry.nave"
       },
       "scripts": {
-        "initialize": [
-          "variable.gliding_speed_value = 1.0;"
-        ],
         "animate": [
           "nave"
         ]
       },
       "animations": {
-        "parado": "animation.nave.para",
-        "andando": "animation.nave.anda",
-        "abduzir": "animation.nave.abduzir",
-        "nave": "controller.animation.nave",
-        "move": "animation.nave.anda",
-        "scale": "animation.nave.para"
+        "nave": "controller.animation.nave"
       },
       "render_controllers": [
         "controller.render.ghast"
