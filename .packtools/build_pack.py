@@ -19,7 +19,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 23]
+VERSION = [1, 21, 24]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -49,6 +49,9 @@ SKIP_FILES = {
     "render_controllers/skibidi_toilet.json",
     "render_controllers/skeleton.json",
     "render_controllers/default.json",
+    "textures/items/copper_luck_rod.png",
+    "textures/items/golden_luck_rod.png",
+    "textures/items/crystal_luck_rod.png",
 }
 
 

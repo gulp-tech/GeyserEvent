@@ -435,7 +435,7 @@ public class RiftEventListener implements Listener {
         }
         if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isFisherman(clicked)) {
             event.setCancelled(true);
-            plugin.getFishingEventManager().handleNpcClick(event.getPlayer());
+            triggerFishingNpcClickDebounced(event.getPlayer());
         }
     }
 
@@ -454,7 +454,19 @@ public class RiftEventListener implements Listener {
         }
         if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isFisherman(clicked)) {
             event.setCancelled(true);
-            plugin.getFishingEventManager().handleNpcClick(event.getPlayer());
+            triggerFishingNpcClickDebounced(event.getPlayer());
+        }
+    }
+
+    private void triggerFishingNpcClickDebounced(Player player) {
+        long now = System.currentTimeMillis();
+        long last = villagerClickCooldown.getOrDefault(player.getUniqueId(), 0L);
+        if (now - last < 400L) {
+            return;
+        }
+        villagerClickCooldown.put(player.getUniqueId(), now);
+        if (plugin.getFishingEventManager() != null) {
+            plugin.getFishingEventManager().handleNpcClick(player);
         }
     }
 
@@ -807,11 +819,8 @@ public class RiftEventListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (plugin.getFishingEventManager() != null) {
-            plugin.getFishingEventManager().trackFishingLine(event);
-            if (plugin.getFishingEventManager().isActive()) {
-                plugin.getFishingEventManager().handleFishCatch(event);
-            }
+        if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
+            plugin.getFishingEventManager().handleFishCatch(event);
         }
     }
 

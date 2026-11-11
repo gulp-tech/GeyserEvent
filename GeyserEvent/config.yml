@@ -1526,7 +1526,8 @@ fishing:
   enabled: true
   duration-minutes: 8
   warp-name: fishing
-  max-rods: 3
+  max-rods: 1
+  rod-cooldown-seconds: 4
   rods:
     common:
       chance: 35

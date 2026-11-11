@@ -44,7 +44,7 @@ public final class FishingCommand implements CommandExecutor, TabCompleter {
                 }
                 boolean started = plugin.getRiftManager().startEventAt(player.getLocation(), EventType.FISHING);
                 sender.sendMessage(started
-                        ? ColorUtil.color("&e┠ &#34D711Рыбалка запущена здесь. Варп выставлен.")
+                        ? ColorUtil.color("&e┠ &#34D711Рыбалка запущена здесь. Координаты в чат.")
                         : ColorUtil.color("&e┠ &cНе удалось запустить."));
                 return true;
             }
@@ -54,14 +54,14 @@ public final class FishingCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 mgr.stopEvent();
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Пруд убран, варп удалён."));
+                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Пруд убран."));
                 return true;
             }
             case "help", "?" -> {
                 sender.sendMessage(ColorUtil.color("&e┼ &b&lРыбалка"));
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " &8— &fзапустить в мире ивентов"));
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " here &8— &fна своей позиции"));
-                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fстоп + delwarp"));
+                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fстоп"));
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/rift menu &8— &fлут удочек"));
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/rift copylot excavation fishing"));
                 return true;
@@ -69,7 +69,7 @@ public final class FishingCommand implements CommandExecutor, TabCompleter {
             default -> {
                 boolean started = plugin.getRiftManager().startEventRandomInConfiguredWorld(EventType.FISHING);
                 sender.sendMessage(started
-                        ? ColorUtil.color("&e┠ &#34D711Рыбалка запущена. Варп: &#E0C912/warp fishing")
+                        ? ColorUtil.color("&e┠ &#34D711Рыбалка запущена. Координаты в чат, &#E0C912/event gps")
                         : ColorUtil.color("&e┠ &cНе удалось запустить в мире ивентов."));
                 return true;
             }

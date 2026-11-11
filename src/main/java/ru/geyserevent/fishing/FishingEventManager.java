@@ -2,12 +2,10 @@ package ru.geyserevent.fishing;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.Color;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.boss.BarColor;
@@ -25,7 +23,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.excavation.BrushLootManager;
@@ -37,7 +34,6 @@ import java.io.File;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -51,7 +47,7 @@ public final class FishingEventManager {
 
     public static final String REGION_ID = "geyserevent_fishing";
     public static final String SCHEMATIC_FILE = "fishing_pond.schem.yml";
-    public static final int ARENA_RADIUS = 12;
+    public static final int ARENA_RADIUS = 14;
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -68,8 +64,7 @@ public final class FishingEventManager {
     private BukkitRunnable tickTask;
     private UUID npcUuid;
     private String activeWarpName;
-    private final Map<UUID, UUID> fishingHooks = new ConcurrentHashMap<>();
-    private BukkitRunnable lineTask;
+    private final Map<UUID, Long> rodTakeCooldown = new ConcurrentHashMap<>();
 
     public FishingEventManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -112,13 +107,18 @@ public final class FishingEventManager {
                 : Math.max(60, plugin.getConfig().getInt("fishing.duration-minutes", 8) * 60));
         this.openedAtClock = LocalTime.now().format(CLOCK);
 
+        try {
+            plugin.saveResource("schematics/" + SCHEMATIC_FILE, true);
+            schematicManager.loadSchematicFile();
+        } catch (IllegalArgumentException ignored) {
+        }
         setChunksForceLoaded(this.center, true);
-        schematicManager.pasteSchematic(this.center, ARENA_RADIUS, 4);
+        schematicManager.pasteSchematic(this.center, ARENA_RADIUS, 7);
         schematicManager.persistRestoreState(restoreSnapshotFile());
         spawnNpc();
         spawnHologram();
         createBossBar();
-        createEventWarp();
+        deleteEventWarp();
         broadcastSpawn();
 
         if (plugin.getWorldGuardHook() != null) {
@@ -166,6 +166,7 @@ public final class FishingEventManager {
         this.center = null;
         this.npcUuid = null;
         this.activeWarpName = null;
+        this.rodTakeCooldown.clear();
     }
 
     public boolean isActive() {
@@ -198,9 +199,17 @@ public final class FishingEventManager {
             return false;
         }
         BrushLootManager loot = plugin.getBrushLootManager();
-        int max = Math.max(1, plugin.getConfig().getInt("fishing.max-rods", 3));
+        long now = System.currentTimeMillis();
+        long cooldownMs = Math.max(1, plugin.getConfig().getInt("fishing.rod-cooldown-seconds", 4)) * 1000L;
+        Long last = rodTakeCooldown.get(player.getUniqueId());
+        if (last != null && now - last < cooldownMs) {
+            long left = (cooldownMs - (now - last) + 999L) / 1000L;
+            player.sendMessage(ColorUtil.color("&e┠ &cПодождите ещё " + left + " сек. перед следующей удочкой."));
+            return true;
+        }
+        int max = 1;
         if (loot.countPlayerFishingRods(player) >= max) {
-            player.sendMessage(ColorUtil.color("&e┠ &cВ инвентаре можно держать максимум " + max + " удочки!"));
+            player.sendMessage(ColorUtil.color("&e┠ &cСначала используйте удочку, которая уже есть."));
             return true;
         }
         if (player.getInventory().firstEmpty() == -1) {
@@ -210,68 +219,10 @@ public final class FishingEventManager {
         BrushTier tier = loot.rollRandomFishingRodTier();
         ItemStack rod = loot.createFishingRod(tier);
         player.getInventory().addItem(rod);
+        rodTakeCooldown.put(player.getUniqueId(), now);
         player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 1.0f, 1.15f);
         player.sendMessage(ColorUtil.color("&e┠ &fРыбак выдал: " + loot.getFishingRodTitle(tier)));
         return true;
-    }
-
-    /** Леска для кастомных удочек: Geyser не рисует ванильную леску на custom item. */
-    public void trackFishingLine(PlayerFishEvent event) {
-        Player player = event.getPlayer();
-        if (player == null) {
-            return;
-        }
-        switch (event.getState()) {
-            case FISHING, BITE -> {
-                if (event.getHook() != null) {
-                    fishingHooks.put(player.getUniqueId(), event.getHook().getUniqueId());
-                    ensureLineTask();
-                }
-            }
-            default -> fishingHooks.remove(player.getUniqueId());
-        }
-    }
-
-    private void ensureLineTask() {
-        if (lineTask != null) {
-            return;
-        }
-        lineTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (fishingHooks.isEmpty()) {
-                    return;
-                }
-                Particle.DustOptions dust = new Particle.DustOptions(Color.fromRGB(210, 210, 220), 0.45f);
-                Iterator<Map.Entry<UUID, UUID>> it = fishingHooks.entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry<UUID, UUID> entry = it.next();
-                    Player player = Bukkit.getPlayer(entry.getKey());
-                    Entity hook = Bukkit.getEntity(entry.getValue());
-                    if (player == null || !player.isOnline() || hook == null || hook.isDead()) {
-                        it.remove();
-                        continue;
-                    }
-                    Location from = player.getEyeLocation().add(player.getLocation().getDirection().multiply(0.55));
-                    from.subtract(0.0, 0.35, 0.0);
-                    Location to = hook.getLocation();
-                    Vector delta = to.toVector().subtract(from.toVector());
-                    double dist = delta.length();
-                    if (dist < 0.3 || dist > 48.0) {
-                        continue;
-                    }
-                    Vector step = delta.normalize().multiply(0.28);
-                    int n = Math.min(80, (int) (dist / 0.28));
-                    Location cur = from.clone();
-                    World world = player.getWorld();
-                    for (int i = 0; i < n; i++) {
-                        world.spawnParticle(Particle.DUST, cur, 1, 0, 0, 0, 0, dust);
-                        cur.add(step);
-                    }
-                }
-            }
-        };
-        lineTask.runTaskTimer(plugin, 1L, 1L);
     }
 
     public boolean handleFishCatch(PlayerFishEvent event) {
@@ -317,11 +268,9 @@ public final class FishingEventManager {
         }
         Location loc = schematicManager.getBossSpawnLocation();
         if (loc == null) {
-            loc = center.clone().add(0.5, 1.0, 8.5);
+            loc = center.clone().add(0.5, 1.0, 9.5);
         }
-        loc = snapToSurface(loc);
-        loc.setY(loc.getY() + 1.0);
-        loc.setYaw(180f);
+        loc.setYaw(0f);
         Villager npc = (Villager) center.getWorld().spawnEntity(loc, EntityType.VILLAGER);
         npc.getPersistentDataContainer().set(npcKey, PersistentDataType.BYTE, (byte) 1);
         npc.setAdult();
@@ -467,12 +416,13 @@ public final class FishingEventManager {
     }
 
     private String[] hologramLines() {
-        String warp = plugin.getConfig().getString("fishing.warp-name", "fishing");
+        String coords = center == null ? "—"
+                : center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ();
         return new String[]{
                 ColorUtil.color("&b&lРыбалка"),
                 ColorUtil.color("&7Возьмите удочку у рыбака"),
                 ColorUtil.color("&7До конца: &#E0C912" + ColorUtil.formatDuration(getSecondsRemaining())),
-                ColorUtil.color("&7Варп: &#E0C912/warp " + warp)
+                ColorUtil.color("&7Координаты: &#E0C912" + coords)
         };
     }
 
@@ -506,9 +456,14 @@ public final class FishingEventManager {
     }
 
     private void broadcastSpawn() {
-        String warp = plugin.getConfig().getString("fishing.warp-name", "fishing");
-        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &bРыбалка на пруду. &#E0C912/warp " + warp
-                + " &7· возьмите удочку у рыбака."));
+        if (center == null) {
+            return;
+        }
+        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &bРыбалка на пруду!"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
+                + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЛокатор: &#34D711/event gps"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &7Возьмите удочку у рыбака в будке."));
     }
 
     private Location snapToSurface(Location loc) {
