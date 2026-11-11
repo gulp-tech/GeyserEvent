@@ -186,7 +186,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.43 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" GeyserEvent v1.21.44 успешно запущен! (Purpur 1.21–26.63)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Клад, Рыбалка (пришельцы/скибиди/CR7 выключены)");
         getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
         getLogger().info("==================================================");
@@ -241,16 +241,32 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private void exportGeyserCustomItems(File geyserDir) {
         try {
             saveResource("geyser/custom-items.json", true);
+            saveResource("geyser/Geyser-fishing-rods-mapping.json", true);
             File exported = new File(getDataFolder(), "geyser/custom-items.json");
-            if (!exported.exists()) {
-                return;
+            File mappingFile = new File(getDataFolder(), "geyser/Geyser-fishing-rods-mapping.json");
+            if (exported.exists()) {
+                Files.copy(exported.toPath(), new File(geyserDir, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                File mappings = new File(geyserDir, "custom-mappings");
+                if (!mappings.exists()) {
+                    mappings.mkdirs();
+                }
+                Files.copy(exported.toPath(), new File(mappings, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
-            Files.copy(exported.toPath(), new File(geyserDir, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-            File mappings = new File(geyserDir, "custom-mappings");
-            if (!mappings.exists()) {
-                mappings.mkdirs();
+            if (mappingFile.exists()) {
+                File underscore = new File(geyserDir, "custom_mappings");
+                if (!underscore.exists()) {
+                    underscore.mkdirs();
+                }
+                Files.copy(mappingFile.toPath(), new File(underscore, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                File pluginsDir = getDataFolder().getParentFile();
+                if (pluginsDir != null && pluginsDir.getParentFile() != null) {
+                    File bedrockMappings = new File(pluginsDir.getParentFile(), "bedrock" + File.separator + "custom_mappings");
+                    if (bedrockMappings.exists() || new File(pluginsDir.getParentFile(), "bedrock").isDirectory()) {
+                        bedrockMappings.mkdirs();
+                        Files.copy(mappingFile.toPath(), new File(bedrockMappings, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
             }
-            Files.copy(exported.toPath(), new File(mappings, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception ignored) {
         }
     }

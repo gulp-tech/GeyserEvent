@@ -618,9 +618,20 @@ public class InfernalRiftManager {
      * Старт ивента. {@code fromSummonAltar} = true, если алтарь призыва:
      * тогда при таймауте босса в чат уйдёт сообщение summon.timeout-message.
      */
+    /** Скибиди, CR7 и пришельцы выключены в коде: не спавним ванильных мобов как подмену модели. */
+    public static boolean isTemporarilyDisabled(EventType type) {
+        return type == EventType.SKIBIDI
+                || type == EventType.RONALDO
+                || type == EventType.ALIEN_INVASION;
+    }
+
     public boolean startEventAt(Location targetCenter, EventType type, Integer durationSecondsOverride,
                                 boolean fromSummonAltar) {
         if (targetCenter == null || targetCenter.getWorld() == null) {
+            return false;
+        }
+        if (isTemporarilyDisabled(type)) {
+            plugin.getLogger().warning("Ивент «" + type.getDisplayName() + "» временно выключен в коде (без ванильных мобов).");
             return false;
         }
         if (type != EventType.GRAVITY_HOARD

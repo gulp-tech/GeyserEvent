@@ -32,47 +32,17 @@ public final class RonaldoCommand implements CommandExecutor, TabCompleter {
         }
         String sub = args.length == 0 ? "start" : args[0].toLowerCase(Locale.ROOT);
         RonaldoEventManager mgr = plugin.getRonaldoEventManager();
-        if (mgr == null) {
-            sender.sendMessage(ColorUtil.color("&e┠ &cМенеджер Роналду не загружен."));
+        if (sub.equals("stop") || sub.equals("off") || sub.equals("стоп")) {
+            if (mgr == null || !mgr.isActive()) {
+                sender.sendMessage(ColorUtil.color("&e┠ &cРоналду сейчас не активен."));
+                return true;
+            }
+            mgr.stopEvent();
+            sender.sendMessage(ColorUtil.color("&e┠ &#34D711Стадион убран, варп удалён."));
             return true;
         }
-        switch (sub) {
-            case "here", "тут", "здесь" -> {
-                if (!(sender instanceof Player player)) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cТолько для игроков: &#E0C912/" + label + " here"));
-                    return true;
-                }
-                boolean started = plugin.getRiftManager().startEventAt(player.getLocation(), EventType.RONALDO);
-                sender.sendMessage(started
-                        ? ColorUtil.color("&e┠ &#34D711Роналду SIUU запущен здесь. Варп выставлен.")
-                        : ColorUtil.color("&e┠ &cНе удалось запустить."));
-                return true;
-            }
-            case "stop", "off", "стоп" -> {
-                if (!mgr.isActive()) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cРоналду сейчас не активен."));
-                    return true;
-                }
-                mgr.stopEvent();
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Стадион убран, варп удалён."));
-                return true;
-            }
-            case "help", "?" -> {
-                sender.sendMessage(ColorUtil.color("&e┼ &e&lРоналду SIUU"));
-                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " &8— &fзапустить в мире ивентов"));
-                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " here &8— &fна своей позиции"));
-                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop &8— &fстоп + delwarp"));
-                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/rift copylot excavation ronaldo"));
-                return true;
-            }
-            default -> {
-                boolean started = plugin.getRiftManager().startEventRandomInConfiguredWorld(EventType.RONALDO);
-                sender.sendMessage(started
-                        ? ColorUtil.color("&e┠ &#34D711Роналду SIUU запущен. Варп: &#E0C912/warp ronaldo")
-                        : ColorUtil.color("&e┠ &cНе удалось запустить в мире ивентов."));
-                return true;
-            }
-        }
+        sender.sendMessage(ColorUtil.color("&e┠ &cРоналду SIUU временно выключен в коде."));
+        return true;
     }
 
     @Override

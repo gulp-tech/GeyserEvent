@@ -807,8 +807,11 @@ public class RiftEventListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
-            plugin.getFishingEventManager().handleFishCatch(event);
+        if (plugin.getFishingEventManager() != null) {
+            plugin.getFishingEventManager().trackFishingLine(event);
+            if (plugin.getFishingEventManager().isActive()) {
+                plugin.getFishingEventManager().handleFishCatch(event);
+            }
         }
     }
 

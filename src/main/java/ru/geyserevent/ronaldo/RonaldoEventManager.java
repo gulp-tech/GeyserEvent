@@ -39,6 +39,8 @@ import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.event.DamageLeaderboard;
+import ru.geyserevent.event.EventType;
+import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.schematic.RiftSchematicManager;
 import ru.geyserevent.util.ColorUtil;
 
@@ -103,11 +105,11 @@ public final class RonaldoEventManager {
     }
 
     public boolean startEvent(Location targetCenter, Integer durationSecondsOverride) {
-        if (targetCenter == null || targetCenter.getWorld() == null) {
+        if (InfernalRiftManager.isTemporarilyDisabled(EventType.RONALDO)) {
+            plugin.getLogger().warning("Ивент «Роналду SIUU» временно выключен в коде.");
             return false;
         }
-        if (!plugin.getConfig().getBoolean("ronaldo.enabled", true)) {
-            plugin.getLogger().warning("Ивент «Роналду» выключен (ronaldo.enabled: false).");
+        if (targetCenter == null || targetCenter.getWorld() == null) {
             return false;
         }
         if (plugin.getRiftManager() != null && plugin.getRiftManager().isActive()) {

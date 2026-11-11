@@ -27,6 +27,8 @@ import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.config.PluginConfig;
+import ru.geyserevent.event.EventType;
+import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.schematic.RiftSchematicManager;
 import ru.geyserevent.util.ColorUtil;
 
@@ -82,11 +84,11 @@ public final class SkibidiToiletManager {
     }
 
     public boolean startEvent(Location targetCenter, Integer durationSecondsOverride) {
-        if (targetCenter == null || targetCenter.getWorld() == null) {
+        if (InfernalRiftManager.isTemporarilyDisabled(EventType.SKIBIDI)) {
+            plugin.getLogger().warning("Ивент «Шкибиди Туалет» временно выключен в коде.");
             return false;
         }
-        if (!plugin.getConfig().getBoolean("skibidi.enabled", true)) {
-            plugin.getLogger().warning("Ивент «Шкибиди Туалет» выключен (skibidi.enabled: false).");
+        if (targetCenter == null || targetCenter.getWorld() == null) {
             return false;
         }
         if (plugin.getRiftManager() != null && plugin.getRiftManager().isActive()) {

@@ -217,6 +217,10 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                         return true;
                     }
                 }
+                if (type != null && InfernalRiftManager.isTemporarilyDisabled(type)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cИвент «" + type.getDisplayName() + "» временно выключен в коде."));
+                    return true;
+                }
                 boolean started = (type != null)
                         ? manager.startEventRandomInConfiguredWorld(type)
                         : manager.startEventRandomInConfiguredWorld();
@@ -239,6 +243,10 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                         return true;
                     }
                     type = parsed;
+                }
+                if (InfernalRiftManager.isTemporarilyDisabled(type)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cИвент «" + type.getDisplayName() + "» временно выключен в коде."));
+                    return true;
                 }
                 manager.startEventAt(player.getLocation(), type);
                 return true;

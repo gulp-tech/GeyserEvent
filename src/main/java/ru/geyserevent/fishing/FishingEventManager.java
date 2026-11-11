@@ -2,10 +2,12 @@ package ru.geyserevent.fishing;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Color;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.boss.BarColor;
@@ -23,6 +25,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.excavation.BrushLootManager;
@@ -34,8 +37,11 @@ import java.io.File;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Ивент «Рыбалка»: пруд + рыбак. Удочки трёх редкостей по PDC.
@@ -62,6 +68,8 @@ public final class FishingEventManager {
     private BukkitRunnable tickTask;
     private UUID npcUuid;
     private String activeWarpName;
+    private final Map<UUID, UUID> fishingHooks = new ConcurrentHashMap<>();
+    private BukkitRunnable lineTask;
 
     public FishingEventManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -205,6 +213,65 @@ public final class FishingEventManager {
         player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 1.0f, 1.15f);
         player.sendMessage(ColorUtil.color("&e┠ &fРыбак выдал: " + loot.getFishingRodTitle(tier)));
         return true;
+    }
+
+    /** Леска для кастомных удочек: Geyser не рисует ванильную леску на custom item. */
+    public void trackFishingLine(PlayerFishEvent event) {
+        Player player = event.getPlayer();
+        if (player == null) {
+            return;
+        }
+        switch (event.getState()) {
+            case FISHING, BITE -> {
+                if (event.getHook() != null) {
+                    fishingHooks.put(player.getUniqueId(), event.getHook().getUniqueId());
+                    ensureLineTask();
+                }
+            }
+            default -> fishingHooks.remove(player.getUniqueId());
+        }
+    }
+
+    private void ensureLineTask() {
+        if (lineTask != null) {
+            return;
+        }
+        lineTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (fishingHooks.isEmpty()) {
+                    return;
+                }
+                Particle.DustOptions dust = new Particle.DustOptions(Color.fromRGB(210, 210, 220), 0.45f);
+                Iterator<Map.Entry<UUID, UUID>> it = fishingHooks.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<UUID, UUID> entry = it.next();
+                    Player player = Bukkit.getPlayer(entry.getKey());
+                    Entity hook = Bukkit.getEntity(entry.getValue());
+                    if (player == null || !player.isOnline() || hook == null || hook.isDead()) {
+                        it.remove();
+                        continue;
+                    }
+                    Location from = player.getEyeLocation().add(player.getLocation().getDirection().multiply(0.55));
+                    from.subtract(0.0, 0.35, 0.0);
+                    Location to = hook.getLocation();
+                    Vector delta = to.toVector().subtract(from.toVector());
+                    double dist = delta.length();
+                    if (dist < 0.3 || dist > 48.0) {
+                        continue;
+                    }
+                    Vector step = delta.normalize().multiply(0.28);
+                    int n = Math.min(80, (int) (dist / 0.28));
+                    Location cur = from.clone();
+                    World world = player.getWorld();
+                    for (int i = 0; i < n; i++) {
+                        world.spawnParticle(Particle.DUST, cur, 1, 0, 0, 0, 0, dust);
+                        cur.add(step);
+                    }
+                }
+            }
+        };
+        lineTask.runTaskTimer(plugin, 1L, 1L);
     }
 
     public boolean handleFishCatch(PlayerFishEvent event) {

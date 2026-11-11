@@ -29,6 +29,8 @@ import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.boss.BossAbilityController;
 import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.event.DamageLeaderboard;
+import ru.geyserevent.event.EventType;
+import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.hook.WorldGuardHook;
 import ru.geyserevent.schematic.RiftSchematicManager;
 import ru.geyserevent.util.ColorUtil;
@@ -109,8 +111,8 @@ public final class AlienInvasionManager {
      */
     public boolean startEvent(Location targetCenter, Integer durationSecondsOverride) {
         PluginConfig cfg = plugin.getPluginConfig();
-        if (!cfg.isAlienEnabled()) {
-            plugin.getLogger().warning("Ивент «Вторжение Пришельцев» выключен в конфиге (alien.enabled: false).");
+        if (InfernalRiftManager.isTemporarilyDisabled(EventType.ALIEN_INVASION)) {
+            plugin.getLogger().warning("Ивент «Вторжение Пришельцев» временно выключен в коде (не спавним поборника/гаста).");
             return false;
         }
         if (targetCenter == null || targetCenter.getWorld() == null) {

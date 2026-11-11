@@ -32,47 +32,17 @@ public final class SkibidiCommand implements CommandExecutor, TabCompleter {
         }
         String sub = args.length == 0 ? "start" : args[0].toLowerCase(Locale.ROOT);
         SkibidiToiletManager mgr = plugin.getSkibidiToiletManager();
-        if (mgr == null) {
-            sender.sendMessage(ColorUtil.color("&e┠ &cМенеджер шкибиди не загружен."));
+        if (sub.equals("stop") || sub.equals("off") || sub.equals("стоп")) {
+            if (mgr == null || !mgr.isActive()) {
+                sender.sendMessage(ColorUtil.color("&e┠ &cШкибиди сейчас не активен."));
+                return true;
+            }
+            mgr.stopEvent();
+            sender.sendMessage(ColorUtil.color("&e┠ &#34D711Шкибиди Туалет уехал."));
             return true;
         }
-        switch (sub) {
-            case "here", "тут", "здесь" -> {
-                if (!(sender instanceof Player player)) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cТолько для игроков: &#E0C912/" + label + " here"));
-                    return true;
-                }
-                boolean started = plugin.getRiftManager().startEventAt(player.getLocation(), EventType.SKIBIDI);
-                sender.sendMessage(started
-                        ? ColorUtil.color("&e┠ &#34D711Шкибиди Туалет запущен здесь.")
-                        : ColorUtil.color("&e┠ &cНе удалось запустить."));
-                return true;
-            }
-            case "stop", "off", "стоп" -> {
-                if (!mgr.isActive()) {
-                    sender.sendMessage(ColorUtil.color("&e┠ &cШкибиди сейчас не активен."));
-                    return true;
-                }
-                mgr.stopEvent();
-                sender.sendMessage(ColorUtil.color("&e┠ &#34D711Шкибиди Туалет уехал."));
-                return true;
-            }
-            case "help", "?" -> {
-                sender.sendMessage(ColorUtil.color("&e┼ &f&lШкибиди Туалет"));
-                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " &8— &fзапустить в мире ивентов"));
-                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " here &8— &fна своей позиции"));
-                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop"));
-                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/rift copylot excavation skibidi &8— &fлут со своим шансом"));
-                return true;
-            }
-            default -> {
-                boolean started = plugin.getRiftManager().startEventRandomInConfiguredWorld(EventType.SKIBIDI);
-                sender.sendMessage(started
-                        ? ColorUtil.color("&e┠ &#34D711Шкибиди Туалет запущен.")
-                        : ColorUtil.color("&e┠ &cНе удалось запустить в мире ивентов."));
-                return true;
-            }
-        }
+        sender.sendMessage(ColorUtil.color("&e┠ &cШкибиди временно выключен в коде."));
+        return true;
     }
 
     @Override
