@@ -23,6 +23,7 @@ PALETTE = {
     "M": "moss_block",
     "V": "oak_slab",
     "I": "stripped_oak_log",
+    "D": "dirt",
 }
 
 
@@ -43,18 +44,22 @@ def h(x, z, mod):
     return (x * 17 + z * 31 + 9) % mod == 0
 
 
-layers = {y: grid(".") for y in range(6)}
+layers = {y: grid(".") for y in range(-2, 6)}
 g0, g1, g2, g3, g4, g5 = (layers[y] for y in range(6))
 
 for z in range(N):
     for x in range(N):
         dx, dz = x - CX, z - CZ
         d2 = dx * dx + dz * dz
+        setc(layers[-2], x, z, "D")
         if d2 <= 80:
+            setc(layers[-1], x, z, "S")
             setc(g0, x, z, "W")
         elif d2 <= 120:
+            setc(layers[-1], x, z, "S")
             setc(g0, x, z, "S")
         else:
+            setc(layers[-1], x, z, "D")
             setc(g0, x, z, "G")
 
 # широкий пирс
@@ -155,7 +160,7 @@ for k, v in PALETTE.items():
     lines.append(f"  {k}: {v}")
 lines.append("")
 lines.append("layers:")
-for key in range(6):
+for key in range(-2, 6):
     lines.append(f'  "{key}":')
     for row in dump(layers[key]):
         lines.append(f'    - "{row}"')

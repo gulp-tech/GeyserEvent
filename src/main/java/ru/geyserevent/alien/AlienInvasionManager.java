@@ -162,7 +162,6 @@ public final class AlienInvasionManager {
             EntityEquipment eq = s.getEquipment();
             if (eq != null) {
                 eq.setHelmet(displayItem(ufo));
-                eq.setHelmetDropChance(0.0f);
             }
         });
         visualByHost.put(host.getUniqueId(), stand.getUniqueId());
@@ -336,7 +335,6 @@ public final class AlienInvasionManager {
         EntityEquipment ufoEq = ufo.getEquipment();
         if (ufoEq != null) {
             ufoEq.setHelmet(displayItem(true));
-            ufoEq.setHelmetDropChance(0.0f);
         }
         this.ufoUuid = ufo.getUniqueId();
         this.ufoHome = loc.clone();
