@@ -1156,14 +1156,13 @@ alien:
   protection-radius: 13
 
   # ---- Босс-пришелец ----
-  # Хитбокс — husk (не меняет ванильных husk). Модель — geyserevent:alien_display.
-  boss-type: "HUSK"
+  boss-type: "VINDICATOR"
   # Имя: %hp% — текущее HP, %max_hp% — максимум
   boss-name: "&5&lПришелец-Владыка &8[&d%hp%&7/&d%max_hp% ❤&8]"
   boss-health: 16000.0
   boss-damage: 24.0
   # Размер модели (1.0 — ванильный). Модель alien и так высокая (~3 блока).
-  boss-scale: 1.75
+  boss-scale: 1.0
   boss-movement-speed: 0.32
   boss-knockback-resistance: 1.0
   # Радиус преследования: босс идёт к игрокам в этом радиусе (помогает выбраться из арены)
@@ -1176,11 +1175,11 @@ alien:
   # ---- Малые пришельцы (приспешники) ----
   minions:
     enabled: true
-    type: "HUSK"
+    type: "VINDICATOR"
     name: "&a&lМалый пришелец &7[%hp% ❤]"
     health: 160.0
     damage: 16.0
-    scale: 1.15
+    scale: 0.65
     weapon: "AIR"
     interval-seconds: 25
     count-per-wave: 2
