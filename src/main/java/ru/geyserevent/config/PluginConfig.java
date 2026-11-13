@@ -700,12 +700,12 @@ public class PluginConfig {
         this.alienDurationMinutes = Math.max(1, cfg.getInt("alien.duration-minutes", 15));
         this.alienProtectionRadius = Math.max(6, cfg.getInt("alien.protection-radius", 13));
 
-        this.alienBossType = entityType(cfg.getString("alien.boss-type", "VINDICATOR"), EntityType.VINDICATOR);
+        this.alienBossType = remapAlienHost(entityType(cfg.getString("alien.boss-type", "HUSK"), EntityType.HUSK));
         this.alienBossName = ColorUtil.color(cfg.getString("alien.boss-name",
                 "&5&lПришелец-Владыка &8[&d%hp%&7/&d%max_hp% ❤&8]"));
         this.alienBossHealth = Math.max(50.0, cfg.getDouble("alien.boss-health", 12000.0));
         this.alienBossDamage = Math.max(1.0, cfg.getDouble("alien.boss-damage", 18.0));
-        this.alienBossScale = Math.max(0.3, cfg.getDouble("alien.boss-scale", 1.35));
+        this.alienBossScale = Math.max(0.3, cfg.getDouble("alien.boss-scale", 1.75));
         this.alienBossMovementSpeed = Math.max(0.05, cfg.getDouble("alien.boss-movement-speed", 0.32));
         this.alienBossKnockbackResistance = Math.min(1.0, Math.max(0.0, cfg.getDouble("alien.boss-knockback-resistance", 1.0)));
         this.alienBossChaseRange = Math.max(5.0, cfg.getDouble("alien.boss-chase-range", 25.0));
@@ -714,12 +714,12 @@ public class PluginConfig {
 
         ConfigurationSection minions = cfg.getConfigurationSection("alien.minions");
         this.alienMinionsEnabled = minions == null || minions.getBoolean("enabled", true);
-        this.alienMinionType = entityType(minions != null ? minions.getString("type", "VINDICATOR") : "VINDICATOR", EntityType.VINDICATOR);
+        this.alienMinionType = remapAlienHost(entityType(minions != null ? minions.getString("type", "HUSK") : "HUSK", EntityType.HUSK));
         this.alienMinionName = ColorUtil.color(minions != null ? minions.getString("name",
                 "&a&lМалый пришелец &7[%hp% ❤]") : "&a&lМалый пришелец &7[%hp% ❤]");
         this.alienMinionHealth = minions != null ? Math.max(1.0, minions.getDouble("health", 120.0)) : 120.0;
         this.alienMinionDamage = minions != null ? Math.max(0.0, minions.getDouble("damage", 12.0)) : 12.0;
-        this.alienMinionScale = minions != null ? Math.max(0.2, minions.getDouble("scale", 1.0)) : 1.0;
+        this.alienMinionScale = minions != null ? Math.max(1.0, minions.getDouble("scale", 1.15)) : 1.15;
         this.alienMinionWeapon = material(minions != null ? minions.getString("weapon", "AIR") : "AIR", Material.AIR);
         this.alienMinionIntervalSeconds = minions != null ? Math.max(20, minions.getInt("interval-seconds", 25)) : 25;
         this.alienMinionCountPerWave = minions != null ? Math.max(1, Math.min(2, minions.getInt("count-per-wave", 2))) : 2;
@@ -730,7 +730,7 @@ public class PluginConfig {
 
         ConfigurationSection ufo = cfg.getConfigurationSection("alien.ufo");
         this.alienUfoEnabled = ufo == null || ufo.getBoolean("enabled", true);
-        this.alienUfoType = entityType(ufo != null ? ufo.getString("type", "GHAST") : "GHAST", EntityType.GHAST);
+        this.alienUfoType = remapAlienUfo(entityType(ufo != null ? ufo.getString("type", "ARMOR_STAND") : "ARMOR_STAND", EntityType.ARMOR_STAND));
         this.alienUfoHeight = ufo != null ? Math.max(3.0, ufo.getDouble("height", 10.0)) : 10.0;
         this.alienUfoScale = ufo != null ? Math.max(0.15, ufo.getDouble("scale", 0.45)) : 0.45;
 
@@ -879,6 +879,23 @@ public class PluginConfig {
         } catch (IllegalArgumentException ex) {
             return fallback;
         }
+    }
+
+    /** Не используем поборника/гаста — они подменяли ванильных мобов в паке. */
+    private static EntityType remapAlienHost(EntityType type) {
+        if (type == EntityType.VINDICATOR || type == EntityType.EVOKER || type == EntityType.PILLAGER
+                || type == EntityType.ILLUSIONER || type == EntityType.VEX || type == EntityType.RAVAGER
+                || type == EntityType.GHAST) {
+            return EntityType.HUSK;
+        }
+        return type == null ? EntityType.HUSK : type;
+    }
+
+    private static EntityType remapAlienUfo(EntityType type) {
+        if (type == EntityType.GHAST || type == EntityType.VINDICATOR || type == EntityType.EVOKER) {
+            return EntityType.ARMOR_STAND;
+        }
+        return type == null ? EntityType.ARMOR_STAND : type;
     }
 
     private static int toInt(Object obj, int def) {

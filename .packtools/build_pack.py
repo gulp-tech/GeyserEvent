@@ -4,12 +4,8 @@
 Пак для Bedrock-клиентов через Geyser:
   • 3D-рюкзак шахтёра (turtle_helmet attachable)
   • блоки призыва босса и обшивки корабля (редкие ванильные блоки)
-  • 3D-модели из аддона al3xandre, ПРИВЯЗАННЫЕ к ванильным сущностям:
-      minecraft:vindicator → geometry.alien (босс и малые пришельцы)
-      minecraft:ghast      → geometry.nave  (тарелка)
-    Вызыватель (evoker) НЕ трогаем — магазины/NPC на нём остаются ванильными.
-    На Java-сервере Geyser не умеет спавнить ale:alien / ale:nave, поэтому
-    идентификаторы кастомного аддона сюда НЕ попадают.
+  • 3D-модели пришельца/тарелки только как attachable (geyserevent:alien_display /
+    nave_display) на предмете. Ванильные vindicator/ghast/evoker НЕ трогаем.
   • звуки пришельцев (sounds/sound_definitions.json)
 HUD клиента не меняется.
 """
@@ -19,7 +15,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 26]
+VERSION = [1, 21, 27]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -41,6 +37,8 @@ SKIP_PREFIXES = (
 SKIP_FILES = {
     "entity/evocation_illager.entity.json",
     "entity/ravager.entity.json",
+    "entity/vindicator.entity.json",
+    "entity/ghast.entity.json",
     "textures/entity/vindicator.png",
     "models/entity/vindicator.geo.json",
     "models/entity/ghast.geo.json",
@@ -48,6 +46,8 @@ SKIP_FILES = {
     "render_controllers/skibidi_toilet.json",
     "render_controllers/skeleton.json",
     "render_controllers/default.json",
+    "render_controllers/vindicator.json",
+    "render_controllers/ghast.json",
 }
 
 
@@ -188,13 +188,9 @@ sound_defs["sound_definitions"]["ronaldo_talk"] = {
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))
 
-# sanity: никаких оверрайдов ванильных мобов/эндер-сундука, кроме модели пришельца/тарелки
-ALLOWED_ENTITY = {
-    "entity/vindicator.entity.json",
-    "entity/ghast.entity.json",
-}
+# sanity: никаких оверрайдов ванильных мобов
 for name in list(entries):
-    if name.startswith("entity/") and name not in ALLOWED_ENTITY:
+    if name.startswith("entity/"):
         raise SystemExit("ОШИБКА: в паке entity/ ломает ванильных мобов: " + name)
     if name.startswith("textures/entity/chest/") or name.startswith("textures/entity/ghast/"):
         raise SystemExit("ОШИБКА: ванильная текстура в паке: " + name)

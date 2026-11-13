@@ -242,8 +242,8 @@ public class MinerBackpackManager {
         if (backpackSyncTask != null) {
             backpackSyncTask.cancel();
         }
-        // Поскольку рюкзак прикреплён к игроку через addPassenger, проверка зоны раз в 10 тиков не создаёт нагрузки
-        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncVisualBackpacks, 10L, 10L);
+        // Каждый тик: телепорт за спину (не пассажир). Иначе при присяде рюкзак в зад, при повороте отстаёт.
+        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncVisualBackpacks, 1L, 1L);
     }
 
     /**
@@ -314,14 +314,7 @@ public class MinerBackpackManager {
             return;
         }
         if (mineMgr.isPlayerInsideMineZone(player.getLocation())) {
-            // PlayerMoveEvent приходит ~20 раз в секунду, а синхронизация рюкзака и так
-            // идёт раз в 10 тиков — поэтому здесь троттлинг 200 мс (мгновенная реакция сохранена)
-            long now = System.currentTimeMillis();
-            Long lastSync = moveSyncCooldown.get(uuid);
-            if (lastSync == null || now - lastSync >= 200L) {
-                moveSyncCooldown.put(uuid, now);
-                syncSinglePlayerBackpack(player);
-            }
+            syncSinglePlayerBackpack(player);
         } else if (hasStand) {
             removeVisualBackpack(player);
             player.sendMessage(ColorUtil.color("&e┠ &7Рюкзак шахтёра снят со спины (вы покинули Шахту Древних)."));
@@ -342,31 +335,32 @@ public class MinerBackpackManager {
             return;
         }
 
-        Location pLoc = player.getLocation();
-        if (pLoc.getWorld() == null) {
+        Location spawnLoc = backpackFollowLocation(player);
+        if (spawnLoc.getWorld() == null) {
             return;
         }
 
-        float yaw = pLoc.getYaw();
+        float yaw = spawnLoc.getYaw();
         ArmorStand stand = visualBackpackStands.get(uuid);
-        if (stand == null || !stand.isValid() || !stand.getWorld().equals(pLoc.getWorld())) {
+        if (stand == null || !stand.isValid() || !stand.getWorld().equals(spawnLoc.getWorld())) {
             if (stand != null) {
-                player.removePassenger(stand);
+                if (stand.getVehicle() != null) {
+                    stand.getVehicle().removePassenger(stand);
+                }
                 stand.remove();
             }
             ItemStack backpackModelItem = createVisualBackpackModelItem(getBackpackLevel(uuid));
-            Location spawnLoc = pLoc.clone();
-            spawnLoc.setPitch(0.0f);
-            stand = pLoc.getWorld().spawn(spawnLoc, ArmorStand.class, s -> {
+            stand = spawnLoc.getWorld().spawn(spawnLoc, ArmorStand.class, s -> {
                 s.setVisible(false);
                 s.setGravity(false);
                 s.setMarker(true);
-                s.setSmall(false);
+                s.setSmall(player.isSneaking());
                 s.setBasePlate(false);
                 s.setArms(false);
                 s.setSilent(true);
                 s.setGlowing(false);
                 s.setInvulnerable(true);
+                s.setCollidable(false);
                 s.setPersistent(false);
                 s.setCustomNameVisible(false);
                 s.setHeadPose(EulerAngle.ZERO);
@@ -378,7 +372,7 @@ public class MinerBackpackManager {
                     equip.setHelmet(backpackModelItem);
                 }
             });
-            player.addPassenger(stand);
+            stand.teleport(spawnLoc);
             stand.setRotation(yaw, 0.0f);
             visualBackpackStands.put(uuid, stand);
             lastSyncedYaw.put(uuid, yaw);
@@ -390,17 +384,30 @@ public class MinerBackpackManager {
                     "&e┠ &63D-Рюкзак шахтёра &8(&eУр. " + lvl + " &7| &a" + carried + "&7/&a" + cap + " руды&8) &fнадет на спину!"
             ));
         } else {
-            // Оптимизация: player.getPassengers() создаёт новый список на каждый вызов,
-            // а stand.getVehicle() — бесплатная проверка
-            if (stand.getVehicle() != player) {
-                player.addPassenger(stand);
+            if (stand.getVehicle() != null) {
+                stand.getVehicle().removePassenger(stand);
             }
-            Float prevYaw = lastSyncedYaw.get(uuid);
-            if (prevYaw == null || Math.abs(wrapAngleDelta(yaw - prevYaw)) >= 12.0f) {
-                stand.setRotation(yaw, 0.0f);
-                lastSyncedYaw.put(uuid, yaw);
-            }
+            stand.setSmall(player.isSneaking());
+            stand.teleport(spawnLoc);
+            stand.setRotation(yaw, 0.0f);
+            lastSyncedYaw.put(uuid, yaw);
         }
+    }
+
+    /** Точка за спиной: при присяде/посадке не уезжает в зад, поворот сразу. */
+    private Location backpackFollowLocation(Player player) {
+        Location loc = player.getLocation();
+        float yaw = loc.getYaw();
+        double rad = Math.toRadians(yaw);
+        boolean low = player.isSneaking() || player.isInsideVehicle();
+        double back = 0.34;
+        double y = low ? 0.58 : 0.88;
+        loc.setX(loc.getX() + Math.sin(rad) * back);
+        loc.setY(loc.getY() + y);
+        loc.setZ(loc.getZ() - Math.cos(rad) * back);
+        loc.setYaw(yaw);
+        loc.setPitch(0.0f);
+        return loc;
     }
 
     private static float wrapAngleDelta(float delta) {
@@ -451,11 +458,15 @@ public class MinerBackpackManager {
     }
 
     public boolean isActiveMountedBackpackStand(ArmorStand stand) {
-        if (stand == null || !stand.isValid() || !(stand.getVehicle() instanceof Player owner) || !owner.isOnline() || owner.isDead()) {
+        if (stand == null || !stand.isValid()) {
             return false;
         }
-        ArmorStand active = visualBackpackStands.get(owner.getUniqueId());
-        return active != null && active.getUniqueId().equals(stand.getUniqueId());
+        for (ArmorStand active : visualBackpackStands.values()) {
+            if (active != null && active.getUniqueId().equals(stand.getUniqueId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean isVisualBackpackEntity(Entity entity) {

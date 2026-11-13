@@ -61,15 +61,16 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class AncientMineManager {
 
-    private static final int CURRENT_MINE_SCHEMA_VERSION = 9;
+    private static final int CURRENT_MINE_SCHEMA_VERSION = 10;
     public static final int MINE_RADIUS = 24;
     public static final double MINE_ZONE_LIMIT = 26.5;
     /** Верхняя кромка crater-lobby (трава). Origin ставится так, чтобы кромка была на уровне земли. */
     private static final int RIM_DY = 9;
     private static final int FLOOR_DY = -2;
-    /** Двухполосный каменный подъём к южной кромке (относительно origin). */
-    private static final int LIFT_DX = 0;
-    private static final int LIFT_START_DZ = 5;
+    /** Широкая каменная лестница к южной кромке (относительно origin). */
+    private static final int LIFT_DX = -1;
+    private static final int LIFT_WIDTH = 4;
+    private static final int LIFT_START_DZ = 4;
     private static final int LIFT_STEPS = 11;
     /** Мини-пещера в crater-lobby (относительно центра 0,0). */
     private static final double NPC_DX = -10.0;
@@ -1523,6 +1524,8 @@ public class AncientMineManager {
         }
 
         buildCraterAscent(origin);
+        smoothInnerCliffs(origin);
+        plantOreVeins(origin);
     }
 
     /**
@@ -1553,7 +1556,7 @@ public class AncientMineManager {
     }
 
     /**
-     * Двухполосный каменный подъём с пола кратера на южную кромку (вместо jump-n-run).
+     * Широкая каменная лестница с пола кратера на южную кромку.
      */
     private void buildCraterAscent(Location origin) {
         World w = origin.getWorld();
@@ -1563,17 +1566,16 @@ public class AncientMineManager {
         int ox = origin.getBlockX();
         int oy = origin.getBlockY();
         int oz = origin.getBlockZ();
+        int x1 = LIFT_DX;
+        int x2 = LIFT_DX + LIFT_WIDTH - 1;
 
         for (int t = 0; t < LIFT_STEPS; t++) {
             int dz = LIFT_START_DZ + t;
             int dy = FLOOR_DY + 1 + t;
-            for (int dx = LIFT_DX; dx <= LIFT_DX + 1; dx++) {
+            for (int dx = x1; dx <= x2; dx++) {
                 Block under = w.getBlockAt(ox + dx, oy + dy - 1, oz + dz);
-                if (!under.getType().isSolid() || under.getType() == Material.GRASS_BLOCK
-                        || under.getType() == Material.DIRT || under.getType() == Material.DIRT_PATH) {
-                    under.setType(Material.STONE_BRICKS, false);
-                    protectedBlocks.add(BlockKey.of(under));
-                }
+                under.setType(Material.STONE_BRICKS, false);
+                protectedBlocks.add(BlockKey.of(under));
                 Block step = w.getBlockAt(ox + dx, oy + dy, oz + dz);
                 BlockData data = Bukkit.createBlockData(Material.STONE_BRICK_STAIRS);
                 if (data instanceof Stairs stairs) {
@@ -1583,26 +1585,19 @@ public class AncientMineManager {
                 protectedBlocks.add(BlockKey.of(step));
                 for (int h = 1; h <= 3; h++) {
                     Block head = w.getBlockAt(ox + dx, oy + dy + h, oz + dz);
-                    if (!protectedBlocks.contains(BlockKey.of(head))
-                            && (head.getType().isAir() || isFoliageOrTree(head.getType())
-                            || head.getType() == Material.GRASS_BLOCK
-                            || head.getType() == Material.DIRT
-                            || head.getType() == Material.STONE
-                            || head.getType() == Material.ANDESITE
-                            || head.getType() == Material.GRANITE
-                            || head.getType() == Material.DIORITE
-                            || head.getType() == Material.DIRT_PATH)) {
-                        if (dy + h <= RIM_DY + 2) {
-                            head.setType(Material.AIR, false);
-                        }
+                    if (dy + h <= RIM_DY + 2) {
+                        head.setType(Material.AIR, false);
                     }
                 }
             }
-            for (int railDx : new int[]{LIFT_DX - 1, LIFT_DX + 2}) {
+            for (int railDx : new int[]{x1 - 1, x2 + 1}) {
                 Block rail = w.getBlockAt(ox + railDx, oy + dy, oz + dz);
-                if (rail.getType().isAir() || isFoliageOrTree(rail.getType())) {
-                    rail.setType(Material.STONE_BRICK_WALL, false);
-                    protectedBlocks.add(BlockKey.of(rail));
+                rail.setType(Material.STONE_BRICK_WALL, false);
+                protectedBlocks.add(BlockKey.of(rail));
+                Block railBase = w.getBlockAt(ox + railDx, oy + dy - 1, oz + dz);
+                if (!railBase.getType().isSolid()) {
+                    railBase.setType(Material.STONE_BRICKS, false);
+                    protectedBlocks.add(BlockKey.of(railBase));
                 }
             }
         }
@@ -1610,18 +1605,170 @@ public class AncientMineManager {
         int topY = RIM_DY;
         int topZ = LIFT_START_DZ + LIFT_STEPS - 1;
         for (int dz = topZ; dz <= 21; dz++) {
-            for (int dx = LIFT_DX - 1; dx <= LIFT_DX + 2; dx++) {
+            for (int dx = x1 - 1; dx <= x2 + 1; dx++) {
                 Block plat = w.getBlockAt(ox + dx, oy + topY, oz + dz);
-                if (plat.getType().isAir() || isFoliageOrTree(plat.getType())) {
-                    plat.setType(dz >= 19 ? Material.GRASS_BLOCK : Material.STONE_BRICKS, false);
-                    protectedBlocks.add(BlockKey.of(plat));
-                }
+                plat.setType(dz >= 19 ? Material.GRASS_BLOCK : Material.STONE_BRICKS, false);
+                protectedBlocks.add(BlockKey.of(plat));
                 Block above = w.getBlockAt(ox + dx, oy + topY + 1, oz + dz);
-                if (isFoliageOrTree(above.getType())) {
-                    above.setType(Material.AIR, false);
+                if (!above.getType().isAir() && (isFoliageOrTree(above.getType()) || above.getType().isSolid())) {
+                    if (isFoliageOrTree(above.getType())) {
+                        above.setType(Material.AIR, false);
+                    }
                 }
             }
         }
+    }
+
+    private boolean isCraterRock(Material m) {
+        return m == Material.STONE || m == Material.ANDESITE || m == Material.GRANITE
+                || m == Material.DIORITE || m == Material.COBBLESTONE || m == Material.DEEPSLATE
+                || m == Material.TUFF;
+    }
+
+    private boolean isExposedToAir(Block block) {
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP}) {
+            Material n = block.getRelative(face).getType();
+            if (n.isAir() || n == Material.CAVE_AIR) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Ступени на обрывах внутри чаши, чтобы не прыгать через 2+ блока. */
+    private void smoothInnerCliffs(Location origin) {
+        World w = origin.getWorld();
+        if (w == null) {
+            return;
+        }
+        int ox = origin.getBlockX();
+        int oy = origin.getBlockY();
+        int oz = origin.getBlockZ();
+        record Dir(int dx, int dz, BlockFace face) {}
+        Dir[] dirs = {
+                new Dir(1, 0, BlockFace.WEST),
+                new Dir(-1, 0, BlockFace.EAST),
+                new Dir(0, 1, BlockFace.NORTH),
+                new Dir(0, -1, BlockFace.SOUTH)
+        };
+        for (int dx = -22; dx <= 22; dx++) {
+            for (int dz = -21; dz <= 21; dz++) {
+                if (Math.hypot(dx, dz) > 21.5) {
+                    continue;
+                }
+                int yHere = surfaceRelY(w, ox, oy, oz, dx, dz);
+                if (yHere == Integer.MIN_VALUE) {
+                    continue;
+                }
+                for (Dir dir : dirs) {
+                    int yNext = surfaceRelY(w, ox, oy, oz, dx + dir.dx(), dz + dir.dz());
+                    if (yNext == Integer.MIN_VALUE) {
+                        continue;
+                    }
+                    int drop = yHere - yNext;
+                    if (drop < 2 || drop > 5) {
+                        continue;
+                    }
+                    for (int step = 1; step < drop; step++) {
+                        int dy = yNext + step;
+                        Block stair = w.getBlockAt(ox + dx, oy + dy, oz + dz);
+                        if (stair.getType() == Material.STONE_BRICK_STAIRS) {
+                            continue;
+                        }
+                        BlockData data = Bukkit.createBlockData(Material.COBBLESTONE_STAIRS);
+                        if (data instanceof Stairs stairs) {
+                            stairs.setFacing(dir.face());
+                        }
+                        stair.setBlockData(data, false);
+                        protectedBlocks.add(BlockKey.of(stair));
+                        Block head = w.getBlockAt(ox + dx, oy + dy + 1, oz + dz);
+                        if (head.getType().isSolid() && isCraterRock(head.getType())) {
+                            head.setType(Material.AIR, false);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private int surfaceRelY(World w, int ox, int oy, int oz, int dx, int dz) {
+        for (int dy = RIM_DY; dy >= FLOOR_DY; dy--) {
+            Block b = w.getBlockAt(ox + dx, oy + dy, oz + dz);
+            if (b.getType().isSolid()) {
+                Block above = w.getBlockAt(ox + dx, oy + dy + 1, oz + dz);
+                if (above.getType().isAir() || isFoliageOrTree(above.getType())) {
+                    return dy;
+                }
+            }
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    /** Жилы руд в стенках кратера — в схеме crater-lobby руд нет. */
+    private void plantOreVeins(Location origin) {
+        World w = origin.getWorld();
+        if (w == null) {
+            return;
+        }
+        List<Block> exposed = new ArrayList<>();
+        for (BlockKey key : new ArrayList<>(protectedBlocks)) {
+            Block b = w.getBlockAt(key.x(), key.y(), key.z());
+            if (!isCraterRock(b.getType())) {
+                continue;
+            }
+            if (b.getY() < origin.getBlockY() + FLOOR_DY || b.getY() > origin.getBlockY() + RIM_DY - 1) {
+                continue;
+            }
+            if (isExposedToAir(b)) {
+                exposed.add(b);
+            }
+        }
+        java.util.Collections.shuffle(exposed, ThreadLocalRandom.current());
+        int oreCount = Math.min(96, Math.max(36, exposed.size() / 6));
+        Material[] ores = {
+                Material.DEEPSLATE_COPPER_ORE, Material.DEEPSLATE_COPPER_ORE, Material.DEEPSLATE_IRON_ORE,
+                Material.DEEPSLATE_IRON_ORE, Material.DEEPSLATE_GOLD_ORE, Material.DEEPSLATE_EMERALD_ORE,
+                Material.DEEPSLATE_DIAMOND_ORE, Material.ANCIENT_DEBRIS
+        };
+        int placed = 0;
+        for (int i = 0; i < exposed.size() && placed < oreCount; i++) {
+            Block b = exposed.get(i);
+            if (MineOreType.fromBlockMaterial(b.getType()) != null) {
+                continue;
+            }
+            Material ore = ores[placed % ores.length];
+            if (placed % 11 == 10) {
+                ore = Material.ANCIENT_DEBRIS;
+            }
+            b.setType(ore, false);
+            BlockKey key = BlockKey.of(b);
+            protectedBlocks.add(key);
+            mineableOreSpots.add(key);
+            defaultOreMaterials.put(key, ore);
+            placed++;
+        }
+
+        int extraGeodes = 0;
+        for (Block b : exposed) {
+            if (extraGeodes >= 24) {
+                break;
+            }
+            if (!isCraterRock(b.getType()) && MineOreType.fromBlockMaterial(b.getType()) != null) {
+                continue;
+            }
+            if (!b.getRelative(BlockFace.UP).getType().isAir()) {
+                continue;
+            }
+            if (ThreadLocalRandom.current().nextInt(8) != 0) {
+                continue;
+            }
+            int dx = b.getX() - origin.getBlockX();
+            int dy = b.getY() - origin.getBlockY();
+            int dz = b.getZ() - origin.getBlockZ();
+            geodePoolOffsets.add(new Offset(dx, dy, dz));
+            extraGeodes++;
+        }
+        plugin.getLogger().info("Шахта Древних: посажено жил руды " + placed + ", жеод-точек +" + extraGeodes + ".");
     }
 
     private void restoreOrCaptureTerrain(World world, int centerX, int centerZ, boolean forceRestoreOnly) {

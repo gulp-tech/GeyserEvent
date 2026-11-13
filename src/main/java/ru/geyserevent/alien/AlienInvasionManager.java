@@ -155,6 +155,7 @@ public final class AlienInvasionManager {
             s.setBasePlate(false);
             s.setArms(false);
             s.setSmall(false);
+            s.setHeadPose(new org.bukkit.util.EulerAngle(0, 0, 0));
             s.setCollidable(false);
             s.setSilent(true);
             s.setCustomNameVisible(false);
@@ -324,6 +325,8 @@ public final class AlienInvasionManager {
             mob.setTarget(null);
         }
         BossAbilityController.applyEntityScale(ufo, cfg.getAlienUfoScale());
+        hideVanillaBody(ufo);
+        attachAlienVisual(ufo, true);
         this.ufoUuid = ufo.getUniqueId();
         this.ufoHome = loc.clone();
         world.playSound(loc, "alien_transmit", 1.4f, 0.7f);
@@ -412,6 +415,9 @@ public final class AlienInvasionManager {
         boss.setSilent(true);
         boss.setGravity(true);
 
+        hideVanillaBody(boss);
+        attachAlienVisual(boss, false);
+
         // Страшные звуки пришельцев (v1.20.3)
         world.playSound(loc, "alien_growl", 2.0f, 0.8f);
         world.playSound(loc, Sound.BLOCK_BEACON_ACTIVATE, 1.5f, 1.4f);
@@ -496,6 +502,8 @@ public final class AlienInvasionManager {
                 minion.setSilent(true);
                 minion.setGravity(true);
                 BossAbilityController.setEntityAttribute(minion, "FOLLOW_RANGE", "generic.follow_range", 40.0);
+                hideVanillaBody(minion);
+                attachAlienVisual(minion, false);
                 alienMinions.add(minion.getUniqueId());
                 spawned++;
                 World w = spawnLoc.getWorld();
@@ -860,6 +868,7 @@ public final class AlienInvasionManager {
         updateNativeAi(boss, cfg);
         silenceEvoker(boss);
         hoverUfo();
+        syncVisuals();
 
         this.subSecondTicks++;
         if (this.subSecondTicks % 4 != 0) {

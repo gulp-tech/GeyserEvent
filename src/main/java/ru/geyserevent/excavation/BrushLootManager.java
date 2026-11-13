@@ -479,21 +479,39 @@ public class BrushLootManager {
                     getFishingRodTitle(tier)
             );
             meta.setDisplayName(ColorUtil.color(title));
+            int lure = fishingLureLevel(tier);
             meta.setLore(List.of(
                     ColorUtil.color("&7Редкость: " + getFishingRodTitle(tier)),
                     ColorUtil.color("&7Поклёвок: &e" + uses),
+                    ColorUtil.color("&7Поклёвка: " + fishingBiteLabel(tier)),
                     ColorUtil.color("&8Ловите в пруду ивента")
             ));
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
             pdc.set(fishingKey, PersistentDataType.STRING, tier.name());
             pdc.set(fishingUsesKey, PersistentDataType.INTEGER, uses);
-            try {
-                meta.setCustomModelData(fishingRodCustomModelData(tier));
-            } catch (Throwable ignored) {
-            }
+            // Без custom_model_data: Geyser custom fishing_rod прячет ванильную леску.
+            meta.addEnchant(Enchantment.LURE, lure, true);
+            meta.addEnchant(Enchantment.LUCK_OF_THE_SEA, lure, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             stack.setItemMeta(meta);
         }
         return stack;
+    }
+
+    private int fishingLureLevel(BrushTier tier) {
+        return switch (tier) {
+            case COMMON -> 1;
+            case EPIC -> 2;
+            case LEGENDARY -> 3;
+        };
+    }
+
+    private String fishingBiteLabel(BrushTier tier) {
+        return switch (tier) {
+            case COMMON -> "&aобычная";
+            case EPIC -> "&dбыстрая";
+            case LEGENDARY -> "&6очень быстрая";
+        };
     }
 
     public boolean isFishingRod(ItemStack item) {

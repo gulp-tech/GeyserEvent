@@ -62,6 +62,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
@@ -166,6 +167,13 @@ public class RiftEventListener implements Listener {
         if (lastZoneCheck == null || now - lastZoneCheck >= 250L) {
             zoneCheckCooldown.put(player.getUniqueId(), now);
             plugin.getRiftManager().enforceBrushZoneForPlayer(player);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
+        if (plugin.getMinerBackpackManager() != null) {
+            plugin.getMinerBackpackManager().onPlayerMovedOrTeleported(event.getPlayer());
         }
     }
 
