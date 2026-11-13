@@ -327,8 +327,7 @@ public final class AlienInvasionManager {
             mob.setTarget(null);
         }
         BossAbilityController.applyEntityScale(ufo, cfg.getAlienUfoScale());
-        hideVanillaBody(ufo);
-        attachAlienVisual(ufo, true);
+        ru.geyserevent.hud.GeyserEntityBridge.markNave(ufo.getUniqueId());
         this.ufoUuid = ufo.getUniqueId();
         this.ufoHome = loc.clone();
         world.playSound(loc, "alien_transmit", 1.4f, 0.7f);
@@ -417,8 +416,7 @@ public final class AlienInvasionManager {
         boss.setSilent(true);
         boss.setGravity(true);
 
-        hideVanillaBody(boss);
-        attachAlienVisual(boss, false);
+        ru.geyserevent.hud.GeyserEntityBridge.markAlien(boss.getUniqueId());
 
         // Страшные звуки пришельцев (v1.20.3)
         world.playSound(loc, "alien_growl", 2.0f, 0.8f);
@@ -504,8 +502,7 @@ public final class AlienInvasionManager {
                 minion.setSilent(true);
                 minion.setGravity(true);
                 BossAbilityController.setEntityAttribute(minion, "FOLLOW_RANGE", "generic.follow_range", 40.0);
-                hideVanillaBody(minion);
-                attachAlienVisual(minion, false);
+                ru.geyserevent.hud.GeyserEntityBridge.markAlien(minion.getUniqueId());
                 alienMinions.add(minion.getUniqueId());
                 spawned++;
                 World w = spawnLoc.getWorld();
@@ -811,10 +808,12 @@ public final class AlienInvasionManager {
     }
 
     private void removeAlienEntities() {
+        ru.geyserevent.hud.GeyserEntityBridge.clear();
         if (center != null && center.getWorld() != null) {
             World w = center.getWorld();
             for (Entity entity : w.getNearbyEntities(center, 64, 48, 64)) {
                 if (isAlienBoss(entity) || isAlienMinion(entity) || isAlienUfo(entity) || isAlienVisual(entity)) {
+                    ru.geyserevent.hud.GeyserEntityBridge.unmark(entity.getUniqueId());
                     entity.remove();
                 }
             }

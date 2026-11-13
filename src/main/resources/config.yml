@@ -1187,10 +1187,10 @@ alien:
     max-active: 4
     trigger-radius: 25.0
 
-  # Тарелка: стойка с моделью nave, не гаст.
+  # Тарелка: Java GHAST, на Bedrock только этот UUID → geyserevent:nave.
   ufo:
     enabled: true
-    type: "ARMOR_STAND"
+    type: "GHAST"
     height: 10.0
     scale: 0.45
 

@@ -168,6 +168,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         // 8. Экспорт и автоматическая перезапись меню DeluxeMenus (events.yml) и текстурпака (GeyserEvent-Pack.mcpack)
         exportDeluxeMenusConfig();
         exportResourcePackAndOverwriteGeyser();
+        ru.geyserevent.hud.GeyserEntityBridge.subscribe(this);
 
         // 9. Автоматический запуск постоянного ивента «Шахта Древних (Жила Жеод)» 45x45 на 0 ~ 0
         Bukkit.getScheduler().runTaskLater(this, () -> {
@@ -186,7 +187,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.52 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" GeyserEvent v1.21.53 успешно запущен! (Purpur 1.21–26.63)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Клад, Рыбалка (пришельцы/скибиди/CR7 выключены)");
         getLogger().info(" Постоянный ивент: Шахта Древних crater-lobby (v9) + подъём на 0 ~ 0");
         getLogger().info("==================================================");

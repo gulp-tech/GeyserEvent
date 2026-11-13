@@ -61,7 +61,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class AncientMineManager {
 
-    private static final int CURRENT_MINE_SCHEMA_VERSION = 11;
+    private static final int CURRENT_MINE_SCHEMA_VERSION = 12;
     public static final int MINE_RADIUS = 24;
     public static final double MINE_ZONE_LIMIT = 26.5;
     /** Верхняя кромка crater-lobby (трава). Origin ставится так, чтобы кромка была на уровне земли. */
@@ -1631,12 +1631,12 @@ public class AncientMineManager {
         for (int dx = -30; dx <= 30; dx++) {
             for (int dz = -30; dz <= 30; dz++) {
                 double dist = Math.hypot(dx, dz);
-                if (dist < 18.0 || dist > 30.0) {
+                if (dist < 16.0 || dist > 34.0) {
                     continue;
                 }
-                int drop = (int) Math.round((dist - 18.0) * 0.9);
+                int drop = (int) Math.round(Math.max(0.0, dist - 16.0) * 1.15);
                 int topY = rimY - drop;
-                for (int y = topY; y >= rimY - 16; y--) {
+                for (int y = topY; y >= rimY - 22; y--) {
                     Block b = w.getBlockAt(ox + dx, y, oz + dz);
                     Material t = b.getType();
                     if (t.isAir() || t == Material.CAVE_AIR || t == Material.VOID_AIR

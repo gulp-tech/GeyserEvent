@@ -242,8 +242,7 @@ public class MinerBackpackManager {
         if (backpackSyncTask != null) {
             backpackSyncTask.cancel();
         }
-        // Каждый тик: телепорт за спину (не пассажир). Иначе при присяде рюкзак в зад, при повороте отстаёт.
-        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncVisualBackpacks, 1L, 1L);
+        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncVisualBackpacks, 10L, 10L);
     }
 
     /**
@@ -335,14 +334,12 @@ public class MinerBackpackManager {
             return;
         }
 
-        Location spawnLoc = backpackFollowLocation(player);
-        if (spawnLoc.getWorld() == null) {
+        Location pLoc = player.getLocation();
+        if (pLoc.getWorld() == null) {
             return;
         }
-
-        float yaw = spawnLoc.getYaw();
         ArmorStand stand = visualBackpackStands.get(uuid);
-        if (stand == null || !stand.isValid() || !stand.getWorld().equals(spawnLoc.getWorld())) {
+        if (stand == null || !stand.isValid() || !stand.getWorld().equals(pLoc.getWorld())) {
             if (stand != null) {
                 if (stand.getVehicle() != null) {
                     stand.getVehicle().removePassenger(stand);
@@ -350,10 +347,12 @@ public class MinerBackpackManager {
                 stand.remove();
             }
             ItemStack backpackModelItem = createVisualBackpackModelItem(getBackpackLevel(uuid));
-            stand = spawnLoc.getWorld().spawn(spawnLoc, ArmorStand.class, s -> {
+            Location spawnLoc = pLoc.clone();
+            spawnLoc.setPitch(0.0f);
+            stand = pLoc.getWorld().spawn(spawnLoc, ArmorStand.class, s -> {
                 s.setVisible(false);
                 s.setGravity(false);
-                s.setMarker(false);
+                s.setMarker(true);
                 s.setSmall(false);
                 s.setBasePlate(false);
                 s.setArms(false);
@@ -372,10 +371,8 @@ public class MinerBackpackManager {
                     equip.setHelmet(backpackModelItem);
                 }
             });
-            stand.teleport(spawnLoc);
-            stand.setRotation(yaw, 0.0f);
+            player.addPassenger(stand);
             visualBackpackStands.put(uuid, stand);
-            lastSyncedYaw.put(uuid, yaw);
 
             int lvl = getBackpackLevel(uuid);
             int cap = getBackpackCapacity(uuid);
@@ -383,35 +380,9 @@ public class MinerBackpackManager {
             player.sendMessage(ColorUtil.color(
                     "&e┠ &63D-Рюкзак шахтёра &8(&eУр. " + lvl + " &7| &a" + carried + "&7/&a" + cap + " руды&8) &fнадет на спину!"
             ));
-        } else {
-            if (stand.getVehicle() != null) {
-                stand.getVehicle().removePassenger(stand);
-            }
-            stand.setSmall(false);
-            stand.setMarker(false);
-            stand.teleport(spawnLoc);
-            stand.setRotation(yaw, 0.0f);
-            lastSyncedYaw.put(uuid, yaw);
+        } else if (stand.getVehicle() != player) {
+            player.addPassenger(stand);
         }
-    }
-
-    /**
-     * Стойка стоит ногами у ног игрока: шлем (модель рюкзака) на верхней спине.
-     * Marker нельзя — тогда модель рисуется у ног.
-     */
-    private Location backpackFollowLocation(Player player) {
-        Location loc = player.getLocation();
-        float yaw = loc.getYaw();
-        double rad = Math.toRadians(yaw);
-        boolean low = player.isSneaking() || player.isInsideVehicle();
-        double back = 0.22;
-        double y = low ? -0.40 : -0.05;
-        loc.setX(loc.getX() + Math.sin(rad) * back);
-        loc.setY(loc.getY() + y);
-        loc.setZ(loc.getZ() - Math.cos(rad) * back);
-        loc.setYaw(yaw);
-        loc.setPitch(0.0f);
-        return loc;
     }
 
     private static float wrapAngleDelta(float delta) {

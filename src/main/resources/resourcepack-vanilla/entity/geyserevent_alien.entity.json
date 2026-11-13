@@ -1,0 +1,21 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "geyserevent:alien",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/alien"
+      },
+      "geometry": {
+        "default": "geometry.alien"
+      },
+      "render_controllers": [
+        "controller.render.geyserevent_alien"
+      ],
+      "enable_attachables": false
+    }
+  }
+}

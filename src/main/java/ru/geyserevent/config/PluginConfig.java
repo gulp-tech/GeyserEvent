@@ -730,7 +730,7 @@ public class PluginConfig {
 
         ConfigurationSection ufo = cfg.getConfigurationSection("alien.ufo");
         this.alienUfoEnabled = ufo == null || ufo.getBoolean("enabled", true);
-        this.alienUfoType = remapAlienUfo(entityType(ufo != null ? ufo.getString("type", "ARMOR_STAND") : "ARMOR_STAND", EntityType.ARMOR_STAND));
+        this.alienUfoType = remapAlienUfo(entityType(ufo != null ? ufo.getString("type", "GHAST") : "GHAST", EntityType.GHAST));
         this.alienUfoHeight = ufo != null ? Math.max(3.0, ufo.getDouble("height", 10.0)) : 10.0;
         this.alienUfoScale = ufo != null ? Math.max(0.15, ufo.getDouble("scale", 0.45)) : 0.45;
 
@@ -892,10 +892,10 @@ public class PluginConfig {
     }
 
     private static EntityType remapAlienUfo(EntityType type) {
-        if (type == EntityType.GHAST || type == EntityType.VINDICATOR || type == EntityType.EVOKER) {
-            return EntityType.ARMOR_STAND;
+        if (type == EntityType.VINDICATOR || type == EntityType.EVOKER || type == EntityType.ARMOR_STAND) {
+            return EntityType.GHAST;
         }
-        return type == null ? EntityType.ARMOR_STAND : type;
+        return type == null ? EntityType.GHAST : type;
     }
 
     private static int toInt(Object obj, int def) {

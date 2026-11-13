@@ -4,8 +4,7 @@
 Пак для Bedrock-клиентов через Geyser:
   • 3D-рюкзак шахтёра (turtle_helmet attachable)
   • блоки призыва босса и обшивки корабля (редкие ванильные блоки)
-  • 3D-модели пришельца/тарелки только как attachable (geyserevent:alien_display /
-    nave_display) на предмете. Ванильные vindicator/ghast/evoker НЕ трогаем.
+  • 3D-модели geyserevent:alien / geyserevent:nave (НЕ minecraft:vindicator/ghast).
   • звуки пришельцев (sounds/sound_definitions.json)
 HUD клиента не меняется.
 """
@@ -15,7 +14,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 27]
+VERSION = [1, 21, 28]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -188,9 +187,9 @@ sound_defs["sound_definitions"]["ronaldo_talk"] = {
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))
 
-# sanity: никаких оверрайдов ванильных мобов
+# sanity: никаких оверрайдов ванильных мобов (свои geyserevent:* можно)
 for name in list(entries):
-    if name.startswith("entity/"):
+    if name.startswith("entity/") and not name.startswith("entity/geyserevent_"):
         raise SystemExit("ОШИБКА: в паке entity/ ломает ванильных мобов: " + name)
     if name.startswith("textures/entity/chest/") or name.startswith("textures/entity/ghast/"):
         raise SystemExit("ОШИБКА: ванильная текстура в паке: " + name)
