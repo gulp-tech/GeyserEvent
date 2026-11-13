@@ -14,7 +14,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 28]
+VERSION = [1, 21, 29]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -187,9 +187,14 @@ sound_defs["sound_definitions"]["ronaldo_talk"] = {
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))
 
-# sanity: никаких оверрайдов ванильных мобов (свои geyserevent:* можно)
+# vindicator/ghast/evoker не трогаем. husk — только ивент пришельцев (в джунглях не спавнится).
+ALLOWED_ENTITY = {
+    "entity/geyserevent_alien.entity.json",
+    "entity/geyserevent_nave.entity.json",
+    "entity/husk.entity.json",
+}
 for name in list(entries):
-    if name.startswith("entity/") and not name.startswith("entity/geyserevent_"):
+    if name.startswith("entity/") and name not in ALLOWED_ENTITY:
         raise SystemExit("ОШИБКА: в паке entity/ ломает ванильных мобов: " + name)
     if name.startswith("textures/entity/chest/") or name.startswith("textures/entity/ghast/"):
         raise SystemExit("ОШИБКА: ванильная текстура в паке: " + name)
