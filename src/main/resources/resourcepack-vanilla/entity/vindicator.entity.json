@@ -8,10 +8,35 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/alien"
+        "default": "textures/entity/vindicator",
+        "alien": "textures/entity/alien"
       },
       "geometry": {
-        "default": "geometry.alien"
+        "default": "geometry.vindicator.v1.8",
+        "alien": "geometry.alien"
+      },
+      "scripts": {
+        "pre_animation": [
+          "variable.ge_event = query.model_scale < 0.88 || query.model_scale > 1.06;"
+        ],
+        "animate": [
+          { "alien": "variable.ge_event" },
+          { "vindicator_base": "!variable.ge_event" },
+          { "vindicator_walk": "!variable.ge_event" },
+          { "vindicator_attack": "!variable.ge_event" },
+          { "look_at_target": "!variable.ge_event" }
+        ]
+      },
+      "animations": {
+        "alien": "controller.animation.alien",
+        "idle": "animation.alien.idle",
+        "walk": "animation.alien.walk",
+        "attack": "animation.alien.attack",
+        "look": "animation.common.look_at_target",
+        "look_at_target": "animation.common.look_at_target",
+        "vindicator_base": "animation.vindicator.base",
+        "vindicator_walk": "animation.vindicator.walk",
+        "vindicator_attack": "animation.vindicator.attack"
       },
       "render_controllers": [
         "controller.render.vindicator"

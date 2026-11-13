@@ -705,7 +705,7 @@ public class PluginConfig {
                 "&5&lПришелец-Владыка &8[&d%hp%&7/&d%max_hp% ❤&8]"));
         this.alienBossHealth = Math.max(50.0, cfg.getDouble("alien.boss-health", 12000.0));
         this.alienBossDamage = Math.max(1.0, cfg.getDouble("alien.boss-damage", 18.0));
-        this.alienBossScale = 1.0;
+        this.alienBossScale = 1.12;
         this.alienBossMovementSpeed = Math.max(0.05, cfg.getDouble("alien.boss-movement-speed", 0.32));
         this.alienBossKnockbackResistance = Math.min(1.0, Math.max(0.0, cfg.getDouble("alien.boss-knockback-resistance", 1.0)));
         this.alienBossChaseRange = Math.max(5.0, cfg.getDouble("alien.boss-chase-range", 25.0));
@@ -732,7 +732,7 @@ public class PluginConfig {
         this.alienUfoEnabled = ufo == null || ufo.getBoolean("enabled", true);
         this.alienUfoType = remapAlienUfo(entityType(ufo != null ? ufo.getString("type", "GHAST") : "GHAST", EntityType.GHAST));
         this.alienUfoHeight = ufo != null ? Math.max(3.0, ufo.getDouble("height", 10.0)) : 10.0;
-        this.alienUfoScale = ufo != null ? Math.max(0.15, ufo.getDouble("scale", 0.45)) : 0.45;
+        this.alienUfoScale = 0.45;
 
         ConfigurationSection chests = cfg.getConfigurationSection("alien.chests");
         this.alienChestsEnabled = chests == null || chests.getBoolean("enabled", true);

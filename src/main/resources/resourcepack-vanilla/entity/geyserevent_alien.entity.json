@@ -12,6 +12,18 @@
       "geometry": {
         "default": "geometry.alien"
       },
+      "scripts": {
+        "animate": [
+          "alien"
+        ]
+      },
+      "animations": {
+        "alien": "controller.animation.alien",
+        "idle": "animation.alien.idle",
+        "walk": "animation.alien.walk",
+        "attack": "animation.alien.attack",
+        "look": "animation.common.look_at_target"
+      },
       "render_controllers": [
         "controller.render.geyserevent_alien"
       ],

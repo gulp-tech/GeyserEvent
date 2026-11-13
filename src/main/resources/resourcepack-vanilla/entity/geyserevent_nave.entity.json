@@ -19,7 +19,10 @@
         ]
       },
       "animations": {
-        "nave": "controller.animation.nave"
+        "nave": "controller.animation.nave",
+        "parado": "animation.nave.para",
+        "andando": "animation.nave.anda",
+        "abduzir": "animation.nave.abduzir"
       },
       "render_controllers": [
         "controller.render.geyserevent_alien"

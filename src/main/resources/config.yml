@@ -1162,7 +1162,7 @@ alien:
   boss-health: 16000.0
   boss-damage: 24.0
   # Размер модели (1.0 — ванильный). Модель alien и так высокая (~3 блока).
-  boss-scale: 1.0
+  boss-scale: 1.12
   boss-movement-speed: 0.32
   boss-knockback-resistance: 1.0
   # Радиус преследования: босс идёт к игрокам в этом радиусе (помогает выбраться из арены)
