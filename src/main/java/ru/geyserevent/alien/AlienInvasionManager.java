@@ -146,12 +146,13 @@ public final class AlienInvasionManager {
         }
         removeVisual(host.getUniqueId());
         Location loc = host.getLocation().clone();
-        ArmorStand stand = host.getWorld().spawn(loc, ArmorStand.class, s -> {
+        Location standLoc = alienVisualLocation(host, ufo);
+        ArmorStand stand = host.getWorld().spawn(standLoc, ArmorStand.class, s -> {
             s.setPersistent(false);
             s.setGravity(false);
             s.setInvulnerable(true);
             s.setInvisible(true);
-            s.setMarker(true);
+            s.setMarker(false);
             s.setBasePlate(false);
             s.setArms(false);
             s.setSmall(false);
@@ -166,10 +167,7 @@ public final class AlienInvasionManager {
             }
         });
         visualByHost.put(host.getUniqueId(), stand.getUniqueId());
-        try {
-            host.addPassenger(stand);
-        } catch (Throwable ignored) {
-        }
+        stand.teleport(standLoc);
     }
 
     private void removeVisual(UUID hostId) {
@@ -193,17 +191,21 @@ public final class AlienInvasionManager {
                 }
                 return true;
             }
-            if (!host.getPassengers().contains(stand)) {
-                Location loc = host.getLocation().clone().add(0, ufoVisualOffset(host), 0);
-                loc.setYaw(host.getLocation().getYaw());
-                stand.teleport(loc);
+            if (stand.getVehicle() != null) {
+                stand.getVehicle().removePassenger(stand);
             }
+            Location loc = alienVisualLocation(host, isAlienUfo(host));
+            stand.teleport(loc);
             return false;
         });
     }
 
-    private double ufoVisualOffset(Entity host) {
-        return isAlienUfo(host) ? 0.0 : 0.0;
+    /** Модель alien с pivot в ногах: шлем стойки совпадает с ногами хоста. */
+    private Location alienVisualLocation(Entity host, boolean ufo) {
+        Location loc = host.getLocation().clone();
+        loc.setY(loc.getY() + (ufo ? -1.0 : -1.35));
+        loc.setPitch(0.0f);
+        return loc;
     }
 
     public boolean isAlienVisual(Entity entity) {

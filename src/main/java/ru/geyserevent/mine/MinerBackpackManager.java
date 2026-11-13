@@ -353,8 +353,8 @@ public class MinerBackpackManager {
             stand = spawnLoc.getWorld().spawn(spawnLoc, ArmorStand.class, s -> {
                 s.setVisible(false);
                 s.setGravity(false);
-                s.setMarker(true);
-                s.setSmall(player.isSneaking());
+                s.setMarker(false);
+                s.setSmall(false);
                 s.setBasePlate(false);
                 s.setArms(false);
                 s.setSilent(true);
@@ -387,21 +387,25 @@ public class MinerBackpackManager {
             if (stand.getVehicle() != null) {
                 stand.getVehicle().removePassenger(stand);
             }
-            stand.setSmall(player.isSneaking());
+            stand.setSmall(false);
+            stand.setMarker(false);
             stand.teleport(spawnLoc);
             stand.setRotation(yaw, 0.0f);
             lastSyncedYaw.put(uuid, yaw);
         }
     }
 
-    /** Точка за спиной: при присяде/посадке не уезжает в зад, поворот сразу. */
+    /**
+     * Стойка стоит ногами у ног игрока: шлем (модель рюкзака) на верхней спине.
+     * Marker нельзя — тогда модель рисуется у ног.
+     */
     private Location backpackFollowLocation(Player player) {
         Location loc = player.getLocation();
         float yaw = loc.getYaw();
         double rad = Math.toRadians(yaw);
         boolean low = player.isSneaking() || player.isInsideVehicle();
-        double back = 0.34;
-        double y = low ? 0.58 : 0.88;
+        double back = 0.22;
+        double y = low ? -0.40 : -0.05;
         loc.setX(loc.getX() + Math.sin(rad) * back);
         loc.setY(loc.getY() + y);
         loc.setZ(loc.getZ() - Math.cos(rad) * back);

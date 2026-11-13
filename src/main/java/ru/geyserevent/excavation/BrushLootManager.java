@@ -489,7 +489,10 @@ public class BrushLootManager {
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
             pdc.set(fishingKey, PersistentDataType.STRING, tier.name());
             pdc.set(fishingUsesKey, PersistentDataType.INTEGER, uses);
-            // Без custom_model_data: Geyser custom fishing_rod прячет ванильную леску.
+            try {
+                meta.setCustomModelData(fishingRodCustomModelData(tier));
+            } catch (Throwable ignored) {
+            }
             meta.addEnchant(Enchantment.LURE, lure, true);
             meta.addEnchant(Enchantment.LUCK_OF_THE_SEA, lure, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);

@@ -65,11 +65,13 @@ public final class FishingEventManager {
     private UUID npcUuid;
     private String activeWarpName;
     private final Map<UUID, Long> rodTakeCooldown = new ConcurrentHashMap<>();
+    private final NamespacedKey rodCdKey;
 
     public FishingEventManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
         this.schematicManager = new RiftSchematicManager(plugin, SCHEMATIC_FILE);
         this.npcKey = new NamespacedKey(plugin, "fishing_npc");
+        this.rodCdKey = new NamespacedKey(plugin, "fishing_rod_take_at");
     }
 
     public boolean startEvent(Location targetCenter, Integer durationSecondsOverride) {
@@ -200,16 +202,19 @@ public final class FishingEventManager {
         }
         BrushLootManager loot = plugin.getBrushLootManager();
         long now = System.currentTimeMillis();
-        long cooldownMs = Math.max(1, plugin.getConfig().getInt("fishing.rod-cooldown-seconds", 30)) * 1000L;
-        Long last = rodTakeCooldown.get(player.getUniqueId());
-        if (last != null && now - last < cooldownMs) {
-            long left = (cooldownMs - (now - last) + 999L) / 1000L;
-            player.sendMessage(ColorUtil.color("&e┠ &cПодождите ещё " + left + " сек. перед следующей удочкой."));
-            return true;
+        long cooldownMs = Math.max(30, plugin.getConfig().getInt("fishing.rod-cooldown-seconds", 30)) * 1000L;
+        Long lastMem = rodTakeCooldown.get(player.getUniqueId());
+        Long lastPdc = player.getPersistentDataContainer().get(rodCdKey, PersistentDataType.LONG);
+        long last = 0L;
+        if (lastMem != null) {
+            last = lastMem;
         }
-        int max = 1;
-        if (loot.countPlayerFishingRods(player) >= max) {
-            player.sendMessage(ColorUtil.color("&e┠ &cСначала используйте удочку, которая уже есть."));
+        if (lastPdc != null && lastPdc > last) {
+            last = lastPdc;
+        }
+        if (last > 0L && now - last < cooldownMs) {
+            long left = (cooldownMs - (now - last) + 999L) / 1000L;
+            player.sendMessage(ColorUtil.color("&e┠ &cСледующую удочку можно взять через " + left + " сек."));
             return true;
         }
         if (player.getInventory().firstEmpty() == -1) {
@@ -220,8 +225,10 @@ public final class FishingEventManager {
         ItemStack rod = loot.createFishingRod(tier);
         player.getInventory().addItem(rod);
         rodTakeCooldown.put(player.getUniqueId(), now);
+        player.getPersistentDataContainer().set(rodCdKey, PersistentDataType.LONG, now);
         player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 1.0f, 1.15f);
-        player.sendMessage(ColorUtil.color("&e┠ &fРыбак выдал: " + loot.getFishingRodTitle(tier)));
+        player.sendMessage(ColorUtil.color("&e┠ &fРыбак выдал: " + loot.getFishingRodTitle(tier)
+                + " &7· следующая через 30 сек."));
         return true;
     }
 
