@@ -60,9 +60,14 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class AncientMineManager {
 
-    private static final int CURRENT_MINE_SCHEMA_VERSION = 7;
-    public static final int MINE_RADIUS = 22;
-    public static final double MINE_ZONE_LIMIT = 24.5;
+    private static final int CURRENT_MINE_SCHEMA_VERSION = 8;
+    public static final int MINE_RADIUS = 24;
+    public static final double MINE_ZONE_LIMIT = 26.5;
+    /** Мини-пещера в crater-lobby (относительно центра 0,0). */
+    private static final double NPC_DX = -10.0;
+    private static final double NPC_DY = -1.0;
+    private static final double NPC_DZ = -16.0;
+    private static final float NPC_YAW = -30.0f;
 
     private final GeyserEventPlugin plugin;
     private final File schematicFile;
@@ -348,7 +353,7 @@ public class AncientMineManager {
             return;
         }
 
-        Location npcLoc = centerLocation.clone().add(0.0, 2.0, 0.0);
+        Location npcLoc = blacksmithLocation();
         for (Entity entity : entities) {
             if (entity == null || entity instanceof Player || entity instanceof org.bukkit.entity.Item) {
                 continue;
@@ -759,9 +764,7 @@ public class AncientMineManager {
             return;
         }
         World w = centerLocation.getWorld();
-        Location npcLoc = centerLocation.clone().add(0.0, 2.0, 0.0);
-        npcLoc.setYaw(0.0f);
-        npcLoc.setPitch(0.0f);
+        Location npcLoc = blacksmithLocation();
 
         // 1. Если в радиусе 64 блоков от 0 ~ 0 нет ни одного игрока — НЕ трогаем чанки и НЕ спавним НПС!
         //    Когда рядом нет игроков, чанки выгружают свои сущности (isEntitiesLoaded() == false),
@@ -897,8 +900,15 @@ public class AncientMineManager {
         v.setCustomName(ColorUtil.color("&#FFB81C&lДревний Кузнец &8[&aКузница и Рюкзак&8]"));
         v.setCustomNameVisible(true);
 
-        BossAbilityController.applyEntityScale(v, 1.38);
+        BossAbilityController.applyEntityScale(v, 1.0);
         this.blacksmithUuid = v.getUniqueId();
+    }
+
+    private Location blacksmithLocation() {
+        Location loc = centerLocation.clone().add(NPC_DX, NPC_DY, NPC_DZ);
+        loc.setYaw(NPC_YAW);
+        loc.setPitch(0.0f);
+        return loc;
     }
 
     private boolean areHologramsValid() {
@@ -961,15 +971,22 @@ public class AncientMineManager {
                 return;
             }
             plugin.getLogger().info("Перезапись схемы ancient_mine.schem.yml до версии "
-                    + CURRENT_MINE_SCHEMA_VERSION + " (цельная крыша и сгруппированные жилы руд)...");
+                    + CURRENT_MINE_SCHEMA_VERSION + " (crater-lobby, кузнец в мини-пещере)...");
+        }
+        try {
+            plugin.saveResource("schematics/ancient_mine.schem.yml", true);
+            if (schematicFile.exists()) {
+                return;
+            }
+        } catch (IllegalArgumentException ignored) {
         }
 
         YamlConfiguration yml = new YamlConfiguration();
         yml.set("schema-version", CURRENT_MINE_SCHEMA_VERSION);
-        yml.set("name", "ancient_mine_45x45_v5");
+        yml.set("name", "crater-lobby-no-jump-n-run");
         yml.set("size.width", 45);
-        yml.set("size.length", 45);
-        yml.set("size.height", 14);
+        yml.set("size.length", 43);
+        yml.set("size.height", 12);
 
         List<Map<String, Object>> serialized = new ArrayList<>();
         for (BlockEntry entry : buildDefaultSchematic()) {
@@ -1369,7 +1386,7 @@ public class AncientMineManager {
         for (int dx = -MINE_RADIUS - 1; dx <= MINE_RADIUS + 1; dx++) {
             for (int dz = -MINE_RADIUS - 1; dz <= MINE_RADIUS + 1; dz++) {
                 if (Math.hypot(dx, dz) <= MINE_RADIUS + 1.5) {
-                    for (int dy = 1; dy <= 14; dy++) {
+                    for (int dy = -4; dy <= 16; dy++) {
                         Block air = w.getBlockAt(ox + dx, oy + dy, oz + dz);
                         Material type = air.getType();
                         if (!type.isAir() && type != Material.CAVE_AIR && type != Material.VOID_AIR) {
