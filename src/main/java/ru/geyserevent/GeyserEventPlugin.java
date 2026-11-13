@@ -186,9 +186,9 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.49 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" GeyserEvent v1.21.50 успешно запущен! (Purpur 1.21–26.63)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Клад, Рыбалка (пришельцы/скибиди/CR7 выключены)");
-        getLogger().info(" Постоянный ивент: Шахта Древних 45x45 (v7) + 3D-Рюкзак на 0 ~ 0");
+        getLogger().info(" Постоянный ивент: Шахта Древних crater-lobby (v9) + подъём на 0 ~ 0");
         getLogger().info("==================================================");
     }
 

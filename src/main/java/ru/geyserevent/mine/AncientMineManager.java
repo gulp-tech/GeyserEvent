@@ -13,6 +13,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
+import org.bukkit.block.data.type.Stairs;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.ArmorStand;
@@ -60,9 +61,16 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class AncientMineManager {
 
-    private static final int CURRENT_MINE_SCHEMA_VERSION = 8;
+    private static final int CURRENT_MINE_SCHEMA_VERSION = 9;
     public static final int MINE_RADIUS = 24;
     public static final double MINE_ZONE_LIMIT = 26.5;
+    /** Верхняя кромка crater-lobby (трава). Origin ставится так, чтобы кромка была на уровне земли. */
+    private static final int RIM_DY = 9;
+    private static final int FLOOR_DY = -2;
+    /** Двухполосный каменный подъём к южной кромке (относительно origin). */
+    private static final int LIFT_DX = 0;
+    private static final int LIFT_START_DZ = 5;
+    private static final int LIFT_STEPS = 11;
     /** Мини-пещера в crater-lobby (относительно центра 0,0). */
     private static final double NPC_DX = -10.0;
     private static final double NPC_DY = -1.0;
@@ -171,6 +179,7 @@ public class AncientMineManager {
         }
 
         Integer preservedCenterY = null;
+        boolean schemaUpgrade = false;
         if (backupFile.exists()) {
             YamlConfiguration backupYml = YamlConfiguration.loadConfiguration(backupFile);
             if (backupYml.contains("center-y")) {
@@ -182,15 +191,30 @@ public class AncientMineManager {
                         + "). Выполняется полный откат и перезапись на новую архитектуру v" + CURRENT_MINE_SCHEMA_VERSION + "...");
                 restoreOrCaptureTerrain(world, centerX, centerZ, true);
                 backupFile.delete();
+                schemaUpgrade = true;
+                preservedCenterY = null;
             }
         }
 
-        int centerY = preservedCenterY != null ? preservedCenterY : resolveGroundY(world, centerX, centerZ);
+        int configuredY = plugin.getConfig().getInt("ancient-mine.center-y", -9999);
+        int centerY;
+        if (configuredY != -9999) {
+            centerY = configuredY;
+        } else if (!schemaUpgrade && preservedCenterY != null) {
+            centerY = preservedCenterY;
+        } else {
+            int rimY = resolveTerrainY(world, centerX, centerZ);
+            centerY = rimY - RIM_DY;
+        }
         this.centerLocation = new Location(world, centerX + 0.5, centerY, centerZ + 0.5);
 
         purgeOldMineEntities(world, centerX, centerY, centerZ);
         if (plugin.getMinerBackpackManager() != null) {
             plugin.getMinerBackpackManager().purgeOrphanedBackpackStands();
+        }
+
+        if (schemaUpgrade) {
+            clearLeftoverMineVolume(world, centerX, centerZ, centerY + RIM_DY);
         }
 
         restoreOrCaptureTerrain(world, centerX, centerZ, false);
@@ -204,8 +228,9 @@ public class AncientMineManager {
         this.mineActive = true;
         startTasks();
 
-        plugin.getLogger().info("Постоянный ивент «Шахта Древних (45x45, v7)» активен на координатах "
-                + centerX + " " + centerY + " " + centerZ + " (" + world.getName() + ")!");
+        plugin.getLogger().info("Постоянный ивент «Шахта Древних (crater-lobby, v9)» активен на "
+                + centerX + " " + centerY + " " + centerZ + " (" + world.getName()
+                + "), кромка Y=" + (centerY + RIM_DY) + "!");
     }
 
     /**
@@ -232,8 +257,8 @@ public class AncientMineManager {
                     centerLocation.getBlockY(),
                     centerLocation.getBlockZ(),
                     MINE_RADIUS + 4,
-                    centerLocation.getBlockY() - 14,
-                    centerLocation.getBlockY() + 34
+                    centerLocation.getBlockY() - 18,
+                    centerLocation.getBlockY() + 24
             );
             if (applied) {
                 plugin.getLogger().info("WorldGuard: регион " + WorldGuardHook.REGION_ID
@@ -267,8 +292,8 @@ public class AncientMineManager {
                     centerLocation.getBlockY(),
                     centerLocation.getBlockZ(),
                     MINE_RADIUS + 4,
-                    centerLocation.getBlockY() - 14,
-                    centerLocation.getBlockY() + 34
+                    centerLocation.getBlockY() - 18,
+                    centerLocation.getBlockY() + 24
             );
         } catch (Throwable ignored) {
             // Любая ошибка WorldGuard не должна ломать ивент
@@ -393,14 +418,70 @@ public class AncientMineManager {
                 return yml.getInt("center-y", 64);
             }
         }
+        return resolveTerrainY(world, x, z) - RIM_DY;
+    }
+
+    /**
+     * Высота поверхности земли ВОКРУГ шахты (не по листьям джунглей и не по висящему острову на 0 0).
+     */
+    private int resolveTerrainY(World world, int x, int z) {
+        int[][] offsets = {
+                {36, 0}, {-36, 0}, {0, 36}, {0, -36},
+                {32, 32}, {32, -32}, {-32, 32}, {-32, -32},
+                {40, 8}, {-40, -8}, {8, 40}, {-8, -40}
+        };
+        List<Integer> samples = new ArrayList<>();
+        for (int[] o : offsets) {
+            int sy = scanSolidSurfaceY(world, x + o[0], z + o[1]);
+            if (sy != Integer.MIN_VALUE) {
+                samples.add(sy);
+            }
+        }
+        if (samples.isEmpty()) {
+            int fallback = scanSolidSurfaceY(world, x, z);
+            return fallback == Integer.MIN_VALUE ? 64 : fallback;
+        }
+        java.util.Collections.sort(samples);
+        return samples.get(samples.size() / 2);
+    }
+
+    private int scanSolidSurfaceY(World world, int x, int z) {
         int highest = world.getHighestBlockYAt(x, z);
-        for (int y = Math.min(world.getMaxHeight() - 15, highest + 2); y >= world.getMinHeight() + 10; y--) {
+        for (int y = Math.min(world.getMaxHeight() - 2, highest + 2); y >= world.getMinHeight() + 8; y--) {
             Material m = world.getBlockAt(x, y, z).getType();
-            if (m.isSolid() && !m.name().contains("LEAVES") && !m.name().contains("LOG")) {
+            if (isTerrainSurface(m)) {
                 return y;
             }
         }
-        return Math.max(64, highest);
+        return Integer.MIN_VALUE;
+    }
+
+    private boolean isTerrainSurface(Material m) {
+        if (m == null || !m.isSolid()) {
+            return false;
+        }
+        String n = m.name();
+        if (n.contains("LEAVES") || n.contains("LOG") || n.contains("WOOD")
+                || n.contains("STEM") || n.contains("HYPHAE") || n.contains("FENCE")
+                || n.contains("SLAB") || n.contains("STAIR") || n.contains("PLANK")
+                || n.contains("VINE") || n.contains("BAMBOO") || n.contains("MUSHROOM")
+                || n.contains("GLASS") || n.contains("BANNER") || n.contains("SIGN")) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isFoliageOrTree(Material m) {
+        if (m == null || m.isAir()) {
+            return false;
+        }
+        String n = m.name();
+        return n.contains("LEAVES") || n.contains("LOG") || n.contains("VINE")
+                || n.contains("BAMBOO") || n.contains("SAPLING") || n.contains("FERN")
+                || n.contains("FLOWER") || n.contains("MUSHROOM") || n.contains("COCOA")
+                || n.contains("MOSS") || n.contains("SNOW") || n.equals("GRASS")
+                || n.equals("SHORT_GRASS") || n.equals("TALL_GRASS")
+                || n.contains("ROOTS") || n.contains("HANGING");
     }
 
     public int getRegenIntervalSeconds() {
@@ -739,7 +820,7 @@ public class AncientMineManager {
         int dx = Math.abs(loc.getBlockX() - centerLocation.getBlockX());
         int dz = Math.abs(loc.getBlockZ() - centerLocation.getBlockZ());
         int dy = loc.getBlockY() - centerLocation.getBlockY();
-        return dx <= MINE_RADIUS + 1 && dz <= MINE_RADIUS + 1 && dy >= -6 && dy <= 16;
+        return dx <= MINE_RADIUS + 1 && dz <= MINE_RADIUS + 1 && dy >= -14 && dy <= 18;
     }
 
     public boolean isPlayerInsideMineZone(Location loc) {
@@ -752,7 +833,7 @@ public class AncientMineManager {
         double dx = loc.getX() - centerLocation.getX();
         double dz = loc.getZ() - centerLocation.getZ();
         double dy = loc.getY() - centerLocation.getY();
-        return (dx * dx + dz * dz) <= (MINE_ZONE_LIMIT * MINE_ZONE_LIMIT) && dy >= -6.0 && dy <= 16.0;
+        return (dx * dx + dz * dz) <= (MINE_ZONE_LIMIT * MINE_ZONE_LIMIT) && dy >= -14.0 && dy <= 18.0;
     }
 
     // =========================================================================
@@ -971,7 +1052,7 @@ public class AncientMineManager {
                 return;
             }
             plugin.getLogger().info("Перезапись схемы ancient_mine.schem.yml до версии "
-                    + CURRENT_MINE_SCHEMA_VERSION + " (crater-lobby, кузнец в мини-пещере)...");
+                    + CURRENT_MINE_SCHEMA_VERSION + " (crater в грунт + подъём)...");
         }
         try {
             plugin.saveResource("schematics/ancient_mine.schem.yml", true);
@@ -1383,19 +1464,9 @@ public class AncientMineManager {
         int oy = origin.getBlockY();
         int oz = origin.getBlockZ();
 
-        for (int dx = -MINE_RADIUS - 1; dx <= MINE_RADIUS + 1; dx++) {
-            for (int dz = -MINE_RADIUS - 1; dz <= MINE_RADIUS + 1; dz++) {
-                if (Math.hypot(dx, dz) <= MINE_RADIUS + 1.5) {
-                    for (int dy = -4; dy <= 16; dy++) {
-                        Block air = w.getBlockAt(ox + dx, oy + dy, oz + dz);
-                        Material type = air.getType();
-                        if (!type.isAir() && type != Material.CAVE_AIR && type != Material.VOID_AIR) {
-                            air.setType(Material.AIR, false);
-                        }
-                    }
-                }
-            }
-        }
+        Map<String, Integer> lowestY = new HashMap<>();
+        Map<String, Integer> highestY = new HashMap<>();
+        Set<String> columns = new HashSet<>();
 
         for (BlockEntry entry : cachedSchematic) {
             int x = ox + entry.dx();
@@ -1417,6 +1488,138 @@ public class AncientMineManager {
             if (!entry.geodeSpot() && MineOreType.fromBlockMaterial(m) != null) {
                 mineableOreSpots.add(key);
                 defaultOreMaterials.put(key, m);
+            }
+            String col = entry.dx() + ":" + entry.dz();
+            columns.add(col);
+            lowestY.merge(col, entry.dy(), (a, b) -> a < b ? a : b);
+            highestY.merge(col, entry.dy(), (a, b) -> a > b ? a : b);
+        }
+
+        for (String col : columns) {
+            String[] parts = col.split(":");
+            int dx = Integer.parseInt(parts[0]);
+            int dz = Integer.parseInt(parts[1]);
+            int low = lowestY.get(col);
+            int high = highestY.get(col);
+            Material fill = high >= RIM_DY - 1 ? Material.DIRT : Material.STONE;
+            for (int dy = low - 1; dy >= FLOOR_DY - 10; dy--) {
+                Block b = w.getBlockAt(ox + dx, oy + dy, oz + dz);
+                Material type = b.getType();
+                if (type.isAir() || type == Material.CAVE_AIR || type == Material.VOID_AIR
+                        || isFoliageOrTree(type) || type == Material.WATER || type == Material.LAVA) {
+                    Material use = (low - dy) <= 3 && fill == Material.DIRT ? Material.DIRT : Material.STONE;
+                    b.setType(use, false);
+                    protectedBlocks.add(BlockKey.of(b));
+                } else if (type.isSolid()) {
+                    break;
+                }
+            }
+            for (int dy = high + 1; dy <= RIM_DY + 6; dy++) {
+                Block above = w.getBlockAt(ox + dx, oy + dy, oz + dz);
+                if (isFoliageOrTree(above.getType())) {
+                    above.setType(Material.AIR, false);
+                }
+            }
+        }
+
+        buildCraterAscent(origin);
+    }
+
+    /**
+     * Убирает висящий остров/старую шахту в цилиндре 0 0, чтобы crater сел в грунт.
+     */
+    private void clearLeftoverMineVolume(World world, int centerX, int centerZ, int rimY) {
+        int top = Math.min(world.getMaxHeight() - 1, Math.max(world.getHighestBlockYAt(centerX, centerZ), rimY) + 16);
+        int bottom = Math.max(world.getMinHeight() + 1, rimY - 22);
+        for (int dx = -MINE_RADIUS - 1; dx <= MINE_RADIUS + 1; dx++) {
+            for (int dz = -MINE_RADIUS - 1; dz <= MINE_RADIUS + 1; dz++) {
+                if (Math.hypot(dx, dz) > MINE_RADIUS + 1.5) {
+                    continue;
+                }
+                for (int y = top; y >= bottom; y--) {
+                    Block b = world.getBlockAt(centerX + dx, y, centerZ + dz);
+                    Material m = b.getType();
+                    if (m == Material.BEDROCK || m == Material.END_PORTAL || m == Material.END_PORTAL_FRAME) {
+                        continue;
+                    }
+                    if (!m.isAir()) {
+                        b.setType(Material.AIR, false);
+                    }
+                }
+            }
+        }
+        plugin.getLogger().info("Шахта Древних: старый объём очищен (Y " + bottom + ".." + top
+                + "), кромка будет на Y=" + rimY + ".");
+    }
+
+    /**
+     * Двухполосный каменный подъём с пола кратера на южную кромку (вместо jump-n-run).
+     */
+    private void buildCraterAscent(Location origin) {
+        World w = origin.getWorld();
+        if (w == null) {
+            return;
+        }
+        int ox = origin.getBlockX();
+        int oy = origin.getBlockY();
+        int oz = origin.getBlockZ();
+
+        for (int t = 0; t < LIFT_STEPS; t++) {
+            int dz = LIFT_START_DZ + t;
+            int dy = FLOOR_DY + 1 + t;
+            for (int dx = LIFT_DX; dx <= LIFT_DX + 1; dx++) {
+                Block under = w.getBlockAt(ox + dx, oy + dy - 1, oz + dz);
+                if (!under.getType().isSolid() || under.getType() == Material.GRASS_BLOCK
+                        || under.getType() == Material.DIRT || under.getType() == Material.DIRT_PATH) {
+                    under.setType(Material.STONE_BRICKS, false);
+                    protectedBlocks.add(BlockKey.of(under));
+                }
+                Block step = w.getBlockAt(ox + dx, oy + dy, oz + dz);
+                BlockData data = Bukkit.createBlockData(Material.STONE_BRICK_STAIRS);
+                if (data instanceof Stairs stairs) {
+                    stairs.setFacing(BlockFace.SOUTH);
+                }
+                step.setBlockData(data, false);
+                protectedBlocks.add(BlockKey.of(step));
+                for (int h = 1; h <= 3; h++) {
+                    Block head = w.getBlockAt(ox + dx, oy + dy + h, oz + dz);
+                    if (!protectedBlocks.contains(BlockKey.of(head))
+                            && (head.getType().isAir() || isFoliageOrTree(head.getType())
+                            || head.getType() == Material.GRASS_BLOCK
+                            || head.getType() == Material.DIRT
+                            || head.getType() == Material.STONE
+                            || head.getType() == Material.ANDESITE
+                            || head.getType() == Material.GRANITE
+                            || head.getType() == Material.DIORITE
+                            || head.getType() == Material.DIRT_PATH)) {
+                        if (dy + h <= RIM_DY + 2) {
+                            head.setType(Material.AIR, false);
+                        }
+                    }
+                }
+            }
+            for (int railDx : new int[]{LIFT_DX - 1, LIFT_DX + 2}) {
+                Block rail = w.getBlockAt(ox + railDx, oy + dy, oz + dz);
+                if (rail.getType().isAir() || isFoliageOrTree(rail.getType())) {
+                    rail.setType(Material.STONE_BRICK_WALL, false);
+                    protectedBlocks.add(BlockKey.of(rail));
+                }
+            }
+        }
+
+        int topY = RIM_DY;
+        int topZ = LIFT_START_DZ + LIFT_STEPS - 1;
+        for (int dz = topZ; dz <= 21; dz++) {
+            for (int dx = LIFT_DX - 1; dx <= LIFT_DX + 2; dx++) {
+                Block plat = w.getBlockAt(ox + dx, oy + topY, oz + dz);
+                if (plat.getType().isAir() || isFoliageOrTree(plat.getType())) {
+                    plat.setType(dz >= 19 ? Material.GRASS_BLOCK : Material.STONE_BRICKS, false);
+                    protectedBlocks.add(BlockKey.of(plat));
+                }
+                Block above = w.getBlockAt(ox + dx, oy + topY + 1, oz + dz);
+                if (isFoliageOrTree(above.getType())) {
+                    above.setType(Material.AIR, false);
+                }
             }
         }
     }
@@ -1449,7 +1652,9 @@ public class AncientMineManager {
             return;
         }
 
-        int centerY = resolveGroundY(world, centerX, centerZ);
+        int centerY = (centerLocation != null && centerLocation.getWorld() == world)
+                ? centerLocation.getBlockY()
+                : resolveGroundY(world, centerX, centerZ);
         YamlConfiguration backup = new YamlConfiguration();
         backup.set("backup-schema-version", CURRENT_MINE_SCHEMA_VERSION);
         backup.set("world", world.getName());
@@ -1460,7 +1665,7 @@ public class AncientMineManager {
         ConfigurationSection sec = backup.createSection("blocks");
         for (int dx = -MINE_RADIUS - 1; dx <= MINE_RADIUS + 1; dx++) {
             for (int dz = -MINE_RADIUS - 1; dz <= MINE_RADIUS + 1; dz++) {
-                for (int dy = -3; dy <= 14; dy++) {
+                for (int dy = FLOOR_DY - 10; dy <= RIM_DY + 8; dy++) {
                     int x = centerX + dx;
                     int y = centerY + dy;
                     int z = centerZ + dz;
