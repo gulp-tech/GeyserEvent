@@ -1497,11 +1497,13 @@ wind:
   unlock-seconds: 600
   # Сколько секунд гейзер живёт после открытия.
   loot-seconds: 600
+  # Одна редкость на весь ивент. Сумма = 100.
   rarity-chances:
-    common: 50
+    common: 40
     rare: 30
-    epic: 15
-    legendary: 5
+    epic: 20
+    legendary: 10
+  erupt-interval-seconds: 3
   loot:
     common:
       gold:
