@@ -498,20 +498,43 @@ public final class GravityHoardManager {
     }
 
     private String rollRarity() {
-        double roll = random.nextDouble() * 100.0;
-        double common = plugin.getConfig().getDouble("wind.rarity-chances.common", 40);
-        double rare = plugin.getConfig().getDouble("wind.rarity-chances.rare", 30);
-        double epic = plugin.getConfig().getDouble("wind.rarity-chances.epic", 20);
+        // 0–39 обычная (40%), 40–69 редкая (30%), 70–89 эпическая (20%), 90–99 легендарная (10%).
+        int common = readChance("common", 40);
+        int rare = readChance("rare", 30);
+        int epic = readChance("epic", 20);
+        int legendary = readChance("legendary", 10);
+        int total = common + rare + epic + legendary;
+        if (total <= 0) {
+            common = 40;
+            rare = 30;
+            epic = 20;
+            legendary = 10;
+            total = 100;
+        }
+        int roll = java.util.concurrent.ThreadLocalRandom.current().nextInt(total);
+        String tier;
         if (roll < common) {
-            return "common";
+            tier = "common";
+        } else if (roll < common + rare) {
+            tier = "rare";
+        } else if (roll < common + rare + epic) {
+            tier = "epic";
+        } else {
+            tier = "legendary";
         }
-        if (roll < common + rare) {
-            return "rare";
+        plugin.getLogger().info("Гейзер: редкость " + tier + " (бросок " + roll + "/" + total
+                + ", шансы " + common + "/" + rare + "/" + epic + "/" + legendary + ")");
+        return tier;
+    }
+
+    private int readChance(String key, int fallback) {
+        org.bukkit.configuration.ConfigurationSection sec =
+                plugin.getConfig().getConfigurationSection("wind.rarity-chances");
+        if (sec == null || !(sec.isInt(key) || sec.isDouble(key))) {
+            return fallback;
         }
-        if (roll < common + rare + epic) {
-            return "epic";
-        }
-        return "legendary";
+        int value = (int) Math.round(sec.getDouble(key, fallback));
+        return Math.max(0, value);
     }
 
     private void keepLidOpen() {
