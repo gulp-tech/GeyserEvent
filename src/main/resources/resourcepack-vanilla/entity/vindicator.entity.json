@@ -17,7 +17,7 @@
       },
       "scripts": {
         "pre_animation": [
-          "variable.ge_event = query.model_scale < 0.88 || query.model_scale > 1.06;"
+          "variable.ge_event = !query.is_item_name_any('slot.weapon.mainhand', 'minecraft:iron_axe', 'minecraft:stone_axe', 'minecraft:golden_axe', 'minecraft:diamond_axe', 'minecraft:netherite_axe', 'minecraft:wooden_axe');"
         ],
         "animate": [
           { "alien": "variable.ge_event" },
@@ -41,7 +41,7 @@
       "render_controllers": [
         "controller.render.vindicator"
       ],
-      "enable_attachables": false
+      "enable_attachables": true
     }
   }
 }
