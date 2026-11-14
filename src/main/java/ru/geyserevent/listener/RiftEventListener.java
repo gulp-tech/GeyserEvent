@@ -1001,11 +1001,20 @@ public class RiftEventListener implements Listener {
         }
         GravityHoardManager windEnv = plugin.getGravityHoardManager();
         if (windEnv != null && windEnv.isActive()) {
-            if (windEnv.isHoardEntity(entity)
-                    || (entity instanceof Player && windEnv.cancelFallInArena(entity.getLocation())
-                    && event.getCause() == EntityDamageEvent.DamageCause.FALL)) {
+            if (windEnv.isHoardEntity(entity)) {
                 event.setCancelled(true);
                 return;
+            }
+            if (entity instanceof Player && windEnv.isInCrater(entity.getLocation())) {
+                EntityDamageEvent.DamageCause cause = event.getCause();
+                if (cause == EntityDamageEvent.DamageCause.FALL
+                        || cause == EntityDamageEvent.DamageCause.HOT_FLOOR
+                        || cause == EntityDamageEvent.DamageCause.FIRE
+                        || cause == EntityDamageEvent.DamageCause.FIRE_TICK
+                        || cause == EntityDamageEvent.DamageCause.LAVA) {
+                    event.setCancelled(true);
+                    return;
+                }
             }
         }
         if (plugin.getRiftManager().isExcavationVillager(entity)

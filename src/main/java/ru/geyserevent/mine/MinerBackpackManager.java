@@ -242,7 +242,7 @@ public class MinerBackpackManager {
         if (backpackSyncTask != null) {
             backpackSyncTask.cancel();
         }
-        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncVisualBackpacks, 10L, 10L);
+        backpackSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncVisualBackpacks, 15L, 15L);
     }
 
     /**

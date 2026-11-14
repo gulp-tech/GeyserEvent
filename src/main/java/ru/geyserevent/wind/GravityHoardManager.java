@@ -34,6 +34,7 @@ import ru.geyserevent.util.ColorUtil;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -72,10 +73,12 @@ public final class GravityHoardManager {
     private long eventEndEpochSeconds;
     private BossBar bossBar;
     private BukkitRunnable tickTask;
-    private BukkitRunnable animTask;
+    private BukkitRunnable ejectTask;
     private int shakeCounter;
     private int eruptWaves;
+    private int bossBarSyncCounter;
     private String eruptTier = "common";
+    private final Map<UUID, Long> ejectCooldown = new ConcurrentHashMap<>();
 
     public GravityHoardManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -138,7 +141,7 @@ public final class GravityHoardManager {
             );
         }
         startTickLoop();
-        startAnimLoop();
+        startEjectLoop();
         return true;
     }
 
@@ -147,10 +150,11 @@ public final class GravityHoardManager {
             tickTask.cancel();
             tickTask = null;
         }
-        if (animTask != null) {
-            animTask.cancel();
-            animTask = null;
+        if (ejectTask != null) {
+            ejectTask.cancel();
+            ejectTask = null;
         }
+        ejectCooldown.clear();
         clearHolograms();
         this.eruptTier = "common";
         if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
@@ -280,7 +284,23 @@ public final class GravityHoardManager {
     }
 
     public boolean cancelFallInArena(Location loc) {
-        return false;
+        return isInCrater(loc);
+    }
+
+    public boolean isInCrater(Location loc) {
+        if (!active || loc == null || center == null || loc.getWorld() == null) {
+            return false;
+        }
+        if (!loc.getWorld().equals(center.getWorld())) {
+            return false;
+        }
+        double dx = loc.getX() - center.getX();
+        double dz = loc.getZ() - center.getZ();
+        if (dx * dx + dz * dz > 2.25 * 2.25) {
+            return false;
+        }
+        double dy = loc.getY() - center.getBlockY();
+        return dy >= 0.0 && dy <= CONE_HEIGHT + 1.2;
     }
 
     private void startTickLoop() {
@@ -303,45 +323,83 @@ public final class GravityHoardManager {
                 if (unlocked && (now - unlockAtEpoch) % interval == 0) {
                     eruptBurst();
                 }
-                if (center != null && center.getWorld() != null && chestLocation != null) {
-                    Location fx = chestLocation.clone().add(0, 0.5, 0);
-                    Particle steam = particle("CAMPFIRE_COSY_SMOKE", Particle.CLOUD);
-                    center.getWorld().spawnParticle(steam, fx, unlocked ? 10 : 4, 0.22, 0.45, 0.22, 0.01);
-                    if (unlocked) {
-                        center.getWorld().spawnParticle(Particle.CLOUD, fx, 6, 0.3, 0.7, 0.3, 0.02);
-                    }
+                if (chestLocation != null && chestLocation.getWorld() != null && now % 2 == 0) {
+                    chestLocation.getWorld().spawnParticle(Particle.CLOUD,
+                            chestLocation, unlocked ? 3 : 1, 0.18, 0.35, 0.18, 0.005);
                 }
-                refreshBossBar();
                 refreshHolograms();
+                refreshBossBar();
             }
         };
         tickTask.runTaskTimer(plugin, 20L, 20L);
     }
 
-    private void startAnimLoop() {
-        animTask = new BukkitRunnable() {
+    private void startEjectLoop() {
+        ejectTask = new BukkitRunnable() {
             @Override
             public void run() {
-                if (!active || chestLocation == null || chestLocation.getWorld() == null) {
+                if (!active || center == null || center.getWorld() == null) {
                     return;
                 }
-                if (!activated || unlocked) {
-                    return;
-                }
-                long leftMs = Math.max(0L, unlockAtEpoch * 1000L - System.currentTimeMillis());
-                int totalMs = Math.max(1, plugin.getConfig().getInt("wind.unlock-seconds", 600)) * 1000;
-                double progress = 1.0 - Math.min(1.0, leftMs / (double) totalMs);
-                int period = (int) Math.max(1, Math.round(10.0 - progress * 9.0));
-                shakeCounter++;
-                if (shakeCounter % period != 0) {
-                    return;
-                }
-                Location fx = chestLocation.clone().add(0, 0.2, 0);
-                chestLocation.getWorld().spawnParticle(Particle.CLOUD, fx, 4 + (int) (progress * 8), 0.4, 0.5, 0.4, 0.02);
-                chestLocation.getWorld().playSound(fx, Sound.BLOCK_STONE_HIT, 0.2f + (float) progress * 0.4f, 0.5f);
+                ejectPlayersFromCrater();
             }
         };
-        animTask.runTaskTimer(plugin, 2L, 2L);
+        ejectTask.runTaskTimer(plugin, 5L, 5L);
+    }
+
+    private void ejectPlayersFromCrater() {
+        World world = center.getWorld();
+        double cx = center.getX();
+        double cy = center.getBlockY();
+        double cz = center.getZ();
+        long now = System.currentTimeMillis();
+        Sound whoosh = sound("ENTITY_WIND_CHARGE_WIND_BURST", Sound.ENTITY_PLAYER_ATTACK_SWEEP);
+        for (Player player : world.getPlayers()) {
+            if (player.getGameMode() == org.bukkit.GameMode.SPECTATOR
+                    || player.getGameMode() == org.bukkit.GameMode.CREATIVE) {
+                continue;
+            }
+            Location loc = player.getLocation();
+            double dx = loc.getX() - cx;
+            double dz = loc.getZ() - cz;
+            double distSq = dx * dx + dz * dz;
+            if (distSq > 2.2 * 2.2) {
+                continue;
+            }
+            double dy = loc.getY() - cy;
+            if (dy < 0.15 || dy > CONE_HEIGHT + 0.8) {
+                continue;
+            }
+            Long until = ejectCooldown.get(player.getUniqueId());
+            if (until != null && until > now) {
+                continue;
+            }
+            ejectCooldown.put(player.getUniqueId(), now + 400L);
+            Vector dir;
+            if (distSq < 0.05) {
+                dir = new Vector(random.nextGaussian(), 0, random.nextGaussian());
+            } else {
+                dir = new Vector(dx, 0, dz);
+            }
+            if (dir.lengthSquared() < 0.0001) {
+                dir = new Vector(1, 0, 0);
+            }
+            dir.normalize().multiply(0.72).setY(0.22);
+            player.setVelocity(dir);
+            player.playSound(loc, whoosh, 0.85f, 1.35f);
+            world.playSound(loc, Sound.BLOCK_LAVA_EXTINGUISH, 0.35f, 1.6f);
+        }
+        if (ejectCooldown.size() > 32) {
+            ejectCooldown.entrySet().removeIf(e -> e.getValue() < now);
+        }
+    }
+
+    private static Sound sound(String name, Sound fallback) {
+        try {
+            return Sound.valueOf(name);
+        } catch (IllegalArgumentException ex) {
+            return fallback;
+        }
     }
 
     private void ensureChestBlock() {
@@ -414,7 +472,7 @@ public final class GravityHoardManager {
                 Location fx = chestLocation.clone().add(0, 0.4, 0);
                 world.playSound(fx, Sound.ENTITY_GENERIC_EXPLODE, 0.7f, 0.8f);
                 world.playSound(fx, Sound.BLOCK_LAVA_POP, 1.4f, 0.5f);
-                world.spawnParticle(Particle.CLOUD, fx, 40, 0.6, 1.2, 0.6, 0.06);
+                world.spawnParticle(Particle.CLOUD, fx, 8, 0.35, 0.6, 0.35, 0.03);
             }
         }, 4L);
         refreshHolograms();
@@ -557,10 +615,8 @@ public final class GravityHoardManager {
         eruptWaves++;
         World world = chestLocation.getWorld();
         Location mouth = chestLocation.clone().add(0, 0.35, 0);
-        world.playSound(mouth, Sound.BLOCK_LAVA_POP, 1.1f, 0.55f + random.nextFloat() * 0.4f);
-        world.playSound(mouth, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_INSIDE, 0.9f, 0.9f);
-        world.spawnParticle(Particle.CLOUD, mouth, 14, 0.35, 1.1, 0.35, 0.04);
-        world.spawnParticle(particle("CAMPFIRE_COSY_SMOKE", Particle.SMOKE), mouth, 10, 0.25, 1.3, 0.25, 0.02);
+        world.playSound(mouth, Sound.BLOCK_LAVA_POP, 0.8f, 0.55f + random.nextFloat() * 0.4f);
+        world.spawnParticle(Particle.CLOUD, mouth, 4, 0.22, 0.55, 0.22, 0.02);
         int throwsCount = 1 + random.nextInt(2);
         for (int i = 0; i < throwsCount; i++) {
             ItemStack stack = eruptStack();
@@ -849,9 +905,11 @@ public final class GravityHoardManager {
             bossBar.setTitle(ColorUtil.color("&b&lГейзер бьёт &8| " + rarityLabelMasculine()
                     + " &8| &f" + ColorUtil.formatDuration(left)));
         }
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (plugin.getBedrockService().canParticipate(player)) {
-                bossBar.addPlayer(player);
+        if (bossBarSyncCounter++ % 5 == 0) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (plugin.getBedrockService().canParticipate(player)) {
+                    bossBar.addPlayer(player);
+                }
             }
         }
     }

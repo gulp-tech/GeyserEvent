@@ -211,7 +211,7 @@ public class InfernalRiftManager {
                 }
                 enforceNpcInvisibilityRules();
             }
-        }.runTaskTimer(plugin, 10L, 10L);
+        }.runTaskTimer(plugin, 20L, 20L);
     }
 
     /**
