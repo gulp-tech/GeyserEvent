@@ -498,43 +498,19 @@ public final class GravityHoardManager {
     }
 
     private String rollRarity() {
-        // 0–39 обычная (40%), 40–69 редкая (30%), 70–89 эпическая (20%), 90–99 легендарная (10%).
-        int common = readChance("common", 40);
-        int rare = readChance("rare", 30);
-        int epic = readChance("epic", 20);
-        int legendary = readChance("legendary", 10);
-        int total = common + rare + epic + legendary;
-        if (total <= 0) {
-            common = 40;
-            rare = 30;
-            epic = 20;
-            legendary = 10;
-            total = 100;
+        // Шанс, с которым заспавнится ивент с этой редкостью лута:
+        // обычная 40%, редкая 30%, эпическая 20%, легендарная 10%.
+        int roll = java.util.concurrent.ThreadLocalRandom.current().nextInt(100);
+        if (roll < 40) {
+            return "common";
         }
-        int roll = java.util.concurrent.ThreadLocalRandom.current().nextInt(total);
-        String tier;
-        if (roll < common) {
-            tier = "common";
-        } else if (roll < common + rare) {
-            tier = "rare";
-        } else if (roll < common + rare + epic) {
-            tier = "epic";
-        } else {
-            tier = "legendary";
+        if (roll < 70) {
+            return "rare";
         }
-        plugin.getLogger().info("Гейзер: редкость " + tier + " (бросок " + roll + "/" + total
-                + ", шансы " + common + "/" + rare + "/" + epic + "/" + legendary + ")");
-        return tier;
-    }
-
-    private int readChance(String key, int fallback) {
-        org.bukkit.configuration.ConfigurationSection sec =
-                plugin.getConfig().getConfigurationSection("wind.rarity-chances");
-        if (sec == null || !(sec.isInt(key) || sec.isDouble(key))) {
-            return fallback;
+        if (roll < 90) {
+            return "epic";
         }
-        int value = (int) Math.round(sec.getDouble(key, fallback));
-        return Math.max(0, value);
+        return "legendary";
     }
 
     private void keepLidOpen() {
@@ -942,10 +918,12 @@ public final class GravityHoardManager {
             return;
         }
         int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 600));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFГейзер &fподнялся из земли!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fРедкость этого ивента: " + rarityLabel()));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFГейзер &fзаспавнился!"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fРедкость лута этого ивента: " + rarityLabel()
+                + " &8(&f40% / 30% / 20% / 10%&8)"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fВесь лут из жерла будет только этой редкости"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЧерез &#E0C912" + ColorUtil.formatDuration(wait)
-                + " &fжерло начнёт выбрасывать лут этой редкости"));
+                + " &fжерло откроется"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                 + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЛокатор: &#34D711/event gps"));
