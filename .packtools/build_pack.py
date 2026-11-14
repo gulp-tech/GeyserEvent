@@ -14,7 +14,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 33]
+VERSION = [1, 21, 34]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -38,6 +38,7 @@ SKIP_FILES = {
     "entity/ravager.entity.json",
     "entity/husk.entity.json",
     "entity/ghast.entity.json",
+    "entity/vindicator.entity.json",
     "textures/entity/vindicator.png",
     "models/entity/vindicator.geo.json",
     "models/entity/ghast.geo.json",
@@ -46,6 +47,7 @@ SKIP_FILES = {
     "render_controllers/skeleton.json",
     "render_controllers/default.json",
     "render_controllers/ghast.json",
+    "render_controllers/vindicator.json",
 }
 
 
@@ -186,11 +188,10 @@ sound_defs["sound_definitions"]["ronaldo_talk"] = {
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))
 
-# Ивент: безоружный поборник → alien. Гаст не трогаем (ад остаётся ванильным).
+# Не пакуем minecraft:vindicator / ghast — ванильные мобы не подменяются.
 ALLOWED_ENTITY = {
     "entity/geyserevent_alien.entity.json",
     "entity/geyserevent_nave.entity.json",
-    "entity/vindicator.entity.json",
 }
 for name in list(entries):
     if name.startswith("entity/") and name not in ALLOWED_ENTITY:
