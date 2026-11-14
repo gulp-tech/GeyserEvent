@@ -53,16 +53,17 @@ event:
   duration-minutes: 20
   # Минимум игроков онлайн для АВТО-старта, если у ивента нет своего числа.
   # Ручной запуск (/rift start, /rift start-here) всегда без проверки.
-  min-bedrock-players: 1
+  min-bedrock-players: 5
   # Сколько игроков нужно, чтобы этот ивент сам появился по таймеру.
   # Меняется командой: /rift minplayers <rift|excavation|cauldron|wind|all> <число>
   auto-min-players:
-    rift: 10
-    excavation: 1
-    cauldron: 1
-    wind: 1
-    skibidi: 10
-    ronaldo: 10
+    rift: 5
+    excavation: 5
+    cauldron: 5
+    wind: 5
+    skibidi: 5
+    ronaldo: 5
+    fishing: 5
   # Задержка перед очисткой после убийства босса (в секундах)
   cleanup-delay-seconds: 15
 
@@ -1492,11 +1493,11 @@ alien:
 # ============================================================================
 wind:
   enabled: true
-  duration-minutes: 25
-  # Таймер до открытия (секунды). Стартует сразу.
+  duration-minutes: 15
+  # Таймер до открытия (секунды). Стартует сразу. 10 минут.
   unlock-seconds: 600
-  # Сколько секунд гейзер живёт после открытия.
-  loot-seconds: 600
+  # Сколько секунд гейзер разбрасывает лут после открытия. 5 минут.
+  loot-seconds: 300
   # Одна редкость на весь ивент. Сумма = 100.
   rarity-chances:
     common: 40

@@ -287,17 +287,14 @@ public class PluginConfig {
         this.autoStart = cfg.getBoolean("event.auto-start", true);
         this.intervalMinutes = Math.max(1, cfg.getInt("event.interval-minutes", 40));
         this.durationMinutes = Math.max(1, cfg.getInt("event.duration-minutes", 20));
-        this.minBedrockPlayers = Math.max(0, cfg.getInt("event.min-bedrock-players", 1));
+        this.minBedrockPlayers = Math.max(0, cfg.getInt("event.min-bedrock-players", 5));
         this.autoMinPlayers.clear();
         ConfigurationSection minSec = cfg.getConfigurationSection("event.auto-min-players");
         for (EventType type : EventType.values()) {
-            int fallback = isBossEvent(type) ? 10 : this.minBedrockPlayers;
+            int fallback = this.minBedrockPlayers;
             int value = minSec != null && minSec.contains(type.getId())
                     ? minSec.getInt(type.getId(), fallback)
                     : fallback;
-            if (isBossEvent(type)) {
-                value = Math.max(10, value);
-            }
             this.autoMinPlayers.put(type, Math.max(0, value));
         }
         this.cleanupDelaySeconds = Math.max(1, cfg.getInt("event.cleanup-delay-seconds", 15));
@@ -573,11 +570,7 @@ public class PluginConfig {
         if (type == null) {
             return minBedrockPlayers;
         }
-        int value = autoMinPlayers.getOrDefault(type, isBossEvent(type) ? 10 : minBedrockPlayers);
-        if (isBossEvent(type)) {
-            return Math.max(10, value);
-        }
-        return value;
+        return autoMinPlayers.getOrDefault(type, minBedrockPlayers);
     }
 
     public void setAutoMinPlayers(EventType type, int amount) {
@@ -586,14 +579,10 @@ public class PluginConfig {
             this.minBedrockPlayers = clamped;
             plugin.getConfig().set("event.min-bedrock-players", clamped);
             for (EventType each : EventType.values()) {
-                int eachValue = isBossEvent(each) ? Math.max(10, clamped) : clamped;
-                this.autoMinPlayers.put(each, eachValue);
-                plugin.getConfig().set("event.auto-min-players." + each.getId(), eachValue);
+                this.autoMinPlayers.put(each, clamped);
+                plugin.getConfig().set("event.auto-min-players." + each.getId(), clamped);
             }
         } else {
-            if (isBossEvent(type)) {
-                clamped = Math.max(10, clamped);
-            }
             this.autoMinPlayers.put(type, clamped);
             plugin.getConfig().set("event.auto-min-players." + type.getId(), clamped);
         }

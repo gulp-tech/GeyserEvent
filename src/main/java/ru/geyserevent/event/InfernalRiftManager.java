@@ -167,13 +167,17 @@ public class InfernalRiftManager {
                 }
                 long now = System.currentTimeMillis() / 1000L;
                 if (now >= nextAutoStartEpochSeconds) {
-                    int online = plugin.getBedrockService().getOnlineBedrockCount();
+                    int online = Bukkit.getOnlinePlayers().size();
+                    if (online < 5) {
+                        nextAutoStartEpochSeconds = now + 60L;
+                        return;
+                    }
                     List<EventType> eligible = new ArrayList<>();
                     for (EventType type : EventType.values()) {
                         if (!isEventEnabledInConfig(type)) {
                             continue;
                         }
-                        if (online >= plugin.getPluginConfig().getAutoMinPlayers(type)) {
+                        if (online >= Math.max(5, plugin.getPluginConfig().getAutoMinPlayers(type))) {
                             eligible.add(type);
                         }
                     }

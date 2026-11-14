@@ -112,15 +112,13 @@ public final class GravityHoardManager {
         this.eruptTier = rollRarity();
         this.startEpochSeconds = System.currentTimeMillis() / 1000L;
 
+        int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 600));
+        int lootSeconds = Math.max(30, plugin.getConfig().getInt("wind.loot-seconds", 300));
         long durationSeconds = (durationSecondsOverride != null && durationSecondsOverride > 0)
                 ? durationSecondsOverride
-                : (Math.max(5, plugin.getConfig().getInt("wind.duration-minutes",
-                plugin.getPluginConfig().getDurationMinutes())) * 60L);
-        this.eventEndEpochSeconds = this.startEpochSeconds + durationSeconds;
-        int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 600));
+                : (wait + lootSeconds);
         this.unlockAtEpoch = this.startEpochSeconds + wait;
-        this.eventEndEpochSeconds = Math.max(this.eventEndEpochSeconds, this.unlockAtEpoch
-                + Math.max(30, plugin.getConfig().getInt("wind.loot-seconds", 600)));
+        this.eventEndEpochSeconds = this.startEpochSeconds + durationSeconds;
 
         setChunksForceLoaded(this.center, true);
         pasteArena(this.center);
