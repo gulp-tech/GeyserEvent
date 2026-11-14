@@ -166,6 +166,7 @@ public class PluginConfig {
     private String alienTimeoutLine;
     private final List<AlienLootItem> skibidiLoot = new ArrayList<>();
     private final List<AlienLootItem> windLoot = new ArrayList<>();
+    private final Map<String, List<AlienLootItem>> windLootTiers = new java.util.LinkedHashMap<>();
     private final List<AlienLootItem> ronaldoLoot = new ArrayList<>();
 
     /** Предмет лута в сундуках пришельцев (ключ, материал, количество, шанс, rare, оформление). */
@@ -942,6 +943,9 @@ public class PluginConfig {
     public String getAlienTimeoutLine() { return alienTimeoutLine; }
     public List<AlienLootItem> getSkibidiLoot() { return skibidiLoot; }
     public List<AlienLootItem> getWindLoot() { return windLoot; }
+    public List<AlienLootItem> getWindLoot(String tier) {
+        return windLootTiers.getOrDefault(tier == null ? "" : tier.toLowerCase(Locale.ROOT), List.of());
+    }
     public List<AlienLootItem> getRonaldoLoot() { return ronaldoLoot; }
 
     private void loadSkibidiLoot(FileConfiguration cfg) {
@@ -958,9 +962,25 @@ public class PluginConfig {
 
     private void loadWindLoot(FileConfiguration cfg) {
         this.windLoot.clear();
-        this.windLoot.addAll(readChanceLoot(cfg.getConfigurationSection("wind.loot")));
+        this.windLootTiers.clear();
+        ConfigurationSection loot = cfg.getConfigurationSection("wind.loot");
+        if (loot != null && (loot.isConfigurationSection("common")
+                || loot.isConfigurationSection("rare")
+                || loot.isConfigurationSection("epic")
+                || loot.isConfigurationSection("legendary"))) {
+            for (String tier : List.of("common", "rare", "epic", "legendary")) {
+                List<AlienLootItem> items = readChanceLoot(loot.getConfigurationSection(tier));
+                this.windLootTiers.put(tier, items);
+                this.windLoot.addAll(items);
+            }
+        } else {
+            List<AlienLootItem> items = readChanceLoot(loot);
+            this.windLootTiers.put("common", items);
+            this.windLoot.addAll(items);
+        }
         if (this.windLoot.isEmpty()) {
             this.windLoot.addAll(this.alienChestLoot);
+            this.windLootTiers.put("common", new ArrayList<>(this.alienChestLoot));
         }
     }
 
