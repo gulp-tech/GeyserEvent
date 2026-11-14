@@ -71,7 +71,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
 import ru.geyserevent.GeyserEventPlugin;
-import ru.geyserevent.alien.AlienInvasionManager;
 import ru.geyserevent.event.EventType;
 import ru.geyserevent.event.InfernalRiftManager;
 import ru.geyserevent.excavation.BrushTier;
@@ -759,34 +758,6 @@ public class RiftEventListener implements Listener {
         }
     }
 
-    /** Мобы ивента пришельцев. */
-    private boolean isAlienMob(Entity entity) {
-        AlienInvasionManager alien = plugin.getAlienInvasionManager();
-        return alien != null && (alien.isAlienBoss(entity) || alien.isAlienMinion(entity)
-                || alien.isAlienUfo(entity) || alien.isAlienVisual(entity));
-    }
-
-    /**
-     * Клыки и вексы от заклинания вызывателя не появляются.
-     * Наши малые пришельцы спавнятся с причиной CUSTOM — их не трогаем.
-     */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onCreatureSpawn(CreatureSpawnEvent event) {
-        AlienInvasionManager alien = plugin.getAlienInvasionManager();
-        if (alien == null || !alien.isActive()) {
-            return;
-        }
-        EntityType type = event.getEntityType();
-        String typeName = type != null ? type.name() : "";
-        if (typeName.contains("FANG")) {
-            event.setCancelled(true);
-            return;
-        }
-        if (type == EntityType.VEX && event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPELL) {
-            event.setCancelled(true);
-        }
-    }
-
     /** Мобы остальных ивентов (Разлом, Раскопки, Котёл). */
     private boolean isEventMob(Entity entity) {
         return plugin.getRiftManager().isBoss(entity)
@@ -799,7 +770,7 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent event) {
         Entity entity = event.getEntity();
-        if (isAlienMob(entity) || isEventMob(entity)
+        if (isEventMob(entity)
                 || plugin.getSchematicManager().isRiftPortalOrZone(event.getFrom())) {
             event.setCancelled(true);
         }
@@ -808,7 +779,7 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTransform(EntityTransformEvent event) {
         Entity entity = event.getEntity();
-        if (isAlienMob(entity) || isEventMob(entity)) {
+        if (isEventMob(entity)) {
             event.setCancelled(true);
         }
     }
@@ -816,7 +787,7 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onVehicleEnter(VehicleEnterEvent event) {
         Entity entered = event.getEntered();
-        if (isAlienMob(entered) || isEventMob(entered)) {
+        if (isEventMob(entered)) {
             event.setCancelled(true);
         }
     }
@@ -824,7 +795,7 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerFish(PlayerFishEvent event) {
         Entity caught = event.getCaught();
-        if (caught != null && (isAlienMob(caught) || isEventMob(caught))) {
+        if (caught != null && (isEventMob(caught))) {
             event.setCancelled(true);
             return;
         }
@@ -856,13 +827,8 @@ public class RiftEventListener implements Listener {
             return;
         }
 
-        AlienInvasionManager alien = plugin.getAlienInvasionManager();
-        boolean sourceIsAlien = alien != null && (alien.isAlienBoss(source) || alien.isAlienMinion(source) || alien.isAlienUfo(source));
-        boolean targetIsAlien = alien != null && (alien.isAlienBoss(target) || alien.isAlienMinion(target) || alien.isAlienUfo(target));
-        boolean sourceIsRiftMob = sourceIsAlien
-                || plugin.getRiftManager().isBoss(source) || plugin.getAbilityController().isMinion(source);
-        boolean targetIsRiftMob = targetIsAlien
-                || plugin.getRiftManager().isBoss(target) || plugin.getAbilityController().isMinion(target);
+        boolean sourceIsRiftMob = plugin.getRiftManager().isBoss(source) || plugin.getAbilityController().isMinion(source);
+        boolean targetIsRiftMob = plugin.getRiftManager().isBoss(target) || plugin.getAbilityController().isMinion(target);
 
         if (sourceIsRiftMob && targetIsRiftMob) {
             event.setCancelled(true);
@@ -926,11 +892,6 @@ public class RiftEventListener implements Listener {
             return;
         }
 
-        AlienInvasionManager alienMgr = plugin.getAlienInvasionManager();
-        if (alienMgr != null && alienMgr.isAlienUfo(victim)) {
-            event.setCancelled(true);
-            return;
-        }
         var skibidiDmg = plugin.getSkibidiToiletManager();
         if (skibidiDmg != null && skibidiDmg.isToilet(victim) && skibidiDmg.isToilet(damager)) {
             event.setCancelled(true);
@@ -963,23 +924,16 @@ public class RiftEventListener implements Listener {
             }
             return;
         }
-        boolean victimIsAlienBoss = alienMgr != null && alienMgr.isAlienBoss(victim);
-        boolean victimIsAlienMinion = alienMgr != null && alienMgr.isAlienMinion(victim);
-        boolean damagerIsAlienBoss = alienMgr != null && alienMgr.isAlienBoss(damager);
-        boolean damagerIsAlienMinion = alienMgr != null && alienMgr.isAlienMinion(damager);
-
-        boolean victimIsBoss = manager.isBoss(victim) || victimIsAlienBoss;
+        boolean victimIsBoss = manager.isBoss(victim);
         boolean victimIsMinion = plugin.getAbilityController().isMinion(victim);
-        boolean damagerIsBoss = manager.isBoss(damager) || damagerIsAlienBoss;
+        boolean damagerIsBoss = manager.isBoss(damager);
         boolean damagerIsMinion = plugin.getAbilityController().isMinion(damager);
 
-        // Если ивент Разлома уже закончился или Босс уже повержен, любые оставшиеся Боссы/Приспешники немедленно удаляются!
         boolean riftActive = manager.isActive()
                 && !manager.isDefeated()
                 && manager.getActiveEventType() == EventType.INFERNAL_RIFT;
-        boolean alienActive = alienMgr != null && alienMgr.isActive() && !alienMgr.isDefeated();
 
-        if (!riftActive && !alienActive) {
+        if (!riftActive) {
             if (victimIsBoss || victimIsMinion) {
                 event.setCancelled(true);
                 victim.remove();
@@ -998,9 +952,7 @@ public class RiftEventListener implements Listener {
         }
 
         if (damagerIsBoss) {
-            event.setDamage(alienMgr != null && damagerIsAlienBoss
-                    ? plugin.getPluginConfig().getAlienBossDamage()
-                    : plugin.getPluginConfig().getBossDamage());
+            event.setDamage(plugin.getPluginConfig().getBossDamage());
             return;
         }
 
@@ -1029,11 +981,7 @@ public class RiftEventListener implements Listener {
                 }
             }
 
-            if (victimIsAlienBoss && victim instanceof LivingEntity alienBoss) {
-                double finalDmg = Math.max(1.0, Math.max(event.getDamage(), event.getFinalDamage()));
-                event.setDamage(0.0);
-                alienMgr.handleBossDamaged(alienBoss, attacker, finalDmg);
-            } else if (victimIsBoss && victim instanceof LivingEntity boss) {
+            if (victimIsBoss && victim instanceof LivingEntity boss) {
                 double finalDmg = Math.max(1.0, Math.max(event.getDamage(), event.getFinalDamage()));
                 event.setDamage(0.0);
                 manager.handleBossDamaged(boss, attacker, finalDmg);
@@ -1065,9 +1013,7 @@ public class RiftEventListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        AlienInvasionManager alienEnv = plugin.getAlienInvasionManager();
-        boolean alienBossEnv = alienEnv != null && alienEnv.isAlienBoss(entity);
-        if (!plugin.getRiftManager().isBoss(entity) && !alienBossEnv) {
+        if (!plugin.getRiftManager().isBoss(entity)) {
             return;
         }
 
@@ -1117,7 +1063,6 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
-        AlienInvasionManager alienDeath = plugin.getAlienInvasionManager();
         GravityHoardManager windDeath = plugin.getGravityHoardManager();
         if (windDeath != null && windDeath.isCore(entity)) {
             event.getDrops().clear();
@@ -1145,16 +1090,7 @@ public class RiftEventListener implements Listener {
             plugin.getRonaldoEventManager().handleDeath(entity);
             return;
         }
-        if (alienDeath != null && alienDeath.isAlienBoss(entity)) {
-            event.getDrops().clear();
-            event.setDroppedExp(600);
-            if (!alienDeath.isDefeated()) {
-                alienDeath.handleBossDefeated();
-            }
-        } else if (alienDeath != null && alienDeath.isAlienMinion(entity)) {
-            event.getDrops().clear();
-            event.setDroppedExp(25);
-        } else if (plugin.getRiftManager().isBoss(entity)) {
+        if (plugin.getRiftManager().isBoss(entity)) {
             event.getDrops().clear();
             event.setDroppedExp(600);
             if (!plugin.getRiftManager().isDefeated()) {
@@ -1227,13 +1163,6 @@ public class RiftEventListener implements Listener {
             return;
         }
 
-        // Ивент «Вторжение Пришельцев»: посадочную площадь не ломаем
-        if (plugin.getAlienInvasionManager() != null
-                && plugin.getAlienInvasionManager().isProtectedBlock(block.getLocation())) {
-            event.setCancelled(true);
-            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
-            return;
-        }
         if (plugin.getGravityHoardManager() != null
                 && plugin.getGravityHoardManager().isProtectedBlock(block.getLocation())) {
             event.setCancelled(true);
@@ -1286,12 +1215,6 @@ public class RiftEventListener implements Listener {
             return;
         }
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isInsideMineTerritory(block.getLocation())) {
-            event.setCancelled(true);
-            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
-            return;
-        }
-        if (plugin.getAlienInvasionManager() != null
-                && plugin.getAlienInvasionManager().isProtectedBlock(block.getLocation())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
@@ -1384,18 +1307,6 @@ public class RiftEventListener implements Listener {
                 }
             }
         }
-        AlienInvasionManager alien = plugin.getAlienInvasionManager();
-        if (alien != null && alien.isActive() && !alien.isDefeated() && alien.getCenterLocation() != null) {
-            Location center = alien.getCenterLocation();
-            if (center.getWorld() != null && center.getWorld().equals(loc.getWorld())) {
-                int r = plugin.getPluginConfig().getAlienProtectionRadius();
-                if (Math.abs(loc.getX() - center.getX()) <= r + reach
-                        && Math.abs(loc.getZ() - center.getZ()) <= r + reach
-                        && Math.abs(loc.getY() - center.getY()) <= 12 + reach) {
-                    return true;
-                }
-            }
-        }
         GravityHoardManager wind = plugin.getGravityHoardManager();
         if (wind != null && wind.isActive() && wind.getCenterLocation() != null) {
             Location center = wind.getCenterLocation();
@@ -1457,9 +1368,6 @@ public class RiftEventListener implements Listener {
             return false;
         }
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isInsideMineTerritory(loc)) {
-            return true;
-        }
-        if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isProtectedBlock(loc)) {
             return true;
         }
         if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isProtectedBlock(loc)) {

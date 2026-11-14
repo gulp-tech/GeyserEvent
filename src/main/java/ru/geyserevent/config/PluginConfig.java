@@ -285,7 +285,7 @@ public class PluginConfig {
         this.lootRarity = ColorUtil.color(cfg.getString("event.loot-rarity",
                 "&#FF2E2EМ&#F64620и&#ED5E12ф&#E47604и&#EB8E08ч&#F2A60Cе&#F9BE10с&#FFD614к&#FFE042и&#FFEA70й"));
         this.autoStart = cfg.getBoolean("event.auto-start", true);
-        this.intervalMinutes = Math.max(1, cfg.getInt("event.interval-minutes", 60));
+        this.intervalMinutes = Math.max(1, cfg.getInt("event.interval-minutes", 40));
         this.durationMinutes = Math.max(1, cfg.getInt("event.duration-minutes", 20));
         this.minBedrockPlayers = Math.max(0, cfg.getInt("event.min-bedrock-players", 1));
         this.autoMinPlayers.clear();
@@ -565,7 +565,6 @@ public class PluginConfig {
 
     public static boolean isBossEvent(EventType type) {
         return type == EventType.INFERNAL_RIFT
-                || type == EventType.ALIEN_INVASION
                 || type == EventType.SKIBIDI
                 || type == EventType.RONALDO;
     }

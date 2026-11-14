@@ -85,9 +85,6 @@ public final class FishingEventManager {
         if (plugin.getRiftManager() != null && plugin.getRiftManager().isActive()) {
             plugin.getRiftManager().stopEvent(false);
         }
-        if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
-            plugin.getAlienInvasionManager().stopEvent();
-        }
         if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
             plugin.getGravityHoardManager().stopEvent();
         }

@@ -115,22 +115,7 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
                             + wind.getCenterLocation().getBlockX() + " "
                             + wind.getCenterLocation().getBlockY() + " "
                             + wind.getCenterLocation().getBlockZ()));
-                    sender.sendMessage(ColorUtil.color("&e┠ &7Кликни по сундуку — 5 минут, потом 54 слота лута"));
-                    return true;
-                }
-                if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()
-                        && plugin.getAlienInvasionManager().getCenterLocation() != null) {
-                    var alien = plugin.getAlienInvasionManager();
-                    for (String line : cfg.getAlienDelayActiveLines()) {
-                        sender.sendMessage(ColorUtil.color(line
-                                .replace("%hp%", String.valueOf((int) Math.ceil(alien.getBossCurrentHealth())))
-                                .replace("%max_hp%", String.valueOf((int) Math.ceil(alien.getBossMaxHealth())))
-                                .replace("%remaining%", ColorUtil.formatDuration(alien.getSecondsRemaining()))
-                                .replace("%time%", ColorUtil.formatDuration(alien.getSecondsRemaining()))
-                                .replace("%x%", String.valueOf(alien.getCenterLocation().getBlockX()))
-                                .replace("%y%", String.valueOf(alien.getCenterLocation().getBlockY()))
-                                .replace("%z%", String.valueOf(alien.getCenterLocation().getBlockZ()))));
-                    }
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Лут вылетает из жерла гейзера — сундуков нет"));
                     return true;
                 }
                 if (manager.isActive() && manager.getRiftCenterLocation() != null) {

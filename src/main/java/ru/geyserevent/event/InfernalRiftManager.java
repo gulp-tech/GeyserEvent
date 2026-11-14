@@ -153,9 +153,6 @@ public class InfernalRiftManager {
                 if (active || !plugin.getPluginConfig().isAutoStart()) {
                     return;
                 }
-                if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
-                    return;
-                }
                 if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
                     return;
                 }
@@ -568,7 +565,7 @@ public class InfernalRiftManager {
             return true;
         }
         String path = switch (type) {
-            case ALIEN_INVASION -> "alien.enabled";
+            case GRAVITY_HOARD -> "wind.enabled";
             case SKIBIDI -> "skibidi.enabled";
             case RONALDO -> "ronaldo.enabled";
             case FISHING -> "fishing.enabled";
@@ -618,7 +615,7 @@ public class InfernalRiftManager {
      * Старт ивента. {@code fromSummonAltar} = true, если алтарь призыва:
      * тогда при таймауте босса в чат уйдёт сообщение summon.timeout-message.
      */
-    /** Скибиди и CR7 выключены в коде. Пришельцы снова можно стартовать (отдельная модель, ваниль не трогаем). */
+    /** Скибиди и CR7 выключены в коде. Ивент пришельцев удалён. */
     public static boolean isTemporarilyDisabled(EventType type) {
         return type == EventType.SKIBIDI || type == EventType.RONALDO;
     }
@@ -652,28 +649,12 @@ public class InfernalRiftManager {
                 && plugin.getFishingEventManager().isActive()) {
             plugin.getFishingEventManager().stopEvent();
         }
-        // Ивент «Вторжение Пришельцев» ведёт свой менеджер (своя схема и свой босс)
-        if (type == EventType.ALIEN_INVASION) {
-            if (plugin.getAlienInvasionManager() == null) {
-                return false;
-            }
-            if (active) {
-                stopEvent(false);
-            }
-            if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
-                plugin.getGravityHoardManager().stopEvent();
-            }
-            return plugin.getAlienInvasionManager().startEvent(targetCenter, durationSecondsOverride);
-        }
         if (type == EventType.GRAVITY_HOARD) {
             if (plugin.getGravityHoardManager() == null) {
                 return false;
             }
             if (active) {
                 stopEvent(false);
-            }
-            if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
-                plugin.getAlienInvasionManager().stopEvent();
             }
             return plugin.getGravityHoardManager().startEvent(targetCenter, durationSecondsOverride);
         }
@@ -683,9 +664,6 @@ public class InfernalRiftManager {
             }
             if (active) {
                 stopEvent(false);
-            }
-            if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
-                plugin.getAlienInvasionManager().stopEvent();
             }
             if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
                 plugin.getGravityHoardManager().stopEvent();
@@ -702,9 +680,6 @@ public class InfernalRiftManager {
             if (active) {
                 stopEvent(false);
             }
-            if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
-                plugin.getAlienInvasionManager().stopEvent();
-            }
             if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
                 plugin.getGravityHoardManager().stopEvent();
             }
@@ -719,9 +694,6 @@ public class InfernalRiftManager {
             }
             if (active) {
                 stopEvent(false);
-            }
-            if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
-                plugin.getAlienInvasionManager().stopEvent();
             }
             if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
                 plugin.getGravityHoardManager().stopEvent();
@@ -1819,11 +1791,10 @@ public class InfernalRiftManager {
                 continue;
             }
 
-            Location alienBossLoc = getAlienGpsTarget();
             Location windCoreLoc = getWindGpsTarget();
             Location targetLoc = (active && activeEventType == EventType.INFERNAL_RIFT && getBossEntity() != null)
                     ? getBossEntity().getLocation()
-                    : (alienBossLoc != null ? alienBossLoc : (windCoreLoc != null ? windCoreLoc : baseLoc));
+                    : (windCoreLoc != null ? windCoreLoc : baseLoc);
             double dist = player.getLocation().distance(targetLoc);
 
             if (dist > arrivalDist + 1.5) {
@@ -1872,18 +1843,11 @@ public class InfernalRiftManager {
     }
 
     /**
-     * Базовая точка GPS: активный ивент Разлома → ивент пришельцев → «Шахта Древних».
-     * Локатор один на всех, поэтому пришельцы пользуются им же.
+     * Базовая точка GPS: активный ивент → «Шахта Древних».
      */
     private Location resolveGpsBaseLocation() {
         if (active && riftCenterLocation != null && riftCenterLocation.getWorld() != null) {
             return riftCenterLocation;
-        }
-        if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
-            Location alienCenter = plugin.getAlienInvasionManager().getCenterLocation();
-            if (alienCenter != null && alienCenter.getWorld() != null) {
-                return alienCenter;
-            }
         }
         if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
             Location windCenter = plugin.getGravityHoardManager().getCenterLocation();
@@ -1919,15 +1883,6 @@ public class InfernalRiftManager {
             return plugin.getAncientMineManager().getCenterLocation();
         }
         return null;
-    }
-
-    /** Куда ведёт локатор во время ивента пришельцев: к самому пришельцу. */
-    private Location getAlienGpsTarget() {
-        if (plugin.getAlienInvasionManager() == null || !plugin.getAlienInvasionManager().isActive()) {
-            return null;
-        }
-        LivingEntity boss = plugin.getAlienInvasionManager().getBossEntity();
-        return boss != null ? boss.getLocation() : null;
     }
 
     private Location getWindGpsTarget() {

@@ -48,19 +48,18 @@ event:
   # Автоматический запуск случайного ивента по таймеру
   auto-start: true
   # Интервал между автоматическими запусками (в минутах)
-  interval-minutes: 60
+  interval-minutes: 40
   # Длительность ивента (в минутах). Через 20 минут ивент пропадает.
   duration-minutes: 20
   # Минимум игроков онлайн для АВТО-старта, если у ивента нет своего числа.
   # Ручной запуск (/rift start, /rift start-here) всегда без проверки.
   min-bedrock-players: 1
   # Сколько игроков нужно, чтобы этот ивент сам появился по таймеру.
-  # Меняется командой: /rift minplayers <rift|excavation|cauldron|alien|all> <число>
+  # Меняется командой: /rift minplayers <rift|excavation|cauldron|wind|all> <число>
   auto-min-players:
     rift: 10
     excavation: 1
     cauldron: 1
-    alien: 10
     wind: 1
     skibidi: 10
     ronaldo: 10
@@ -1498,6 +1497,11 @@ wind:
   unlock-seconds: 600
   # Сколько секунд гейзер живёт после открытия.
   loot-seconds: 600
+  rarity-chances:
+    common: 50
+    rare: 30
+    epic: 15
+    legendary: 5
   loot:
     common:
       gold:

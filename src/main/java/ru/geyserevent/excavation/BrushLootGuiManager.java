@@ -197,16 +197,7 @@ public class BrushLootGuiManager {
         inv.setItem(31, createTierSelectIcon(BrushTier.EPIC, LootCategory.MINE));
         inv.setItem(33, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.MINE));
 
-        // Ряд 4: плоский лут — пришельцы, скибиди, клад, Роналду
-        inv.setItem(36, createButton(
-                Material.ENDER_EYE,
-                "&#A020FF&lПришельцы",
-                List.of(
-                        "&7Лут сундуков посадочной площадки.",
-                        "",
-                        "&eНажмите, чтобы открыть меню лута"
-                )
-        ));
+        // Ряд 4: плоский лут — скибиди, клад, Роналду
         inv.setItem(38, createButton(
                 Material.HOPPER,
                 "&f&lШкибиди Туалет",
@@ -217,10 +208,10 @@ public class BrushLootGuiManager {
                 )
         ));
         inv.setItem(40, createButton(
-                Material.ENDER_CHEST,
-                "&#7DF9FF&lДревний клад",
+                Material.MAGMA_BLOCK,
+                "&#7DF9FF&lГейзер",
                 List.of(
-                        "&7Лут сундука в руинах (wind.loot).",
+                        "&7Лут из жерла (wind.loot).",
                         "",
                         "&eНажмите, чтобы открыть меню лута"
                 )
@@ -247,10 +238,6 @@ public class BrushLootGuiManager {
 
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
-    }
-
-    public void openAlienMenu(Player player) {
-        openFlatLootMenu(player, "alien.chests.loot", "Пришельцы", Material.ENDER_EYE, true);
     }
 
     @SuppressWarnings("deprecation")
@@ -900,9 +887,8 @@ public class BrushLootGuiManager {
                 case 29 -> openTierMenu(player, BrushTier.COMMON, LootCategory.MINE);
                 case 31 -> openTierMenu(player, BrushTier.EPIC, LootCategory.MINE);
                 case 33 -> openTierMenu(player, BrushTier.LEGENDARY, LootCategory.MINE);
-                case 36 -> openFlatLootMenu(player, "alien.chests.loot", "Пришельцы", Material.ENDER_EYE, true);
                 case 38 -> openFlatLootMenu(player, "skibidi.loot", "Шкибиди Туалет", Material.HOPPER, false);
-                case 40 -> openFlatLootMenu(player, "wind.loot", "Древний клад", Material.ENDER_CHEST, false);
+                case 40 -> openFlatLootMenu(player, "wind.loot", "Гейзер", Material.MAGMA_BLOCK, false);
                 case 42 -> openFlatLootMenu(player, "ronaldo.loot", "Роналду SIUU", Material.GOLDEN_HELMET, false);
                 case 44 -> openFishingMenu(player);
                 default -> {

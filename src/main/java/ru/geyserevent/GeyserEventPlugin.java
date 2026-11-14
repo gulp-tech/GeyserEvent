@@ -3,7 +3,6 @@ package ru.geyserevent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
-import ru.geyserevent.alien.AlienInvasionManager;
 import ru.geyserevent.fishing.FishingEventManager;
 import ru.geyserevent.ronaldo.RonaldoEventManager;
 import ru.geyserevent.skibidi.SkibidiToiletManager;
@@ -62,7 +61,6 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private BossAbilityController abilityController;
     private SummonAltarManager summonAltarManager;
     private InfernalRiftManager riftManager;
-    private AlienInvasionManager alienInvasionManager;
     private GravityHoardManager gravityHoardManager;
     private SkibidiToiletManager skibidiToiletManager;
     private RonaldoEventManager ronaldoEventManager;
@@ -105,8 +103,6 @@ public final class GeyserEventPlugin extends JavaPlugin {
         // 4a. Призывные ивенты: алтари призыва босса (спецблоки с кастомными текстурами)
         this.summonAltarManager = new SummonAltarManager(this);
 
-        // 4b. Ивент «Вторжение Пришельцев»: свой босс с кастомной текстурой и 4 сундука
-        this.alienInvasionManager = new AlienInvasionManager(this);
         this.gravityHoardManager = new GravityHoardManager(this);
         this.skibidiToiletManager = new SkibidiToiletManager(this);
         this.ronaldoEventManager = new RonaldoEventManager(this);
@@ -168,7 +164,6 @@ public final class GeyserEventPlugin extends JavaPlugin {
         // 8. Экспорт и автоматическая перезапись меню DeluxeMenus (events.yml) и текстурпака (GeyserEvent-Pack.mcpack)
         exportDeluxeMenusConfig();
         exportResourcePackAndOverwriteGeyser();
-        ru.geyserevent.hud.GeyserEntityBridge.subscribe(this);
 
         // 9. Автоматический запуск постоянного ивента «Шахта Древних (Жила Жеод)» 45x45 на 0 ~ 0
         Bukkit.getScheduler().runTaskLater(this, () -> {
@@ -187,8 +182,8 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.60 успешно запущен! (Purpur 1.21–26.63)");
-        getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Клад, Рыбалка (пришельцы/скибиди/CR7 выключены)");
+        getLogger().info(" GeyserEvent v1.21.61 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Гейзер, Рыбалка (пришельцы удалены, скибиди/CR7 выключены)");
         getLogger().info(" Постоянный ивент: Шахта Древних crater-lobby (v9) + подъём на 0 ~ 0");
         getLogger().info("==================================================");
     }
@@ -243,10 +238,8 @@ public final class GeyserEventPlugin extends JavaPlugin {
         try {
             saveResource("geyser/custom-items.json", true);
             saveResource("geyser/Geyser-fishing-rods-mapping.json", true);
-            saveResource("geyser/Geyser-alien-display-mapping.json", true);
             File exported = new File(getDataFolder(), "geyser/custom-items.json");
             File mappingFile = new File(getDataFolder(), "geyser/Geyser-fishing-rods-mapping.json");
-            File alienMapping = new File(getDataFolder(), "geyser/Geyser-alien-display-mapping.json");
             if (exported.exists()) {
                 Files.copy(exported.toPath(), new File(geyserDir, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
                 File mappings = new File(geyserDir, "custom-mappings");
@@ -267,18 +260,8 @@ public final class GeyserEventPlugin extends JavaPlugin {
                     if (bedrockMappings.exists() || new File(pluginsDir.getParentFile(), "bedrock").isDirectory()) {
                         bedrockMappings.mkdirs();
                         Files.copy(mappingFile.toPath(), new File(bedrockMappings, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        if (alienMapping.exists()) {
-                            Files.copy(alienMapping.toPath(), new File(bedrockMappings, "Geyser-alien-display-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        }
                     }
                 }
-            }
-            if (alienMapping.exists()) {
-                File underscore = new File(geyserDir, "custom_mappings");
-                if (!underscore.exists()) {
-                    underscore.mkdirs();
-                }
-                Files.copy(alienMapping.toPath(), new File(underscore, "Geyser-alien-display-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (Exception ignored) {
         }
@@ -295,10 +278,6 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }
         if (this.summonAltarManager != null) {
             this.summonAltarManager.shutdown();
-        }
-        if (this.alienInvasionManager != null && this.alienInvasionManager.isActive()) {
-            getLogger().info("Завершение ивента «Вторжение Пришельцев» и откат схемы...");
-            this.alienInvasionManager.stopEvent();
         }
         if (this.gravityHoardManager != null && this.gravityHoardManager.isActive()) {
             getLogger().info("Завершение ивента «Сердце Ветра» и откат схемы...");
@@ -385,8 +364,6 @@ public final class GeyserEventPlugin extends JavaPlugin {
     public BrushLootGuiManager getBrushLootGuiManager() {
         return brushLootGuiManager;
     }
-
-    public AlienInvasionManager getAlienInvasionManager() { return alienInvasionManager; }
 
     public GravityHoardManager getGravityHoardManager() { return gravityHoardManager; }
 

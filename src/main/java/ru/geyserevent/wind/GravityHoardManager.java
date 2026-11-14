@@ -46,7 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class GravityHoardManager {
 
     public static final String REGION_ID = "geyserevent_wind";
-    public static final int ARENA_RADIUS = 12;
+    public static final int ARENA_RADIUS = 22;
+    public static final int CONE_HEIGHT = 11;
 
     private final GeyserEventPlugin plugin;
     private final NamespacedKey chestKey;
@@ -73,7 +74,7 @@ public final class GravityHoardManager {
     private BukkitRunnable animTask;
     private int shakeCounter;
     private int eruptWaves;
-    private Inventory lootInventory;
+    private String eruptTier = "common";
 
     public GravityHoardManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -91,9 +92,6 @@ public final class GravityHoardManager {
         if (plugin.getRiftManager() != null && plugin.getRiftManager().isActive()) {
             plugin.getRiftManager().stopEvent(false);
         }
-        if (plugin.getAlienInvasionManager() != null && plugin.getAlienInvasionManager().isActive()) {
-            plugin.getAlienInvasionManager().stopEvent();
-        }
         if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
             plugin.getSkibidiToiletManager().stopEvent();
         }
@@ -109,7 +107,7 @@ public final class GravityHoardManager {
         this.lootFilled = false;
         this.shakeCounter = 0;
         this.eruptWaves = 0;
-        this.lootInventory = Bukkit.createInventory(null, 54, ColorUtil.color("&b&lГейзер"));
+        this.eruptTier = "common";
         this.center = snapToSurface(targetCenter);
         this.startEpochSeconds = System.currentTimeMillis() / 1000L;
 
@@ -125,7 +123,7 @@ public final class GravityHoardManager {
 
         setChunksForceLoaded(this.center, true);
         pasteArena(this.center);
-        placeEventChest();
+        this.chestLocation = this.center.clone().add(0, CONE_HEIGHT, 0);
         spawnHolograms();
         createBossBar();
         broadcastSpawn();
@@ -155,8 +153,7 @@ public final class GravityHoardManager {
             animTask = null;
         }
         clearHolograms();
-        closeLootViewers();
-        this.lootInventory = null;
+        this.eruptTier = "common";
         if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
             plugin.getWorldGuardHook().removeRegion(center.getWorld(), REGION_ID);
         }
@@ -178,10 +175,7 @@ public final class GravityHoardManager {
     }
 
     public boolean isEventChest(Block block) {
-        if (!active || block == null) {
-            return false;
-        }
-        return sameBlock(block, chestLocation);
+        return false;
     }
 
     private static boolean sameBlock(Block block, Location loc) {
@@ -196,53 +190,11 @@ public final class GravityHoardManager {
      * @return true — открытие сундука надо отменить (ещё не активирован / идёт отсчёт)
      */
     public boolean handleChestClick(Player player) {
-        if (!active || player == null) {
-            return false;
-        }
-        if (!plugin.getBedrockService().canParticipate(player)) {
-            player.sendMessage(plugin.getPluginConfig().getMsgOnlyBedrock());
-            return true;
-        }
-        long now = System.currentTimeMillis() / 1000L;
-        tryUnlock(now);
-        if (!unlocked) {
-            long left = Math.max(0L, unlockAtEpoch - now);
-            player.sendMessage(ColorUtil.color("&e┠ &fГейзер ещё закрыт: &#E0C912"
-                    + ColorUtil.formatDuration(left)));
-            return true;
-        }
-        openLootGui(player);
-        return true;
+        return false;
     }
 
     public boolean isLootGui(Inventory inventory) {
-        return lootInventory != null && inventory == lootInventory;
-    }
-
-    private void openLootGui(Player player) {
-        if (lootInventory == null) {
-            return;
-        }
-        if (!lootFilled) {
-            fillEventChest();
-        }
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!active || !unlocked || lootInventory == null || !player.isOnline()) {
-                return;
-            }
-            player.openInventory(lootInventory);
-            player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 1.0f, 1.0f);
-            keepLidOpen();
-        });
-    }
-
-    private void closeLootViewers() {
-        if (lootInventory == null) {
-            return;
-        }
-        for (HumanEntity viewer : new ArrayList<>(lootInventory.getViewers())) {
-            viewer.closeInventory();
-        }
+        return false;
     }
 
     public boolean isProtectedBlock(Location loc) {
@@ -349,7 +301,6 @@ public final class GravityHoardManager {
                 long now = System.currentTimeMillis() / 1000L;
                 tryUnlock(now);
                 if (unlocked) {
-                    keepLidOpen();
                     eruptBurst();
                 }
                 if (center != null && center.getWorld() != null && chestLocation != null) {
@@ -377,17 +328,17 @@ public final class GravityHoardManager {
                 if (!activated || unlocked) {
                     return;
                 }
-                ensureChestBlock();
-                keepLidClosed();
                 long leftMs = Math.max(0L, unlockAtEpoch * 1000L - System.currentTimeMillis());
-                int totalMs = Math.max(1, plugin.getConfig().getInt("wind.unlock-seconds", 300)) * 1000;
+                int totalMs = Math.max(1, plugin.getConfig().getInt("wind.unlock-seconds", 600)) * 1000;
                 double progress = 1.0 - Math.min(1.0, leftMs / (double) totalMs);
                 int period = (int) Math.max(1, Math.round(10.0 - progress * 9.0));
                 shakeCounter++;
                 if (shakeCounter % period != 0) {
                     return;
                 }
-                shakeChest(progress);
+                Location fx = chestLocation.clone().add(0.5, 0.4, 0.5);
+                chestLocation.getWorld().spawnParticle(Particle.CLOUD, fx, 4 + (int) (progress * 8), 0.4, 0.5, 0.4, 0.02);
+                chestLocation.getWorld().playSound(fx, Sound.BLOCK_STONE_HIT, 0.2f + (float) progress * 0.4f, 0.5f);
             }
         };
         animTask.runTaskTimer(plugin, 2L, 2L);
@@ -450,28 +401,56 @@ public final class GravityHoardManager {
             return;
         }
         unlocked = true;
-        fillEventChest();
-        placeEnderChestBlock();
+        eruptWaves = 0;
+        rollAndAnnounceRarity(true);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!active || !unlocked) {
                 return;
             }
-            keepLidOpen();
             knockbackNearby();
             if (chestLocation != null && chestLocation.getWorld() != null) {
                 World world = chestLocation.getWorld();
                 Location fx = chestLocation.clone().add(0.5, 0.8, 0.5);
-                world.playSound(fx, Sound.BLOCK_ENDER_CHEST_OPEN, 1.4f, 0.9f);
-                world.playSound(fx, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.4f);
-                world.spawnParticle(Particle.SOUL_FIRE_FLAME, fx, 40, 0.45, 0.4, 0.45, 0.03);
-                world.spawnParticle(Particle.CLOUD, fx, 20, 0.5, 0.2, 0.5, 0.04);
-                world.spawnParticle(Particle.END_ROD, fx, 16, 0.3, 0.55, 0.3, 0.02);
+                world.playSound(fx, Sound.ENTITY_GENERIC_EXPLODE, 0.7f, 0.8f);
+                world.playSound(fx, Sound.BLOCK_LAVA_POP, 1.4f, 0.5f);
+                world.spawnParticle(Particle.CLOUD, fx, 40, 0.6, 1.2, 0.6, 0.06);
+                world.spawnParticle(Particle.SPLASH, fx, 30, 0.5, 0.8, 0.5, 0.04);
             }
+            eruptBurst();
         }, 4L);
-        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFГейзер прорвался!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fРесурсы вылетают из жерла — хватай и открывай сундук."));
         refreshHolograms();
         refreshBossBar();
+    }
+
+    private void rollAndAnnounceRarity(boolean opening) {
+        eruptTier = rollRarity();
+        String label = switch (eruptTier) {
+            case "rare" -> "&9&lРедкая";
+            case "epic" -> "&d&lЭпическая";
+            case "legendary" -> "&6&lЛегендарная";
+            default -> "&a&lОбычная";
+        };
+        if (opening) {
+            Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFГейзер прорвался!"));
+        }
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fИз жерла вылетает " + label + " &fдобыча!"));
+    }
+
+    private String rollRarity() {
+        double roll = random.nextDouble() * 100.0;
+        double common = plugin.getConfig().getDouble("wind.rarity-chances.common", 50);
+        double rare = plugin.getConfig().getDouble("wind.rarity-chances.rare", 30);
+        double epic = plugin.getConfig().getDouble("wind.rarity-chances.epic", 15);
+        if (roll < common) {
+            return "common";
+        }
+        if (roll < common + rare) {
+            return "rare";
+        }
+        if (roll < common + rare + epic) {
+            return "epic";
+        }
+        return "legendary";
     }
 
     private void keepLidOpen() {
@@ -520,14 +499,6 @@ public final class GravityHoardManager {
             dir.normalize().multiply(1.75).setY(0.48);
             player.setVelocity(dir);
         }
-    }
-
-    private void fillEventChest() {
-        if (lootFilled || lootInventory == null) {
-            return;
-        }
-        fillInventory(lootInventory);
-        lootFilled = true;
     }
 
     private void fillInventory(Inventory inv) {
@@ -581,35 +552,37 @@ public final class GravityHoardManager {
             return;
         }
         eruptWaves++;
-        if (eruptWaves > 90 && eruptWaves % 4 != 0) {
+        if (eruptWaves > 1 && eruptWaves % 15 == 1) {
+            rollAndAnnounceRarity(false);
+        }
+        if (eruptWaves > 90 && eruptWaves % 3 != 0) {
             return;
         }
         World world = chestLocation.getWorld();
-        Location mouth = chestLocation.clone().add(0.5, 1.15, 0.5);
-        world.playSound(mouth, Sound.BLOCK_LAVA_POP, 0.9f, 0.7f + random.nextFloat() * 0.4f);
-        world.playSound(mouth, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_INSIDE, 0.7f, 1.2f);
-        world.spawnParticle(Particle.CLOUD, mouth, 10, 0.25, 0.6, 0.25, 0.03);
-        world.spawnParticle(particle("CAMPFIRE_COSY_SMOKE", Particle.SMOKE), mouth, 8, 0.2, 0.8, 0.2, 0.01);
-        world.spawnParticle(Particle.SPLASH, mouth, 12, 0.35, 0.4, 0.35, 0.02);
-        int throwsCount = 2 + random.nextInt(3);
+        Location mouth = chestLocation.clone().add(0.5, 0.4, 0.5);
+        world.playSound(mouth, Sound.BLOCK_LAVA_POP, 1.1f, 0.55f + random.nextFloat() * 0.4f);
+        world.playSound(mouth, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_INSIDE, 0.9f, 0.9f);
+        world.spawnParticle(Particle.CLOUD, mouth, 18, 0.45, 1.4, 0.45, 0.05);
+        world.spawnParticle(particle("CAMPFIRE_COSY_SMOKE", Particle.SMOKE), mouth, 14, 0.35, 1.6, 0.35, 0.02);
+        world.spawnParticle(Particle.SPLASH, mouth, 20, 0.5, 0.8, 0.5, 0.03);
+        int throwsCount = 3 + random.nextInt(4);
         for (int i = 0; i < throwsCount; i++) {
             ItemStack stack = eruptStack();
             if (stack == null) {
                 continue;
             }
             org.bukkit.entity.Item dropped = world.dropItem(mouth, stack);
-            dropped.setPickupDelay(15);
+            dropped.setPickupDelay(12);
             dropped.setVelocity(new Vector(
-                    (random.nextDouble() - 0.5) * 0.55,
-                    0.55 + random.nextDouble() * 0.45,
-                    (random.nextDouble() - 0.5) * 0.55
+                    (random.nextDouble() - 0.5) * 0.85,
+                    0.85 + random.nextDouble() * 0.65,
+                    (random.nextDouble() - 0.5) * 0.85
             ));
         }
     }
 
     private ItemStack eruptStack() {
-        double roll = random.nextDouble();
-        String tier = roll < 0.55 ? "common" : roll < 0.83 ? "rare" : roll < 0.95 ? "epic" : "legendary";
+        String tier = eruptTier == null ? "common" : eruptTier;
         List<PluginConfig.AlienLootItem> pool = plugin.getPluginConfig().getWindLoot(tier);
         if (pool == null || pool.isEmpty()) {
             pool = plugin.getPluginConfig().getWindLoot();
@@ -642,17 +615,22 @@ public final class GravityHoardManager {
         int r = ARENA_RADIUS;
         Material basalt = mat("SMOOTH_BASALT", Material.BASALT);
         Material blackstone = mat("BLACKSTONE", Material.BLACK_CONCRETE);
-        Material polishedBlack = mat("POLISHED_BLACKSTONE", blackstone);
         Material magma = mat("MAGMA_BLOCK", Material.NETHERRACK);
+        Material calcite = mat("CALCITE", Material.DIORITE);
+        Material diorite = Material.DIORITE;
+        Material quartz = Material.QUARTZ_BLOCK;
+        Material orange = mat("ORANGE_TERRACOTTA", Material.ORANGE_CONCRETE);
+        Material yellow = mat("YELLOW_TERRACOTTA", Material.YELLOW_CONCRETE);
+        Material white = mat("WHITE_TERRACOTTA", calcite);
         Material tuff = mat("TUFF", Material.ANDESITE);
-        Material copper = mat("WAXED_COPPER_BLOCK", Material.RAW_COPPER_BLOCK);
-        Material copperGrate = mat("WAXED_COPPER_GRATE", copper);
-        Material lantern = mat("COPPER_BULB", Material.LANTERN);
 
         for (int dx = -r; dx <= r; dx++) {
             for (int dz = -r; dz <= r; dz++) {
                 double dist = Math.hypot(dx, dz);
-                for (int dy = 1; dy <= 10; dy++) {
+                if (dist > r + 0.4) {
+                    continue;
+                }
+                for (int dy = 1; dy <= CONE_HEIGHT + 2; dy++) {
                     Block block = world.getBlockAt(cx + dx, cy + dy, cz + dz);
                     Material type = block.getType();
                     if (type.isAir() || type == Material.CAVE_AIR || type == Material.VOID_AIR) {
@@ -664,30 +642,35 @@ public final class GravityHoardManager {
                 setProtected(world, cx + dx, cy - 1, cz + dz, basalt);
 
                 Material floor;
-                if (dist <= 1.6) {
+                if (dist <= 2.2) {
                     floor = magma;
-                } else if (dist <= 3.2) {
-                    floor = polishedBlack;
-                } else if (dist <= 5.4) {
+                } else if (dist <= 5.5) {
                     floor = blackstone;
-                } else if (dist <= 7.4) {
-                    floor = basalt;
-                } else if (dist <= r - 0.2) {
-                    floor = ((dx + dz) & 1) == 0 ? tuff : Material.GRAVEL;
+                } else if (dist <= 9.0) {
+                    floor = calcite;
+                } else if (dist <= 13.0) {
+                    floor = ((dx + dz) & 1) == 0 ? white : orange;
+                } else if (dist <= 17.5) {
+                    floor = ((dx * 3 + dz) & 2) == 0 ? yellow : diorite;
                 } else {
-                    floor = Material.STONE;
+                    floor = ((dx + dz) & 1) == 0 ? tuff : quartz;
                 }
                 setProtected(world, cx + dx, cy, cz + dz, floor);
 
-                if (dist > 4.2 && dist < 6.2) {
+                if (dist > 6.5 && dist < 10.5) {
                     setProtected(world, cx + dx, cy + 1, cz + dz, Material.WATER);
                 }
 
-                if (dist <= 4.6) {
-                    int height = (int) Math.max(1, Math.round(5.2 - dist));
-                    for (int h = 1; h < height; h++) {
-                        Material wall = h == height - 1 ? polishedBlack : basalt;
-                        if (dist > 1.2) {
+                if (dist <= 8.5) {
+                    int height = (int) Math.round(CONE_HEIGHT * (1.0 - dist / 8.8));
+                    height = Math.max(dist <= 2.4 ? 1 : 2, height);
+                    for (int h = 1; h <= height; h++) {
+                        if (dist <= 1.6 && h < height) {
+                            setProtected(world, cx + dx, cy + h, cz + dz, magma);
+                            continue;
+                        }
+                        Material wall = h >= height - 1 ? calcite : (h % 2 == 0 ? basalt : blackstone);
+                        if (dist > 1.6) {
                             setProtected(world, cx + dx, cy + h, cz + dz, wall);
                         }
                     }
@@ -697,25 +680,16 @@ public final class GravityHoardManager {
 
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                setProtected(world, cx + dx, cy, cz + dz, magma);
+                for (int h = 0; h <= 2; h++) {
+                    setProtected(world, cx + dx, cy + h, cz + dz, magma);
+                }
             }
         }
-        setProtected(world, cx, cy, cz, magma);
 
-        int[][] vents = {{5, 0}, {-5, 0}, {0, 5}, {0, -5}, {4, 4}, {4, -4}, {-4, 4}, {-4, -4}};
+        int[][] vents = {{10, 0}, {-10, 0}, {0, 10}, {0, -10}, {8, 8}, {8, -8}, {-8, 8}, {-8, -8}};
         for (int[] v : vents) {
-            setProtected(world, cx + v[0], cy + 1, cz + v[1], copper);
-            setProtected(world, cx + v[0], cy + 2, cz + v[1], lantern);
-        }
-
-        for (int s = 5; s >= 1; s--) {
-            setProtected(world, cx, cy + 1, cz + s + 3, mat("BASALT", Material.COBBLESTONE));
-        }
-        setProtected(world, cx + 1, cy + 1, cz + 8, Material.LANTERN);
-        setProtected(world, cx - 1, cy + 1, cz + 8, Material.LANTERN);
-        if (copperGrate != copper) {
-            setProtected(world, cx + 2, cy + 1, cz + 2, copperGrate);
-            setProtected(world, cx - 2, cy + 1, cz - 2, copperGrate);
+            setProtected(world, cx + v[0], cy + 1, cz + v[1], calcite);
+            setProtected(world, cx + v[0], cy + 2, cz + v[1], Material.LANTERN);
         }
     }
 
