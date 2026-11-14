@@ -579,7 +579,7 @@ public final class GravityHoardManager {
     private int addTierRolls(Inventory inv, int slot, int size, String tier, int count) {
         List<PluginConfig.AlienLootItem> pool = plugin.getPluginConfig().getWindLoot(tier);
         if (pool == null || pool.isEmpty()) {
-            pool = plugin.getPluginConfig().getWindLoot();
+            pool = plugin.getPluginConfig().getWindLoot("common");
         }
         if (pool == null || pool.isEmpty() || count <= 0) {
             return slot;
