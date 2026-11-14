@@ -113,7 +113,7 @@ public final class GravityHoardManager {
         this.startEpochSeconds = System.currentTimeMillis() / 1000L;
 
         int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 600));
-        int lootSeconds = Math.max(30, plugin.getConfig().getInt("wind.loot-seconds", 300));
+        int lootSeconds = 180;
         long durationSeconds = (durationSecondsOverride != null && durationSecondsOverride > 0)
                 ? durationSecondsOverride
                 : (wait + lootSeconds);
