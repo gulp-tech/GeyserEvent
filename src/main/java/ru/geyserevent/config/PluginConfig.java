@@ -729,7 +729,7 @@ public class PluginConfig {
         this.alienAbilityIntervalSeconds = Math.max(3, cfg.getInt("alien.ability-interval-seconds", 14));
 
         ConfigurationSection ufo = cfg.getConfigurationSection("alien.ufo");
-        this.alienUfoEnabled = ufo == null || ufo.getBoolean("enabled", true);
+        this.alienUfoEnabled = false;
         this.alienUfoType = remapAlienUfo(entityType(ufo != null ? ufo.getString("type", "GHAST") : "GHAST", EntityType.GHAST));
         this.alienUfoHeight = ufo != null ? Math.max(3.0, ufo.getDouble("height", 10.0)) : 10.0;
         this.alienUfoScale = 0.45;

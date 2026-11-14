@@ -1188,7 +1188,7 @@ alien:
 
   # Тарелка: Java GHAST, на Bedrock только этот UUID → geyserevent:nave.
   ufo:
-    enabled: true
+    enabled: false
     type: "GHAST"
     height: 10.0
     scale: 0.45

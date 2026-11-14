@@ -272,8 +272,7 @@ public final class AlienInvasionManager {
         createBossBar(boss);
         broadcastLines(cfg.getAlienSpawnLines(), this.center);
 
-        // 4. Летающая тарелка над ареной (3D-модель nave на гасте)
-        spawnUfo();
+        // НЛО временно выключено — не спавним гаста.
 
         // 5. Сразу пара малых пришельцев, чтобы ивент не выглядел пустым
         spawnMinionWave(true);

@@ -20,7 +20,10 @@
           "variable.ge_event = !query.is_item_name_any('slot.weapon.mainhand', 'minecraft:iron_axe', 'minecraft:stone_axe', 'minecraft:golden_axe', 'minecraft:diamond_axe', 'minecraft:netherite_axe', 'minecraft:wooden_axe');"
         ],
         "animate": [
-          { "alien": "variable.ge_event" },
+          { "idle": "variable.ge_event" },
+          { "walk": "variable.ge_event && query.modified_move_speed > 0.12" },
+          { "attack": "variable.ge_event && (query.attack_time > 0.0 || query.is_delayed_attacking)" },
+          { "look": "variable.ge_event" },
           { "vindicator_base": "!variable.ge_event" },
           { "vindicator_walk": "!variable.ge_event" },
           { "vindicator_attack": "!variable.ge_event" },
@@ -28,7 +31,6 @@
         ]
       },
       "animations": {
-        "alien": "controller.animation.alien",
         "idle": "animation.alien.idle",
         "walk": "animation.alien.walk",
         "attack": "animation.alien.attack",
