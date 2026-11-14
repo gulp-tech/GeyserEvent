@@ -430,6 +430,15 @@ public final class GravityHoardManager {
         };
     }
 
+    private String rarityLabelMasculine() {
+        return switch (eruptTier == null ? "common" : eruptTier) {
+            case "rare" -> "&9&lРедкий";
+            case "epic" -> "&d&lЭпический";
+            case "legendary" -> "&6&lЛегендарный";
+            default -> "&a&lОбычный";
+        };
+    }
+
     private String rollRarity() {
         double roll = random.nextDouble() * 100.0;
         double common = plugin.getConfig().getDouble("wind.rarity-chances.common", 40);
@@ -786,7 +795,7 @@ public final class GravityHoardManager {
     }
 
     private String[] hologramLines() {
-        String rarity = ColorUtil.color(rarityLabel());
+        String rarity = ColorUtil.color("&fредкость: " + rarityLabel());
         if (!unlocked) {
             long left = Math.max(0L, unlockAtEpoch - System.currentTimeMillis() / 1000L);
             return new String[]{
@@ -831,13 +840,13 @@ public final class GravityHoardManager {
             int totalWait = Math.max(1, plugin.getConfig().getInt("wind.unlock-seconds", 600));
             bossBar.setColor(BarColor.YELLOW);
             bossBar.setProgress(Math.max(0.0, Math.min(1.0, wait / (double) totalWait)));
-            bossBar.setTitle(ColorUtil.color("&b&lГейзер &8| " + rarityLabel()
+            bossBar.setTitle(ColorUtil.color("&b&lГейзер &8| " + rarityLabelMasculine()
                     + " &8| &e" + ColorUtil.formatDuration(wait)));
         } else {
             long total = Math.max(1L, eventEndEpochSeconds - unlockAtEpoch);
             bossBar.setColor(BarColor.GREEN);
             bossBar.setProgress(Math.max(0.0, Math.min(1.0, left / (double) total)));
-            bossBar.setTitle(ColorUtil.color("&b&lГейзер бьёт &8| " + rarityLabel()
+            bossBar.setTitle(ColorUtil.color("&b&lГейзер бьёт &8| " + rarityLabelMasculine()
                     + " &8| &f" + ColorUtil.formatDuration(left)));
         }
         for (Player player : Bukkit.getOnlinePlayers()) {
