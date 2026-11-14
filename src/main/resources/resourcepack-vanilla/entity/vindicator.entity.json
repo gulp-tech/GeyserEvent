@@ -1,0 +1,49 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "minecraft:vindicator",
+      "min_engine_version": "1.8.0",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/vindicator",
+        "alien": "textures/entity/alien"
+      },
+      "geometry": {
+        "default": "geometry.vindicator.v1.8",
+        "alien": "geometry.alien"
+      },
+      "scripts": {
+        "pre_animation": [
+          "variable.ge_event = !query.is_item_name_any('slot.weapon.mainhand', 'minecraft:iron_axe', 'minecraft:stone_axe', 'minecraft:golden_axe', 'minecraft:diamond_axe', 'minecraft:netherite_axe', 'minecraft:wooden_axe');"
+        ],
+        "animate": [
+          { "idle": "variable.ge_event" },
+          { "walk": "variable.ge_event && query.modified_move_speed > 0.12" },
+          { "attack": "variable.ge_event && (query.attack_time > 0.0 || query.is_delayed_attacking)" },
+          { "look": "variable.ge_event" },
+          { "vindicator_base": "!variable.ge_event" },
+          { "vindicator_walk": "!variable.ge_event" },
+          { "vindicator_attack": "!variable.ge_event" },
+          { "look_at_target": "!variable.ge_event" }
+        ]
+      },
+      "animations": {
+        "idle": "animation.alien.idle",
+        "walk": "animation.alien.walk",
+        "attack": "animation.alien.attack",
+        "look": "animation.common.look_at_target",
+        "look_at_target": "animation.common.look_at_target",
+        "vindicator_base": "animation.vindicator.base",
+        "vindicator_walk": "animation.vindicator.walk",
+        "vindicator_attack": "animation.vindicator.attack"
+      },
+      "render_controllers": [
+        "controller.render.vindicator"
+      ],
+      "enable_attachables": true
+    }
+  }
+}

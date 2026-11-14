@@ -1,0 +1,395 @@
+package ru.geyserevent;
+
+import org.bukkit.Bukkit;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.java.JavaPlugin;
+import ru.geyserevent.fishing.FishingEventManager;
+import ru.geyserevent.ronaldo.RonaldoEventManager;
+import ru.geyserevent.skibidi.SkibidiToiletManager;
+import ru.geyserevent.wind.GravityHoardManager;
+import ru.geyserevent.boss.BossAbilityController;
+import ru.geyserevent.boss.MinionLootManager;
+import ru.geyserevent.cauldron.AlchemistSchematicManager;
+import ru.geyserevent.command.EventPlayerCommand;
+import ru.geyserevent.command.FishingCommand;
+import ru.geyserevent.command.KladCommand;
+import ru.geyserevent.command.RiftCommand;
+import ru.geyserevent.command.RonaldoCommand;
+import ru.geyserevent.command.SkibidiCommand;
+import ru.geyserevent.config.PluginConfig;
+import ru.geyserevent.event.InfernalRiftManager;
+import ru.geyserevent.excavation.BeachSchematicManager;
+import ru.geyserevent.excavation.BrushLootGuiManager;
+import ru.geyserevent.excavation.BrushLootManager;
+import ru.geyserevent.hook.BedrockService;
+import ru.geyserevent.hook.PlayerPointsHook;
+import ru.geyserevent.hook.WorldGuardHook;
+import ru.geyserevent.hud.TopRightHudManager;
+import ru.geyserevent.summon.SummonAltarManager;
+import ru.geyserevent.listener.RiftEventListener;
+import ru.geyserevent.mine.AncientMineManager;
+import ru.geyserevent.mine.MinerBackpackManager;
+import ru.geyserevent.schematic.RiftSchematicManager;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+
+/**
+ * Главный класс плагина GeyserEvent v1.8.1 — четыре анархических ивента:
+ * 1) «Адский Разлом (Вторжение Босса)»
+ * 2) «Пляжные Раскопки (Большая схема 31x31, 2-метровый Житель с кисточками по клику)»
+ * 3) «Котёл Алхимика (Мистическое болото 31x31, сбор реагентов и варка в котле)»
+ * 4) Постоянный ивент «Шахта Древних (Жила Жеод, 45x45, 3D-Рюкзак на спине)» на координатах 0 ~ 0
+ * Специально для Purpur 26.2 с поддержкой игроков Bedrock Edition (GeyserMC).
+ */
+public final class GeyserEventPlugin extends JavaPlugin {
+
+    private PluginConfig pluginConfig;
+    private BedrockService bedrockService;
+    private PlayerPointsHook playerPointsHook;
+    private WorldGuardHook worldGuardHook;
+    private RiftSchematicManager schematicManager;
+    private BeachSchematicManager beachSchematicManager;
+    private AlchemistSchematicManager alchemistSchematicManager;
+    private AncientMineManager ancientMineManager;
+    private MinerBackpackManager minerBackpackManager;
+    private BrushLootManager brushLootManager;
+    private BrushLootGuiManager brushLootGuiManager;
+    private TopRightHudManager topRightHudManager;
+    private MinionLootManager minionLootManager;
+    private BossAbilityController abilityController;
+    private SummonAltarManager summonAltarManager;
+    private InfernalRiftManager riftManager;
+    private GravityHoardManager gravityHoardManager;
+    private SkibidiToiletManager skibidiToiletManager;
+    private RonaldoEventManager ronaldoEventManager;
+    private FishingEventManager fishingEventManager;
+
+    @Override
+    public void onLoad() {
+        // Перезаписываем текстурпак в папке Geyser ещё на этапе onLoad (до того, как Geyser-Spigot просканирует packs/)
+        exportResourcePackAndOverwriteGeyser();
+    }
+
+    @Override
+    public void onEnable() {
+        // 1. Загрузка конфигурации config.yml
+        this.pluginConfig = new PluginConfig(this);
+
+        // 2. Инициализация интеграций GeyserMC/Floodgate, PlayerPoints и WorldGuard
+        this.bedrockService = new BedrockService(this);
+        this.playerPointsHook = new PlayerPointsHook(this);
+        this.worldGuardHook = new WorldGuardHook();
+        if (this.worldGuardHook.isAvailable()) {
+            getLogger().info("WorldGuard найден: регионы WorldGuard не будут мешать ломать руды «Шахты Древних».");
+        }
+
+        // 3. Менеджеры схем, лута, 3D-рюкзака, GUI-меню и HUD
+        this.schematicManager = new RiftSchematicManager(this);
+        this.beachSchematicManager = new BeachSchematicManager(this);
+        this.alchemistSchematicManager = new AlchemistSchematicManager(this);
+        this.brushLootManager = new BrushLootManager(this);
+        this.brushLootGuiManager = new BrushLootGuiManager(this);
+        this.minerBackpackManager = new MinerBackpackManager(this);
+        this.ancientMineManager = new AncientMineManager(this);
+        this.topRightHudManager = new TopRightHudManager(this);
+        this.minionLootManager = new MinionLootManager(this);
+
+        // 4. Контроллер способностей босса и главный менеджер ивентов
+        this.abilityController = new BossAbilityController(this);
+        this.riftManager = new InfernalRiftManager(this);
+
+        // 4a. Призывные ивенты: алтари призыва босса (спецблоки с кастомными текстурами)
+        this.summonAltarManager = new SummonAltarManager(this);
+
+        this.gravityHoardManager = new GravityHoardManager(this);
+        this.skibidiToiletManager = new SkibidiToiletManager(this);
+        this.ronaldoEventManager = new RonaldoEventManager(this);
+        this.fishingEventManager = new FishingEventManager(this);
+
+        // 5. Регистрация слушателей событий
+        getServer().getPluginManager().registerEvents(new RiftEventListener(this), this);
+
+        // 6. Регистрация команд для игроков (/event delay, /event gps, /event mine, /event backpack)
+        PluginCommand eventCmd = getCommand("event");
+        if (eventCmd != null) {
+            EventPlayerCommand playerExecutor = new EventPlayerCommand(this);
+            eventCmd.setExecutor(playerExecutor);
+            eventCmd.setTabCompleter(playerExecutor);
+        }
+
+        // 7. Регистрация админ-команд (/rift, /cauldronmenu, /minemenu)
+        RiftCommand adminExecutor = new RiftCommand(this);
+        PluginCommand riftCmd = getCommand("rift");
+        if (riftCmd != null) {
+            riftCmd.setExecutor(adminExecutor);
+            riftCmd.setTabCompleter(adminExecutor);
+        }
+        PluginCommand cauldronMenuCmd = getCommand("cauldronmenu");
+        if (cauldronMenuCmd != null) {
+            cauldronMenuCmd.setExecutor(adminExecutor);
+            cauldronMenuCmd.setTabCompleter(adminExecutor);
+        }
+        PluginCommand mineMenuCmd = getCommand("minemenu");
+        if (mineMenuCmd != null) {
+            mineMenuCmd.setExecutor(adminExecutor);
+            mineMenuCmd.setTabCompleter(adminExecutor);
+        }
+        PluginCommand kladCmd = getCommand("klad");
+        if (kladCmd != null) {
+            KladCommand kladExecutor = new KladCommand(this);
+            kladCmd.setExecutor(kladExecutor);
+            kladCmd.setTabCompleter(kladExecutor);
+        }
+        PluginCommand skibidiCmd = getCommand("skibidi");
+        if (skibidiCmd != null) {
+            SkibidiCommand skibidiExecutor = new SkibidiCommand(this);
+            skibidiCmd.setExecutor(skibidiExecutor);
+            skibidiCmd.setTabCompleter(skibidiExecutor);
+        }
+        PluginCommand ronaldoCmd = getCommand("ronaldo");
+        if (ronaldoCmd != null) {
+            RonaldoCommand ronaldoExecutor = new RonaldoCommand(this);
+            ronaldoCmd.setExecutor(ronaldoExecutor);
+            ronaldoCmd.setTabCompleter(ronaldoExecutor);
+        }
+        PluginCommand fishingCmd = getCommand("fishing");
+        if (fishingCmd != null) {
+            FishingCommand fishingExecutor = new FishingCommand(this);
+            fishingCmd.setExecutor(fishingExecutor);
+            fishingCmd.setTabCompleter(fishingExecutor);
+        }
+
+        // 8. Экспорт и автоматическая перезапись меню DeluxeMenus (events.yml) и текстурпака (GeyserEvent-Pack.mcpack)
+        exportDeluxeMenusConfig();
+        exportResourcePackAndOverwriteGeyser();
+
+        // 9. Автоматический запуск постоянного ивента «Шахта Древних (Жила Жеод)» 45x45 на 0 ~ 0
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            if (this.ancientMineManager != null) {
+                this.ancientMineManager.initializePermanentMine();
+            }
+            if (this.skibidiToiletManager != null) {
+                this.skibidiToiletManager.cleanupOrphanSchematic();
+            }
+            if (this.ronaldoEventManager != null) {
+                this.ronaldoEventManager.cleanupOrphanSchematic();
+            }
+            if (this.fishingEventManager != null) {
+                this.fishingEventManager.cleanupOrphanSchematic();
+            }
+        }, 20L);
+
+        getLogger().info("==================================================");
+        getLogger().info(" GeyserEvent v1.21.61 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Гейзер, Рыбалка (пришельцы удалены, скибиди/CR7 выключены)");
+        getLogger().info(" Постоянный ивент: Шахта Древних crater-lobby (v9) + подъём на 0 ~ 0");
+        getLogger().info("==================================================");
+    }
+
+    private void exportDeluxeMenusConfig() {
+        try {
+            saveResource("deluxemenus/events.yml", true);
+            File exported = new File(getDataFolder(), "deluxemenus/events.yml");
+            File pluginsDir = getDataFolder().getParentFile();
+            if (pluginsDir != null && exported.exists()) {
+                File dmGuiDir = new File(new File(pluginsDir, "DeluxeMenus"), "gui_menus");
+                if (dmGuiDir.exists()) {
+                    File target = new File(dmGuiDir, "events.yml");
+                    Files.copy(exported.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void exportResourcePackAndOverwriteGeyser() {
+        try {
+            saveResource("resourcepack/GeyserEvent-Pack.mcpack", true);
+            File exported = new File(getDataFolder(), "resourcepack/GeyserEvent-Pack.mcpack");
+            if (exported.exists()) {
+                File rootCopy = new File(getDataFolder(), "GeyserEvent-Pack.mcpack");
+                Files.copy(exported.toPath(), rootCopy.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                File pluginsDir = getDataFolder().getParentFile();
+                if (pluginsDir != null) {
+                    for (String geyserFolder : new String[]{"Geyser-Spigot", "Geyser-Paper", "Geyser-Purpur", "Geyser"}) {
+                        File geyserDir = new File(pluginsDir, geyserFolder);
+                        if (geyserDir.exists()) {
+                            File packsDir = new File(geyserDir, "packs");
+                            if (!packsDir.exists()) {
+                                packsDir.mkdirs();
+                            }
+                            File targetPack = new File(packsDir, "GeyserEvent-Pack.mcpack");
+                            Files.copy(exported.toPath(), targetPack.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            getLogger().info("Текстурпак GeyserEvent-Pack.mcpack автоматически перезаписан в " + targetPack.getPath());
+                            exportGeyserCustomItems(geyserDir);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    /** Маппинг CustomModelData удочек Lucky Waters. Ванильная удочка без CMD не трогается. */
+    private void exportGeyserCustomItems(File geyserDir) {
+        try {
+            saveResource("geyser/custom-items.json", true);
+            saveResource("geyser/Geyser-fishing-rods-mapping.json", true);
+            File exported = new File(getDataFolder(), "geyser/custom-items.json");
+            File mappingFile = new File(getDataFolder(), "geyser/Geyser-fishing-rods-mapping.json");
+            if (exported.exists()) {
+                Files.copy(exported.toPath(), new File(geyserDir, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                File mappings = new File(geyserDir, "custom-mappings");
+                if (!mappings.exists()) {
+                    mappings.mkdirs();
+                }
+                Files.copy(exported.toPath(), new File(mappings, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            if (mappingFile.exists()) {
+                File underscore = new File(geyserDir, "custom_mappings");
+                if (!underscore.exists()) {
+                    underscore.mkdirs();
+                }
+                Files.copy(mappingFile.toPath(), new File(underscore, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                File pluginsDir = getDataFolder().getParentFile();
+                if (pluginsDir != null && pluginsDir.getParentFile() != null) {
+                    File bedrockMappings = new File(pluginsDir.getParentFile(), "bedrock" + File.separator + "custom_mappings");
+                    if (bedrockMappings.exists() || new File(pluginsDir.getParentFile(), "bedrock").isDirectory()) {
+                        bedrockMappings.mkdirs();
+                        Files.copy(mappingFile.toPath(), new File(bedrockMappings, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    @Override
+    public void onDisable() {
+        if (this.minerBackpackManager != null) {
+            this.minerBackpackManager.saveData();
+            this.minerBackpackManager.clearAllVisualBackpacks();
+        }
+        if (this.ancientMineManager != null) {
+            this.ancientMineManager.shutdownMine(true);
+        }
+        if (this.summonAltarManager != null) {
+            this.summonAltarManager.shutdown();
+        }
+        if (this.gravityHoardManager != null && this.gravityHoardManager.isActive()) {
+            getLogger().info("Завершение ивента «Сердце Ветра» и откат схемы...");
+            this.gravityHoardManager.stopEvent();
+        }
+        if (this.skibidiToiletManager != null && this.skibidiToiletManager.isActive()) {
+            getLogger().info("Завершение ивента «Шкибиди Туалет» и откат схемы...");
+            this.skibidiToiletManager.stopEvent();
+        } else if (this.skibidiToiletManager != null) {
+            this.skibidiToiletManager.cleanupOrphanSchematic();
+        }
+        if (this.ronaldoEventManager != null && this.ronaldoEventManager.isActive()) {
+            getLogger().info("Завершение ивента «Роналду» и откат схемы...");
+            this.ronaldoEventManager.stopEvent();
+        } else if (this.ronaldoEventManager != null) {
+            this.ronaldoEventManager.cleanupOrphanSchematic();
+        }
+        if (this.fishingEventManager != null && this.fishingEventManager.isActive()) {
+            getLogger().info("Завершение ивента «Рыбалка» и откат схемы...");
+            this.fishingEventManager.stopEvent();
+        } else if (this.fishingEventManager != null) {
+            this.fishingEventManager.cleanupOrphanSchematic();
+        }
+        if (this.riftManager != null && this.riftManager.isActive()) {
+            getLogger().info("Завершение активного ивента и откат схемы...");
+            this.riftManager.stopEvent(false);
+        } else {
+            if (this.schematicManager != null) {
+                this.schematicManager.restoreSchematic();
+            }
+            if (this.beachSchematicManager != null) {
+                this.beachSchematicManager.restoreActiveSchematic();
+            }
+            if (this.alchemistSchematicManager != null) {
+                this.alchemistSchematicManager.restoreActiveSchematic();
+            }
+            if (this.topRightHudManager != null) {
+                this.topRightHudManager.clearAllHud();
+            }
+        }
+        getLogger().info("GeyserEvent выключен.");
+    }
+
+    public PluginConfig getPluginConfig() {
+        return pluginConfig;
+    }
+
+    public BedrockService getBedrockService() {
+        return bedrockService;
+    }
+
+    public PlayerPointsHook getPlayerPointsHook() {
+        return playerPointsHook;
+    }
+
+    public WorldGuardHook getWorldGuardHook() {
+        return worldGuardHook;
+    }
+
+    public RiftSchematicManager getSchematicManager() {
+        return schematicManager;
+    }
+
+    public BeachSchematicManager getBeachSchematicManager() {
+        return beachSchematicManager;
+    }
+
+    public AlchemistSchematicManager getAlchemistSchematicManager() {
+        return alchemistSchematicManager;
+    }
+
+    public AncientMineManager getAncientMineManager() {
+        return ancientMineManager;
+    }
+
+    public MinerBackpackManager getMinerBackpackManager() {
+        return minerBackpackManager;
+    }
+
+    public BrushLootManager getBrushLootManager() {
+        return brushLootManager;
+    }
+
+    public BrushLootGuiManager getBrushLootGuiManager() {
+        return brushLootGuiManager;
+    }
+
+    public GravityHoardManager getGravityHoardManager() { return gravityHoardManager; }
+
+    public SkibidiToiletManager getSkibidiToiletManager() { return skibidiToiletManager; }
+
+    public RonaldoEventManager getRonaldoEventManager() { return ronaldoEventManager; }
+
+    public FishingEventManager getFishingEventManager() { return fishingEventManager; }
+
+    public TopRightHudManager getTopRightHudManager() {
+        return topRightHudManager;
+    }
+
+    public MinionLootManager getMinionLootManager() {
+        return minionLootManager;
+    }
+
+    public BossAbilityController getAbilityController() {
+        return abilityController;
+    }
+
+    public SummonAltarManager getSummonAltarManager() {
+        return summonAltarManager;
+    }
+
+    public InfernalRiftManager getRiftManager() {
+        return riftManager;
+    }
+}

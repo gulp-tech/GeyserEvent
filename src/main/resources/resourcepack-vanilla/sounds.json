@@ -1,0 +1,101 @@
+{
+  "alien_growl": {
+    "sounds": [
+      {"name": "alien/alien_growl", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.0,
+    "pitch": 1.0,
+    "attenuation_distance": 64
+  },
+  "alien_screech": {
+    "sounds": [
+      {"name": "alien/alien_screech", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.0,
+    "pitch": 1.0,
+    "attenuation_distance": 64
+  },
+  "alien_ambient": {
+    "sounds": [
+      {"name": "alien/alien_ambient", "stream": false}
+    ],
+    "category": "ambient",
+    "volume": 0.5,
+    "pitch": 1.0,
+    "attenuation_distance": 32
+  },
+  "alien_transmit": {
+    "sounds": [
+      {"name": "alien/alien_transmit", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 0.8,
+    "pitch": 1.0,
+    "attenuation_distance": 48
+  },
+  "alien_death": {
+    "sounds": [
+      {"name": "alien/alien_death", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.5,
+    "pitch": 1.0,
+    "attenuation_distance": 80
+  },
+  "skibidi_boss": {
+    "sounds": [
+      {"name": "skibidi/boss", "stream": true}
+    ],
+    "category": "hostile",
+    "volume": 1.4,
+    "pitch": 1.0,
+    "attenuation_distance": 80
+  },
+  "skibidi_ambient": {
+    "sounds": [
+      {"name": "skibidi/ambient", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 0.8,
+    "pitch": 1.0,
+    "attenuation_distance": 48
+  },
+  "skibidi_chase": {
+    "sounds": [
+      {"name": "skibidi/chase", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.0,
+    "pitch": 1.0,
+    "attenuation_distance": 48
+  },
+  "skibidi_death": {
+    "sounds": [
+      {"name": "skibidi/death", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.3,
+    "pitch": 1.0,
+    "attenuation_distance": 64
+  },
+  "ronaldo_siuu": {
+    "sounds": [
+      {"name": "ronaldo/siuu", "stream": false}
+    ],
+    "category": "hostile",
+    "volume": 1.8,
+    "pitch": 1.0,
+    "attenuation_distance": 48
+  },
+  "ronaldo_talk": {
+    "sounds": [
+      {"name": "ronaldo/talk", "stream": true}
+    ],
+    "category": "hostile",
+    "volume": 1.5,
+    "pitch": 1.0,
+    "attenuation_distance": 48
+  }
+}

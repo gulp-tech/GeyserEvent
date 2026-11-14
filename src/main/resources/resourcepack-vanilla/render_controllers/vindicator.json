@@ -1,0 +1,18 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.vindicator": {
+      "arrays": {
+        "geometries": {
+          "Array.geos": [ "Geometry.default", "Geometry.alien" ]
+        },
+        "textures": {
+          "Array.skins": [ "Texture.default", "Texture.alien" ]
+        }
+      },
+      "geometry": "Array.geos[!query.is_item_name_any('slot.weapon.mainhand', 'minecraft:iron_axe', 'minecraft:stone_axe', 'minecraft:golden_axe', 'minecraft:diamond_axe', 'minecraft:netherite_axe', 'minecraft:wooden_axe')]",
+      "materials": [ { "*": "Material.default" } ],
+      "textures": [ "Array.skins[!query.is_item_name_any('slot.weapon.mainhand', 'minecraft:iron_axe', 'minecraft:stone_axe', 'minecraft:golden_axe', 'minecraft:diamond_axe', 'minecraft:netherite_axe', 'minecraft:wooden_axe')]" ]
+    }
+  }
+}
