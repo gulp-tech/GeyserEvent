@@ -6,6 +6,7 @@ import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.boss.BarColor;
@@ -41,7 +42,7 @@ public final class NewYearEventManager {
 
     public static final String REGION_ID = "geyserevent_newyear";
     public static final String SCHEMATIC_FILE = "santa_sleigh.schem.yml";
-    public static final int ARENA_RADIUS = 18;
+    public static final int ARENA_RADIUS = 22;
 
     private final GeyserEventPlugin plugin;
     private final RiftSchematicManager schematicManager;
@@ -107,7 +108,7 @@ public final class NewYearEventManager {
         } catch (IllegalArgumentException ignored) {
         }
         setChunksForceLoaded(this.center, true);
-        schematicManager.pasteSchematic(this.center, ARENA_RADIUS, 8);
+        schematicManager.pasteSchematic(this.center, ARENA_RADIUS, 10);
         schematicManager.persistRestoreState(restoreSnapshotFile());
         spawnSanta();
         spawnHologram();
@@ -248,6 +249,9 @@ public final class NewYearEventManager {
                     scatterTick = 0;
                     scatterGifts();
                 }
+                if (scatterTick % 2 == 0) {
+                    snowBurst();
+                }
                 refreshHologram();
                 refreshBossBar();
                 if (bossBar != null) {
@@ -268,26 +272,56 @@ public final class NewYearEventManager {
         if (center == null || center.getWorld() == null) {
             return;
         }
-        Location mouth = schematicManager.getBossSpawnLocation();
-        if (mouth == null) {
-            mouth = center.clone().add(0.5, 2.4, 10.5);
-        } else {
-            mouth = mouth.clone().add(0, 0.4, 0);
+        if (countGroundGifts() >= 12) {
+            return;
         }
+        Location mouth = sackLocation();
         World world = mouth.getWorld();
-        world.playSound(mouth, Sound.ENTITY_SNOWBALL_THROW, 0.7f, 0.8f);
+        world.playSound(mouth, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.8f, 1.3f);
+        world.playSound(mouth, Sound.ENTITY_SNOWBALL_THROW, 0.45f, 0.7f);
         int n = 1 + ThreadLocalRandom.current().nextInt(2);
         for (int i = 0; i < n; i++) {
             String rarity = rollRarity();
             ItemStack gift = createGift(rarity);
             Item dropped = world.dropItem(mouth, gift);
-            dropped.setPickupDelay(8);
+            dropped.setPickupDelay(10);
+            dropped.setGlowing(true);
+            dropped.setCustomName(gift.getItemMeta() != null ? gift.getItemMeta().getDisplayName() : null);
+            dropped.setCustomNameVisible(true);
             dropped.setVelocity(new Vector(
-                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.85,
-                    0.45 + ThreadLocalRandom.current().nextDouble() * 0.25,
-                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.85
+                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.7,
+                    0.38 + ThreadLocalRandom.current().nextDouble() * 0.22,
+                    -0.15 + (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.55
             ));
         }
+    }
+
+    private Location sackLocation() {
+        if (center == null) {
+            return null;
+        }
+        return center.clone().add(0.5, 3.6, 16.5);
+    }
+
+    private int countGroundGifts() {
+        if (center == null || center.getWorld() == null) {
+            return 0;
+        }
+        int n = 0;
+        for (Entity entity : center.getWorld().getNearbyEntities(center, ARENA_RADIUS + 6, 8, ARENA_RADIUS + 6)) {
+            if (entity instanceof Item item && isGift(item.getItemStack())) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private void snowBurst() {
+        if (center == null || center.getWorld() == null) {
+            return;
+        }
+        Location loc = center.clone().add(0, 4.5, 8);
+        center.getWorld().spawnParticle(Particle.CLOUD, loc, 6, 3.5, 1.2, 6.0, 0.01);
     }
 
     private String rollRarity() {
@@ -389,7 +423,8 @@ public final class NewYearEventManager {
             santa.getEquipment().setChestplate(dyed(Material.LEATHER_CHESTPLATE, Color.fromRGB(180, 20, 20)));
             santa.getEquipment().setLeggings(dyed(Material.LEATHER_LEGGINGS, Color.fromRGB(180, 20, 20)));
             santa.getEquipment().setBoots(dyed(Material.LEATHER_BOOTS, Color.fromRGB(40, 20, 20)));
-            santa.getEquipment().setHelmet(dyed(Material.LEATHER_HELMET, Color.fromRGB(180, 20, 20)));
+            santa.getEquipment().setHelmet(dyed(Material.LEATHER_HELMET, Color.fromRGB(220, 30, 30)));
+            santa.getEquipment().setItemInMainHand(createGift("legendary"));
         }
         this.santaUuid = santa.getUniqueId();
     }
@@ -469,7 +504,7 @@ public final class NewYearEventManager {
         if (center == null) {
             return null;
         }
-        return new Location(center.getWorld(), center.getX(), center.getY() + 3.4, center.getZ());
+        return new Location(center.getWorld(), center.getX() + 0.5, center.getY() + 4.6, center.getZ() + 14.5);
     }
 
     private String[] hologramLines() {
@@ -516,9 +551,11 @@ public final class NewYearEventManager {
         if (center == null) {
             return;
         }
+        center.getWorld().playSound(center, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1.0f, 1.1f);
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &cКарета Санты приземлилась!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fПодарки: &fбелый &8/ &9голубой &8/ &dпурпур &8/ &cкрасный шалкер"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fПКМ по подарку — открыть. Ванильный шалкер не трогаем."));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &f9 оленей, мешок с подарками-шалкерами"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &f&lбелый &8/ &9голубой &8/ &dпурпур &8/ &cкрасный &f— редкость"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fПКМ открыть. Ванильный шалкер без метки не меняется."));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                 + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЛокатор: &#34D711/event gps"));
@@ -528,12 +565,9 @@ public final class NewYearEventManager {
         if (center == null || center.getWorld() == null) {
             return;
         }
-        double r = (ARENA_RADIUS + 8) * (ARENA_RADIUS + 8);
-        for (Entity entity : center.getWorld().getEntities()) {
-            if (entity instanceof Item item && item.getLocation().distanceSquared(center) <= r) {
-                if (isGift(item.getItemStack())) {
-                    item.remove();
-                }
+        for (Entity entity : center.getWorld().getNearbyEntities(center, ARENA_RADIUS + 8, 10, ARENA_RADIUS + 8)) {
+            if (entity instanceof Item item && isGift(item.getItemStack())) {
+                item.remove();
             }
         }
     }
