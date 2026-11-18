@@ -21,6 +21,8 @@ resourcepack:
   # например: "/home/geyser/packs". Если путь недоступен — плагин напишет в консоли,
   # какой файл куда скопировать вручную.
   geyser-packs-dir: ""
+  # Java-ресурспак со звуком кареты. Без него playSound кастомного ключа молчит.
+  java-pack-url: "https://raw.githubusercontent.com/gulp-tech/GeyserEvent/arena/0d820c4a-geyserevent/GeyserEvent-Java-Pack.zip"
   # Ресурспак GeyserEvent-Pack.mcpack: 3D-рюкзак шахтёра и текстуры блоков призыва.
   # Панель ивента в углу экрана убрана в v1.9.29 — настройки ниже не используются,
   # но оставлены для будущего. Информация ивента: только BossBar сверху + GPS в action bar.

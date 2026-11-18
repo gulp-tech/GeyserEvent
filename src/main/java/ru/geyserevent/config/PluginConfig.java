@@ -39,6 +39,7 @@ public class PluginConfig {
     // ResourcePack & Top-Right HUD
     private boolean autoInstallResourcePackToGeyser;
     private String geyserPacksDir;
+    private String javaPackUrl;
     private boolean topRightHudEnabled;
     private String topRightHudTitle;
     private String topRightEventDisplayName;
@@ -268,6 +269,8 @@ public class PluginConfig {
         // Путь к папке packs вашего Geyser. Пусто = автоопределение plugins/Geyser-Spigot/packs.
         // Если Geyser стоит отдельным прокси (BungeeCord/Velocity/Standalone) — укажите путь к его packs вручную.
         this.geyserPacksDir = cfg.getString("resourcepack.geyser-packs-dir", "").trim();
+        this.javaPackUrl = cfg.getString("resourcepack.java-pack-url",
+                "https://raw.githubusercontent.com/gulp-tech/GeyserEvent/arena/0d820c4a-geyserevent/GeyserEvent-Java-Pack.zip").trim();
         this.topRightHudEnabled = cfg.getBoolean("resourcepack.top-right-hud.enabled", true);
         this.topRightHudTitle = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.title", "&#FF2E2E&lАДСКИЙ РАЗЛОМ"));
         this.topRightEventDisplayName = ColorUtil.color(cfg.getString("resourcepack.top-right-hud.event-display-name", "&#34D711Адский-Разлом"));
@@ -544,6 +547,7 @@ public class PluginConfig {
 
     public boolean isAutoInstallResourcePackToGeyser() { return autoInstallResourcePackToGeyser; }
     public String getGeyserPacksDir() { return geyserPacksDir; }
+    public String getJavaPackUrl() { return javaPackUrl; }
     public boolean isTopRightHudEnabled() { return topRightHudEnabled; }
     public String getTopRightHudTitle() { return topRightHudTitle; }
     public String getTopRightEventDisplayName() { return topRightEventDisplayName; }

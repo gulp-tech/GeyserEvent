@@ -14,7 +14,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 35]
+VERSION = [1, 21, 36]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -185,11 +185,18 @@ sound_defs["sound_definitions"]["ronaldo_talk"] = {
     "max_distance": 64,
     "sounds": [{"name": "sounds/ronaldo/talk", "volume": 1.4}],
 }
-sound_defs["sound_definitions"]["newyear_sleigh"] = {
-    "category": "ambient",
-    "max_distance": 72,
-    "sounds": [{"name": "sounds/newyear/sleigh", "stream": True, "volume": 1.8}],
+newyear_sound = {
+    "category": "music",
+    "max_distance": 128,
+    "sounds": [{
+        "name": "sounds/newyear/sleigh",
+        "stream": True,
+        "volume": 1.0,
+        "load_on_low_memory": True,
+    }],
 }
+for alias in ("newyear_sleigh", "minecraft.newyear_sleigh", "minecraft:newyear_sleigh"):
+    sound_defs["sound_definitions"][alias] = newyear_sound
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))
 
@@ -222,3 +229,51 @@ with zipfile.ZipFile(DST) as z:
     print("hud_screen.json in pack:", "ui/hud_screen.json" in names, "(must be False)")
     print("pack version / uuid:", VERSION, PACK_UUID)
     print("bad zip:", z.testzip())
+
+# --- Java resource pack (без него playSound кастомного ключа молчит) ---
+java_entries = {}
+java_entries["pack.mcmeta"] = json.dumps({
+    "pack": {
+        "pack_format": 34,
+        "description": "GeyserEvent — звук кареты Санты",
+    }
+}, ensure_ascii=False, indent=2).encode("utf-8")
+icon_path = os.path.join(VANILLA, "pack_icon.png")
+if os.path.exists(icon_path):
+    with open(icon_path, "rb") as fh:
+        java_entries["pack.png"] = fh.read()
+
+java_sounds = {}
+sounds_root = os.path.join(VANILLA, "sounds")
+if os.path.isdir(sounds_root):
+    for root, _, files in os.walk(sounds_root):
+        for name in sorted(files):
+            if not name.lower().endswith(".ogg"):
+                continue
+            full = os.path.join(root, name)
+            rel = os.path.relpath(full, sounds_root).replace(os.sep, "/")
+            key = rel[:-4].replace("\\", "/")
+            with open(full, "rb") as fh:
+                java_entries["assets/minecraft/sounds/" + rel] = fh.read()
+            event = key.replace("/", "_")
+            if key == "newyear/sleigh":
+                event = "newyear_sleigh"
+            elif key == "ronaldo/siuu":
+                event = "ronaldo_siuu"
+            elif key == "ronaldo/talk":
+                event = "ronaldo_talk"
+            java_sounds[event] = {
+                "category": "master",
+                "sounds": [{"name": key, "stream": True, "volume": 1.0}],
+            }
+java_entries["assets/minecraft/sounds.json"] = json.dumps(java_sounds, ensure_ascii=False, indent=2).encode("utf-8")
+java_targets = (
+    os.path.join(ROOT, "GeyserEvent-Java-Pack.zip"),
+    os.path.join(ROOT, "src", "main", "resources", "resourcepack", "GeyserEvent-Java-Pack.zip"),
+)
+for target in java_targets:
+    os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name in sorted(java_entries):
+            zf.writestr(name, java_entries[name])
+    print("java pack", target, os.path.getsize(target), "bytes", "events", list(java_sounds))

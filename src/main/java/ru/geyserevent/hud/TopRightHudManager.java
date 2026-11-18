@@ -7,6 +7,7 @@ import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.hook.BedrockService;
 
 import java.io.File;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -31,6 +32,7 @@ public class TopRightHudManager {
 
     /** Результат последней попытки скопировать ресурспак в Geyser (для /rift hudinfo). */
     private String packInstallResult = "ещё не выполнялась";
+    private byte[] javaPackHash;
 
     public TopRightHudManager(GeyserEventPlugin plugin) {
         this.plugin = plugin;
@@ -57,6 +59,7 @@ public class TopRightHudManager {
             plugin.saveResource("resourcepack/GeyserEvent-Pack.mcpack", true);
         } catch (Exception ignored) {
         }
+        exportJavaSoundPack(packDir);
 
         if (!plugin.getPluginConfig().isAutoInstallResourcePackToGeyser()) {
             packInstallResult = "авто-установка выключена (auto-install-to-geyser: false)";
@@ -272,6 +275,42 @@ public class TopRightHudManager {
     /** Результат копирования ресурспака в Geyser (для диагностики). */
     public String getPackInstallResult() {
         return packInstallResult;
+    }
+
+    private void exportJavaSoundPack(File packDir) {
+        try {
+            plugin.saveResource("resourcepack/GeyserEvent-Java-Pack.zip", true);
+        } catch (Exception ignored) {
+        }
+        File zip = new File(packDir, "GeyserEvent-Java-Pack.zip");
+        if (!zip.isFile()) {
+            this.javaPackHash = null;
+            return;
+        }
+        try {
+            this.javaPackHash = MessageDigest.getInstance("SHA-1").digest(Files.readAllBytes(zip.toPath()));
+            plugin.getLogger().info("Java-ресурспак звуков: " + zip.getPath());
+        } catch (Exception ex) {
+            this.javaPackHash = null;
+            plugin.getLogger().warning("Не удалось прочитать Java-ресурспак: " + ex.getMessage());
+        }
+    }
+
+    public void offerJavaPack(Player player) {
+        if (player == null || javaPackHash == null) {
+            return;
+        }
+        if (plugin.getBedrockService() != null && plugin.getBedrockService().isBedrockPlayer(player)) {
+            return;
+        }
+        String url = plugin.getPluginConfig().getJavaPackUrl();
+        if (url == null || url.isEmpty()) {
+            return;
+        }
+        try {
+            player.setResourcePack(url, javaPackHash);
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Экспортированный ресурспак (отсюда его можно скопировать в packs Geyser вручную). */

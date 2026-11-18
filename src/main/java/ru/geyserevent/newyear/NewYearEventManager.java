@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -853,20 +854,8 @@ public final class NewYearEventManager {
     }
 
     private void playSpawnSound() {
-        Location loc = shulkerBlockLocation();
-        if (loc == null) {
-            loc = center;
-        }
-        if (loc == null || loc.getWorld() == null) {
-            return;
-        }
-        Location at = loc.clone().add(0.5, 0.5, 0.5);
-        at.getWorld().playSound(at, SPAWN_SOUND, 1.8f, 1.0f);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getWorld().equals(at.getWorld())
-                    && player.getLocation().distanceSquared(at) <= 64 * 64) {
-                player.playSound(player.getLocation(), SPAWN_SOUND, 1.8f, 1.0f);
-            }
+            player.playSound(player.getLocation(), SPAWN_SOUND, SoundCategory.MASTER, 1.0f, 1.0f);
         }
     }
 
