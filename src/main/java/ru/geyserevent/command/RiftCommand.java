@@ -232,7 +232,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     type = EventType.fromString(args[1]);
                     if (type == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912wind&c, &#E0C912skibidi&c, &#E0C912ronaldo &cили &#E0C912fishing&c."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912wind&c, &#E0C912fishing &cили &#E0C912newyear&c."));
                         return true;
                     }
                 }
@@ -258,7 +258,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 if (args.length >= 2) {
                     EventType parsed = EventType.fromString(args[1]);
                     if (parsed == null) {
-                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912wind&c, &#E0C912skibidi&c, &#E0C912ronaldo &cили &#E0C912fishing&c."));
+                        sender.sendMessage(ColorUtil.color("&e┠ &cУкажите ивент: &#E0C912rift&c, &#E0C912excavation&c, &#E0C912cauldron&c, &#E0C912wind&c, &#E0C912fishing &cили &#E0C912newyear&c."));
                         return true;
                     }
                     type = parsed;
@@ -281,7 +281,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                         && plugin.getRonaldoEventManager().isActive();
                 boolean fishingActive = plugin.getFishingEventManager() != null
                         && plugin.getFishingEventManager().isActive();
-                if (!riftActive && !windActive && !skibidiActive && !ronaldoActive && !fishingActive) {
+                boolean newyearActive = plugin.getNewYearEventManager() != null
+                        && plugin.getNewYearEventManager().isActive();
+                if (!riftActive && !windActive && !skibidiActive && !ronaldoActive && !fishingActive && !newyearActive) {
                     sender.sendMessage(ColorUtil.color("&e┠ &cИвент не активен."));
                     return true;
                 }
@@ -299,6 +301,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 }
                 if (fishingActive) {
                     plugin.getFishingEventManager().stopEvent();
+                }
+                if (newyearActive) {
+                    plugin.getNewYearEventManager().stopEvent();
                 }
                 sender.sendMessage(ColorUtil.color("&e┠ &#34D711Ивент остановлен и схема откачена."));
                 return true;
@@ -1186,7 +1191,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return filterPrefix(Arrays.asList("regen", "spawn", "set-here", "remove", "menu", "status"), args[1]);
             }
             if (sub.equals("start") || sub.equals("start-here") || sub.equals("starthere")) {
-                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "wind", "skibidi", "ronaldo", "fishing"), args[1]);
+                return filterPrefix(Arrays.asList("rift", "excavation", "cauldron", "wind", "fishing", "newyear"), args[1]);
             }
             if (sub.equals("menu") || sub.equals("gui") || sub.equals("cauldronmenu") || sub.equals("cmenu")
                     || sub.equals("minemenu") || sub.equals("mmenu") || sub.equals("excavationmenu")

@@ -63,6 +63,19 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
             }
 
             case "delay", "time", "info" -> {
+                if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isActive()
+                        && plugin.getNewYearEventManager().getCenterLocation() != null) {
+                    var ny = plugin.getNewYearEventManager();
+                    sender.sendMessage(ColorUtil.color("&e┼ &c&lНовый год &fактивен."));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fДо конца: &#E0C912"
+                            + ColorUtil.formatDuration(ny.getSecondsRemaining())));
+                    sender.sendMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
+                            + ny.getCenterLocation().getBlockX() + " "
+                            + ny.getCenterLocation().getBlockY() + " "
+                            + ny.getCenterLocation().getBlockZ()));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7ПКМ по подарку-шалкеру — открыть"));
+                    return true;
+                }
                 if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()
                         && plugin.getFishingEventManager().getCenterLocation() != null) {
                     var fishing = plugin.getFishingEventManager();

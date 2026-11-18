@@ -152,6 +152,23 @@ public class BrushLootGuiManager {
         }
     }
 
+    public static class NewyearMenuHolder implements InventoryHolder {
+        private final GuiKind kind;
+
+        public NewyearMenuHolder(GuiKind kind) {
+            this.kind = kind;
+        }
+
+        public GuiKind getKind() {
+            return kind;
+        }
+
+        @Override
+        public Inventory getInventory() {
+            return null;
+        }
+    }
+
     private final GeyserEventPlugin plugin;
 
     public BrushLootGuiManager(GeyserEventPlugin plugin) {
@@ -243,6 +260,11 @@ public class BrushLootGuiManager {
         inv.setItem(31, createTierSelectIcon(BrushTier.EPIC, LootCategory.MINE, kind));
         inv.setItem(33, createTierSelectIcon(BrushTier.LEGENDARY, LootCategory.MINE, kind));
 
+        inv.setItem(36, createButton(
+                Material.RED_SHULKER_BOX,
+                "&c&lНовый год",
+                List.of("&7Подарки-шалкеры по редкости", "", "&eНажмите")
+        ));
         inv.setItem(38, createButton(
                 Material.HOPPER,
                 "&f&lШкибиди Туалет",
@@ -375,6 +397,36 @@ public class BrushLootGuiManager {
                 loot ? Material.GOLD_INGOT : Material.CHEST,
                 loot ? "&6Перейти к шансам" : "&aПерейти к луту",
                 List.of("&7Другое меню гейзера")
+        ));
+        openLater(player, inv);
+    }
+
+    @SuppressWarnings("deprecation")
+    public void openNewyearMenu(Player player, GuiKind kind) {
+        boolean loot = kind == GuiKind.LOOT;
+        Inventory inv = Bukkit.createInventory(
+                new NewyearMenuHolder(kind),
+                27,
+                ColorUtil.color(loot ? "&8Лут: Новый год" : "&8Шансы: Новый год")
+        );
+        ItemStack filler = createButton(Material.GRAY_STAINED_GLASS_PANE, "&7", List.of());
+        for (int i = 0; i < 27; i++) {
+            inv.setItem(i, filler);
+        }
+        inv.setItem(4, createButton(
+                Material.RED_SHULKER_BOX,
+                "&c&lНовый год — " + (loot ? "лут" : "шансы"),
+                List.of("&7Цвет шалкера = редкость подарка.", "&eВыберите пул")
+        ));
+        inv.setItem(10, createButton(Material.WHITE_SHULKER_BOX, "&fОбычный", List.of("&7newyear.loot.common")));
+        inv.setItem(12, createButton(Material.LIGHT_BLUE_SHULKER_BOX, "&9Редкий", List.of("&7newyear.loot.rare")));
+        inv.setItem(14, createButton(Material.MAGENTA_SHULKER_BOX, "&dЭпический", List.of("&7newyear.loot.epic")));
+        inv.setItem(16, createButton(Material.RED_SHULKER_BOX, "&6Легендарный", List.of("&7newyear.loot.legendary")));
+        inv.setItem(18, createButton(Material.ARROW, "&e« К списку ивентов", List.of("&7Тот же режим")));
+        inv.setItem(22, createButton(
+                loot ? Material.GOLD_INGOT : Material.CHEST,
+                loot ? "&6Перейти к шансам" : "&aПерейти к луту",
+                List.of("&7Другое меню")
         ));
         openLater(player, inv);
     }
@@ -803,6 +855,7 @@ public class BrushLootGuiManager {
                 case 29 -> openTierMenu(player, BrushTier.COMMON, LootCategory.MINE, kind);
                 case 31 -> openTierMenu(player, BrushTier.EPIC, LootCategory.MINE, kind);
                 case 33 -> openTierMenu(player, BrushTier.LEGENDARY, LootCategory.MINE, kind);
+                case 36 -> openNewyearMenu(player, kind);
                 case 38 -> openFlatLootMenu(player, "skibidi.loot", "Шкибиди Туалет", Material.HOPPER, false, kind);
                 case 40 -> openGeyserMenu(player, kind);
                 case 42 -> openFlatLootMenu(player, "ronaldo.loot", "Роналду SIUU", Material.GOLDEN_HELMET, false, kind);
@@ -848,6 +901,48 @@ public class BrushLootGuiManager {
             return true;
         }
 
+        if (holder instanceof NewyearMenuHolder nyHolder) {
+            event.setCancelled(true);
+            if (event.getClickedInventory() != top) {
+                return true;
+            }
+            GuiKind kind = nyHolder.getKind();
+            int slot = event.getSlot();
+            if (slot == 18) {
+                openEventList(player, kind);
+                return true;
+            }
+            if (slot == 22) {
+                openNewyearMenu(player, kind == GuiKind.LOOT ? GuiKind.CHANCES : GuiKind.LOOT);
+                return true;
+            }
+            String path = switch (slot) {
+                case 10 -> "newyear.loot.common";
+                case 12 -> "newyear.loot.rare";
+                case 14 -> "newyear.loot.epic";
+                case 16 -> "newyear.loot.legendary";
+                default -> null;
+            };
+            String title = switch (slot) {
+                case 10 -> "Новый год · обычный";
+                case 12 -> "Новый год · редкий";
+                case 14 -> "Новый год · эпик";
+                case 16 -> "Новый год · легенда";
+                default -> null;
+            };
+            Material icon = switch (slot) {
+                case 10 -> Material.WHITE_SHULKER_BOX;
+                case 12 -> Material.LIGHT_BLUE_SHULKER_BOX;
+                case 14 -> Material.MAGENTA_SHULKER_BOX;
+                case 16 -> Material.RED_SHULKER_BOX;
+                default -> Material.SHULKER_BOX;
+            };
+            if (path != null) {
+                openFlatLootMenu(player, path, title, icon, false, kind);
+            }
+            return true;
+        }
+
         if (holder instanceof FlatLootHolder flatHolder) {
             event.setCancelled(true);
             if (event.getClickedInventory() != top) {
@@ -869,6 +964,8 @@ public class BrushLootGuiManager {
             if (slot == 45) {
                 if (flatHolder.path.startsWith("wind.loot.")) {
                     openGeyserMenu(player, flatHolder.kind);
+                } else if (flatHolder.path.startsWith("newyear.loot.")) {
+                    openNewyearMenu(player, flatHolder.kind);
                 } else {
                     openEventList(player, flatHolder.kind);
                 }
@@ -1030,7 +1127,7 @@ public class BrushLootGuiManager {
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
         if (holder instanceof HubHolder || holder instanceof MainMenuHolder || holder instanceof EventMenuHolder
                 || holder instanceof TierMenuHolder || holder instanceof FlatLootHolder
-                || holder instanceof WindMenuHolder) {
+                || holder instanceof WindMenuHolder || holder instanceof NewyearMenuHolder) {
             event.setCancelled(true);
             return true;
         }

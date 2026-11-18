@@ -168,6 +168,7 @@ public class PluginConfig {
     private final List<AlienLootItem> windLoot = new ArrayList<>();
     private final Map<String, List<AlienLootItem>> windLootTiers = new java.util.LinkedHashMap<>();
     private final List<AlienLootItem> ronaldoLoot = new ArrayList<>();
+    private final Map<String, List<AlienLootItem>> newyearLootTiers = new java.util.LinkedHashMap<>();
 
     /** Предмет лута в сундуках пришельцев (ключ, материал, количество, шанс, rare, оформление). */
     public record AlienLootItem(
@@ -409,6 +410,7 @@ public class PluginConfig {
         loadSkibidiLoot(cfg);
         loadWindLoot(cfg);
         loadRonaldoLoot(cfg);
+        loadNewyearLoot(cfg);
 
         // NPCs & Invisibility (невидимость НЕ работает на НПС ивентов)
         this.npcsIgnoreInvisibility = cfg.getBoolean("npcs.ignore-invisibility", true);
@@ -935,6 +937,9 @@ public class PluginConfig {
         return windLootTiers.getOrDefault(tier == null ? "" : tier.toLowerCase(Locale.ROOT), List.of());
     }
     public List<AlienLootItem> getRonaldoLoot() { return ronaldoLoot; }
+    public List<AlienLootItem> getNewyearLoot(String tier) {
+        return newyearLootTiers.getOrDefault(tier == null ? "" : tier.toLowerCase(Locale.ROOT), List.of());
+    }
 
     private void loadSkibidiLoot(FileConfiguration cfg) {
         this.skibidiLoot.clear();
@@ -969,6 +974,22 @@ public class PluginConfig {
         if (this.windLoot.isEmpty()) {
             this.windLoot.addAll(this.alienChestLoot);
             this.windLootTiers.put("common", new ArrayList<>(this.alienChestLoot));
+        }
+    }
+
+    private void loadNewyearLoot(FileConfiguration cfg) {
+        this.newyearLootTiers.clear();
+        ConfigurationSection loot = cfg.getConfigurationSection("newyear.loot");
+        if (loot != null) {
+            for (String tier : List.of("common", "rare", "epic", "legendary")) {
+                this.newyearLootTiers.put(tier, readChanceLoot(loot.getConfigurationSection(tier)));
+            }
+        }
+        if (this.newyearLootTiers.getOrDefault("common", List.of()).isEmpty()) {
+            this.newyearLootTiers.put("common", List.of(
+                    new AlienLootItem("cookie", Material.COOKIE, 4, 12, 80.0, false, null, List.of(), Map.of()),
+                    new AlienLootItem("snow", Material.SNOWBALL, 8, 16, 70.0, false, null, List.of(), Map.of())
+            ));
         }
     }
 

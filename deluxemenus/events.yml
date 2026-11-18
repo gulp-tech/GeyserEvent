@@ -110,6 +110,26 @@ items:
     right_click_commands:
       - '[player] event gps'
 
+  'newyear_sleigh':
+    material: RED_SHULKER_BOX
+    slot: 25
+    item_flags:
+      - HIDE_ATTRIBUTES
+    display_name: '&c&lНовый год'
+    lore:
+      - '&8Карета Санты и 9 оленей'
+      - ''
+      - '&e┠ &fПодарки-шалкеры: белый / голубой / пурпур / красный'
+      - '&e┠ &fПКМ по подарку — открыть'
+      - '&e┠ &fСтарт: &#E0C912/newyear &f· случайная точка'
+      - ''
+      - '&#34D711» ЛКМ — /event delay'
+      - '&#E0C912» ПКМ — /event gps'
+    left_click_commands:
+      - '[player] event delay'
+    right_click_commands:
+      - '[player] event gps'
+
   'fishing_pond':
     material: FISHING_ROD
     slot: 23

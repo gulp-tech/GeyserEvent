@@ -3,7 +3,9 @@ package ru.geyserevent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+import ru.geyserevent.command.NewYearCommand;
 import ru.geyserevent.fishing.FishingEventManager;
+import ru.geyserevent.newyear.NewYearEventManager;
 import ru.geyserevent.ronaldo.RonaldoEventManager;
 import ru.geyserevent.skibidi.SkibidiToiletManager;
 import ru.geyserevent.wind.GravityHoardManager;
@@ -65,6 +67,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
     private SkibidiToiletManager skibidiToiletManager;
     private RonaldoEventManager ronaldoEventManager;
     private FishingEventManager fishingEventManager;
+    private NewYearEventManager newYearEventManager;
 
     @Override
     public void onLoad() {
@@ -107,6 +110,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         this.skibidiToiletManager = new SkibidiToiletManager(this);
         this.ronaldoEventManager = new RonaldoEventManager(this);
         this.fishingEventManager = new FishingEventManager(this);
+        this.newYearEventManager = new NewYearEventManager(this);
 
         // 5. Регистрация слушателей событий
         getServer().getPluginManager().registerEvents(new RiftEventListener(this), this);
@@ -160,6 +164,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
             fishingCmd.setExecutor(fishingExecutor);
             fishingCmd.setTabCompleter(fishingExecutor);
         }
+        PluginCommand newyearCmd = getCommand("newyear");
+        if (newyearCmd != null) {
+            NewYearCommand newyearExecutor = new NewYearCommand(this);
+            newyearCmd.setExecutor(newyearExecutor);
+            newyearCmd.setTabCompleter(newyearExecutor);
+        }
 
         // 8. Экспорт и автоматическая перезапись меню DeluxeMenus (events.yml) и текстурпака (GeyserEvent-Pack.mcpack)
         exportDeluxeMenusConfig();
@@ -179,10 +189,13 @@ public final class GeyserEventPlugin extends JavaPlugin {
             if (this.fishingEventManager != null) {
                 this.fishingEventManager.cleanupOrphanSchematic();
             }
+            if (this.newYearEventManager != null) {
+                this.newYearEventManager.cleanupOrphanSchematic();
+            }
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.72 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" GeyserEvent v1.21.73 успешно запущен! (Purpur 1.21–26.63)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Гейзер, Рыбалка (пришельцы удалены, скибиди/CR7 выключены)");
         getLogger().info(" Постоянный ивент: Шахта Древних crater-lobby (v9) + подъём на 0 ~ 0");
         getLogger().info("==================================================");
@@ -301,6 +314,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
         } else if (this.fishingEventManager != null) {
             this.fishingEventManager.cleanupOrphanSchematic();
         }
+        if (this.newYearEventManager != null && this.newYearEventManager.isActive()) {
+            getLogger().info("Завершение ивента «Новый год» и откат схемы...");
+            this.newYearEventManager.stopEvent();
+        } else if (this.newYearEventManager != null) {
+            this.newYearEventManager.cleanupOrphanSchematic();
+        }
         if (this.riftManager != null && this.riftManager.isActive()) {
             getLogger().info("Завершение активного ивента и откат схемы...");
             this.riftManager.stopEvent(false);
@@ -372,6 +391,8 @@ public final class GeyserEventPlugin extends JavaPlugin {
     public RonaldoEventManager getRonaldoEventManager() { return ronaldoEventManager; }
 
     public FishingEventManager getFishingEventManager() { return fishingEventManager; }
+
+    public NewYearEventManager getNewYearEventManager() { return newYearEventManager; }
 
     public TopRightHudManager getTopRightHudManager() {
         return topRightHudManager;

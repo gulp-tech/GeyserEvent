@@ -17,7 +17,8 @@ public enum EventType {
     GRAVITY_HOARD("wind", "Гейзер"),
     SKIBIDI("skibidi", "Шкибиди Туалет"),
     RONALDO("ronaldo", "Роналду SIUU"),
-    FISHING("fishing", "Рыбалка");
+    FISHING("fishing", "Рыбалка"),
+    NEWYEAR("newyear", "Новый год");
 
     private final String id;
     private final String displayName;
@@ -47,6 +48,7 @@ public enum EventType {
             case "skibidi", "toilet", "туалет", "шкибиди", "6" -> SKIBIDI;
             case "ronaldo", "cr7", "siuu", "siu", "роналду", "рональдо", "7" -> RONALDO;
             case "fishing", "fish", "рыбалка", "удочка", "rybalka", "8" -> FISHING;
+            case "newyear", "ny", "santa", "новыйгод", "новый", "дедмороз", "карета", "9" -> NEWYEAR;
             default -> null;
         };
     }

@@ -64,6 +64,7 @@ event:
     skibidi: 5
     ronaldo: 5
     fishing: 5
+    newyear: 5
   # Задержка перед очисткой после убийства босса (в секундах)
   cleanup-delay-seconds: 15
 
@@ -2058,3 +2059,87 @@ fishing:
       chance: 25
       uses: 8
       name: "&6Кристальная удочка удачи"
+
+# ============================================================================
+# Ивент 9: «Новый год» — карета Санты, 9 оленей, подарки-шалкеры.
+# Старт: /newyear  или  /rift start newyear  (случайная точка).
+# Цвета: белый / голубой / пурпур / красный. Ванильный шалкер без PDC не меняется.
+# ============================================================================
+newyear:
+  enabled: true
+  duration-minutes: 10
+  gift-interval-seconds: 4
+  loot:
+    common:
+      cookie:
+        material: COOKIE
+        min: 4
+        max: 12
+        chance: 80
+      snow:
+        material: SNOWBALL
+        min: 8
+        max: 16
+        chance: 70
+      coal:
+        material: COAL
+        min: 8
+        max: 24
+        chance: 55
+      iron:
+        material: IRON_INGOT
+        min: 4
+        max: 10
+        chance: 40
+    rare:
+      gold:
+        material: GOLD_INGOT
+        min: 3
+        max: 8
+        chance: 70
+      emerald:
+        material: EMERALD
+        min: 2
+        max: 6
+        chance: 45
+      lapis:
+        material: LAPIS_LAZULI
+        min: 8
+        max: 16
+        chance: 50
+    epic:
+      diamond:
+        material: DIAMOND
+        min: 2
+        max: 5
+        chance: 55
+      golden_apple:
+        material: GOLDEN_APPLE
+        min: 1
+        max: 3
+        chance: 35
+      totem:
+        material: TOTEM_OF_UNDYING
+        min: 1
+        max: 1
+        chance: 12
+        rare: true
+    legendary:
+      netherite:
+        material: NETHERITE_INGOT
+        min: 1
+        max: 2
+        chance: 30
+        rare: true
+      enchanted_apple:
+        material: ENCHANTED_GOLDEN_APPLE
+        min: 1
+        max: 1
+        chance: 10
+        rare: true
+      elytra:
+        material: ELYTRA
+        min: 1
+        max: 1
+        chance: 6
+        rare: true

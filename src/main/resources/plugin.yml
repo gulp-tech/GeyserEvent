@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.21.72'
+version: '1.21.73'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
@@ -53,6 +53,11 @@ commands:
   fishing:
     description: Запустить ивент «Рыбалка»
     aliases: [rybalka, fish]
+    usage: /<command> [here|stop]
+    permission: geyserevent.admin
+  newyear:
+    description: Запустить ивент «Новый год» (карета Санты)
+    aliases: [ny, santa, noviygod]
     usage: /<command> [here|stop]
     permission: geyserevent.admin
 

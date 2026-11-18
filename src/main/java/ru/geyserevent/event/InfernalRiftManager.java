@@ -165,6 +165,9 @@ public class InfernalRiftManager {
                 if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
                     return;
                 }
+                if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isActive()) {
+                    return;
+                }
                 long now = System.currentTimeMillis() / 1000L;
                 if (now >= nextAutoStartEpochSeconds) {
                     int online = Bukkit.getOnlinePlayers().size();
@@ -174,7 +177,7 @@ public class InfernalRiftManager {
                     }
                     List<EventType> eligible = new ArrayList<>();
                     for (EventType type : EventType.values()) {
-                        if (!isEventEnabledInConfig(type)) {
+                        if (!isEventEnabledInConfig(type) || isTemporarilyDisabled(type)) {
                             continue;
                         }
                         if (online >= Math.max(5, plugin.getPluginConfig().getAutoMinPlayers(type))) {
@@ -573,6 +576,7 @@ public class InfernalRiftManager {
             case SKIBIDI -> "skibidi.enabled";
             case RONALDO -> "ronaldo.enabled";
             case FISHING -> "fishing.enabled";
+            case NEWYEAR -> "newyear.enabled";
             default -> null;
         };
         if (path == null) {
@@ -653,6 +657,11 @@ public class InfernalRiftManager {
                 && plugin.getFishingEventManager().isActive()) {
             plugin.getFishingEventManager().stopEvent();
         }
+        if (type != EventType.NEWYEAR
+                && plugin.getNewYearEventManager() != null
+                && plugin.getNewYearEventManager().isActive()) {
+            plugin.getNewYearEventManager().stopEvent();
+        }
         if (type == EventType.GRAVITY_HOARD) {
             if (plugin.getGravityHoardManager() == null) {
                 return false;
@@ -709,6 +718,21 @@ public class InfernalRiftManager {
                 plugin.getRonaldoEventManager().stopEvent();
             }
             return plugin.getFishingEventManager().startEvent(targetCenter, durationSecondsOverride);
+        }
+        if (type == EventType.NEWYEAR) {
+            if (plugin.getNewYearEventManager() == null) {
+                return false;
+            }
+            if (active) {
+                stopEvent(false);
+            }
+            if (plugin.getGravityHoardManager() != null && plugin.getGravityHoardManager().isActive()) {
+                plugin.getGravityHoardManager().stopEvent();
+            }
+            if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()) {
+                plugin.getFishingEventManager().stopEvent();
+            }
+            return plugin.getNewYearEventManager().startEvent(targetCenter, durationSecondsOverride);
         }
         if (active) {
             stopEvent(false);
@@ -1881,6 +1905,12 @@ public class InfernalRiftManager {
             Location fishing = plugin.getFishingEventManager().getCenterLocation();
             if (fishing != null && fishing.getWorld() != null) {
                 return fishing;
+            }
+        }
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isActive()) {
+            Location ny = plugin.getNewYearEventManager().getCenterLocation();
+            if (ny != null && ny.getWorld() != null) {
+                return ny;
             }
         }
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isMineActive()) {

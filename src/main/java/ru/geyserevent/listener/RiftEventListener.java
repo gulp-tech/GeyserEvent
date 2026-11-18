@@ -507,6 +507,12 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteractBlock(PlayerInteractEvent event) {
         Action action = event.getAction();
+        if ((action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)
+                && plugin.getNewYearEventManager() != null
+                && plugin.getNewYearEventManager().tryUnwrapGift(event.getPlayer())) {
+            event.setCancelled(true);
+            return;
+        }
         if (action != Action.RIGHT_CLICK_BLOCK && action != Action.LEFT_CLICK_BLOCK) {
             return;
         }
