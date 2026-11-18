@@ -79,7 +79,7 @@ public class TopRightHudManager {
 
         List<String> copied = new ArrayList<>();
         for (File packsDir : targets) {
-            if (!packsDir.exists() && !packsDir.mkdirs()) {
+            if (!packsDir.isDirectory()) {
                 continue;
             }
             File targetFile = new File(packsDir, "GeyserEvent-Pack.mcpack");
@@ -183,7 +183,10 @@ public class TopRightHudManager {
             plugin.getLogger().info("Движок Bedrock сообщил свою папку packs: " + apiDir.getPath());
         }
 
-        addCandidate(dirs, serverRoot, "bedrock" + File.separator + "packs");
+        File existingBedrockPacks = new File(serverRoot, "bedrock" + File.separator + "packs");
+        if (existingBedrockPacks.isDirectory()) {
+            addCandidate(dirs, serverRoot, "bedrock" + File.separator + "packs");
+        }
 
         String dataDirProp = System.getProperty("purpurbedrock.dataDir");
         if (dataDirProp != null && !dataDirProp.isBlank()) {
@@ -196,15 +199,8 @@ public class TopRightHudManager {
         addCandidate(dirs, serverRoot, "packs");
         addCandidate(dirs, serverRoot, "bedrock" + File.separator + "pack");
 
-        // Запасной вариант: обходим папку сервера и plugins и ищем любые папки packs
-        // (движки разных сборок кладут их в разные места).
         scanForPacksFolders(dirs, serverRoot);
         scanForPacksFolders(dirs, new File(serverRoot, "plugins"));
-
-        if (dirs.isEmpty()) {
-            // движок Purpurbedrock: паки кладём в <папка сервера>/bedrock/packs
-            dirs.add(new File(serverRoot, "bedrock" + File.separator + "packs"));
-        }
         return dirs;
     }
 
@@ -244,10 +240,8 @@ public class TopRightHudManager {
             return;
         }
         File dir = new File(base, relative);
-        if (dir.isDirectory() || (dir.getParentFile() != null && dir.getParentFile().isDirectory())) {
-            if (!dirs.contains(dir)) {
-                dirs.add(dir);
-            }
+        if (dir.isDirectory() && !dirs.contains(dir)) {
+            dirs.add(dir);
         }
     }
 

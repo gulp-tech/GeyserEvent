@@ -202,7 +202,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.81 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" GeyserEvent v1.21.82 успешно запущен! (Purpur 1.21–26.63)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Гейзер, Рыбалка (пришельцы удалены, скибиди/CR7 выключены)");
         getLogger().info(" Постоянный ивент: Шахта Древних crater-lobby (v9) + подъём на 0 ~ 0");
         getLogger().info("==================================================");
@@ -238,58 +238,13 @@ public final class GeyserEventPlugin extends JavaPlugin {
                         File geyserDir = new File(pluginsDir, geyserFolder);
                         if (geyserDir.exists()) {
                             File packsDir = new File(geyserDir, "packs");
-                            if (!packsDir.exists()) {
-                                packsDir.mkdirs();
+                            if (!packsDir.isDirectory()) {
+                                continue;
                             }
                             File targetPack = new File(packsDir, "GeyserEvent-Pack.mcpack");
                             Files.copy(exported.toPath(), targetPack.toPath(), StandardCopyOption.REPLACE_EXISTING);
                             getLogger().info("Текстурпак GeyserEvent-Pack.mcpack автоматически перезаписан в " + targetPack.getPath());
-                            exportGeyserCustomItems(geyserDir);
                         }
-                    }
-                }
-            }
-        } catch (Exception ignored) {
-        }
-    }
-
-    /** Маппинг CustomModelData удочек Lucky Waters. Ванильная удочка без CMD не трогается. */
-    private void exportGeyserCustomItems(File geyserDir) {
-        try {
-            saveResource("geyser/custom-items.json", true);
-            saveResource("geyser/Geyser-fishing-rods-mapping.json", true);
-            saveResource("geyser/Geyser-voidpe-mapping.json", true);
-            File exported = new File(getDataFolder(), "geyser/custom-items.json");
-            File mappingFile = new File(getDataFolder(), "geyser/Geyser-fishing-rods-mapping.json");
-            File voidpeFile = new File(getDataFolder(), "geyser/Geyser-voidpe-mapping.json");
-            if (exported.exists()) {
-                Files.copy(exported.toPath(), new File(geyserDir, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-                File mappings = new File(geyserDir, "custom-mappings");
-                if (!mappings.exists()) {
-                    mappings.mkdirs();
-                }
-                Files.copy(exported.toPath(), new File(mappings, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-            File underscore = new File(geyserDir, "custom_mappings");
-            if (!underscore.exists()) {
-                underscore.mkdirs();
-            }
-            if (mappingFile.exists()) {
-                Files.copy(mappingFile.toPath(), new File(underscore, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-            if (voidpeFile.exists()) {
-                Files.copy(voidpeFile.toPath(), new File(underscore, "Geyser-voidpe-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-            File pluginsDir = getDataFolder().getParentFile();
-            if (pluginsDir != null && pluginsDir.getParentFile() != null) {
-                File bedrockMappings = new File(pluginsDir.getParentFile(), "bedrock" + File.separator + "custom_mappings");
-                if (bedrockMappings.exists() || new File(pluginsDir.getParentFile(), "bedrock").isDirectory()) {
-                    bedrockMappings.mkdirs();
-                    if (mappingFile.exists()) {
-                        Files.copy(mappingFile.toPath(), new File(bedrockMappings, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    if (voidpeFile.exists()) {
-                        Files.copy(voidpeFile.toPath(), new File(bedrockMappings, "Geyser-voidpe-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
                 }
             }
