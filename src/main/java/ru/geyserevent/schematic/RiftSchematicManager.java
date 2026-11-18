@@ -80,7 +80,7 @@ public class RiftSchematicManager {
                 && ("infernal_citadel_25.schem.yml".equals(fileName)
                 || "fishing_pond.schem.yml".equals(fileName))) {
             YamlConfiguration existing = YamlConfiguration.loadConfiguration(schemFile);
-            if (existing.getInt("schematic-version", 1) < 2) {
+            if (existing.getInt("schematic-version", 1) < 3) {
                 export = true;
             }
         }

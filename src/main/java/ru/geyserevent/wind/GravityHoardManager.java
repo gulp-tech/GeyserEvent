@@ -919,8 +919,7 @@ public final class GravityHoardManager {
         }
         int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 600));
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFГейзер &fзаспавнился!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fРедкость лута этого ивента: " + rarityLabel()
-                + " &8(&f40% / 30% / 20% / 10%&8)"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fРедкость лута этого ивента: " + rarityLabel()));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fВесь лут из жерла будет только этой редкости"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЧерез &#E0C912" + ColorUtil.formatDuration(wait)
                 + " &fжерло откроется"));

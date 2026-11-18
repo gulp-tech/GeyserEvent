@@ -59,7 +59,7 @@ public class BeachSchematicManager {
         }
 
         File file = new File(schemDir, "beach_excavation.schem.yml");
-        if (!file.exists() || YamlConfiguration.loadConfiguration(file).getInt("schema-version", 1) < 4) {
+        if (!file.exists() || YamlConfiguration.loadConfiguration(file).getInt("schema-version", 1) < 5) {
             try {
                 plugin.saveResource("schematics/beach_excavation.schem.yml", true);
             } catch (IllegalArgumentException ignored) {
@@ -67,7 +67,7 @@ public class BeachSchematicManager {
         }
         if (file.exists()) {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-            if (yaml.getInt("schema-version", 1) >= 4) {
+            if (yaml.getInt("schema-version", 1) >= 5) {
                 parseYamlSchematic(yaml);
             }
         }

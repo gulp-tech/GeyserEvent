@@ -1,46 +1,22 @@
-schema-version: 4
+schema-version: 5
 name: beach_dig_camp
 blocks:
-- x: -1
-  y: 0
-  z: -14
-  material: SAND
-- x: 1
-  y: 0
-  z: -14
-  material: SAND
-- x: 2
-  y: 0
-  z: -14
-  material: SAND
 - x: -4
   y: 0
   z: -13
   material: SMOOTH_SANDSTONE
-- x: -3
-  y: 0
-  z: -13
-  material: SAND
 - x: -2
   y: 0
   z: -13
   material: SAND
-- x: -2
-  y: 1
-  z: -13
-  material: DEAD_BUSH
 - x: -1
-  y: 0
-  z: -13
-  material: SAND
-- x: 0
   y: 0
   z: -13
   material: SAND
 - x: 1
   y: 0
   z: -13
-  material: GRAVEL
+  material: SAND
 - x: 2
   y: 0
   z: -13
@@ -57,34 +33,14 @@ blocks:
   y: 0
   z: -13
   material: SANDSTONE
-- x: 6
-  y: 0
-  z: -13
-  material: SAND
-- x: 6
-  y: 1
-  z: -13
-  material: FERN
-- x: -7
-  y: 0
-  z: -12
-  material: SAND
 - x: -6
   y: 0
   z: -12
   material: SAND
-- x: -6
-  y: 1
-  z: -12
-  material: DEAD_BUSH
 - x: -5
   y: 0
   z: -12
   material: SAND
-- x: -5
-  y: 1
-  z: -12
-  material: DEAD_BUSH
 - x: -4
   y: 0
   z: -12
@@ -93,10 +49,6 @@ blocks:
   y: 0
   z: -12
   material: SAND
-- x: -3
-  y: 1
-  z: -12
-  material: FERN
 - x: -2
   y: 0
   z: -12
@@ -117,10 +69,6 @@ blocks:
   y: 0
   z: -12
   material: SAND
-- x: 2
-  y: 1
-  z: -12
-  material: DEAD_BUSH
 - x: 3
   y: 0
   z: -12
@@ -133,26 +81,10 @@ blocks:
   y: 0
   z: -12
   material: SAND
-- x: 6
-  y: 0
-  z: -12
-  material: SMOOTH_SANDSTONE
-- x: 7
-  y: 0
-  z: -12
-  material: GRAVEL
 - x: 8
   y: 0
   z: -12
   material: SAND
-- x: 9
-  y: 0
-  z: -12
-  material: SAND
-- x: 9
-  y: 1
-  z: -12
-  material: DEAD_BUSH
 - x: -8
   y: 0
   z: -11
@@ -165,10 +97,6 @@ blocks:
   y: 0
   z: -11
   material: SAND
-- x: -5
-  y: 0
-  z: -11
-  material: SAND
 - x: -4
   y: 0
   z: -11
@@ -177,26 +105,10 @@ blocks:
   y: 0
   z: -11
   material: SANDSTONE
-- x: -2
-  y: 0
-  z: -11
-  material: SANDSTONE
-- x: -1
-  y: 0
-  z: -11
-  material: SAND
-- x: 0
-  y: 0
-  z: -11
-  material: SAND
 - x: 1
   y: 0
   z: -11
   material: SAND
-- x: 2
-  y: 0
-  z: -11
-  material: SANDSTONE
 - x: 3
   y: 0
   z: -11
@@ -222,10 +134,6 @@ blocks:
   z: -11
   material: SAND
 - x: 9
-  y: 0
-  z: -11
-  material: SAND
-- x: 10
   y: 0
   z: -11
   material: SAND
@@ -236,12 +144,8 @@ blocks:
 - x: -8
   y: 0
   z: -10
-  material: SANDSTONE
+  material: MOSSY_COBBLESTONE
 - x: -7
-  y: 0
-  z: -10
-  material: SAND
-- x: -6
   y: 0
   z: -10
   material: SAND
@@ -257,22 +161,14 @@ blocks:
   y: 0
   z: -10
   material: GRAVEL
-- x: -2
-  y: 0
-  z: -10
-  material: SAND
 - x: -1
   y: 0
   z: -10
-  material: GRAVEL
+  material: SAND
 - x: 0
   y: 0
   z: -10
   material: SAND
-- x: 0
-  y: 1
-  z: -10
-  material: DEAD_BUSH
 - x: 1
   y: 0
   z: -10
@@ -281,10 +177,6 @@ blocks:
   y: 0
   z: -10
   material: SAND
-- x: 2
-  y: 1
-  z: -10
-  material: FERN
 - x: 3
   y: 0
   z: -10
@@ -293,10 +185,6 @@ blocks:
   y: 0
   z: -10
   material: SAND
-- x: 4
-  y: 1
-  z: -10
-  material: DEAD_BUSH
 - x: 5
   y: 0
   z: -10
@@ -318,14 +206,6 @@ blocks:
   z: -10
   material: SAND
 - x: 10
-  y: 0
-  z: -10
-  material: SAND
-- x: 11
-  y: 0
-  z: -10
-  material: SAND
-- x: 12
   y: 0
   z: -10
   material: SAND
@@ -337,10 +217,6 @@ blocks:
   y: 0
   z: -9
   material: SAND
-- x: -9
-  y: 1
-  z: -9
-  material: FERN
 - x: -8
   y: 0
   z: -9
@@ -364,7 +240,7 @@ blocks:
 - x: -3
   y: 0
   z: -9
-  material: GRAVEL
+  material: SAND
 - x: -2
   y: 0
   z: -9
@@ -388,7 +264,7 @@ blocks:
 - x: 3
   y: 0
   z: -9
-  material: GRAVEL
+  material: SAND
 - x: 4
   y: 0
   z: -9
@@ -397,10 +273,6 @@ blocks:
   y: 0
   z: -9
   material: SAND
-- x: 5
-  y: 1
-  z: -9
-  material: FERN
 - x: 6
   y: 0
   z: -9
@@ -413,10 +285,6 @@ blocks:
   y: 0
   z: -9
   material: SAND
-- x: 8
-  y: 1
-  z: -9
-  material: DEAD_BUSH
 - x: 9
   y: 0
   z: -9
@@ -429,18 +297,10 @@ blocks:
   y: 0
   z: -9
   material: SAND
-- x: 11
-  y: 1
-  z: -9
-  material: DEAD_BUSH
 - x: 12
   y: 0
   z: -9
   material: SAND
-- x: -11
-  y: 0
-  z: -8
-  material: SMOOTH_SANDSTONE
 - x: -10
   y: 0
   z: -8
@@ -453,18 +313,10 @@ blocks:
   y: 0
   z: -8
   material: SAND
-- x: -8
-  y: 1
-  z: -8
-  material: FERN
 - x: -7
   y: 0
   z: -8
   material: SAND
-- x: -7
-  y: 1
-  z: -8
-  material: DEAD_BUSH
 - x: -6
   y: 0
   z: -8
@@ -489,10 +341,6 @@ blocks:
   y: 0
   z: -8
   material: SAND
-- x: -1
-  y: 1
-  z: -8
-  material: FERN
 - x: 0
   y: 0
   z: -8
@@ -512,31 +360,27 @@ blocks:
 - x: 4
   y: 0
   z: -8
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 5
   y: 0
   z: -8
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 6
   y: 0
   z: -8
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 7
   y: 0
   z: -8
   material: SAND
-- x: 7
-  y: 1
-  z: -8
-  material: DEAD_BUSH
 - x: 8
   y: 0
   z: -8
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 9
   y: 0
   z: -8
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 10
   y: 0
   z: -8
@@ -545,10 +389,6 @@ blocks:
   y: 0
   z: -8
   material: SAND
-- x: 11
-  y: 1
-  z: -8
-  material: DEAD_BUSH
 - x: 12
   y: 0
   z: -8
@@ -624,7 +464,7 @@ blocks:
 - x: 4
   y: 0
   z: -7
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 5
   y: 0
   z: -7
@@ -632,19 +472,15 @@ blocks:
 - x: 6
   y: 0
   z: -7
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: 7
   y: 0
   z: -7
-  material: SAND
-- x: 7
-  y: 1
-  z: -7
-  material: DEAD_BUSH
+  material: SUSPICIOUS_SAND
 - x: 8
   y: 0
   z: -7
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 9
   y: 0
   z: -7
@@ -661,22 +497,10 @@ blocks:
   y: 0
   z: -7
   material: SAND
-- x: 12
-  y: 1
-  z: -7
-  material: DEAD_BUSH
 - x: 13
   y: 0
   z: -7
   material: SAND
-- x: 14
-  y: 0
-  z: -7
-  material: SAND
-- x: 14
-  y: 1
-  z: -7
-  material: FERN
 - x: -12
   y: 0
   z: -6
@@ -685,10 +509,6 @@ blocks:
   y: 0
   z: -6
   material: SAND
-- x: -11
-  y: 1
-  z: -6
-  material: FERN
 - x: -10
   y: 0
   z: -6
@@ -744,51 +564,35 @@ blocks:
 - x: 3
   y: 0
   z: -6
-  material: SAND
-- x: 3
-  y: 1
-  z: -6
-  material: FERN
+  material: SUSPICIOUS_SAND
 - x: 4
   y: 0
   z: -6
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: 5
   y: 0
   z: -6
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: 6
   y: 0
   z: -6
-  material: SMOOTH_SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: 7
   y: 0
   z: -6
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: 8
   y: 0
   z: -6
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 9
   y: 0
   z: -6
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 10
   y: 0
   z: -6
   material: SAND
-- x: 11
-  y: 0
-  z: -6
-  material: SAND
-- x: 12
-  y: 0
-  z: -6
-  material: SAND
-- x: 12
-  y: 1
-  z: -6
-  material: DEAD_BUSH
 - x: 13
   y: 0
   z: -6
@@ -809,10 +613,6 @@ blocks:
   y: 0
   z: -5
   material: SAND
-- x: -10
-  y: 1
-  z: -5
-  material: DEAD_BUSH
 - x: -9
   y: 0
   z: -5
@@ -825,18 +625,10 @@ blocks:
   y: 0
   z: -5
   material: SAND
-- x: -7
-  y: 1
-  z: -5
-  material: FERN
 - x: -6
   y: 0
   z: -5
   material: SAND
-- x: -6
-  y: 1
-  z: -5
-  material: FERN
 - x: -5
   y: 0
   z: -5
@@ -845,18 +637,10 @@ blocks:
   y: 0
   z: -5
   material: SAND
-- x: -4
-  y: 1
-  z: -5
-  material: FERN
 - x: -3
   y: 0
   z: -5
   material: SAND
-- x: -3
-  y: 1
-  z: -5
-  material: DEAD_BUSH
 - x: -2
   y: 0
   z: -5
@@ -865,10 +649,6 @@ blocks:
   y: 0
   z: -5
   material: SAND
-- x: -1
-  y: 1
-  z: -5
-  material: DEAD_BUSH
 - x: 0
   y: 0
   z: -5
@@ -884,23 +664,19 @@ blocks:
 - x: 3
   y: 0
   z: -5
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: 4
   y: 0
   z: -5
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 5
   y: 0
   z: -5
-  material: SAND
-- x: 5
-  y: 1
-  z: -5
-  material: DEAD_BUSH
+  material: SUSPICIOUS_SAND
 - x: 6
   y: 0
   z: -5
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 7
   y: 0
   z: -5
@@ -908,27 +684,19 @@ blocks:
 - x: 8
   y: 0
   z: -5
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 9
   y: 0
   z: -5
-  material: SAND
-- x: 9
-  y: 1
-  z: -5
-  material: FERN
+  material: SUSPICIOUS_SAND
 - x: 10
   y: 0
   z: -5
   material: SAND
-- x: 10
-  y: 1
-  z: -5
-  material: DEAD_BUSH
 - x: 11
   y: 0
   z: -5
-  material: GRAVEL
+  material: SAND
 - x: 12
   y: 0
   z: -5
@@ -945,22 +713,14 @@ blocks:
   y: 0
   z: -4
   material: SAND
-- x: -13
-  y: 1
-  z: -4
-  material: DEAD_BUSH
 - x: -12
-  y: 0
-  z: -4
-  material: GRAVEL
-- x: -11
   y: 0
   z: -4
   material: SAND
 - x: -11
-  y: 1
+  y: 0
   z: -4
-  material: FERN
+  material: SANDSTONE
 - x: -10
   y: 0
   z: -4
@@ -1016,11 +776,11 @@ blocks:
 - x: 3
   y: 0
   z: -4
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 4
   y: 0
   z: -4
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 5
   y: 0
   z: -4
@@ -1028,27 +788,19 @@ blocks:
 - x: 6
   y: 0
   z: -4
-  material: SAND
-- x: 6
-  y: 1
-  z: -4
-  material: DEAD_BUSH
+  material: SUSPICIOUS_SAND
 - x: 7
   y: 0
   z: -4
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 8
   y: 0
   z: -4
-  material: SAND
-- x: 8
-  y: 1
-  z: -4
-  material: FERN
+  material: SUSPICIOUS_SAND
 - x: 9
   y: 0
   z: -4
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: 10
   y: 0
   z: -4
@@ -1061,10 +813,6 @@ blocks:
   y: 0
   z: -4
   material: SAND
-- x: 12
-  y: 1
-  z: -4
-  material: FERN
 - x: 13
   y: 0
   z: -4
@@ -1077,30 +825,14 @@ blocks:
   y: 0
   z: -4
   material: SAND
-- x: 15
-  y: 1
-  z: -4
-  material: DEAD_BUSH
-- x: -13
-  y: 0
-  z: -3
-  material: GRAVEL
 - x: -12
   y: 0
   z: -3
   material: SAND
-- x: -12
-  y: 1
-  z: -3
-  material: FERN
 - x: -11
   y: 0
   z: -3
-  material: SAND
-- x: -11
-  y: 1
-  z: -3
-  material: FERN
+  material: SANDSTONE
 - x: -10
   y: 0
   z: -3
@@ -1112,19 +844,19 @@ blocks:
 - x: -8
   y: 0
   z: -3
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: -7
   y: 0
   z: -3
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -6
   y: 0
   z: -3
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -5
   y: 0
   z: -3
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -4
   y: 0
   z: -3
@@ -1156,19 +888,15 @@ blocks:
 - x: 3
   y: 0
   z: -3
-  material: GRAVEL
+  material: SUSPICIOUS_SAND
 - x: 4
   y: 0
   z: -3
-  material: SAND
-- x: 4
-  y: 1
-  z: -3
-  material: FERN
+  material: SUSPICIOUS_SAND
 - x: 5
   y: 0
   z: -3
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 6
   y: 0
   z: -3
@@ -1176,19 +904,15 @@ blocks:
 - x: 7
   y: 0
   z: -3
-  material: SAND
-- x: 7
-  y: 1
-  z: -3
-  material: DEAD_BUSH
+  material: SUSPICIOUS_SAND
 - x: 8
   y: 0
   z: -3
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: 9
   y: 0
   z: -3
-  material: SMOOTH_SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: 10
   y: 0
   z: -3
@@ -1217,46 +941,34 @@ blocks:
   y: 0
   z: -2
   material: SAND
-- x: -12
-  y: 0
-  z: -2
-  material: SAND
-- x: -11
-  y: 0
-  z: -2
-  material: GRAVEL
 - x: -10
   y: 0
   z: -2
   material: SAND
-- x: -10
-  y: 1
-  z: -2
-  material: DEAD_BUSH
 - x: -9
   y: 0
   z: -2
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -8
   y: 0
   z: -2
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -7
   y: 0
   z: -2
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: -6
   y: 0
   z: -2
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -5
   y: 0
   z: -2
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -4
   y: 0
   z: -2
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -3
   y: 0
   z: -2
@@ -1264,19 +976,19 @@ blocks:
 - x: -2
   y: 0
   z: -2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: -1
   y: 0
   z: -2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 0
   y: 0
   z: -2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 1
   y: 0
   z: -2
-  material: SANDSTONE
+  material: SMOOTH_SANDSTONE
 - x: 2
   y: 0
   z: -2
@@ -1285,10 +997,6 @@ blocks:
   y: 0
   z: -2
   material: SAND
-- x: 3
-  y: 1
-  z: -2
-  material: FERN
 - x: 4
   y: 0
   z: -2
@@ -1300,19 +1008,15 @@ blocks:
 - x: 6
   y: 0
   z: -2
-  material: SAND
-- x: 6
-  y: 1
-  z: -2
-  material: DEAD_BUSH
+  material: SMOOTH_SANDSTONE
 - x: 7
   y: 0
   z: -2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 8
   y: 0
   z: -2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 9
   y: 0
   z: -2
@@ -1322,10 +1026,6 @@ blocks:
   z: -2
   material: SAND
 - x: 11
-  y: 0
-  z: -2
-  material: SAND
-- x: 12
   y: 0
   z: -2
   material: SAND
@@ -1340,6 +1040,10 @@ blocks:
 - x: 15
   y: 0
   z: -2
+  material: SAND
+- x: -14
+  y: 0
+  z: -1
   material: SAND
 - x: -13
   y: 0
@@ -1349,10 +1053,6 @@ blocks:
   y: 0
   z: -1
   material: SAND
-- x: -11
-  y: 0
-  z: -1
-  material: SAND
 - x: -10
   y: 0
   z: -1
@@ -1360,11 +1060,7 @@ blocks:
 - x: -9
   y: 0
   z: -1
-  material: SAND
-- x: -9
-  y: 1
-  z: -1
-  material: DEAD_BUSH
+  material: SUSPICIOUS_SAND
 - x: -8
   y: 0
   z: -1
@@ -1372,19 +1068,19 @@ blocks:
 - x: -7
   y: 0
   z: -1
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -6
   y: 0
   z: -1
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -5
   y: 0
   z: -1
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -4
   y: 0
   z: -1
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: -3
   y: 0
   z: -1
@@ -1392,11 +1088,11 @@ blocks:
 - x: -2
   y: 0
   z: -1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: -1
   y: 0
   z: -1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 0
   y: 0
   z: -1
@@ -1408,7 +1104,7 @@ blocks:
 - x: 2
   y: 0
   z: -1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 3
   y: 0
   z: -1
@@ -1424,23 +1120,19 @@ blocks:
 - x: 6
   y: 0
   z: -1
-  material: SAND
-- x: 6
-  y: 1
-  z: -1
-  material: DEAD_BUSH
+  material: SMOOTH_SANDSTONE
 - x: 7
   y: 0
   z: -1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 8
   y: 0
   z: -1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 9
   y: 0
   z: -1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 10
   y: 0
   z: -1
@@ -1465,10 +1157,10 @@ blocks:
   y: 0
   z: -1
   material: SAND
-- x: 15
-  y: 1
-  z: -1
-  material: FERN
+- x: -14
+  y: 0
+  z: 0
+  material: SAND
 - x: -13
   y: 0
   z: 0
@@ -1492,23 +1184,23 @@ blocks:
 - x: -8
   y: 0
   z: 0
-  material: GRAVEL
+  material: SUSPICIOUS_SAND
 - x: -7
   y: 0
   z: 0
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -6
   y: 0
   z: 0
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: -5
   y: 0
   z: 0
-  material: SANDSTONE
+  material: SUSPICIOUS_SAND
 - x: -4
   y: 0
   z: 0
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -3
   y: 0
   z: 0
@@ -1516,23 +1208,23 @@ blocks:
 - x: -2
   y: 0
   z: 0
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: -1
   y: 0
   z: 0
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 0
   y: 0
   z: 0
-  material: SAND
+  material: CHISELED_SANDSTONE
 - x: 1
   y: 0
   z: 0
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 2
   y: 0
   z: 0
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 3
   y: 0
   z: 0
@@ -1548,19 +1240,19 @@ blocks:
 - x: 6
   y: 0
   z: 0
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 7
   y: 0
   z: 0
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 8
   y: 0
   z: 0
-  material: SANDSTONE
+  material: SMOOTH_SANDSTONE
 - x: 9
   y: 0
   z: 0
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 10
   y: 0
   z: 0
@@ -1581,13 +1273,9 @@ blocks:
   y: 0
   z: 0
   material: SAND
-- x: 14
-  y: 1
-  z: 0
-  material: DEAD_BUSH
-- x: 15
+- x: -14
   y: 0
-  z: 0
+  z: 1
   material: SAND
 - x: -13
   y: 0
@@ -1597,46 +1285,30 @@ blocks:
   y: 0
   z: 1
   material: SAND
-- x: -12
-  y: 1
-  z: 1
-  material: DEAD_BUSH
 - x: -11
-  y: 0
-  z: 1
-  material: SAND
-- x: -11
-  y: 1
-  z: 1
-  material: FERN
-- x: -10
-  y: 0
-  z: 1
-  material: SAND
-- x: -10
-  y: 1
-  z: 1
-  material: DEAD_BUSH
-- x: -9
-  y: 0
-  z: 1
-  material: GRAVEL
-- x: -8
-  y: 0
-  z: 1
-  material: SAND
-- x: -7
-  y: 0
-  z: 1
-  material: SAND
-- x: -7
-  y: 1
-  z: 1
-  material: FERN
-- x: -6
   y: 0
   z: 1
   material: SANDSTONE
+- x: -10
+  y: 0
+  z: 1
+  material: SAND
+- x: -9
+  y: 0
+  z: 1
+  material: SUSPICIOUS_SAND
+- x: -8
+  y: 0
+  z: 1
+  material: SUSPICIOUS_SAND
+- x: -7
+  y: 0
+  z: 1
+  material: SAND
+- x: -6
+  y: 0
+  z: 1
+  material: SUSPICIOUS_SAND
 - x: -5
   y: 0
   z: 1
@@ -1644,7 +1316,7 @@ blocks:
 - x: -4
   y: 0
   z: 1
-  material: GRAVEL
+  material: SUSPICIOUS_SAND
 - x: -3
   y: 0
   z: 1
@@ -1652,23 +1324,23 @@ blocks:
 - x: -2
   y: 0
   z: 1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: -1
   y: 0
   z: 1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 0
   y: 0
   z: 1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 1
   y: 0
   z: 1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 2
   y: 0
   z: 1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 3
   y: 0
   z: 1
@@ -1684,19 +1356,19 @@ blocks:
 - x: 6
   y: 0
   z: 1
-  material: SANDSTONE
+  material: SMOOTH_SANDSTONE
 - x: 7
   y: 0
   z: 1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 8
   y: 0
   z: 1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 9
   y: 0
   z: 1
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 10
   y: 0
   z: 1
@@ -1716,6 +1388,14 @@ blocks:
 - x: 14
   y: 0
   z: 1
+  material: SAND
+- x: 15
+  y: 0
+  z: 1
+  material: SAND
+- x: -13
+  y: 0
+  z: 2
   material: SAND
 - x: -12
   y: 0
@@ -1724,7 +1404,7 @@ blocks:
 - x: -11
   y: 0
   z: 2
-  material: GRAVEL
+  material: SANDSTONE
 - x: -10
   y: 0
   z: 2
@@ -1732,11 +1412,11 @@ blocks:
 - x: -9
   y: 0
   z: 2
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -8
   y: 0
   z: 2
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -7
   y: 0
   z: 2
@@ -1745,22 +1425,14 @@ blocks:
   y: 0
   z: 2
   material: SAND
-- x: -6
-  y: 1
-  z: 2
-  material: FERN
 - x: -5
   y: 0
   z: 2
-  material: SAND
-- x: -5
-  y: 1
-  z: 2
-  material: DEAD_BUSH
+  material: SUSPICIOUS_SAND
 - x: -4
   y: 0
   z: 2
-  material: SAND
+  material: SUSPICIOUS_SAND
 - x: -3
   y: 0
   z: 2
@@ -1768,23 +1440,23 @@ blocks:
 - x: -2
   y: 0
   z: 2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: -1
   y: 0
   z: 2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 0
   y: 0
   z: 2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 1
   y: 0
   z: 2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 2
   y: 0
   z: 2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 3
   y: 0
   z: 2
@@ -1793,10 +1465,6 @@ blocks:
   y: 0
   z: 2
   material: SAND
-- x: 4
-  y: 1
-  z: 2
-  material: FERN
 - x: 5
   y: 0
   z: 2
@@ -1804,23 +1472,19 @@ blocks:
 - x: 6
   y: 0
   z: 2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 7
   y: 0
   z: 2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 8
   y: 0
   z: 2
-  material: SAND
+  material: SMOOTH_SANDSTONE
 - x: 9
   y: 0
   z: 2
-  material: SAND
-- x: 9
-  y: 1
-  z: 2
-  material: OAK_LOG
+  material: SMOOTH_SANDSTONE
 - x: 10
   y: 0
   z: 2
@@ -1841,18 +1505,18 @@ blocks:
   y: 0
   z: 2
   material: SAND
-- x: 14
-  y: 1
+- x: 15
+  y: 0
   z: 2
-  material: FERN
+  material: SAND
+- x: -13
+  y: 0
+  z: 3
+  material: SANDSTONE
 - x: -12
   y: 0
   z: 3
   material: SAND
-- x: -11
-  y: 0
-  z: 3
-  material: SAND
 - x: -10
   y: 0
   z: 3
@@ -1861,10 +1525,6 @@ blocks:
   y: 0
   z: 3
   material: SAND
-- x: -9
-  y: 1
-  z: 3
-  material: DEAD_BUSH
 - x: -8
   y: 0
   z: 3
@@ -1885,10 +1545,6 @@ blocks:
   y: 0
   z: 3
   material: SAND
-- x: -4
-  y: 1
-  z: 3
-  material: DEAD_BUSH
 - x: -3
   y: 0
   z: 3
@@ -1900,816 +1556,1364 @@ blocks:
 - x: -1
   y: 0
   z: 3
-  material: SAND
-- x: 0
-  y: 0
-  z: 3
-  material: GRAVEL
-- x: 1
-  y: 0
-  z: 3
-  material: SAND
-- x: 2
-  y: 0
-  z: 3
-  material: SMOOTH_SANDSTONE
-- x: 3
-  y: 0
-  z: 3
-  material: SAND
-- x: 4
-  y: 0
-  z: 3
-  material: GRAVEL
-- x: 5
-  y: 0
-  z: 3
-  material: SAND
-- x: 6
-  y: 0
-  z: 3
-  material: GRAVEL
-- x: 7
-  y: 0
-  z: 3
-  material: SAND
-- x: 8
-  y: 0
-  z: 3
-  material: SANDSTONE
-- x: 9
-  y: 0
-  z: 3
-  material: SAND
-- x: 10
-  y: 0
-  z: 3
-  material: SAND
-- x: 11
-  y: 0
-  z: 3
-  material: SAND
-- x: 11
-  y: 1
-  z: 3
-  material: FERN
-- x: 12
-  y: 0
-  z: 3
-  material: SAND
-- x: 13
-  y: 0
-  z: 3
-  material: SAND
-- x: 14
-  y: 0
-  z: 3
-  material: SANDSTONE
-- x: -11
-  y: 0
-  z: 4
-  material: SAND
-- x: -10
-  y: 0
-  z: 4
-  material: SMOOTH_SANDSTONE
-- x: -9
-  y: 0
-  z: 4
-  material: SAND
-- x: -9
-  y: 1
-  z: 4
-  material: DEAD_BUSH
-- x: -8
-  y: 0
-  z: 4
-  material: SAND
-- x: -7
-  y: 0
-  z: 4
-  material: SANDSTONE
-- x: -6
-  y: 0
-  z: 4
-  material: SAND
-- x: -6
-  y: 1
-  z: 4
-  material: DEAD_BUSH
-- x: -5
-  y: 0
-  z: 4
-  material: SAND
-- x: -4
-  y: 0
-  z: 4
-  material: SAND
-- x: -4
-  y: 1
-  z: 4
-  material: DEAD_BUSH
-- x: -3
-  y: 0
-  z: 4
-  material: SAND
-- x: -2
-  y: 0
-  z: 4
-  material: SAND
-- x: -1
-  y: 0
-  z: 4
-  material: SAND
-- x: 0
-  y: 0
-  z: 4
-  material: SAND
-- x: 1
-  y: 0
-  z: 4
-  material: GRAVEL
-- x: 2
-  y: 0
-  z: 4
-  material: SAND
-- x: 3
-  y: 0
-  z: 4
-  material: SMOOTH_SANDSTONE
-- x: 4
-  y: 0
-  z: 4
-  material: SAND
-- x: 5
-  y: 0
-  z: 4
-  material: SAND
-- x: 6
-  y: 0
-  z: 4
-  material: SANDSTONE
-- x: 7
-  y: 0
-  z: 4
-  material: SANDSTONE
-- x: 8
-  y: 0
-  z: 4
-  material: GRAVEL
-- x: 9
-  y: 0
-  z: 4
-  material: GRAVEL
-- x: 10
-  y: 0
-  z: 4
-  material: SAND
-- x: 11
-  y: 0
-  z: 4
-  material: SAND
-- x: 11
-  y: 1
-  z: 4
-  material: FERN
-- x: 12
-  y: 0
-  z: 4
-  material: SAND
-- x: 12
-  y: 1
-  z: 4
-  material: DEAD_BUSH
-- x: 13
-  y: 0
-  z: 4
-  material: SAND
-- x: -10
-  y: 0
-  z: 5
-  material: SAND
-- x: -9
-  y: 0
-  z: 5
-  material: SAND
-- x: -8
-  y: 0
-  z: 5
-  material: SAND
-- x: -8
-  y: 1
-  z: 5
-  material: SANDSTONE
-- x: -7
-  y: 0
-  z: 5
-  material: SAND
-- x: -6
-  y: 0
-  z: 5
-  material: SAND
-- x: -5
-  y: 0
-  z: 5
-  material: SAND
-- x: -4
-  y: 0
-  z: 5
-  material: SAND
-- x: -3
-  y: 0
-  z: 5
-  material: SAND
-- x: -2
-  y: 0
-  z: 5
-  material: SAND
-- x: -1
-  y: 0
-  z: 5
-  material: SAND
-- x: -1
-  y: 1
-  z: 5
-  material: FERN
-- x: 0
-  y: 0
-  z: 5
-  material: SAND
-- x: 1
-  y: 0
-  z: 5
-  material: SAND
-- x: 2
-  y: 0
-  z: 5
-  material: SMOOTH_SANDSTONE
-- x: 3
-  y: 0
-  z: 5
-  material: SAND
-- x: 4
-  y: 0
-  z: 5
-  material: SAND
-- x: 5
-  y: 0
-  z: 5
-  material: SMOOTH_SANDSTONE
-- x: 6
-  y: 0
-  z: 5
-  material: SAND
-- x: 6
-  y: 1
-  z: 5
-  material: FERN
-- x: 7
-  y: 0
-  z: 5
-  material: SAND
-- x: 7
-  y: 1
-  z: 5
-  material: FERN
-- x: 8
-  y: 0
-  z: 5
-  material: SAND
-- x: 9
-  y: 0
-  z: 5
-  material: SAND
-- x: 10
-  y: 0
-  z: 5
-  material: GRAVEL
-- x: 11
-  y: 0
-  z: 5
-  material: SAND
-- x: 12
-  y: 0
-  z: 5
-  material: SAND
-- x: -9
-  y: 0
-  z: 6
-  material: SAND
-- x: -9
-  y: 1
-  z: 6
-  material: FERN
-- x: -8
-  y: 0
-  z: 6
-  material: SAND
-- x: -7
-  y: 0
-  z: 6
-  material: SAND
-- x: -6
-  y: 0
-  z: 6
-  material: SAND
-- x: -5
-  y: 0
-  z: 6
-  material: SAND
-- x: -4
-  y: 0
-  z: 6
-  material: SAND
-- x: -3
-  y: 0
-  z: 6
-  material: SAND
-- x: -2
-  y: 0
-  z: 6
-  material: SAND
-- x: -1
-  y: 0
-  z: 6
-  material: SAND
-- x: 0
-  y: 0
-  z: 6
-  material: SMOOTH_SANDSTONE
-- x: 1
-  y: 0
-  z: 6
-  material: SAND
-- x: 2
-  y: 0
-  z: 6
-  material: SAND
-- x: 2
-  y: 1
-  z: 6
-  material: DEAD_BUSH
-- x: 3
-  y: 0
-  z: 6
-  material: SAND
-- x: 4
-  y: 0
-  z: 6
-  material: SAND
-- x: 5
-  y: 0
-  z: 6
-  material: SMOOTH_SANDSTONE
-- x: 6
-  y: 0
-  z: 6
-  material: SAND
-- x: 7
-  y: 0
-  z: 6
-  material: SAND
-- x: 8
-  y: 0
-  z: 6
-  material: SAND
-- x: 9
-  y: 0
-  z: 6
-  material: SAND
-- x: 10
-  y: 0
-  z: 6
-  material: SAND
-- x: 10
-  y: 1
-  z: 6
-  material: DEAD_BUSH
-- x: 11
-  y: 0
-  z: 6
-  material: SAND
-- x: -8
-  y: 0
-  z: 7
-  material: SAND
-- x: -8
-  y: 1
-  z: 7
-  material: FERN
-- x: -7
-  y: 0
-  z: 7
-  material: SANDSTONE
-- x: -6
-  y: 0
-  z: 7
-  material: SAND
-- x: -5
-  y: 0
-  z: 7
-  material: SAND
-- x: -4
-  y: 0
-  z: 7
-  material: SAND
-- x: -3
-  y: 0
-  z: 7
-  material: SAND
-- x: -3
-  y: 1
-  z: 7
-  material: DEAD_BUSH
-- x: -2
-  y: 0
-  z: 7
-  material: SAND
-- x: -2
-  y: 1
-  z: 7
-  material: FERN
-- x: -1
-  y: 0
-  z: 7
   material: SMOOTH_SANDSTONE
 - x: 0
   y: 0
-  z: 7
-  material: SANDSTONE
-- x: 1
-  y: 0
-  z: 7
-  material: SAND
-- x: 2
-  y: 0
-  z: 7
-  material: SAND
-- x: 2
-  y: 1
-  z: 7
-  material: DEAD_BUSH
-- x: 3
-  y: 0
-  z: 7
-  material: SAND
-- x: 4
-  y: 0
-  z: 7
-  material: SAND
-- x: 4
-  y: 1
-  z: 7
-  material: FERN
-- x: 5
-  y: 0
-  z: 7
-  material: SAND
-- x: 6
-  y: 0
-  z: 7
-  material: SAND
-- x: 6
-  y: 1
-  z: 7
-  material: FERN
-- x: 7
-  y: 0
-  z: 7
-  material: SAND
-- x: 8
-  y: 0
-  z: 7
-  material: SAND
-- x: 9
-  y: 0
-  z: 7
-  material: SAND
-- x: 9
-  y: 1
-  z: 7
-  material: DEAD_BUSH
-- x: 10
-  y: 0
-  z: 7
-  material: SAND
-- x: -7
-  y: 0
-  z: 8
-  material: SAND
-- x: -6
-  y: 0
-  z: 8
-  material: SAND
-- x: -6
-  y: 1
-  z: 8
-  material: FERN
-- x: -5
-  y: 0
-  z: 8
-  material: SAND
-- x: -4
-  y: 0
-  z: 8
-  material: SAND
-- x: -3
-  y: 0
-  z: 8
-  material: SAND
-- x: -2
-  y: 0
-  z: 8
-  material: SAND
-- x: -1
-  y: 0
-  z: 8
-  material: SANDSTONE
-- x: 0
-  y: 0
-  z: 8
-  material: SMOOTH_SANDSTONE
-- x: 1
-  y: 0
-  z: 8
-  material: SAND
-- x: 2
-  y: 0
-  z: 8
-  material: SAND
-- x: 3
-  y: 0
-  z: 8
-  material: SAND
-- x: 4
-  y: 0
-  z: 8
-  material: SAND
-- x: 5
-  y: 0
-  z: 8
-  material: SAND
-- x: 5
-  y: 1
-  z: 8
-  material: JUNGLE_LOG
-- x: 6
-  y: 0
-  z: 8
-  material: SAND
-- x: 7
-  y: 0
-  z: 8
-  material: SAND
-- x: 8
-  y: 0
-  z: 8
-  material: SAND
-- x: 8
-  y: 1
-  z: 8
-  material: BARREL
-- x: -5
-  y: 0
-  z: 9
-  material: SAND
-- x: -4
-  y: 0
-  z: 9
-  material: SAND
-- x: -3
-  y: 0
-  z: 9
-  material: GRAVEL
-- x: -2
-  y: 0
-  z: 9
-  material: SAND
-- x: -1
-  y: 0
-  z: 9
-  material: SAND
-- x: 0
-  y: 0
-  z: 9
-  material: SAND
-- x: 1
-  y: 0
-  z: 9
-  material: SAND
-- x: 2
-  y: 0
-  z: 9
-  material: SAND
-- x: 3
-  y: 0
-  z: 9
-  material: SAND
-- x: 4
-  y: 0
-  z: 9
-  material: SAND
-- x: 5
-  y: 0
-  z: 9
-  material: SAND
-- x: 6
-  y: 0
-  z: 9
-  material: GRAVEL
-- x: 7
-  y: 0
-  z: 9
-  material: SANDSTONE
-- x: 2
-  y: 0
-  z: 10
-  material: SAND
-- x: 3
-  y: 0
-  z: 10
-  material: SAND
-- x: -8
-  y: 1
-  z: -2
-  material: SANDSTONE
-- x: -8
-  y: 2
-  z: -2
-  material: SANDSTONE_WALL
-- x: -8
-  y: 1
-  z: -1
-  material: SANDSTONE
-- x: -8
-  y: 1
-  z: 0
-  material: SANDSTONE
-- x: -8
-  y: 2
-  z: 0
-  material: SANDSTONE_WALL
-- x: -8
-  y: 1
-  z: 1
-  material: SANDSTONE
-- x: -8
-  y: 1
   z: 3
-  material: SANDSTONE
-- x: -8
-  y: 1
-  z: 4
-  material: SANDSTONE
-- x: -8
-  y: 2
-  z: 5
-  material: SANDSTONE_WALL
-- x: -7
-  y: 1
-  z: -2
-  material: SANDSTONE
-- x: -6
-  y: 1
-  z: -2
-  material: SANDSTONE_STAIRS
-- x: -5
-  y: 1
-  z: -2
-  material: SANDSTONE
-- x: -7
-  y: 2
-  z: -2
-  material: SANDSTONE_SLAB
-- x: 0
-  y: 1
-  z: 0
   material: CUT_SANDSTONE
 - x: 1
+  y: 0
+  z: 3
+  material: SMOOTH_SANDSTONE
+- x: 2
+  y: 0
+  z: 3
+  material: SMOOTH_SANDSTONE
+- x: 3
+  y: 0
+  z: 3
+  material: SAND
+- x: 4
+  y: 0
+  z: 3
+  material: SUSPICIOUS_SAND
+- x: 5
+  y: 0
+  z: 3
+  material: SAND
+- x: 6
+  y: 0
+  z: 3
+  material: SUSPICIOUS_SAND
+- x: 7
+  y: 0
+  z: 3
+  material: SAND
+- x: 8
+  y: 0
+  z: 3
+  material: SANDSTONE
+- x: 9
+  y: 0
+  z: 3
+  material: SUSPICIOUS_SAND
+- x: 10
+  y: 0
+  z: 3
+  material: SUSPICIOUS_SAND
+- x: 11
+  y: 0
+  z: 3
+  material: SAND
+- x: 12
+  y: 0
+  z: 3
+  material: SAND
+- x: 13
+  y: 0
+  z: 3
+  material: SAND
+- x: 14
+  y: 0
+  z: 3
+  material: SANDSTONE
+- x: 15
+  y: 0
+  z: 3
+  material: SANDSTONE
+- x: -13
+  y: 0
+  z: 4
+  material: SAND
+- x: -12
+  y: 0
+  z: 4
+  material: SAND
+- x: -11
+  y: 0
+  z: 4
+  material: SAND
+- x: -10
+  y: 0
+  z: 4
+  material: SUSPICIOUS_SAND
+- x: -9
+  y: 0
+  z: 4
+  material: SAND
+- x: -8
+  y: 0
+  z: 4
+  material: SAND
+- x: -7
+  y: 0
+  z: 4
+  material: SANDSTONE
+- x: -6
+  y: 0
+  z: 4
+  material: SAND
+- x: -5
+  y: 0
+  z: 4
+  material: SAND
+- x: -4
+  y: 0
+  z: 4
+  material: SAND
+- x: -3
+  y: 0
+  z: 4
+  material: SAND
+- x: -2
+  y: 0
+  z: 4
+  material: SAND
+- x: -1
+  y: 0
+  z: 4
+  material: SMOOTH_SANDSTONE
+- x: 0
+  y: 0
+  z: 4
+  material: CUT_SANDSTONE
+- x: 1
+  y: 0
+  z: 4
+  material: SMOOTH_SANDSTONE
+- x: 2
+  y: 0
+  z: 4
+  material: SAND
+- x: 3
+  y: 0
+  z: 4
+  material: SMOOTH_SANDSTONE
+- x: 4
+  y: 0
+  z: 4
+  material: SUSPICIOUS_SAND
+- x: 5
+  y: 0
+  z: 4
+  material: SUSPICIOUS_SAND
+- x: 6
+  y: 0
+  z: 4
+  material: SUSPICIOUS_SAND
+- x: 7
+  y: 0
+  z: 4
+  material: SUSPICIOUS_SAND
+- x: 8
+  y: 0
+  z: 4
+  material: SUSPICIOUS_SAND
+- x: 9
+  y: 0
+  z: 4
+  material: SUSPICIOUS_SAND
+- x: 10
+  y: 0
+  z: 4
+  material: SUSPICIOUS_SAND
+- x: 11
+  y: 0
+  z: 4
+  material: SAND
+- x: 12
+  y: 0
+  z: 4
+  material: SAND
+- x: 13
+  y: 0
+  z: 4
+  material: SAND
+- x: 14
+  y: 0
+  z: 4
+  material: SAND
+- x: -12
+  y: 0
+  z: 5
+  material: SAND
+- x: -10
+  y: 0
+  z: 5
+  material: SAND
+- x: -9
+  y: 0
+  z: 5
+  material: SAND
+- x: -8
+  y: 0
+  z: 5
+  material: SAND
+- x: -7
+  y: 0
+  z: 5
+  material: SAND
+- x: -6
+  y: 0
+  z: 5
+  material: SAND
+- x: -5
+  y: 0
+  z: 5
+  material: SAND
+- x: -4
+  y: 0
+  z: 5
+  material: SAND
+- x: -3
+  y: 0
+  z: 5
+  material: SAND
+- x: -2
+  y: 0
+  z: 5
+  material: SAND
+- x: -1
+  y: 0
+  z: 5
+  material: SMOOTH_SANDSTONE
+- x: 0
+  y: 0
+  z: 5
+  material: CUT_SANDSTONE
+- x: 1
+  y: 0
+  z: 5
+  material: SMOOTH_SANDSTONE
+- x: 2
+  y: 0
+  z: 5
+  material: SMOOTH_SANDSTONE
+- x: 3
+  y: 0
+  z: 5
+  material: SAND
+- x: 4
+  y: 0
+  z: 5
+  material: SUSPICIOUS_SAND
+- x: 5
+  y: 0
+  z: 5
+  material: SMOOTH_SANDSTONE
+- x: 6
+  y: 0
+  z: 5
+  material: SUSPICIOUS_SAND
+- x: 7
+  y: 0
+  z: 5
+  material: SUSPICIOUS_SAND
+- x: 8
+  y: 0
+  z: 5
+  material: SAND
+- x: 9
+  y: 0
+  z: 5
+  material: SUSPICIOUS_SAND
+- x: 10
+  y: 0
+  z: 5
+  material: SUSPICIOUS_SAND
+- x: 12
+  y: 0
+  z: 5
+  material: SAND
+- x: 13
+  y: 0
+  z: 5
+  material: SAND
+- x: -12
+  y: 0
+  z: 6
+  material: SAND
+- x: -10
+  y: 0
+  z: 6
+  material: SANDSTONE
+- x: -9
+  y: 0
+  z: 6
+  material: SUSPICIOUS_SAND
+- x: -8
+  y: 0
+  z: 6
+  material: SAND
+- x: -7
+  y: 0
+  z: 6
+  material: SAND
+- x: -6
+  y: 0
+  z: 6
+  material: SAND
+- x: -5
+  y: 0
+  z: 6
+  material: SAND
+- x: -4
+  y: 0
+  z: 6
+  material: SAND
+- x: -3
+  y: 0
+  z: 6
+  material: SAND
+- x: -2
+  y: 0
+  z: 6
+  material: SAND
+- x: -1
+  y: 0
+  z: 6
+  material: SANDSTONE
+- x: 0
+  y: 0
+  z: 6
+  material: SMOOTH_SANDSTONE
+- x: 1
+  y: 0
+  z: 6
+  material: CUT_SANDSTONE
+- x: 2
+  y: 0
+  z: 6
+  material: SMOOTH_SANDSTONE
+- x: 3
+  y: 0
+  z: 6
+  material: SAND
+- x: 4
+  y: 0
+  z: 6
+  material: SAND
+- x: 5
+  y: 0
+  z: 6
+  material: SUSPICIOUS_SAND
+- x: 6
+  y: 0
+  z: 6
+  material: SUSPICIOUS_SAND
+- x: 7
+  y: 0
+  z: 6
+  material: SUSPICIOUS_SAND
+- x: 8
+  y: 0
+  z: 6
+  material: SUSPICIOUS_SAND
+- x: 9
+  y: 0
+  z: 6
+  material: SUSPICIOUS_SAND
+- x: 10
+  y: 0
+  z: 6
+  material: SAND
+- x: 11
+  y: 0
+  z: 6
+  material: SAND
+- x: -11
+  y: 0
+  z: 7
+  material: SAND
+- x: -10
+  y: 0
+  z: 7
+  material: SAND
+- x: -9
+  y: 0
+  z: 7
+  material: SAND
+- x: -8
+  y: 0
+  z: 7
+  material: SAND
+- x: -7
+  y: 0
+  z: 7
+  material: SANDSTONE
+- x: -6
+  y: 0
+  z: 7
+  material: SAND
+- x: -5
+  y: 0
+  z: 7
+  material: SUSPICIOUS_SAND
+- x: -4
+  y: 0
+  z: 7
+  material: SAND
+- x: -3
+  y: 0
+  z: 7
+  material: SAND
+- x: -2
+  y: 0
+  z: 7
+  material: SAND
+- x: -1
+  y: 0
+  z: 7
+  material: SMOOTH_SANDSTONE
+- x: 0
+  y: 0
+  z: 7
+  material: SMOOTH_SANDSTONE
+- x: 1
+  y: 0
+  z: 7
+  material: CUT_SANDSTONE
+- x: 2
+  y: 0
+  z: 7
+  material: SMOOTH_SANDSTONE
+- x: 3
+  y: 0
+  z: 7
+  material: SAND
+- x: 4
+  y: 0
+  z: 7
+  material: SUSPICIOUS_SAND
+- x: 5
+  y: 0
+  z: 7
+  material: SUSPICIOUS_SAND
+- x: 6
+  y: 0
+  z: 7
+  material: SUSPICIOUS_SAND
+- x: 7
+  y: 0
+  z: 7
+  material: SUSPICIOUS_SAND
+- x: 8
+  y: 0
+  z: 7
+  material: SAND
+- x: 9
+  y: 0
+  z: 7
+  material: SUSPICIOUS_SAND
+- x: 10
+  y: 0
+  z: 7
+  material: SUSPICIOUS_SAND
+- x: 12
+  y: 0
+  z: 7
+  material: SAND
+- x: 13
+  y: 0
+  z: 7
+  material: SAND
+- x: -10
+  y: 0
+  z: 8
+  material: SMOOTH_SANDSTONE
+- x: -9
+  y: 0
+  z: 8
+  material: SAND
+- x: -8
+  y: 0
+  z: 8
+  material: SAND
+- x: -7
+  y: 0
+  z: 8
+  material: SAND
+- x: -6
+  y: 0
+  z: 8
+  material: SAND
+- x: -5
+  y: 0
+  z: 8
+  material: SAND
+- x: -4
+  y: 0
+  z: 8
+  material: SUSPICIOUS_SAND
+- x: -3
+  y: 0
+  z: 8
+  material: SAND
+- x: -2
+  y: 0
+  z: 8
+  material: SAND
+- x: -1
+  y: 0
+  z: 8
+  material: SANDSTONE
+- x: 0
+  y: 0
+  z: 8
+  material: SMOOTH_SANDSTONE
+- x: 1
+  y: 0
+  z: 8
+  material: CUT_SANDSTONE
+- x: 2
+  y: 0
+  z: 8
+  material: SMOOTH_SANDSTONE
+- x: 3
+  y: 0
+  z: 8
+  material: SAND
+- x: 4
+  y: 0
+  z: 8
+  material: SAND
+- x: 5
+  y: 0
+  z: 8
+  material: SAND
+- x: 6
+  y: 0
+  z: 8
+  material: SUSPICIOUS_SAND
+- x: 7
+  y: 0
+  z: 8
+  material: SUSPICIOUS_SAND
+- x: 8
+  y: 0
+  z: 8
+  material: SUSPICIOUS_SAND
+- x: 9
+  y: 0
+  z: 8
+  material: SUSPICIOUS_SAND
+- x: 10
+  y: 0
+  z: 8
+  material: SUSPICIOUS_SAND
+- x: 11
+  y: 0
+  z: 8
+  material: MOSSY_COBBLESTONE
+- x: 12
+  y: 0
+  z: 8
+  material: SAND
+- x: -9
+  y: 0
+  z: 9
+  material: SAND
+- x: -8
+  y: 0
+  z: 9
+  material: SAND
+- x: -7
+  y: 0
+  z: 9
+  material: SAND
+- x: -6
+  y: 0
+  z: 9
+  material: SAND
+- x: -5
+  y: 0
+  z: 9
+  material: SAND
+- x: -4
+  y: 0
+  z: 9
+  material: SAND
+- x: -3
+  y: 0
+  z: 9
+  material: GRAVEL
+- x: -2
+  y: 0
+  z: 9
+  material: SAND
+- x: -1
+  y: 0
+  z: 9
+  material: SAND
+- x: 0
+  y: 0
+  z: 9
+  material: SMOOTH_SANDSTONE
+- x: 1
+  y: 0
+  z: 9
+  material: CUT_SANDSTONE
+- x: 2
+  y: 0
+  z: 9
+  material: SMOOTH_SANDSTONE
+- x: 3
+  y: 0
+  z: 9
+  material: SAND
+- x: 4
+  y: 0
+  z: 9
+  material: SAND
+- x: 5
+  y: 0
+  z: 9
+  material: SAND
+- x: 6
+  y: 0
+  z: 9
+  material: GRAVEL
+- x: 7
+  y: 0
+  z: 9
+  material: SANDSTONE
+- x: 8
+  y: 0
+  z: 9
+  material: SAND
+- x: 9
+  y: 0
+  z: 9
+  material: SAND
+- x: 10
+  y: 0
+  z: 9
+  material: GRAVEL
+- x: 11
+  y: 0
+  z: 9
+  material: SAND
+- x: -8
+  y: 0
+  z: 10
+  material: SAND
+- x: -7
+  y: 0
+  z: 10
+  material: SAND
+- x: -5
+  y: 0
+  z: 10
+  material: SAND
+- x: -4
+  y: 0
+  z: 10
+  material: SAND
+- x: -3
+  y: 0
+  z: 10
+  material: SAND
+- x: -2
+  y: 0
+  z: 10
+  material: SMOOTH_SANDSTONE
+- x: 0
+  y: 0
+  z: 10
+  material: CUT_SANDSTONE
+- x: 2
+  y: 0
+  z: 10
+  material: SAND
+- x: 3
+  y: 0
+  z: 10
+  material: SAND
+- x: 4
+  y: 0
+  z: 10
+  material: SAND
+- x: 5
+  y: 0
+  z: 10
+  material: SAND
+- x: 7
+  y: 0
+  z: 10
+  material: SAND
+- x: 8
+  y: 0
+  z: 10
+  material: SAND
+- x: 9
+  y: 0
+  z: 10
+  material: SAND
+- x: 10
+  y: 0
+  z: 10
+  material: SAND
+- x: -4
+  y: 0
+  z: 11
+  material: SAND
+- x: -3
+  y: 0
+  z: 11
+  material: SAND
+- x: -2
+  y: 0
+  z: 11
+  material: SAND
+- x: -1
+  y: 0
+  z: 11
+  material: SMOOTH_SANDSTONE
+- x: 0
+  y: 0
+  z: 11
+  material: CUT_SANDSTONE
+- x: 1
+  y: 0
+  z: 11
+  material: SMOOTH_SANDSTONE
+- x: 4
+  y: 0
+  z: 11
+  material: SAND
+- x: 5
+  y: 0
+  z: 11
+  material: SAND
+- x: 7
+  y: 0
+  z: 11
+  material: SAND
+- x: 8
+  y: 0
+  z: 11
+  material: SAND
+- x: -4
+  y: 0
+  z: 12
+  material: SAND
+- x: -3
+  y: 0
+  z: 12
+  material: SAND
+- x: -2
+  y: 0
+  z: 12
+  material: SANDSTONE
+- x: -1
+  y: 0
+  z: 12
+  material: SMOOTH_SANDSTONE
+- x: 0
+  y: 0
+  z: 12
+  material: CUT_SANDSTONE
+- x: 1
+  y: 0
+  z: 12
+  material: SMOOTH_SANDSTONE
+- x: 2
+  y: 0
+  z: 12
+  material: SAND
+- x: 3
+  y: 0
+  z: 12
+  material: SAND
+- x: 4
+  y: 0
+  z: 12
+  material: GRAVEL
+- x: 5
+  y: 0
+  z: 12
+  material: SAND
+- x: 6
+  y: 0
+  z: 12
+  material: SAND
+- x: -1
+  y: 0
+  z: 10
+  material: SMOOTH_SANDSTONE
+- x: 1
+  y: 0
+  z: 10
+  material: SMOOTH_SANDSTONE
+- x: -1
+  y: 0
+  z: 13
+  material: SMOOTH_SANDSTONE
+- x: 0
+  y: 0
+  z: 13
+  material: CUT_SANDSTONE
+- x: 1
+  y: 0
+  z: 13
+  material: SMOOTH_SANDSTONE
+- x: 0
+  y: 1
+  z: 0
+  material: CHISELED_SANDSTONE
+- x: -1
   y: 1
   z: 0
   material: SANDSTONE_SLAB
-- x: -1
+- x: 1
+  y: 1
+  z: 0
+  material: SANDSTONE_SLAB
+- x: 0
+  y: 1
+  z: -1
+  material: SANDSTONE_SLAB
+- x: 9
+  y: 1
+  z: -2
+  material: WHITE_WOOL
+- x: 9
+  y: 2
+  z: -2
+  material: WHITE_WOOL
+- x: 9
+  y: 1
+  z: -1
+  material: WHITE_WOOL
+- x: 9
+  y: 2
+  z: -1
+  material: WHITE_WOOL
+- x: 9
+  y: 1
+  z: 0
+  material: WHITE_WOOL
+- x: 9
+  y: 2
+  z: 0
+  material: LANTERN
+- x: 9
   y: 1
   z: 1
-  material: SANDSTONE_SLAB
-- x: 4
-  y: 1
-  z: 8
-  material: JUNGLE_LOG
-- x: 4
-  y: 1
-  z: 11
-  material: JUNGLE_LOG
-- x: 5
-  y: 1
-  z: 11
-  material: JUNGLE_LOG
-- x: 6
-  y: 1
-  z: 8
-  material: JUNGLE_LOG
-- x: 6
-  y: 1
-  z: 11
-  material: JUNGLE_LOG
-- x: 7
-  y: 1
-  z: 8
-  material: JUNGLE_LOG
-- x: 7
-  y: 1
-  z: 11
-  material: JUNGLE_LOG
-- x: 4
-  y: 1
-  z: 9
-  material: JUNGLE_LOG
-- x: 4
-  y: 1
-  z: 10
-  material: JUNGLE_LOG
-- x: 7
-  y: 1
-  z: 9
   material: WHITE_WOOL
-- x: 6
-  y: 1
-  z: 9
-  material: WHITE_WOOL
-- x: 6
-  y: 1
-  z: 10
-  material: WHITE_WOOL
-- x: 7
-  y: 1
-  z: 10
-  material: WHITE_WOOL
-- x: 6
+- x: 9
   y: 2
-  z: 9
+  z: 1
   material: WHITE_WOOL
-- x: 6
-  y: 2
-  z: 10
+- x: 9
+  y: 1
+  z: 2
   material: ORANGE_WOOL
-- x: 5
+- x: 9
+  y: 2
+  z: 2
+  material: WHITE_WOOL
+- x: 6
   y: 1
-  z: 9
-  material: CAMPFIRE
+  z: -2
+  material: JUNGLE_FENCE
+- x: 6
+  y: 2
+  z: -2
+  material: WHITE_WOOL
+- x: 6
+  y: 1
+  z: 2
+  material: JUNGLE_FENCE
+- x: 6
+  y: 2
+  z: 2
+  material: WHITE_WOOL
+- x: 7
+  y: 1
+  z: -2
+  material: WHITE_WOOL
+- x: 7
+  y: 2
+  z: -2
+  material: WHITE_WOOL
+- x: 7
+  y: 1
+  z: 2
+  material: ORANGE_WOOL
+- x: 7
+  y: 2
+  z: 2
+  material: WHITE_WOOL
+- x: 8
+  y: 1
+  z: -2
+  material: WHITE_WOOL
+- x: 8
+  y: 2
+  z: -2
+  material: WHITE_WOOL
+- x: 8
+  y: 1
+  z: 2
+  material: WHITE_WOOL
+- x: 8
+  y: 2
+  z: 2
+  material: WHITE_WOOL
+- x: 6
+  y: 3
+  z: -2
+  material: WHITE_WOOL
+- x: 6
+  y: 3
+  z: -1
+  material: WHITE_WOOL
+- x: 6
+  y: 3
+  z: 0
+  material: ORANGE_WOOL
+- x: 6
+  y: 3
+  z: 1
+  material: WHITE_WOOL
+- x: 6
+  y: 3
+  z: 2
+  material: WHITE_WOOL
+- x: 7
+  y: 3
+  z: -2
+  material: WHITE_WOOL
+- x: 7
+  y: 3
+  z: -1
+  material: ORANGE_WOOL
+- x: 7
+  y: 3
+  z: 0
+  material: WHITE_WOOL
+- x: 7
+  y: 3
+  z: 1
+  material: WHITE_WOOL
+- x: 7
+  y: 3
+  z: 2
+  material: ORANGE_WOOL
+- x: 8
+  y: 3
+  z: -2
+  material: ORANGE_WOOL
+- x: 8
+  y: 3
+  z: -1
+  material: WHITE_WOOL
+- x: 8
+  y: 3
+  z: 0
+  material: WHITE_WOOL
+- x: 8
+  y: 3
+  z: 1
+  material: ORANGE_WOOL
+- x: 8
+  y: 3
+  z: 2
+  material: WHITE_WOOL
+- x: 9
+  y: 3
+  z: -2
+  material: WHITE_WOOL
+- x: 9
+  y: 3
+  z: -1
+  material: WHITE_WOOL
+- x: 9
+  y: 3
+  z: 0
+  material: ORANGE_WOOL
+- x: 9
+  y: 3
+  z: 1
+  material: WHITE_WOOL
+- x: 9
+  y: 3
+  z: 2
+  material: WHITE_WOOL
+- x: 8
+  y: 1
+  z: 0
+  material: BARREL
+- x: 8
+  y: 1
+  z: 1
+  material: CHEST
+- x: 7
+  y: 1
+  z: -1
+  material: CRAFTING_TABLE
+- x: -11
+  y: 1
+  z: -4
+  material: SANDSTONE
+- x: -11
+  y: 2
+  z: -4
+  material: SANDSTONE_WALL
+- x: -11
+  y: 1
+  z: -3
+  material: SANDSTONE
+- x: -11
+  y: 0
+  z: -2
+  material: SANDSTONE
+- x: -11
+  y: 1
+  z: -2
+  material: SANDSTONE
+- x: -11
+  y: 0
+  z: -1
+  material: SANDSTONE
+- x: -11
+  y: 1
+  z: -1
+  material: SANDSTONE_STAIRS
+- x: -11
+  y: 1
+  z: 1
+  material: SANDSTONE
+- x: -11
+  y: 1
+  z: 2
+  material: SANDSTONE
+- x: -11
+  y: 2
+  z: 2
+  material: SANDSTONE_WALL
+- x: -10
+  y: 1
+  z: -4
+  material: SANDSTONE
+- x: -9
+  y: 1
+  z: -4
+  material: SANDSTONE_SLAB
+- x: -8
+  y: 1
+  z: -4
+  material: SANDSTONE
+- x: -10
+  y: 2
+  z: -4
+  material: SANDSTONE_SLAB
 - x: 3
   y: 1
-  z: 11
-  material: CHEST
-- x: -6
+  z: -2
+  material: BARREL
+- x: 2
   y: 1
+  z: -3
+  material: LANTERN
+- x: 3
+  y: 1
+  z: 8
+  material: CAMPFIRE
+- x: 4
+  y: 1
+  z: 8
+  material: OAK_LOG
+- x: 2
+  y: 1
+  z: 8
+  material: OAK_LOG
+- x: 3
+  y: 1
+  z: 9
+  material: BARREL
+- x: -8
+  y: 1
+  z: -10
+  material: JUNGLE_LOG
+- x: -8
+  y: 2
+  z: -10
+  material: JUNGLE_LOG
+- x: -7
+  y: 3
+  z: -9
+  material: JUNGLE_LOG
+- x: -7
+  y: 4
+  z: -9
+  material: JUNGLE_LOG
+- x: -6
+  y: 5
   z: -8
   material: JUNGLE_LOG
 - x: -6
-  y: 2
+  y: 6
   z: -8
+  material: JUNGLE_LOG
+- x: -6
+  y: 7
+  z: -8
+  material: JUNGLE_LEAVES
+- x: -5
+  y: 7
+  z: -8
+  material: JUNGLE_LEAVES
+- x: -5
+  y: 6
+  z: -8
+  material: JUNGLE_LEAVES
+- x: -7
+  y: 7
+  z: -8
+  material: JUNGLE_LEAVES
+- x: -7
+  y: 6
+  z: -8
+  material: JUNGLE_LEAVES
+- x: -6
+  y: 7
+  z: -7
+  material: JUNGLE_LEAVES
+- x: -6
+  y: 6
+  z: -7
+  material: JUNGLE_LEAVES
+- x: -6
+  y: 7
+  z: -9
+  material: JUNGLE_LEAVES
+- x: -6
+  y: 6
+  z: -9
+  material: JUNGLE_LEAVES
+- x: -5
+  y: 7
+  z: -7
+  material: JUNGLE_LEAVES
+- x: -5
+  y: 6
+  z: -7
+  material: JUNGLE_LEAVES
+- x: -5
+  y: 5
+  z: -8
+  material: SHROOMLIGHT
+- x: 11
+  y: 1
+  z: 8
+  material: JUNGLE_LOG
+- x: 11
+  y: 2
+  z: 8
+  material: JUNGLE_LOG
+- x: 10
+  y: 3
+  z: 8
+  material: JUNGLE_LOG
+- x: 10
+  y: 4
+  z: 8
+  material: SHROOMLIGHT
+- x: 9
+  y: 5
+  z: 8
+  material: JUNGLE_LOG
+- x: 9
+  y: 6
+  z: 8
+  material: JUNGLE_LEAVES
+- x: 10
+  y: 6
+  z: 8
+  material: JUNGLE_LEAVES
+- x: 10
+  y: 5
+  z: 8
+  material: JUNGLE_LEAVES
+- x: 8
+  y: 6
+  z: 8
+  material: JUNGLE_LEAVES
+- x: 8
+  y: 5
+  z: 8
+  material: JUNGLE_LEAVES
+- x: 9
+  y: 6
+  z: 9
+  material: JUNGLE_LEAVES
+- x: 9
+  y: 5
+  z: 9
+  material: JUNGLE_LEAVES
+- x: 9
+  y: 6
+  z: 7
+  material: JUNGLE_LEAVES
+- x: 9
+  y: 5
+  z: 7
+  material: JUNGLE_LEAVES
+- x: 10
+  y: 6
+  z: 9
+  material: JUNGLE_LEAVES
+- x: 10
+  y: 5
+  z: 9
+  material: JUNGLE_LEAVES
+- x: -6
+  y: 0
+  z: 10
+  material: MOSSY_COBBLESTONE
+- x: -6
+  y: 1
+  z: 10
+  material: JUNGLE_LOG
+- x: -6
+  y: 2
+  z: 10
   material: JUNGLE_LOG
 - x: -6
   y: 3
-  z: -8
+  z: 9
   material: JUNGLE_LOG
 - x: -6
   y: 4
-  z: -8
+  z: 9
   material: JUNGLE_LOG
 - x: -6
   y: 5
-  z: -8
+  z: 8
+  material: JUNGLE_LOG
+- x: -6
+  y: 6
+  z: 8
+  material: JUNGLE_LOG
+- x: -6
+  y: 7
+  z: 8
   material: JUNGLE_LEAVES
 - x: -5
-  y: 5
-  z: -8
+  y: 7
+  z: 8
+  material: JUNGLE_LEAVES
+- x: -5
+  y: 6
+  z: 8
   material: JUNGLE_LEAVES
 - x: -7
-  y: 5
-  z: -8
+  y: 7
+  z: 8
+  material: JUNGLE_LEAVES
+- x: -7
+  y: 6
+  z: 8
   material: JUNGLE_LEAVES
 - x: -6
-  y: 5
-  z: -7
+  y: 7
+  z: 9
   material: JUNGLE_LEAVES
 - x: -6
-  y: 4
-  z: -9
+  y: 6
+  z: 9
+  material: JUNGLE_LEAVES
+- x: -6
+  y: 7
+  z: 7
+  material: JUNGLE_LEAVES
+- x: -6
+  y: 6
+  z: 7
   material: JUNGLE_LEAVES
 - x: -5
-  y: 4
-  z: -8
+  y: 7
+  z: 9
   material: JUNGLE_LEAVES
+- x: -5
+  y: 6
+  z: 9
+  material: JUNGLE_LEAVES
+- x: -5
+  y: 5
+  z: 8
+  material: SHROOMLIGHT
+- x: 10
+  y: 1
+  z: -1
+  material: OAK_LOG
+- x: 11
+  y: 1
+  z: -1
+  material: OAK_LOG
+- x: -3
+  y: 1
+  z: 11
+  material: DEAD_BUSH
+- x: -7
+  y: 1
+  z: -9
+  material: DEAD_BUSH
+- x: -1
+  y: 1
+  z: -9
+  material: DEAD_BUSH
+- x: 10
+  y: 1
+  z: -9
+  material: DEAD_BUSH
+- x: -1
+  y: 1
+  z: -8
+  material: DEAD_BUSH
+- x: -12
+  y: 1
+  z: -7
+  material: DEAD_BUSH
+- x: -3
+  y: 1
+  z: -7
+  material: DEAD_BUSH
 - x: 3
   y: 1
   z: -7
-  material: OAK_LOG
-- x: 4
+  material: DEAD_BUSH
+- x: 14
   y: 1
-  z: -7
-  material: OAK_LOG
-- x: 2
+  z: -6
+  material: DEAD_BUSH
+- x: -12
+  y: 1
+  z: -5
+  material: DEAD_BUSH
+- x: -12
+  y: 1
+  z: -4
+  material: DEAD_BUSH
+- x: 13
+  y: 1
+  z: 1
+  material: DEAD_BUSH
+- x: -7
   y: 1
   z: 3
-  material: LANTERN
+  material: DEAD_BUSH
+- x: 3
+  y: 1
+  z: 6
+  material: DEAD_BUSH
+- x: -4
+  y: 1
+  z: 7
+  material: DEAD_BUSH
+- x: -3
+  y: 1
+  z: 10
+  material: DEAD_BUSH

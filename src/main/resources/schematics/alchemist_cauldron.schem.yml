@@ -1,34 +1,22 @@
-schema-version: 4
+schema-version: 5
 name: alchemist_ruin_swamp
 blocks:
-- x: -5
-  y: 0
-  z: -13
-  material: MUD
-- x: -4
-  y: 0
-  z: -13
-  material: MOSS_BLOCK
 - x: -3
-  y: 0
-  z: -13
-  material: MUD
-- x: -3
-  y: 1
-  z: -13
-  material: LILY_PAD
-- x: -2
-  y: 0
-  z: -13
-  material: MUD
-- x: -1
   y: 0
   z: -13
   material: PACKED_MUD
-- x: 0
+- x: -2
+  y: 0
+  z: -13
+  material: MUD
+- x: -1
   y: 0
   z: -13
   material: GRASS_BLOCK
+- x: 0
+  y: 0
+  z: -13
+  material: MOSSY_COBBLESTONE
 - x: 1
   y: 0
   z: -13
@@ -36,35 +24,27 @@ blocks:
 - x: 2
   y: 0
   z: -13
-  material: MUDDY_MANGROVE_ROOTS
+  material: PACKED_MUD
 - x: 3
   y: 0
   z: -13
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -7
   y: 0
   z: -12
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -6
   y: 0
   z: -12
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -5
   y: 0
   z: -12
   material: GRASS_BLOCK
-- x: -4
-  y: 0
-  z: -12
-  material: MUD
-- x: -4
-  y: 1
-  z: -12
-  material: LILY_PAD
 - x: -3
   y: 0
   z: -12
-  material: MUD
+  material: GRASS_BLOCK
 - x: -2
   y: 0
   z: -12
@@ -72,63 +52,39 @@ blocks:
 - x: -1
   y: 0
   z: -12
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: 0
   y: 0
   z: -12
-  material: MUD
+  material: GRASS_BLOCK
 - x: 1
   y: 0
   z: -12
-  material: GRASS_BLOCK
-- x: 1
-  y: 1
-  z: -12
-  material: FERN
+  material: MUD
 - x: 2
   y: 0
   z: -12
-  material: MUD
+  material: MOSSY_COBBLESTONE
 - x: 3
   y: 0
   z: -12
   material: MUD
-- x: 3
-  y: 1
-  z: -12
-  material: LILY_PAD
-- x: 4
-  y: 0
-  z: -12
-  material: GRASS_BLOCK
 - x: 5
   y: 0
   z: -12
   material: GRASS_BLOCK
-- x: 5
-  y: 1
-  z: -12
-  material: FERN
 - x: -9
   y: 0
   z: -11
-  material: GRASS_BLOCK
-- x: -9
-  y: 1
-  z: -11
-  material: FERN
+  material: MOSSY_COBBLESTONE
 - x: -8
   y: 0
   z: -11
   material: GRASS_BLOCK
-- x: -8
-  y: 1
-  z: -11
-  material: FERN
 - x: -7
   y: 0
   z: -11
-  material: GRASS_BLOCK
+  material: PACKED_MUD
 - x: -6
   y: 0
   z: -11
@@ -136,111 +92,71 @@ blocks:
 - x: -5
   y: 0
   z: -11
-  material: MUDDY_MANGROVE_ROOTS
+  material: MUD
 - x: -4
   y: 0
   z: -11
-  material: GRASS_BLOCK
-- x: -4
-  y: 1
-  z: -11
-  material: FERN
-- x: -3
-  y: 0
-  z: -11
-  material: GRASS_BLOCK
-- x: -2
-  y: 0
-  z: -11
-  material: MOSS_BLOCK
+  material: MOSSY_COBBLESTONE
 - x: -1
   y: 0
   z: -11
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: 0
   y: 0
   z: -11
-  material: GRASS_BLOCK
-- x: 0
-  y: 1
-  z: -11
-  material: FERN
+  material: MUD
 - x: 1
-  y: 0
-  z: -11
-  material: GRASS_BLOCK
-- x: 2
   y: 0
   z: -11
   material: MOSS_BLOCK
 - x: 3
   y: 0
   z: -11
-  material: PACKED_MUD
+  material: MUD
 - x: 4
   y: 0
   z: -11
-  material: MOSS_BLOCK
-- x: 5
-  y: 0
-  z: -11
-  material: GRASS_BLOCK
-- x: 6
-  y: 0
-  z: -11
-  material: GRASS_BLOCK
-- x: 6
-  y: 1
-  z: -11
-  material: FERN
+  material: MUD
 - x: 7
   y: 0
   z: -11
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -10
   y: 0
   z: -10
   material: GRASS_BLOCK
-- x: -10
-  y: 1
-  z: -10
-  material: FERN
 - x: -9
   y: 0
   z: -10
-  material: MUDDY_MANGROVE_ROOTS
+  material: MOSS_BLOCK
 - x: -8
-  y: 0
-  z: -10
-  material: GRASS_BLOCK
-- x: -8
-  y: 1
-  z: -10
-  material: FERN
-- x: -7
-  y: 0
-  z: -10
-  material: MUDDY_MANGROVE_ROOTS
-- x: -6
-  y: 0
-  z: -10
-  material: GRASS_BLOCK
-- x: -5
-  y: 0
-  z: -10
-  material: MOSSY_STONE_BRICKS
-- x: -4
-  y: 0
-  z: -10
-  material: MUD
-- x: -3
   y: 0
   z: -10
   material: PACKED_MUD
+- x: -7
+  y: 0
+  z: -10
+  material: MOSS_BLOCK
+- x: -6
+  y: 0
+  z: -10
+  material: MUD
+- x: -5
+  y: 0
+  z: -10
+  material: MUD
+- x: -4
+  y: 0
+  z: -10
+  material: PACKED_MUD
+- x: -3
+  y: 0
+  z: -10
+  material: MUD
 - x: -2
   y: 0
   z: -10
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -1
   y: 0
   z: -10
@@ -248,55 +164,59 @@ blocks:
 - x: 0
   y: 0
   z: -10
-  material: MUD
+  material: PACKED_MUD
 - x: 1
   y: 0
   z: -10
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: 2
   y: 0
   z: -10
-  material: MUD
+  material: MOSS_BLOCK
 - x: 3
   y: 0
   z: -10
-  material: MUD
+  material: GRASS_BLOCK
 - x: 4
   y: 0
   z: -10
-  material: PACKED_MUD
+  material: MUD
 - x: 5
   y: 0
   z: -10
-  material: GRASS_BLOCK
+  material: MOSSY_COBBLESTONE
 - x: 6
   y: 0
   z: -10
-  material: GRASS_BLOCK
+  material: MUD
 - x: 7
   y: 0
   z: -10
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 8
   y: 0
   z: -10
   material: MOSS_BLOCK
+- x: 9
+  y: 0
+  z: -10
+  material: GRASS_BLOCK
 - x: -11
   y: 0
   z: -9
-  material: GRASS_BLOCK
+  material: MOSSY_COBBLESTONE
 - x: -10
   y: 0
   z: -9
-  material: MOSSY_STONE_BRICKS
+  material: PACKED_MUD
 - x: -9
   y: 0
   z: -9
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -8
   y: 0
   z: -9
-  material: GRASS_BLOCK
+  material: MUD
 - x: -7
   y: 0
   z: -9
@@ -305,18 +225,14 @@ blocks:
   y: 0
   z: -9
   material: MUD
-- x: -6
-  y: 1
-  z: -9
-  material: LILY_PAD
 - x: -5
   y: 0
   z: -9
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -4
   y: 0
   z: -9
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -3
   y: 0
   z: -9
@@ -324,11 +240,11 @@ blocks:
 - x: -2
   y: 0
   z: -9
-  material: MUDDY_MANGROVE_ROOTS
+  material: PACKED_MUD
 - x: -1
   y: 0
   z: -9
-  material: GRASS_BLOCK
+  material: MUD
 - x: 0
   y: 0
   z: -9
@@ -336,11 +252,7 @@ blocks:
 - x: 1
   y: 0
   z: -9
-  material: MUD
-- x: 1
-  y: 1
-  z: -9
-  material: LILY_PAD
+  material: GRASS_BLOCK
 - x: 2
   y: 0
   z: -9
@@ -348,31 +260,19 @@ blocks:
 - x: 3
   y: 0
   z: -9
-  material: MUD
-- x: 3
-  y: 1
-  z: -9
-  material: LILY_PAD
+  material: GRASS_BLOCK
 - x: 4
   y: 0
   z: -9
-  material: GRASS_BLOCK
-- x: 4
-  y: 1
-  z: -9
-  material: FERN
+  material: PACKED_MUD
 - x: 5
   y: 0
   z: -9
-  material: GRASS_BLOCK
-- x: 5
-  y: 1
-  z: -9
-  material: FERN
+  material: MOSSY_COBBLESTONE
 - x: 6
   y: 0
   z: -9
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 7
   y: 0
   z: -9
@@ -381,38 +281,34 @@ blocks:
   y: 0
   z: -9
   material: MUD
-- x: 8
-  y: 1
-  z: -9
-  material: LILY_PAD
 - x: 9
   y: 0
   z: -9
-  material: MUDDY_MANGROVE_ROOTS
-- x: -11
+  material: MUD
+- x: 10
+  y: 0
+  z: -9
+  material: GRASS_BLOCK
+- x: -12
   y: 0
   z: -8
   material: GRASS_BLOCK
 - x: -11
-  y: 1
-  z: -8
-  material: FERN
-- x: -10
   y: 0
   z: -8
   material: GRASS_BLOCK
 - x: -10
-  y: 1
+  y: 0
   z: -8
-  material: FERN
+  material: MOSS_BLOCK
 - x: -9
   y: 0
   z: -8
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -8
   y: 0
   z: -8
-  material: GRASS_BLOCK
+  material: PACKED_MUD
 - x: -7
   y: 0
   z: -8
@@ -420,67 +316,55 @@ blocks:
 - x: -6
   y: 0
   z: -8
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -5
   y: 0
   z: -8
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -4
   y: 0
   z: -8
-  material: GRASS_BLOCK
+  material: MOSSY_COBBLESTONE
 - x: -3
   y: 0
   z: -8
-  material: MUD
+  material: CRYING_OBSIDIAN
 - x: -2
   y: 0
   z: -8
-  material: MUD
+  material: GRASS_BLOCK
 - x: -1
   y: 0
   z: -8
-  material: MUD
+  material: MOSS_BLOCK
 - x: 0
   y: 0
   z: -8
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: 1
   y: 0
   z: -8
   material: MUD
-- x: 1
-  y: 1
-  z: -8
-  material: LILY_PAD
 - x: 2
   y: 0
   z: -8
-  material: GRASS_BLOCK
-- x: 2
-  y: 1
-  z: -8
-  material: FERN
+  material: MOSSY_COBBLESTONE
 - x: 3
   y: 0
   z: -8
-  material: GRASS_BLOCK
-- x: 3
-  y: 1
-  z: -8
-  material: FERN
+  material: CRYING_OBSIDIAN
 - x: 4
   y: 0
   z: -8
-  material: GRASS_BLOCK
+  material: MUD
 - x: 5
   y: 0
   z: -8
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: 6
   y: 0
   z: -8
-  material: MUD
+  material: GRASS_BLOCK
 - x: 7
   y: 0
   z: -8
@@ -488,15 +372,23 @@ blocks:
 - x: 8
   y: 0
   z: -8
-  material: MUD
+  material: MOSSY_COBBLESTONE
 - x: 9
   y: 0
   z: -8
-  material: PACKED_MUD
+  material: MUD
 - x: 10
   y: 0
   z: -8
   material: GRASS_BLOCK
+- x: 11
+  y: 0
+  z: -8
+  material: GRASS_BLOCK
+- x: -13
+  y: 0
+  z: -7
+  material: PACKED_MUD
 - x: -12
   y: 0
   z: -7
@@ -504,15 +396,15 @@ blocks:
 - x: -11
   y: 0
   z: -7
-  material: MOSS_BLOCK
+  material: MUD
 - x: -10
   y: 0
   z: -7
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -9
   y: 0
   z: -7
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -8
   y: 0
   z: -7
@@ -520,27 +412,23 @@ blocks:
 - x: -7
   y: 0
   z: -7
-  material: GRASS_BLOCK
+  material: MUD
 - x: -6
   y: 0
   z: -7
-  material: MOSSY_STONE_BRICKS
+  material: MOSS_BLOCK
 - x: -5
   y: 0
   z: -7
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -4
   y: 0
   z: -7
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -3
   y: 0
   z: -7
-  material: MUD
-- x: -3
-  y: 1
-  z: -7
-  material: LILY_PAD
+  material: GRASS_BLOCK
 - x: -2
   y: 0
   z: -7
@@ -548,19 +436,19 @@ blocks:
 - x: -1
   y: 0
   z: -7
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: 0
   y: 0
   z: -7
-  material: MOSS_BLOCK
+  material: MUD
 - x: 1
   y: 0
   z: -7
-  material: MOSSY_STONE_BRICKS
+  material: MUD
 - x: 2
   y: 0
   z: -7
-  material: PACKED_MUD
+  material: MUD
 - x: 3
   y: 0
   z: -7
@@ -568,23 +456,23 @@ blocks:
 - x: 4
   y: 0
   z: -7
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 5
   y: 0
   z: -7
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: 6
   y: 0
   z: -7
-  material: MUD
+  material: MOSS_BLOCK
 - x: 7
   y: 0
   z: -7
-  material: MOSS_BLOCK
+  material: MOSSY_COBBLESTONE
 - x: 8
   y: 0
   z: -7
-  material: MUDDY_MANGROVE_ROOTS
+  material: MUD
 - x: 9
   y: 0
   z: -7
@@ -592,15 +480,15 @@ blocks:
 - x: 10
   y: 0
   z: -7
-  material: MUD
+  material: GRASS_BLOCK
+- x: 11
+  y: 0
+  z: -7
+  material: MOSSY_COBBLESTONE
 - x: -13
   y: 0
   z: -6
-  material: GRASS_BLOCK
-- x: -12
-  y: 0
-  z: -6
-  material: MOSSY_STONE_BRICKS
+  material: MOSS_BLOCK
 - x: -11
   y: 0
   z: -6
@@ -608,63 +496,51 @@ blocks:
 - x: -10
   y: 0
   z: -6
-  material: MOSS_BLOCK
-- x: -9
-  y: 0
-  z: -6
   material: GRASS_BLOCK
 - x: -9
-  y: 1
-  z: -6
-  material: FERN
-- x: -8
-  y: 0
-  z: -6
-  material: GRASS_BLOCK
-- x: -7
-  y: 0
-  z: -6
-  material: PACKED_MUD
-- x: -6
-  y: 0
-  z: -6
-  material: GRASS_BLOCK
-- x: -5
-  y: 0
-  z: -6
-  material: GRASS_BLOCK
-- x: -5
-  y: 1
-  z: -6
-  material: FERN
-- x: -4
-  y: 0
-  z: -6
-  material: PACKED_MUD
-- x: -3
-  y: 0
-  z: -6
-  material: MUDDY_MANGROVE_ROOTS
-- x: -2
   y: 0
   z: -6
   material: MUD
-- x: -2
-  y: 1
-  z: -6
-  material: LILY_PAD
-- x: -1
+- x: -8
   y: 0
   z: -6
-  material: MUDDY_MANGROVE_ROOTS
-- x: 0
+  material: MUD
+- x: -7
   y: 0
   z: -6
-  material: PACKED_MUD
-- x: 1
+  material: MUD
+- x: -6
+  y: 0
+  z: -6
+  material: MOSS_BLOCK
+- x: -5
   y: 0
   z: -6
   material: GRASS_BLOCK
+- x: -4
+  y: 0
+  z: -6
+  material: MUD
+- x: -3
+  y: 0
+  z: -6
+  material: MOSSY_COBBLESTONE
+- x: -2
+  y: 0
+  z: -6
+  material: PACKED_MUD
+- x: -1
+  y: 0
+  z: -6
+  material: MOSS_BLOCK
+- x: 0
+  y: 0
+  z: -6
+  material: GRASS_BLOCK
+- x: 1
+  y: 0
+  z: -6
+  material: MUD
 - x: 2
   y: 0
   z: -6
@@ -672,27 +548,23 @@ blocks:
 - x: 3
   y: 0
   z: -6
-  material: MOSSY_STONE_BRICKS
+  material: MOSSY_COBBLESTONE
 - x: 4
   y: 0
   z: -6
-  material: GRASS_BLOCK
+  material: MUD
 - x: 5
   y: 0
   z: -6
   material: GRASS_BLOCK
-- x: 5
-  y: 1
-  z: -6
-  material: FERN
 - x: 6
   y: 0
   z: -6
-  material: MOSS_BLOCK
+  material: MUD
 - x: 7
   y: 0
   z: -6
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 8
   y: 0
   z: -6
@@ -700,26 +572,22 @@ blocks:
 - x: 9
   y: 0
   z: -6
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 10
   y: 0
   z: -6
-  material: MUDDY_MANGROVE_ROOTS
+  material: MOSS_BLOCK
 - x: 11
   y: 0
   z: -6
-  material: GRASS_BLOCK
-- x: 11
-  y: 1
+  material: PACKED_MUD
+- x: 12
+  y: 0
   z: -6
-  material: FERN
+  material: MUD
 - x: -14
   y: 0
   z: -5
-  material: MOSSY_STONE_BRICKS
-- x: -13
-  y: 0
-  z: -5
   material: MUD
 - x: -12
   y: 0
@@ -728,19 +596,19 @@ blocks:
 - x: -11
   y: 0
   z: -5
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: -10
   y: 0
   z: -5
-  material: MUDDY_MANGROVE_ROOTS
+  material: PACKED_MUD
 - x: -9
   y: 0
   z: -5
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -8
   y: 0
   z: -5
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: -7
   y: 0
   z: -5
@@ -752,7 +620,7 @@ blocks:
 - x: -5
   y: 0
   z: -5
-  material: MOSSY_STONE_BRICKS
+  material: CRYING_OBSIDIAN
 - x: -4
   y: 0
   z: -5
@@ -760,15 +628,15 @@ blocks:
 - x: -3
   y: 0
   z: -5
-  material: GRASS_BLOCK
+  material: PACKED_MUD
 - x: -2
   y: 0
   z: -5
-  material: PACKED_MUD
+  material: MUD
 - x: -1
   y: 0
   z: -5
-  material: MUDDY_MANGROVE_ROOTS
+  material: PACKED_MUD
 - x: 0
   y: 0
   z: -5
@@ -776,7 +644,7 @@ blocks:
 - x: 1
   y: 0
   z: -5
-  material: GRASS_BLOCK
+  material: MUD
 - x: 2
   y: 0
   z: -5
@@ -784,23 +652,19 @@ blocks:
 - x: 3
   y: 0
   z: -5
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 4
   y: 0
   z: -5
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 5
   y: 0
   z: -5
-  material: MUD
+  material: CRYING_OBSIDIAN
 - x: 6
   y: 0
   z: -5
-  material: GRASS_BLOCK
-- x: 6
-  y: 1
-  z: -5
-  material: FERN
+  material: MOSSY_COBBLESTONE
 - x: 7
   y: 0
   z: -5
@@ -808,31 +672,27 @@ blocks:
 - x: 8
   y: 0
   z: -5
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: 9
   y: 0
   z: -5
-  material: MUD
+  material: GRASS_BLOCK
 - x: 10
   y: 0
   z: -5
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 11
   y: 0
   z: -5
   material: MUD
-- x: 11
-  y: 1
-  z: -5
-  material: LILY_PAD
 - x: 12
   y: 0
   z: -5
-  material: GRASS_BLOCK
+  material: MOSSY_COBBLESTONE
 - x: -14
   y: 0
   z: -4
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -13
   y: 0
   z: -4
@@ -840,7 +700,7 @@ blocks:
 - x: -12
   y: 0
   z: -4
-  material: MOSSY_STONE_BRICKS
+  material: MUD
 - x: -11
   y: 0
   z: -4
@@ -848,11 +708,11 @@ blocks:
 - x: -10
   y: 0
   z: -4
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -9
   y: 0
   z: -4
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -8
   y: 0
   z: -4
@@ -864,279 +724,255 @@ blocks:
 - x: -6
   y: 0
   z: -4
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -5
   y: 0
   z: -4
-  material: MOSS_BLOCK
+  material: MOSSY_COBBLESTONE
 - x: -4
-  y: 0
-  z: -4
-  material: MUD
-- x: -4
-  y: 1
-  z: -4
-  material: MOSSY_STONE_BRICKS
-- x: -3
   y: 0
   z: -4
   material: GRASS_BLOCK
 - x: -3
-  y: 1
+  y: 0
   z: -4
+  material: MOSS_BLOCK
+- x: -2
+  y: 0
+  z: -4
+  material: GRASS_BLOCK
+- x: -1
+  y: 0
+  z: -4
+  material: MUD
+- x: 0
+  y: 0
+  z: -4
+  material: MOSS_BLOCK
+- x: 1
+  y: 0
+  z: -4
+  material: MOSSY_COBBLESTONE
+- x: 2
+  y: 0
+  z: -4
+  material: MOSSY_COBBLESTONE
+- x: 3
+  y: 0
+  z: -4
+  material: GRASS_BLOCK
+- x: 4
+  y: 0
+  z: -4
+  material: GRASS_BLOCK
+- x: 5
+  y: 0
+  z: -4
+  material: MOSSY_COBBLESTONE
+- x: 6
+  y: 0
+  z: -4
+  material: GRASS_BLOCK
+- x: 7
+  y: 0
+  z: -4
+  material: MUD
+- x: 8
+  y: 0
+  z: -4
+  material: GRASS_BLOCK
+- x: 9
+  y: 0
+  z: -4
+  material: GRASS_BLOCK
+- x: 10
+  y: 0
+  z: -4
+  material: MUD
+- x: 11
+  y: 0
+  z: -4
+  material: GRASS_BLOCK
+- x: 12
+  y: 0
+  z: -4
+  material: MOSS_BLOCK
+- x: 13
+  y: 0
+  z: -4
+  material: GRASS_BLOCK
+- x: -14
+  y: 0
+  z: -3
+  material: MOSSY_COBBLESTONE
+- x: -13
+  y: 0
+  z: -3
+  material: GRASS_BLOCK
+- x: -12
+  y: 0
+  z: -3
+  material: PACKED_MUD
+- x: -11
+  y: 0
+  z: -3
+  material: GRASS_BLOCK
+- x: -10
+  y: 0
+  z: -3
+  material: MUD
+- x: -9
+  y: 0
+  z: -3
+  material: GRASS_BLOCK
+- x: -8
+  y: 0
+  z: -3
+  material: CRYING_OBSIDIAN
+- x: -7
+  y: 0
+  z: -3
+  material: MOSSY_COBBLESTONE
+- x: -6
+  y: 0
+  z: -3
+  material: GRASS_BLOCK
+- x: -5
+  y: 0
+  z: -3
+  material: MUD
+- x: -4
+  y: 0
+  z: -3
+  material: GRASS_BLOCK
+- x: -3
+  y: 0
+  z: -3
   material: STONE_BRICKS
 - x: -2
   y: 0
-  z: -4
-  material: PACKED_MUD
+  z: -3
+  material: MOSSY_STONE_BRICKS
 - x: -1
   y: 0
-  z: -4
-  material: MOSS_BLOCK
+  z: -3
+  material: MOSSY_STONE_BRICKS
 - x: 0
   y: 0
-  z: -4
-  material: MOSSY_STONE_BRICKS
+  z: -3
+  material: STONE_BRICKS
 - x: 1
   y: 0
-  z: -4
+  z: -3
   material: MOSSY_STONE_BRICKS
 - x: 2
   y: 0
-  z: -4
-  material: PACKED_MUD
+  z: -3
+  material: MOSSY_STONE_BRICKS
 - x: 3
   y: 0
-  z: -4
-  material: MOSS_BLOCK
+  z: -3
+  material: STONE_BRICKS
 - x: 4
   y: 0
-  z: -4
-  material: MUD
-- x: 5
-  y: 0
-  z: -4
+  z: -3
   material: GRASS_BLOCK
 - x: 5
-  y: 1
-  z: -4
-  material: FERN
+  y: 0
+  z: -3
+  material: GRASS_BLOCK
 - x: 6
   y: 0
-  z: -4
+  z: -3
   material: GRASS_BLOCK
 - x: 7
   y: 0
-  z: -4
-  material: MUD
+  z: -3
+  material: GRASS_BLOCK
 - x: 8
   y: 0
-  z: -4
-  material: MOSS_BLOCK
+  z: -3
+  material: CRYING_OBSIDIAN
 - x: 9
   y: 0
-  z: -4
-  material: PACKED_MUD
+  z: -3
+  material: MOSS_BLOCK
 - x: 10
   y: 0
-  z: -4
+  z: -3
   material: MUD
 - x: 11
   y: 0
-  z: -4
-  material: MOSS_BLOCK
+  z: -3
+  material: GRASS_BLOCK
 - x: 12
   y: 0
-  z: -4
+  z: -3
   material: MOSS_BLOCK
-- x: -14
+- x: 13
   y: 0
   z: -3
+  material: GRASS_BLOCK
+- x: -15
+  y: 0
+  z: -2
+  material: MUD
+- x: -14
+  y: 0
+  z: -2
   material: GRASS_BLOCK
 - x: -13
   y: 0
-  z: -3
-  material: MOSS_BLOCK
-- x: -12
-  y: 0
-  z: -3
-  material: MUDDY_MANGROVE_ROOTS
-- x: -11
-  y: 0
-  z: -3
-  material: GRASS_BLOCK
-- x: -10
-  y: 0
-  z: -3
-  material: MOSS_BLOCK
-- x: -9
-  y: 0
-  z: -3
-  material: MUDDY_MANGROVE_ROOTS
-- x: -8
-  y: 0
-  z: -3
-  material: GRASS_BLOCK
-- x: -7
-  y: 0
-  z: -3
-  material: GRASS_BLOCK
-- x: -7
-  y: 1
-  z: -3
-  material: FERN
-- x: -6
-  y: 0
-  z: -3
-  material: GRASS_BLOCK
-- x: -5
-  y: 0
-  z: -3
-  material: MUD
-- x: -5
-  y: 1
-  z: -3
-  material: MOSSY_STONE_BRICKS
-- x: -4
-  y: 0
-  z: -3
-  material: MOSS_BLOCK
-- x: -3
-  y: 0
-  z: -3
-  material: MUD
-- x: -2
-  y: 0
-  z: -3
-  material: MOSS_BLOCK
-- x: -1
-  y: 0
-  z: -3
-  material: GRASS_BLOCK
-- x: 0
-  y: 0
-  z: -3
-  material: MUDDY_MANGROVE_ROOTS
-- x: 1
-  y: 0
-  z: -3
-  material: MOSSY_STONE_BRICKS
-- x: 2
-  y: 0
-  z: -3
-  material: GRASS_BLOCK
-- x: 2
-  y: 1
-  z: -3
-  material: FERN
-- x: 3
-  y: 0
-  z: -3
-  material: MUD
-- x: 4
-  y: 0
-  z: -3
-  material: MUDDY_MANGROVE_ROOTS
-- x: 5
-  y: 0
-  z: -3
-  material: GRASS_BLOCK
-- x: 6
-  y: 0
-  z: -3
-  material: GRASS_BLOCK
-- x: 6
-  y: 1
-  z: -3
-  material: FERN
-- x: 7
-  y: 0
-  z: -3
-  material: PACKED_MUD
-- x: 8
-  y: 0
-  z: -3
-  material: MUD
-- x: 9
-  y: 0
-  z: -3
-  material: MOSS_BLOCK
-- x: 10
-  y: 0
-  z: -3
-  material: MOSSY_STONE_BRICKS
-- x: 11
-  y: 0
-  z: -3
-  material: GRASS_BLOCK
-- x: 12
-  y: 0
-  z: -3
-  material: MUDDY_MANGROVE_ROOTS
-- x: -14
-  y: 0
   z: -2
   material: GRASS_BLOCK
-- x: -14
-  y: 1
-  z: -2
-  material: FERN
-- x: -13
-  y: 0
-  z: -2
-  material: MOSS_BLOCK
 - x: -12
   y: 0
   z: -2
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -11
   y: 0
   z: -2
-  material: MOSSY_STONE_BRICKS
+  material: CRYING_OBSIDIAN
 - x: -10
   y: 0
   z: -2
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -9
   y: 0
   z: -2
-  material: MUD
+  material: GRASS_BLOCK
 - x: -8
   y: 0
   z: -2
-  material: MOSSY_STONE_BRICKS
+  material: MUD
 - x: -7
   y: 0
   z: -2
-  material: PACKED_MUD
+  material: MOSS_BLOCK
 - x: -6
   y: 0
   z: -2
-  material: MOSS_BLOCK
+  material: MUD
 - x: -5
   y: 0
   z: -2
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -4
   y: 0
   z: -2
-  material: MUD
-- x: -4
-  y: 1
-  z: -2
-  material: LILY_PAD
+  material: GRASS_BLOCK
 - x: -3
   y: 0
   z: -2
-  material: MOSS_BLOCK
+  material: MOSSY_STONE_BRICKS
 - x: -2
   y: 0
   z: -2
-  material: MOSS_BLOCK
+  material: MOSSY_STONE_BRICKS
 - x: -1
   y: 0
   z: -2
-  material: MUDDY_MANGROVE_ROOTS
+  material: STONE_BRICKS
 - x: 0
   y: 0
   z: -2
@@ -1144,15 +980,15 @@ blocks:
 - x: 1
   y: 0
   z: -2
-  material: GRASS_BLOCK
+  material: MOSSY_STONE_BRICKS
 - x: 2
   y: 0
   z: -2
-  material: MOSS_BLOCK
+  material: STONE_BRICKS
 - x: 3
   y: 0
   z: -2
-  material: MOSS_BLOCK
+  material: MOSSY_STONE_BRICKS
 - x: 4
   y: 0
   z: -2
@@ -1160,7 +996,7 @@ blocks:
 - x: 5
   y: 0
   z: -2
-  material: GRASS_BLOCK
+  material: MUD
 - x: 6
   y: 0
   z: -2
@@ -1168,11 +1004,7 @@ blocks:
 - x: 7
   y: 0
   z: -2
-  material: MUD
-- x: 7
-  y: 1
-  z: -2
-  material: LILY_PAD
+  material: MOSSY_COBBLESTONE
 - x: 8
   y: 0
   z: -2
@@ -1180,43 +1012,43 @@ blocks:
 - x: 9
   y: 0
   z: -2
-  material: GRASS_BLOCK
+  material: MUD
 - x: 10
   y: 0
   z: -2
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: 11
   y: 0
   z: -2
-  material: GRASS_BLOCK
+  material: CRYING_OBSIDIAN
 - x: 12
   y: 0
   z: -2
   material: MUD
-- x: 12
-  y: 1
+- x: 13
+  y: 0
   z: -2
-  material: LILY_PAD
+  material: MUD
 - x: -15
   y: 0
   z: -1
-  material: MUDDY_MANGROVE_ROOTS
+  material: MOSS_BLOCK
 - x: -14
   y: 0
   z: -1
-  material: MUD
+  material: GRASS_BLOCK
 - x: -13
   y: 0
   z: -1
-  material: MUD
+  material: GRASS_BLOCK
 - x: -12
   y: 0
   z: -1
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -11
   y: 0
   z: -1
-  material: MOSSY_STONE_BRICKS
+  material: PACKED_MUD
 - x: -10
   y: 0
   z: -1
@@ -1228,7 +1060,7 @@ blocks:
 - x: -8
   y: 0
   z: -1
-  material: MUD
+  material: MOSSY_COBBLESTONE
 - x: -7
   y: 0
   z: -1
@@ -1236,23 +1068,23 @@ blocks:
 - x: -6
   y: 0
   z: -1
-  material: MOSSY_STONE_BRICKS
+  material: PACKED_MUD
 - x: -5
   y: 0
   z: -1
-  material: GRASS_BLOCK
+  material: MUD
 - x: -4
   y: 0
   z: -1
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -3
   y: 0
   z: -1
-  material: MUD
+  material: MOSSY_STONE_BRICKS
 - x: -2
   y: 0
   z: -1
-  material: GRASS_BLOCK
+  material: STONE_BRICKS
 - x: -1
   y: 0
   z: -1
@@ -1260,39 +1092,23 @@ blocks:
 - x: 0
   y: 0
   z: -1
-  material: PACKED_MUD
+  material: MOSSY_STONE_BRICKS
 - x: 1
   y: 0
   z: -1
-  material: GRASS_BLOCK
-- x: 1
-  y: 1
+  material: STONE_BRICKS
+- x: 2
+  y: 0
   z: -1
   material: MOSSY_STONE_BRICKS
-- x: 2
-  y: 0
-  z: -1
-  material: GRASS_BLOCK
-- x: 2
-  y: 1
-  z: -1
-  material: FERN
 - x: 3
   y: 0
   z: -1
-  material: GRASS_BLOCK
-- x: 3
-  y: 1
-  z: -1
-  material: FERN
+  material: MOSSY_STONE_BRICKS
 - x: 4
   y: 0
   z: -1
-  material: GRASS_BLOCK
-- x: 4
-  y: 1
-  z: -1
-  material: FERN
+  material: MUD
 - x: 5
   y: 0
   z: -1
@@ -1300,7 +1116,7 @@ blocks:
 - x: 6
   y: 0
   z: -1
-  material: PACKED_MUD
+  material: MUD
 - x: 7
   y: 0
   z: -1
@@ -1308,19 +1124,15 @@ blocks:
 - x: 8
   y: 0
   z: -1
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: 9
   y: 0
   z: -1
-  material: MUD
-- x: 9
-  y: 1
-  z: -1
-  material: LILY_PAD
+  material: PACKED_MUD
 - x: 10
   y: 0
   z: -1
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: 11
   y: 0
   z: -1
@@ -1328,155 +1140,147 @@ blocks:
 - x: 12
   y: 0
   z: -1
+  material: GRASS_BLOCK
+- x: 14
+  y: 0
+  z: -1
+  material: GRASS_BLOCK
+- x: -15
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: -14
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: -13
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: -12
+  y: 0
+  z: 0
+  material: MOSS_BLOCK
+- x: -11
+  y: 0
+  z: 0
+  material: MOSS_BLOCK
+- x: -10
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: -9
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: -8
+  y: 0
+  z: 0
+  material: MUD
+- x: -7
+  y: 0
+  z: 0
+  material: MUD
+- x: -6
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: -5
+  y: 0
+  z: 0
+  material: MUD
+- x: -4
+  y: 0
+  z: 0
+  material: MUD
+- x: -3
+  y: 0
+  z: 0
+  material: STONE_BRICKS
+- x: -2
+  y: 0
+  z: 0
+  material: MOSSY_STONE_BRICKS
+- x: -1
+  y: 0
+  z: 0
+  material: MOSSY_STONE_BRICKS
+- x: 0
+  y: 0
+  z: 0
+  material: CHISELED_STONE_BRICKS
+- x: 1
+  y: 0
+  z: 0
+  material: MOSSY_STONE_BRICKS
+- x: 2
+  y: 0
+  z: 0
+  material: MOSSY_STONE_BRICKS
+- x: 3
+  y: 0
+  z: 0
+  material: STONE_BRICKS
+- x: 4
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: 5
+  y: 0
+  z: 0
+  material: MOSS_BLOCK
+- x: 6
+  y: 0
+  z: 0
+  material: MOSS_BLOCK
+- x: 7
+  y: 0
+  z: 0
+  material: MUD
+- x: 8
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: 9
+  y: 0
+  z: 0
+  material: MUD
+- x: 10
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: 11
+  y: 0
+  z: 0
+  material: GRASS_BLOCK
+- x: 12
+  y: 0
+  z: 0
   material: GRASS_BLOCK
 - x: 13
   y: 0
-  z: -1
-  material: MOSS_BLOCK
-- x: -15
+  z: 0
+  material: MOSSY_COBBLESTONE
+- x: 14
   y: 0
   z: 0
-  material: GRASS_BLOCK
-- x: -14
-  y: 0
-  z: 0
-  material: MUDDY_MANGROVE_ROOTS
-- x: -13
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: -12
-  y: 0
-  z: 0
-  material: MOSSY_STONE_BRICKS
-- x: -11
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: -10
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: -9
-  y: 0
-  z: 0
-  material: MUD
-- x: -9
-  y: 1
-  z: 0
-  material: LILY_PAD
-- x: -8
-  y: 0
-  z: 0
-  material: MOSS_BLOCK
-- x: -7
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: -7
-  y: 1
-  z: 0
-  material: FERN
-- x: -6
-  y: 0
-  z: 0
-  material: MOSS_BLOCK
-- x: -5
-  y: 0
-  z: 0
-  material: MOSS_BLOCK
-- x: -4
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: -3
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: -3
-  y: 1
-  z: 0
-  material: FERN
-- x: -2
-  y: 0
-  z: 0
-  material: MOSS_BLOCK
-- x: -1
-  y: 0
-  z: 0
-  material: MOSS_BLOCK
-- x: 0
-  y: 0
-  z: 0
-  material: MUDDY_MANGROVE_ROOTS
-- x: 1
-  y: 0
-  z: 0
-  material: MUD
-- x: 2
-  y: 0
-  z: 0
-  material: MUD
-- x: 3
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: 4
-  y: 0
-  z: 0
-  material: MUDDY_MANGROVE_ROOTS
-- x: 5
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: 6
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: 7
-  y: 0
-  z: 0
-  material: MUD
-- x: 8
-  y: 0
-  z: 0
-  material: MUD
-- x: 8
-  y: 1
-  z: 0
-  material: LILY_PAD
-- x: 9
-  y: 0
-  z: 0
-  material: MOSSY_STONE_BRICKS
-- x: 10
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: 11
-  y: 0
-  z: 0
-  material: GRASS_BLOCK
-- x: 12
-  y: 0
-  z: 0
-  material: MOSSY_STONE_BRICKS
+  material: PACKED_MUD
 - x: -15
   y: 0
   z: 1
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -14
   y: 0
   z: 1
-  material: MUDDY_MANGROVE_ROOTS
+  material: MOSS_BLOCK
 - x: -13
   y: 0
   z: 1
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -12
   y: 0
   z: 1
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -11
   y: 0
   z: 1
@@ -1484,11 +1288,11 @@ blocks:
 - x: -10
   y: 0
   z: 1
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -9
   y: 0
   z: 1
-  material: GRASS_BLOCK
+  material: MOSSY_COBBLESTONE
 - x: -8
   y: 0
   z: 1
@@ -1496,71 +1300,67 @@ blocks:
 - x: -7
   y: 0
   z: 1
-  material: MOSSY_STONE_BRICKS
+  material: PACKED_MUD
 - x: -6
   y: 0
   z: 1
-  material: GRASS_BLOCK
-- x: -6
-  y: 1
-  z: 1
-  material: FERN
+  material: MOSSY_COBBLESTONE
 - x: -5
   y: 0
   z: 1
-  material: MUDDY_MANGROVE_ROOTS
+  material: MOSSY_COBBLESTONE
 - x: -4
   y: 0
   z: 1
-  material: GRASS_BLOCK
+  material: MUD
 - x: -3
   y: 0
   z: 1
-  material: PACKED_MUD
+  material: MOSSY_STONE_BRICKS
 - x: -2
   y: 0
   z: 1
-  material: MUD
+  material: MOSSY_STONE_BRICKS
 - x: -1
   y: 0
   z: 1
-  material: MOSSY_STONE_BRICKS
+  material: STONE_BRICKS
 - x: 0
   y: 0
   z: 1
-  material: GRASS_BLOCK
+  material: MOSSY_STONE_BRICKS
 - x: 1
   y: 0
   z: 1
-  material: MUDDY_MANGROVE_ROOTS
+  material: MOSSY_STONE_BRICKS
 - x: 2
   y: 0
   z: 1
-  material: GRASS_BLOCK
+  material: STONE_BRICKS
 - x: 3
   y: 0
   z: 1
-  material: MOSS_BLOCK
+  material: MOSSY_STONE_BRICKS
 - x: 4
   y: 0
   z: 1
-  material: MUDDY_MANGROVE_ROOTS
+  material: MOSS_BLOCK
 - x: 5
   y: 0
   z: 1
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 6
   y: 0
   z: 1
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: 7
   y: 0
   z: 1
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: 8
   y: 0
   z: 1
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 9
   y: 0
   z: 1
@@ -1568,7 +1368,7 @@ blocks:
 - x: 10
   y: 0
   z: 1
-  material: GRASS_BLOCK
+  material: MUD
 - x: 11
   y: 0
   z: 1
@@ -1576,15 +1376,19 @@ blocks:
 - x: 12
   y: 0
   z: 1
-  material: MOSSY_STONE_BRICKS
+  material: MOSSY_COBBLESTONE
 - x: 13
   y: 0
   z: 1
+  material: MUD
+- x: 14
+  y: 0
+  z: 1
   material: GRASS_BLOCK
 - x: -15
   y: 0
   z: 2
-  material: MUDDY_MANGROVE_ROOTS
+  material: MUD
 - x: -14
   y: 0
   z: 2
@@ -1592,23 +1396,19 @@ blocks:
 - x: -13
   y: 0
   z: 2
-  material: MOSS_BLOCK
-- x: -12
-  y: 0
-  z: 2
   material: GRASS_BLOCK
 - x: -11
   y: 0
   z: 2
-  material: GRASS_BLOCK
+  material: PACKED_MUD
 - x: -10
   y: 0
   z: 2
-  material: MUD
+  material: GRASS_BLOCK
 - x: -9
   y: 0
   z: 2
-  material: PACKED_MUD
+  material: MUD
 - x: -8
   y: 0
   z: 2
@@ -1616,19 +1416,15 @@ blocks:
 - x: -7
   y: 0
   z: 2
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -6
   y: 0
   z: 2
   material: GRASS_BLOCK
-- x: -6
-  y: 1
-  z: 2
-  material: FERN
 - x: -5
   y: 0
   z: 2
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -4
   y: 0
   z: 2
@@ -1636,319 +1432,295 @@ blocks:
 - x: -3
   y: 0
   z: 2
-  material: MUD
+  material: MOSSY_STONE_BRICKS
 - x: -2
   y: 0
   z: 2
-  material: MOSSY_STONE_BRICKS
+  material: STONE_BRICKS
 - x: -1
   y: 0
   z: 2
-  material: MUD
-- x: -1
-  y: 1
-  z: 2
-  material: LILY_PAD
+  material: MOSSY_STONE_BRICKS
 - x: 0
   y: 0
   z: 2
-  material: GRASS_BLOCK
+  material: MOSSY_STONE_BRICKS
 - x: 1
   y: 0
   z: 2
-  material: MUD
+  material: STONE_BRICKS
 - x: 2
   y: 0
   z: 2
-  material: GRASS_BLOCK
+  material: MOSSY_STONE_BRICKS
 - x: 3
   y: 0
   z: 2
-  material: GRASS_BLOCK
-- x: 3
-  y: 1
-  z: 2
-  material: FERN
+  material: MOSSY_STONE_BRICKS
 - x: 4
   y: 0
   z: 2
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 5
   y: 0
   z: 2
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 6
   y: 0
   z: 2
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 7
   y: 0
   z: 2
-  material: MOSSY_STONE_BRICKS
+  material: MUD
 - x: 8
   y: 0
   z: 2
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 9
   y: 0
   z: 2
-  material: MUD
+  material: MOSS_BLOCK
 - x: 10
   y: 0
   z: 2
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 11
   y: 0
   z: 2
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: 12
   y: 0
   z: 2
+  material: MUD
+- x: 14
+  y: 0
+  z: 2
+  material: MOSS_BLOCK
+- x: -15
+  y: 0
+  z: 3
+  material: MOSSY_COBBLESTONE
+- x: -14
+  y: 0
+  z: 3
+  material: GRASS_BLOCK
+- x: -12
+  y: 0
+  z: 3
+  material: MOSS_BLOCK
+- x: -11
+  y: 0
+  z: 3
+  material: MOSSY_COBBLESTONE
+- x: -10
+  y: 0
+  z: 3
+  material: PACKED_MUD
+- x: -9
+  y: 0
+  z: 3
+  material: MUD
+- x: -8
+  y: 0
+  z: 3
+  material: CRYING_OBSIDIAN
+- x: -7
+  y: 0
+  z: 3
+  material: GRASS_BLOCK
+- x: -6
+  y: 0
+  z: 3
+  material: GRASS_BLOCK
+- x: -5
+  y: 0
+  z: 3
+  material: MUD
+- x: -4
+  y: 0
+  z: 3
+  material: GRASS_BLOCK
+- x: -3
+  y: 0
+  z: 3
+  material: STONE_BRICKS
+- x: -2
+  y: 0
+  z: 3
+  material: MOSSY_STONE_BRICKS
+- x: -1
+  y: 0
+  z: 3
+  material: MOSSY_STONE_BRICKS
+- x: 0
+  y: 0
+  z: 3
+  material: STONE_BRICKS
+- x: 1
+  y: 0
+  z: 3
+  material: MOSSY_STONE_BRICKS
+- x: 2
+  y: 0
+  z: 3
+  material: MOSSY_STONE_BRICKS
+- x: 3
+  y: 0
+  z: 3
+  material: STONE_BRICKS
+- x: 4
+  y: 0
+  z: 3
+  material: GRASS_BLOCK
+- x: 5
+  y: 0
+  z: 3
+  material: MUD
+- x: 6
+  y: 0
+  z: 3
+  material: MUD
+- x: 7
+  y: 0
+  z: 3
+  material: MOSS_BLOCK
+- x: 8
+  y: 0
+  z: 3
+  material: CRYING_OBSIDIAN
+- x: 9
+  y: 0
+  z: 3
+  material: PACKED_MUD
+- x: 10
+  y: 0
+  z: 3
+  material: MOSSY_COBBLESTONE
+- x: 11
+  y: 0
+  z: 3
+  material: GRASS_BLOCK
+- x: 12
+  y: 0
+  z: 3
+  material: GRASS_BLOCK
+- x: 13
+  y: 0
+  z: 3
+  material: GRASS_BLOCK
+- x: -13
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: -12
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: -11
+  y: 0
+  z: 4
+  material: MUD
+- x: -10
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: -9
+  y: 0
+  z: 4
+  material: MUD
+- x: -8
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: -7
+  y: 0
+  z: 4
+  material: MOSS_BLOCK
+- x: -6
+  y: 0
+  z: 4
+  material: MUD
+- x: -5
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: -4
+  y: 0
+  z: 4
+  material: MUD
+- x: -3
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: -2
+  y: 0
+  z: 4
+  material: MUD
+- x: -1
+  y: 0
+  z: 4
+  material: MOSSY_COBBLESTONE
+- x: 0
+  y: 0
+  z: 4
+  material: MOSSY_COBBLESTONE
+- x: 1
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: 2
+  y: 0
+  z: 4
+  material: MUD
+- x: 3
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: 4
+  y: 0
+  z: 4
+  material: MUD
+- x: 5
+  y: 0
+  z: 4
+  material: MOSS_BLOCK
+- x: 6
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: 7
+  y: 0
+  z: 4
+  material: MUD
+- x: 8
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: 9
+  y: 0
+  z: 4
+  material: GRASS_BLOCK
+- x: 10
+  y: 0
+  z: 4
+  material: MUD
+- x: 11
+  y: 0
+  z: 4
+  material: MOSS_BLOCK
+- x: 12
+  y: 0
+  z: 4
   material: PACKED_MUD
 - x: 13
   y: 0
-  z: 2
-  material: PACKED_MUD
-- x: -15
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: -15
-  y: 1
-  z: 3
-  material: FERN
-- x: -14
-  y: 0
-  z: 3
-  material: MOSS_BLOCK
-- x: -13
-  y: 0
-  z: 3
-  material: PACKED_MUD
-- x: -12
-  y: 0
-  z: 3
-  material: MOSS_BLOCK
-- x: -11
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: -10
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: -9
-  y: 0
-  z: 3
-  material: MUD
-- x: -8
-  y: 0
-  z: 3
-  material: MOSS_BLOCK
-- x: -7
-  y: 0
-  z: 3
-  material: MUD
-- x: -6
-  y: 0
-  z: 3
-  material: MUD
-- x: -5
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: -4
-  y: 0
-  z: 3
-  material: MOSS_BLOCK
-- x: -3
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: -2
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: -1
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: 0
-  y: 0
-  z: 3
-  material: MUD
-- x: 1
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: 2
-  y: 0
-  z: 3
-  material: MOSSY_STONE_BRICKS
-- x: 3
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: 4
-  y: 0
-  z: 3
-  material: PACKED_MUD
-- x: 5
-  y: 0
-  z: 3
-  material: MUD
-- x: 6
-  y: 0
-  z: 3
-  material: MUD
-- x: 7
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: 8
-  y: 0
-  z: 3
-  material: MOSS_BLOCK
-- x: 9
-  y: 0
-  z: 3
-  material: MUD
-- x: 10
-  y: 0
-  z: 3
-  material: MOSSY_STONE_BRICKS
-- x: 11
-  y: 0
-  z: 3
-  material: MOSS_BLOCK
-- x: 12
-  y: 0
-  z: 3
-  material: GRASS_BLOCK
-- x: -14
-  y: 0
   z: 4
   material: MOSS_BLOCK
-- x: -13
-  y: 0
-  z: 4
-  material: MUD
-- x: -12
-  y: 0
-  z: 4
-  material: GRASS_BLOCK
-- x: -11
-  y: 0
-  z: 4
-  material: PACKED_MUD
-- x: -10
-  y: 0
-  z: 4
-  material: GRASS_BLOCK
-- x: -9
-  y: 0
-  z: 4
-  material: MOSS_BLOCK
-- x: -8
-  y: 0
-  z: 4
-  material: MOSSY_STONE_BRICKS
-- x: -7
-  y: 0
-  z: 4
-  material: MOSS_BLOCK
-- x: -6
-  y: 0
-  z: 4
-  material: MUD
-- x: -5
-  y: 0
-  z: 4
-  material: MOSS_BLOCK
-- x: -4
-  y: 0
-  z: 4
-  material: MUD
-- x: -4
-  y: 1
-  z: 4
-  material: MOSSY_COBBLESTONE
-- x: -3
-  y: 0
-  z: 4
-  material: MOSS_BLOCK
-- x: -2
-  y: 0
-  z: 4
-  material: MUD
-- x: -1
-  y: 0
-  z: 4
-  material: MUD
-- x: -1
-  y: 1
-  z: 4
-  material: MOSSY_COBBLESTONE
-- x: 0
-  y: 0
-  z: 4
-  material: MOSSY_STONE_BRICKS
-- x: 1
-  y: 0
-  z: 4
-  material: GRASS_BLOCK
-- x: 1
-  y: 1
-  z: 4
-  material: MOSSY_COBBLESTONE
-- x: 2
-  y: 0
-  z: 4
-  material: MUD
-- x: 3
-  y: 0
-  z: 4
-  material: MOSS_BLOCK
-- x: 4
-  y: 0
-  z: 4
-  material: GRASS_BLOCK
-- x: 5
-  y: 0
-  z: 4
-  material: MOSS_BLOCK
-- x: 6
-  y: 0
-  z: 4
-  material: MUDDY_MANGROVE_ROOTS
-- x: 7
-  y: 0
-  z: 4
-  material: GRASS_BLOCK
-- x: 8
-  y: 0
-  z: 4
-  material: MOSSY_STONE_BRICKS
-- x: 9
-  y: 0
-  z: 4
-  material: PACKED_MUD
-- x: 10
-  y: 0
-  z: 4
-  material: PACKED_MUD
-- x: 11
-  y: 0
-  z: 4
-  material: MOSS_BLOCK
-- x: 12
-  y: 0
-  z: 4
-  material: MUD
 - x: -14
   y: 0
   z: 5
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -13
   y: 0
   z: 5
@@ -1956,27 +1728,23 @@ blocks:
 - x: -12
   y: 0
   z: 5
-  material: MUD
+  material: GRASS_BLOCK
 - x: -11
   y: 0
   z: 5
-  material: MOSS_BLOCK
+  material: MUD
 - x: -10
   y: 0
   z: 5
-  material: MUD
-- x: -10
-  y: 1
-  z: 5
-  material: LILY_PAD
+  material: GRASS_BLOCK
 - x: -9
   y: 0
   z: 5
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -8
   y: 0
   z: 5
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -7
   y: 0
   z: 5
@@ -1984,35 +1752,31 @@ blocks:
 - x: -6
   y: 0
   z: 5
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -5
   y: 0
   z: 5
-  material: MUDDY_MANGROVE_ROOTS
+  material: CRYING_OBSIDIAN
 - x: -4
   y: 0
   z: 5
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -3
   y: 0
   z: 5
-  material: MOSSY_STONE_BRICKS
+  material: MUD
 - x: -2
   y: 0
   z: 5
-  material: MUDDY_MANGROVE_ROOTS
+  material: MOSSY_COBBLESTONE
 - x: -1
   y: 0
   z: 5
-  material: GRASS_BLOCK
+  material: PACKED_MUD
 - x: 0
   y: 0
   z: 5
-  material: GRASS_BLOCK
-- x: 0
-  y: 1
-  z: 5
-  material: FERN
+  material: MOSSY_COBBLESTONE
 - x: 1
   y: 0
   z: 5
@@ -2020,11 +1784,11 @@ blocks:
 - x: 2
   y: 0
   z: 5
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 3
   y: 0
   z: 5
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: 4
   y: 0
   z: 5
@@ -2032,47 +1796,43 @@ blocks:
 - x: 5
   y: 0
   z: 5
-  material: GRASS_BLOCK
+  material: CRYING_OBSIDIAN
 - x: 6
   y: 0
   z: 5
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: 7
   y: 0
   z: 5
   material: GRASS_BLOCK
-- x: 7
-  y: 1
-  z: 5
-  material: FERN
 - x: 8
   y: 0
   z: 5
-  material: MOSSY_STONE_BRICKS
+  material: MOSS_BLOCK
 - x: 9
   y: 0
   z: 5
-  material: MUD
+  material: GRASS_BLOCK
 - x: 10
   y: 0
   z: 5
-  material: MOSS_BLOCK
+  material: MUD
 - x: 11
   y: 0
   z: 5
-  material: GRASS_BLOCK
+  material: PACKED_MUD
 - x: 12
   y: 0
   z: 5
-  material: MOSSY_STONE_BRICKS
-- x: -14
+  material: PACKED_MUD
+- x: 13
   y: 0
-  z: 6
-  material: MOSS_BLOCK
+  z: 5
+  material: GRASS_BLOCK
 - x: -13
   y: 0
   z: 6
-  material: GRASS_BLOCK
+  material: PACKED_MUD
 - x: -12
   y: 0
   z: 6
@@ -2080,31 +1840,27 @@ blocks:
 - x: -11
   y: 0
   z: 6
-  material: MUD
-- x: -11
-  y: 1
-  z: 6
-  material: LILY_PAD
+  material: PACKED_MUD
 - x: -10
   y: 0
   z: 6
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -9
   y: 0
   z: 6
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -8
   y: 0
   z: 6
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: -7
   y: 0
   z: 6
-  material: MUD
+  material: MOSSY_COBBLESTONE
 - x: -6
   y: 0
   z: 6
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -5
   y: 0
   z: 6
@@ -2112,23 +1868,23 @@ blocks:
 - x: -4
   y: 0
   z: 6
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -3
   y: 0
   z: 6
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: -2
   y: 0
   z: 6
-  material: MOSSY_STONE_BRICKS
+  material: MUD
 - x: -1
   y: 0
   z: 6
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 0
   y: 0
   z: 6
-  material: MOSSY_STONE_BRICKS
+  material: PACKED_MUD
 - x: 1
   y: 0
   z: 6
@@ -2136,7 +1892,7 @@ blocks:
 - x: 2
   y: 0
   z: 6
-  material: GRASS_BLOCK
+  material: MUD
 - x: 3
   y: 0
   z: 6
@@ -2144,7 +1900,7 @@ blocks:
 - x: 4
   y: 0
   z: 6
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 5
   y: 0
   z: 6
@@ -2152,27 +1908,23 @@ blocks:
 - x: 6
   y: 0
   z: 6
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 7
   y: 0
   z: 6
   material: GRASS_BLOCK
-- x: 7
-  y: 1
-  z: 6
-  material: FERN
 - x: 8
   y: 0
   z: 6
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: 9
   y: 0
   z: 6
-  material: GRASS_BLOCK
+  material: MUD
 - x: 10
   y: 0
   z: 6
-  material: MUD
+  material: MOSS_BLOCK
 - x: 11
   y: 0
   z: 6
@@ -2180,151 +1932,119 @@ blocks:
 - x: 12
   y: 0
   z: 6
+  material: MUD
+- x: -13
+  y: 0
+  z: 7
   material: GRASS_BLOCK
+- x: -12
+  y: 0
+  z: 7
+  material: GRASS_BLOCK
+- x: -11
+  y: 0
+  z: 7
+  material: GRASS_BLOCK
+- x: -10
+  y: 0
+  z: 7
+  material: GRASS_BLOCK
+- x: -9
+  y: 0
+  z: 7
+  material: GRASS_BLOCK
+- x: -8
+  y: 0
+  z: 7
+  material: MUD
+- x: -7
+  y: 0
+  z: 7
+  material: PACKED_MUD
+- x: -6
+  y: 0
+  z: 7
+  material: GRASS_BLOCK
+- x: -5
+  y: 0
+  z: 7
+  material: GRASS_BLOCK
+- x: -4
+  y: 0
+  z: 7
+  material: PACKED_MUD
+- x: -3
+  y: 0
+  z: 7
+  material: MOSS_BLOCK
+- x: -2
+  y: 0
+  z: 7
+  material: MOSSY_COBBLESTONE
+- x: -1
+  y: 0
+  z: 7
+  material: PACKED_MUD
+- x: 0
+  y: 0
+  z: 7
+  material: MUD
+- x: 1
+  y: 0
+  z: 7
+  material: MUD
+- x: 2
+  y: 0
+  z: 7
+  material: PACKED_MUD
+- x: 3
+  y: 0
+  z: 7
+  material: MOSS_BLOCK
+- x: 4
+  y: 0
+  z: 7
+  material: PACKED_MUD
+- x: 5
+  y: 0
+  z: 7
+  material: MOSS_BLOCK
+- x: 6
+  y: 0
+  z: 7
+  material: GRASS_BLOCK
+- x: 7
+  y: 0
+  z: 7
+  material: GRASS_BLOCK
+- x: 8
+  y: 0
+  z: 7
+  material: MOSSY_COBBLESTONE
+- x: 9
+  y: 0
+  z: 7
+  material: MOSS_BLOCK
+- x: 10
+  y: 0
+  z: 7
+  material: MOSSY_COBBLESTONE
+- x: 11
+  y: 0
+  z: 7
+  material: MOSS_BLOCK
 - x: 12
-  y: 1
-  z: 6
-  material: FERN
-- x: -14
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: -13
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: -12
-  y: 0
-  z: 7
-  material: MUDDY_MANGROVE_ROOTS
-- x: -11
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: -10
-  y: 0
-  z: 7
-  material: MUDDY_MANGROVE_ROOTS
-- x: -9
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: -8
-  y: 0
-  z: 7
-  material: MUDDY_MANGROVE_ROOTS
-- x: -7
-  y: 0
-  z: 7
-  material: PACKED_MUD
-- x: -6
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: -5
-  y: 0
-  z: 7
-  material: MOSSY_STONE_BRICKS
-- x: -4
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: -3
-  y: 0
-  z: 7
-  material: MUDDY_MANGROVE_ROOTS
-- x: -2
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: -2
-  y: 1
-  z: 7
-  material: BROWN_MUSHROOM
-- x: -1
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: -1
-  y: 1
-  z: 7
-  material: FERN
-- x: 0
-  y: 0
-  z: 7
-  material: MOSS_BLOCK
-- x: 1
-  y: 0
-  z: 7
-  material: PACKED_MUD
-- x: 2
-  y: 0
-  z: 7
-  material: MUDDY_MANGROVE_ROOTS
-- x: 3
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: 4
   y: 0
   z: 7
   material: MUD
-- x: 4
-  y: 1
-  z: 7
-  material: LILY_PAD
-- x: 5
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: 6
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: 7
-  y: 0
-  z: 7
-  material: MUD
-- x: 7
-  y: 1
-  z: 7
-  material: LILY_PAD
-- x: 8
-  y: 0
-  z: 7
-  material: MOSSY_STONE_BRICKS
-- x: 9
-  y: 0
-  z: 7
-  material: GRASS_BLOCK
-- x: 10
-  y: 0
-  z: 7
-  material: MUD
-- x: 10
-  y: 1
-  z: 7
-  material: LILY_PAD
-- x: 11
-  y: 0
-  z: 7
-  material: MOSS_BLOCK
-- x: -13
-  y: 0
-  z: 8
-  material: MUD
-- x: -13
-  y: 1
-  z: 8
-  material: LILY_PAD
 - x: -12
   y: 0
   z: 8
-  material: MUD
+  material: GRASS_BLOCK
 - x: -11
   y: 0
   z: 8
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -10
   y: 0
   z: 8
@@ -2332,19 +2052,19 @@ blocks:
 - x: -9
   y: 0
   z: 8
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -8
   y: 0
   z: 8
-  material: MUD
+  material: GRASS_BLOCK
 - x: -7
   y: 0
   z: 8
-  material: MOSSY_STONE_BRICKS
+  material: PACKED_MUD
 - x: -6
   y: 0
   z: 8
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -5
   y: 0
   z: 8
@@ -2352,19 +2072,15 @@ blocks:
 - x: -4
   y: 0
   z: 8
-  material: MUDDY_MANGROVE_ROOTS
+  material: MUD
 - x: -3
   y: 0
   z: 8
-  material: MOSS_BLOCK
+  material: CRYING_OBSIDIAN
 - x: -2
   y: 0
   z: 8
-  material: GRASS_BLOCK
-- x: -2
-  y: 1
-  z: 8
-  material: FERN
+  material: MOSS_BLOCK
 - x: -1
   y: 0
   z: 8
@@ -2372,59 +2088,55 @@ blocks:
 - x: 0
   y: 0
   z: 8
-  material: MOSSY_STONE_BRICKS
+  material: MUD
 - x: 1
   y: 0
   z: 8
-  material: MUDDY_MANGROVE_ROOTS
+  material: PACKED_MUD
 - x: 2
   y: 0
   z: 8
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: 3
   y: 0
   z: 8
-  material: GRASS_BLOCK
+  material: CRYING_OBSIDIAN
 - x: 4
   y: 0
   z: 8
-  material: GRASS_BLOCK
-- x: 4
-  y: 1
-  z: 8
-  material: FERN
+  material: MOSS_BLOCK
 - x: 5
   y: 0
   z: 8
-  material: MUDDY_MANGROVE_ROOTS
+  material: MOSS_BLOCK
 - x: 6
   y: 0
   z: 8
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: 7
   y: 0
   z: 8
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: 8
   y: 0
   z: 8
-  material: MUD
+  material: PACKED_MUD
 - x: 9
   y: 0
   z: 8
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: 10
   y: 0
   z: 8
-  material: MUDDY_MANGROVE_ROOTS
+  material: PACKED_MUD
 - x: 11
   y: 0
   z: 8
-  material: MOSS_BLOCK
+  material: MUD
 - x: -12
   y: 0
   z: 9
-  material: PACKED_MUD
+  material: MUD
 - x: -11
   y: 0
   z: 9
@@ -2432,19 +2144,19 @@ blocks:
 - x: -10
   y: 0
   z: 9
-  material: MUD
+  material: MOSS_BLOCK
 - x: -9
   y: 0
   z: 9
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -8
   y: 0
   z: 9
-  material: MOSS_BLOCK
+  material: MUD
 - x: -7
   y: 0
   z: 9
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -6
   y: 0
   z: 9
@@ -2452,39 +2164,27 @@ blocks:
 - x: -5
   y: 0
   z: 9
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -4
   y: 0
   z: 9
-  material: MUDDY_MANGROVE_ROOTS
+  material: PACKED_MUD
 - x: -3
   y: 0
   z: 9
-  material: GRASS_BLOCK
-- x: -3
-  y: 1
-  z: 9
-  material: FERN
+  material: MUD
 - x: -2
   y: 0
   z: 9
   material: GRASS_BLOCK
-- x: -2
-  y: 1
-  z: 9
-  material: FERN
 - x: -1
   y: 0
   z: 9
-  material: GRASS_BLOCK
+  material: MUD
 - x: 0
   y: 0
   z: 9
   material: GRASS_BLOCK
-- x: 0
-  y: 1
-  z: 9
-  material: FERN
 - x: 1
   y: 0
   z: 9
@@ -2493,18 +2193,10 @@ blocks:
   y: 0
   z: 9
   material: MUD
-- x: 2
-  y: 1
-  z: 9
-  material: LILY_PAD
 - x: 3
   y: 0
   z: 9
   material: MUD
-- x: 3
-  y: 1
-  z: 9
-  material: LILY_PAD
 - x: 4
   y: 0
   z: 9
@@ -2512,63 +2204,43 @@ blocks:
 - x: 5
   y: 0
   z: 9
-  material: GRASS_BLOCK
-- x: 5
-  y: 1
-  z: 9
-  material: FERN
+  material: PACKED_MUD
 - x: 6
   y: 0
   z: 9
-  material: MOSS_BLOCK
+  material: MUD
 - x: 7
   y: 0
   z: 9
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: 8
   y: 0
   z: 9
-  material: MUD
+  material: MOSSY_COBBLESTONE
 - x: 9
   y: 0
   z: 9
-  material: MUD
+  material: GRASS_BLOCK
 - x: 10
   y: 0
   z: 9
-  material: GRASS_BLOCK
+  material: PACKED_MUD
 - x: 11
   y: 0
   z: 9
-  material: GRASS_BLOCK
-- x: 11
-  y: 1
-  z: 9
-  material: FERN
-- x: -12
-  y: 0
-  z: 10
-  material: MOSS_BLOCK
+  material: MUD
 - x: -11
   y: 0
   z: 10
   material: MUD
-- x: -11
-  y: 1
-  z: 10
-  material: LILY_PAD
 - x: -10
   y: 0
   z: 10
-  material: GRASS_BLOCK
-- x: -10
-  y: 1
-  z: 10
-  material: FERN
+  material: MOSSY_COBBLESTONE
 - x: -9
   y: 0
   z: 10
-  material: MOSS_BLOCK
+  material: MUD
 - x: -8
   y: 0
   z: 10
@@ -2576,15 +2248,11 @@ blocks:
 - x: -7
   y: 0
   z: 10
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -6
   y: 0
   z: 10
   material: GRASS_BLOCK
-- x: -6
-  y: 1
-  z: 10
-  material: FERN
 - x: -5
   y: 0
   z: 10
@@ -2592,7 +2260,7 @@ blocks:
 - x: -4
   y: 0
   z: 10
-  material: GRASS_BLOCK
+  material: MUD
 - x: -3
   y: 0
   z: 10
@@ -2600,19 +2268,19 @@ blocks:
 - x: -2
   y: 0
   z: 10
-  material: MOSSY_STONE_BRICKS
+  material: MUD
 - x: -1
   y: 0
   z: 10
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 0
   y: 0
   z: 10
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: 1
   y: 0
   z: 10
-  material: GRASS_BLOCK
+  material: MUD
 - x: 2
   y: 0
   z: 10
@@ -2624,43 +2292,35 @@ blocks:
 - x: 4
   y: 0
   z: 10
-  material: PACKED_MUD
-- x: 5
-  y: 0
-  z: 10
   material: MUD
 - x: 5
-  y: 1
-  z: 10
-  material: LILY_PAD
-- x: 6
-  y: 0
-  z: 10
-  material: MUD
-- x: 7
   y: 0
   z: 10
   material: GRASS_BLOCK
+- x: 6
+  y: 0
+  z: 10
+  material: GRASS_BLOCK
+- x: 7
+  y: 0
+  z: 10
+  material: MUD
 - x: 8
   y: 0
   z: 10
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 9
   y: 0
   z: 10
-  material: MOSS_BLOCK
-- x: -11
+  material: MOSSY_COBBLESTONE
+- x: 10
   y: 0
-  z: 11
-  material: MOSSY_STONE_BRICKS
+  z: 10
+  material: GRASS_BLOCK
 - x: -10
   y: 0
   z: 11
-  material: MUD
-- x: -10
-  y: 1
-  z: 11
-  material: LILY_PAD
+  material: GRASS_BLOCK
 - x: -9
   y: 0
   z: 11
@@ -2668,59 +2328,35 @@ blocks:
 - x: -8
   y: 0
   z: 11
-  material: MUD
-- x: -8
-  y: 1
-  z: 11
-  material: LILY_PAD
-- x: -7
-  y: 0
-  z: 11
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -6
   y: 0
   z: 11
   material: MUD
-- x: -5
-  y: 0
-  z: 11
-  material: GRASS_BLOCK
-- x: -5
-  y: 1
-  z: 11
-  material: FERN
 - x: -4
   y: 0
   z: 11
-  material: MUDDY_MANGROVE_ROOTS
+  material: MUD
 - x: -3
-  y: 0
-  z: 11
-  material: GRASS_BLOCK
-- x: -2
   y: 0
   z: 11
   material: MUD
 - x: -2
-  y: 1
-  z: 11
-  material: LILY_PAD
-- x: -1
   y: 0
   z: 11
-  material: PACKED_MUD
-- x: 0
+  material: MUD
+- x: -1
   y: 0
   z: 11
   material: MUD
 - x: 1
   y: 0
   z: 11
-  material: PACKED_MUD
+  material: MUD
 - x: 2
   y: 0
   z: 11
-  material: GRASS_BLOCK
+  material: CRYING_OBSIDIAN
 - x: 3
   y: 0
   z: 11
@@ -2728,7 +2364,7 @@ blocks:
 - x: 4
   y: 0
   z: 11
-  material: MUD
+  material: MOSSY_COBBLESTONE
 - x: 5
   y: 0
   z: 11
@@ -2737,14 +2373,10 @@ blocks:
   y: 0
   z: 11
   material: MUD
-- x: 6
-  y: 1
-  z: 11
-  material: LILY_PAD
 - x: 7
   y: 0
   z: 11
-  material: GRASS_BLOCK
+  material: MUD
 - x: 8
   y: 0
   z: 11
@@ -2752,79 +2384,51 @@ blocks:
 - x: 9
   y: 0
   z: 11
-  material: MOSSY_STONE_BRICKS
-- x: -10
-  y: 0
-  z: 12
   material: GRASS_BLOCK
-- x: -10
-  y: 1
-  z: 12
-  material: FERN
 - x: -9
   y: 0
   z: 12
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: -8
   y: 0
   z: 12
-  material: PACKED_MUD
-- x: -7
-  y: 0
-  z: 12
-  material: PACKED_MUD
-- x: -6
-  y: 0
-  z: 12
-  material: PACKED_MUD
+  material: MOSSY_COBBLESTONE
 - x: -5
   y: 0
   z: 12
-  material: MUD
+  material: MOSS_BLOCK
 - x: -4
   y: 0
   z: 12
-  material: MOSSY_STONE_BRICKS
+  material: GRASS_BLOCK
 - x: -3
   y: 0
   z: 12
-  material: MOSSY_STONE_BRICKS
-- x: -2
-  y: 0
-  z: 12
-  material: GRASS_BLOCK
-- x: -2
-  y: 1
-  z: 12
-  material: FERN
+  material: PACKED_MUD
 - x: -1
   y: 0
   z: 12
-  material: GRASS_BLOCK
-- x: -1
-  y: 1
-  z: 12
-  material: FERN
+  material: MOSSY_COBBLESTONE
 - x: 0
   y: 0
   z: 12
-  material: GRASS_BLOCK
+  material: MUD
 - x: 1
   y: 0
   z: 12
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: 2
   y: 0
   z: 12
-  material: MUD
+  material: MOSS_BLOCK
 - x: 3
   y: 0
   z: 12
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: 4
   y: 0
   z: 12
-  material: PACKED_MUD
+  material: MUD
 - x: 5
   y: 0
   z: 12
@@ -2832,59 +2436,23 @@ blocks:
 - x: 6
   y: 0
   z: 12
-  material: GRASS_BLOCK
-- x: 7
-  y: 0
-  z: 12
-  material: GRASS_BLOCK
-- x: 8
-  y: 0
-  z: 12
-  material: PACKED_MUD
-- x: -9
-  y: 0
-  z: 13
-  material: MOSSY_STONE_BRICKS
-- x: -8
-  y: 0
-  z: 13
-  material: MUDDY_MANGROVE_ROOTS
-- x: -7
-  y: 0
-  z: 13
-  material: GRASS_BLOCK
+  material: MOSS_BLOCK
 - x: -6
   y: 0
   z: 13
-  material: MUD
-- x: -5
-  y: 0
-  z: 13
-  material: GRASS_BLOCK
-- x: -5
-  y: 1
-  z: 13
-  material: FERN
+  material: PACKED_MUD
 - x: -4
   y: 0
   z: 13
   material: MUD
-- x: -4
-  y: 1
-  z: 13
-  material: LILY_PAD
 - x: -3
   y: 0
   z: 13
-  material: MOSS_BLOCK
+  material: GRASS_BLOCK
 - x: -2
   y: 0
   z: 13
-  material: GRASS_BLOCK
-- x: -2
-  y: 1
-  z: 13
-  material: FERN
+  material: MOSS_BLOCK
 - x: -1
   y: 0
   z: 13
@@ -2892,7 +2460,7 @@ blocks:
 - x: 0
   y: 0
   z: 13
-  material: MUDDY_MANGROVE_ROOTS
+  material: GRASS_BLOCK
 - x: 1
   y: 0
   z: 13
@@ -2900,15 +2468,11 @@ blocks:
 - x: 2
   y: 0
   z: 13
-  material: GRASS_BLOCK
-- x: 2
-  y: 1
-  z: 13
-  material: FERN
+  material: PACKED_MUD
 - x: 3
   y: 0
   z: 13
-  material: MUDDY_MANGROVE_ROOTS
+  material: MUD
 - x: 4
   y: 0
   z: 13
@@ -2917,271 +2481,283 @@ blocks:
   y: 0
   z: 13
   material: GRASS_BLOCK
-- x: 5
-  y: 1
-  z: 13
-  material: FERN
 - x: 6
   y: 0
   z: 13
-  material: MOSSY_STONE_BRICKS
-- x: -7
-  y: 0
-  z: 14
-  material: PACKED_MUD
-- x: -6
-  y: 0
-  z: 14
-  material: GRASS_BLOCK
-- x: -6
-  y: 1
-  z: 14
-  material: FERN
-- x: -5
-  y: 0
-  z: 14
-  material: MOSS_BLOCK
-- x: -4
-  y: 0
-  z: 14
-  material: MOSS_BLOCK
+  material: MOSSY_COBBLESTONE
 - x: -3
   y: 0
   z: 14
-  material: MUD
+  material: MOSS_BLOCK
 - x: -2
   y: 0
   z: 14
-  material: PACKED_MUD
+  material: GRASS_BLOCK
 - x: -1
   y: 0
   z: 14
-  material: MOSS_BLOCK
-- x: 0
-  y: 0
-  z: 14
   material: GRASS_BLOCK
 - x: 1
   y: 0
   z: 14
   material: GRASS_BLOCK
-- x: 1
-  y: 1
-  z: 14
-  material: FERN
 - x: 2
   y: 0
   z: 14
-  material: MUD
-- x: 2
-  y: 1
-  z: 14
-  material: LILY_PAD
+  material: GRASS_BLOCK
 - x: 3
   y: 0
   z: 14
   material: MUD
-- x: 4
-  y: 0
-  z: 14
-  material: MOSS_BLOCK
-- x: 5
-  y: 0
-  z: 14
-  material: MOSS_BLOCK
-- x: 6
-  y: 0
-  z: 14
-  material: MOSSY_STONE_BRICKS
-- x: -4
-  y: 0
-  z: 15
-  material: MOSSY_STONE_BRICKS
-- x: -3
-  y: 0
-  z: 15
-  material: GRASS_BLOCK
-- x: -2
-  y: 0
-  z: 15
-  material: MOSS_BLOCK
-- x: -1
-  y: 0
-  z: 15
-  material: MOSSY_STONE_BRICKS
-- x: 0
-  y: 0
-  z: 15
-  material: GRASS_BLOCK
-- x: 1
-  y: 0
-  z: 15
-  material: GRASS_BLOCK
-- x: 1
-  y: 1
-  z: 15
-  material: FERN
-- x: 2
-  y: 0
-  z: 15
-  material: MOSS_BLOCK
-- x: 3
-  y: 0
-  z: 15
-  material: GRASS_BLOCK
-- x: -5
-  y: 1
-  z: -4
-  material: STONE_BRICKS
-- x: -5
-  y: 2
-  z: -4
-  material: MOSSY_STONE_BRICK_WALL
-- x: -5
-  y: 1
-  z: -2
-  material: MOSSY_STONE_BRICKS
-- x: -5
-  y: 2
-  z: -2
-  material: MOSSY_STONE_BRICK_WALL
-- x: -5
-  y: 1
-  z: -1
-  material: MOSSY_STONE_BRICKS
-- x: -5
-  y: 1
-  z: 0
-  material: MOSSY_STONE_BRICKS
-- x: -5
-  y: 1
-  z: 2
-  material: MOSSY_STONE_BRICKS
-- x: -5
-  y: 2
-  z: 2
-  material: MOSSY_STONE_BRICK_WALL
-- x: -5
-  y: 1
-  z: 3
-  material: MOSSY_STONE_BRICKS
-- x: -5
-  y: 1
-  z: 4
-  material: MOSSY_COBBLESTONE
-- x: -5
-  y: 2
-  z: 4
-  material: MOSSY_STONE_BRICK_WALL
-- x: -2
-  y: 1
-  z: -4
-  material: MOSSY_STONE_BRICKS
-- x: -1
-  y: 1
-  z: -4
-  material: STONE_BRICKS
-- x: 0
-  y: 1
-  z: -4
-  material: MOSSY_STONE_BRICKS
-- x: 1
-  y: 1
-  z: -4
-  material: STONE_BRICKS
-- x: 2
-  y: 1
-  z: -4
-  material: MOSSY_STONE_BRICKS
-- x: 3
-  y: 1
-  z: -4
-  material: STONE_BRICKS
-- x: -3
-  y: 1
-  z: 4
-  material: MOSSY_COBBLESTONE
-- x: -2
-  y: 1
-  z: 4
-  material: MOSSY_COBBLESTONE
-- x: 0
-  y: 1
-  z: 4
-  material: MOSSY_COBBLESTONE
-- x: 3
-  y: 1
-  z: -3
-  material: STONE_BRICK_STAIRS
-- x: 3
-  y: 1
-  z: -2
-  material: CRACKED_STONE_BRICKS
-- x: 2
-  y: 2
-  z: -4
-  material: MOSSY_STONE_BRICK_SLAB
-- x: 0
-  y: 1
-  z: -1
-  material: MOSSY_STONE_BRICKS
 - x: 0
   y: 1
   z: 0
-  material: MOSSY_STONE_BRICKS
+  material: CHISELED_STONE_BRICKS
+- x: -1
+  y: 1
+  z: 0
+  material: CAULDRON
 - x: 1
   y: 1
   z: 0
   material: CAULDRON
-- x: 2
+- x: 0
   y: 1
-  z: 0
-  material: BREWING_STAND
-- x: -1
-  y: 1
-  z: 0
-  material: FLOWER_POT
-- x: 1
-  y: 2
   z: -1
-  material: LANTERN
-- x: -3
+  material: CAULDRON
+- x: 0
   y: 1
-  z: 6
-  material: RED_MUSHROOM
-- x: 6
-  y: 1
-  z: 3
-  material: RED_MUSHROOM_BLOCK
-- x: 6
-  y: 1
-  z: 4
-  material: MUSHROOM_STEM
-- x: 5
-  y: 1
-  z: -7
-  material: SPRUCE_LOG
-- x: 5
-  y: 2
-  z: -7
-  material: SPRUCE_LEAVES
-- x: 4
-  y: 2
-  z: -7
-  material: SPRUCE_LEAVES
-- x: 6
-  y: 2
-  z: -7
-  material: SPRUCE_LEAVES
-- x: 5
-  y: 3
-  z: -7
-  material: SPRUCE_LEAVES
-- x: -7
-  y: 1
-  z: -6
-  material: BARREL
+  z: 1
+  material: CAULDRON
 - x: -6
   y: 1
   z: -6
+  material: STONE_BRICKS
+- x: -6
+  y: 2
+  z: -6
+  material: MOSSY_STONE_BRICK_WALL
+- x: -6
+  y: 1
+  z: -5
+  material: MOSSY_STONE_BRICKS
+- x: -6
+  y: 1
+  z: -4
+  material: STONE_BRICKS
+- x: -6
+  y: 1
+  z: -3
+  material: MOSSY_STONE_BRICKS
+- x: -6
+  y: 2
+  z: -3
+  material: MOSSY_STONE_BRICK_WALL
+- x: -6
+  y: 1
+  z: -2
+  material: STONE_BRICKS
+- x: -6
+  y: 1
+  z: -1
+  material: MOSSY_STONE_BRICKS
+- x: -6
+  y: 1
+  z: 0
+  material: STONE_BRICKS
+- x: -6
+  y: 2
+  z: 0
+  material: LANTERN
+- x: -6
+  y: 1
+  z: 1
+  material: MOSSY_STONE_BRICKS
+- x: -6
+  y: 1
+  z: 2
+  material: STONE_BRICKS
+- x: -6
+  y: 1
+  z: 3
+  material: MOSSY_STONE_BRICKS
+- x: -6
+  y: 2
+  z: 3
+  material: MOSSY_STONE_BRICK_WALL
+- x: 6
+  y: 1
+  z: -6
+  material: STONE_BRICKS
+- x: 6
+  y: 2
+  z: -6
+  material: STONE_BRICK_WALL
+- x: 6
+  y: 1
+  z: -5
+  material: CRACKED_STONE_BRICKS
+- x: 6
+  y: 1
+  z: -4
+  material: MOSSY_STONE_BRICKS
+- x: 6
+  y: 1
+  z: -3
+  material: CRACKED_STONE_BRICKS
+- x: 6
+  y: 1
+  z: -1
+  material: CRACKED_STONE_BRICKS
+- x: 6
+  y: 1
+  z: 0
+  material: MOSSY_STONE_BRICKS
+- x: 6
+  y: 2
+  z: 0
+  material: STONE_BRICK_WALL
+- x: 6
+  y: 1
+  z: 1
+  material: CRACKED_STONE_BRICKS
+- x: -5
+  y: 1
+  z: -6
+  material: MOSSY_STONE_BRICKS
+- x: -4
+  y: 1
+  z: -6
+  material: STONE_BRICKS
+- x: -3
+  y: 1
+  z: -6
+  material: MOSSY_STONE_BRICKS
+- x: -1
+  y: 1
+  z: -6
+  material: MOSSY_STONE_BRICKS
+- x: 0
+  y: 1
+  z: -6
+  material: STONE_BRICKS
+- x: 1
+  y: 1
+  z: -6
+  material: MOSSY_STONE_BRICKS
+- x: 2
+  y: 1
+  z: -6
+  material: STONE_BRICKS
+- x: 3
+  y: 1
+  z: -6
+  material: MOSSY_STONE_BRICKS
+- x: 4
+  y: 1
+  z: -6
+  material: STONE_BRICKS
+- x: 5
+  y: 1
+  z: -6
+  material: MOSSY_STONE_BRICKS
+- x: 0
+  y: 2
+  z: -6
+  material: LANTERN
+- x: -2
+  y: 1
+  z: 4
+  material: MOSSY_STONE_BRICK_SLAB
+- x: -1
+  y: 1
+  z: 4
+  material: MOSSY_STONE_BRICK_SLAB
+- x: 0
+  y: 1
+  z: 4
+  material: MOSSY_STONE_BRICK_SLAB
+- x: 1
+  y: 1
+  z: 4
+  material: MOSSY_STONE_BRICK_SLAB
+- x: 2
+  y: 1
+  z: 4
+  material: MOSSY_STONE_BRICK_SLAB
+- x: -4
+  y: 1
+  z: -1
+  material: BREWING_STAND
+- x: -4
+  y: 1
+  z: 0
+  material: BARREL
+- x: -3
+  y: 1
+  z: -2
   material: CRAFTING_TABLE
+- x: -4
+  y: 1
+  z: 1
+  material: FLOWER_POT
+- x: -2
+  y: 0
+  z: -11
+  material: CRYING_OBSIDIAN
+- x: -9
+  y: 1
+  z: 7
+  material: RED_MUSHROOM
+- x: -8
+  y: 1
+  z: 8
+  material: BROWN_MUSHROOM
+- x: 9
+  y: 1
+  z: 6
+  material: RED_MUSHROOM_BLOCK
+- x: 9
+  y: 2
+  z: 6
+  material: RED_MUSHROOM_BLOCK
+- x: 9
+  y: 1
+  z: 5
+  material: MUSHROOM_STEM
+- x: 9
+  y: 2
+  z: 5
+  material: MUSHROOM_STEM
+- x: 7
+  y: 1
+  z: -9
+  material: SPRUCE_LOG
+- x: 7
+  y: 2
+  z: -9
+  material: SPRUCE_LOG
+- x: 7
+  y: 3
+  z: -9
+  material: SPRUCE_LEAVES
+- x: 6
+  y: 3
+  z: -9
+  material: SPRUCE_LEAVES
+- x: 8
+  y: 3
+  z: -9
+  material: SPRUCE_LEAVES
+- x: 7
+  y: 3
+  z: -8
+  material: SPRUCE_LEAVES
+- x: -10
+  y: 1
+  z: -8
+  material: SPRUCE_LOG
+- x: -10
+  y: 2
+  z: -8
+  material: SPRUCE_LEAVES
