@@ -87,9 +87,15 @@ public class AlchemistSchematicManager {
         }
 
         File file = new File(schemDir, "alchemist_cauldron.schem.yml");
+        if (!file.exists() || YamlConfiguration.loadConfiguration(file).getInt("schema-version", 1) < 4) {
+            try {
+                plugin.saveResource("schematics/alchemist_cauldron.schem.yml", true);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
         if (file.exists()) {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-            if (yaml.getInt("schema-version", 1) >= 2) {
+            if (yaml.getInt("schema-version", 1) >= 4) {
                 parseYamlSchematic(yaml);
             }
         }

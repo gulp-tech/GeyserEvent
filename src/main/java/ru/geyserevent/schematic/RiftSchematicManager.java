@@ -75,9 +75,18 @@ public class RiftSchematicManager {
             fileName = "infernal_citadel_25.schem.yml";
         }
         File schemFile = new File(schemDir, fileName);
-        if (!schemFile.exists()) {
+        boolean export = !schemFile.exists();
+        if (schemFile.exists()
+                && ("infernal_citadel_25.schem.yml".equals(fileName)
+                || "fishing_pond.schem.yml".equals(fileName))) {
+            YamlConfiguration existing = YamlConfiguration.loadConfiguration(schemFile);
+            if (existing.getInt("schematic-version", 1) < 2) {
+                export = true;
+            }
+        }
+        if (export) {
             try {
-                plugin.saveResource("schematics/" + fileName, false);
+                plugin.saveResource("schematics/" + fileName, true);
             } catch (IllegalArgumentException ignored) {
             }
         }

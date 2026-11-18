@@ -236,7 +236,7 @@ public class BrushLootGuiManager {
                 )
         ));
 
-        player.openInventory(inv);
+        openLater(player, inv);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
     }
 
@@ -297,7 +297,7 @@ public class BrushLootGuiManager {
                 "&cЗакрыть",
                 List.of("&7Закрыть меню")
         ));
-        player.openInventory(inv);
+        openLater(player, inv);
         player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.7f, 1.2f);
     }
 
@@ -480,7 +480,7 @@ public class BrushLootGuiManager {
                 List.of("&7Открыть меню настройки лута реагентов")
         ));
 
-        player.openInventory(inv);
+        openLater(player, inv);
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_PLACE, 0.7f, 1.2f);
     }
 
@@ -530,7 +530,7 @@ public class BrushLootGuiManager {
                 List.of("&7Открыть меню настройки лута жеод")
         ));
 
-        player.openInventory(inv);
+        openLater(player, inv);
         player.playSound(player.getLocation(), Sound.BLOCK_BREWING_STAND_BREW, 0.8f, 1.2f);
     }
 
@@ -580,7 +580,7 @@ public class BrushLootGuiManager {
                 List.of("&7Открыть меню настройки лута реагентов")
         ));
 
-        player.openInventory(inv);
+        openLater(player, inv);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
     }
 
@@ -620,7 +620,7 @@ public class BrushLootGuiManager {
                 "&#FFD614Перейти к раскопкам »",
                 List.of("&7Открыть меню кисточек")
         ));
-        player.openInventory(inv);
+        openLater(player, inv);
         player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_THROW, 0.8f, 1.2f);
     }
 
@@ -858,7 +858,7 @@ public class BrushLootGuiManager {
                 )
         ));
 
-        player.openInventory(inv);
+        openLater(player, inv);
     }
 
     public boolean handleInventoryClick(InventoryClickEvent event) {
@@ -922,7 +922,6 @@ public class BrushLootGuiManager {
                 return true;
             }
             if (slot == 53) {
-                player.closeInventory();
                 return true;
             }
             if (slot >= 9 && slot <= 44) {
@@ -1077,6 +1076,15 @@ public class BrushLootGuiManager {
             return true;
         }
         return false;
+    }
+
+
+    private void openLater(Player player, Inventory inv) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                player.openInventory(inv);
+            }
+        });
     }
 
     @SuppressWarnings("deprecation")

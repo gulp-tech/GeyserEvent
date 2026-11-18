@@ -59,14 +59,19 @@ public class BeachSchematicManager {
         }
 
         File file = new File(schemDir, "beach_excavation.schem.yml");
+        if (!file.exists() || YamlConfiguration.loadConfiguration(file).getInt("schema-version", 1) < 4) {
+            try {
+                plugin.saveResource("schematics/beach_excavation.schem.yml", true);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
         if (file.exists()) {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-            if (yaml.getInt("schema-version", 1) >= 2) {
+            if (yaml.getInt("schema-version", 1) >= 4) {
                 parseYamlSchematic(yaml);
             }
         }
 
-        // Если схема старая (маленькая) или отсутствует — генерируем большую 31x31 схему и сохраняем её в файл
         if (entries.size() < 400) {
             entries.clear();
             buildLarge31x31BeachSchematic();

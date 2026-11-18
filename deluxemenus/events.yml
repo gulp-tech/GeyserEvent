@@ -27,10 +27,8 @@ items:
       - '&#34D711» ЛКМ — /event delay'
       - '&#E0C912» ПКМ — /event gps'
     left_click_commands:
-      - '[close]'
       - '[player] event delay'
     right_click_commands:
-      - '[close]'
       - '[player] event gps'
 
   'beach_excavation':
@@ -48,10 +46,8 @@ items:
       - '&#34D711» ЛКМ — /event delay'
       - '&#E0C912» ПКМ — /event gps'
     left_click_commands:
-      - '[close]'
       - '[player] event delay'
     right_click_commands:
-      - '[close]'
       - '[player] event gps'
 
   'alchemist_cauldron':
@@ -69,10 +65,8 @@ items:
       - '&#34D711» ЛКМ — /event delay'
       - '&#E0C912» ПКМ — /event gps'
     left_click_commands:
-      - '[close]'
       - '[player] event delay'
     right_click_commands:
-      - '[close]'
       - '[player] event gps'
 
   'ancient_mine':
@@ -90,10 +84,8 @@ items:
       - '&#34D711» ЛКМ — /event backpack'
       - '&#E0C912» ПКМ — /event gps'
     left_click_commands:
-      - '[close]'
       - '[player] event backpack'
     right_click_commands:
-      - '[close]'
       - '[player] event gps'
 
 
@@ -114,10 +106,8 @@ items:
       - '&#34D711» ЛКМ — /event delay'
       - '&#E0C912» ПКМ — /event gps'
     left_click_commands:
-      - '[close]'
       - '[player] event delay'
     right_click_commands:
-      - '[close]'
       - '[player] event gps'
 
   'fishing_pond':
@@ -136,10 +126,8 @@ items:
       - '&#34D711» ЛКМ — /event delay'
       - '&#E0C912» ПКМ — /event gps'
     left_click_commands:
-      - '[close]'
       - '[player] event delay'
     right_click_commands:
-      - '[close]'
       - '[player] event gps'
 
   'event_delay':
@@ -152,10 +140,8 @@ items:
       - '&e┠ &fТаймер следующего ивента'
       - '&e┠ &fили координаты активного'
     left_click_commands:
-      - '[close]'
       - '[player] event delay'
     right_click_commands:
-      - '[close]'
       - '[player] event delay'
 
   'event_gps':
@@ -168,10 +154,8 @@ items:
       - '&e┠ &fСтрелка до ивента'
       - '&e┠ &7Нет ивента — шахта 0 ~ 0'
     left_click_commands:
-      - '[close]'
       - '[player] event gps'
     right_click_commands:
-      - '[close]'
       - '[player] event gps'
 
   'close_menu':
