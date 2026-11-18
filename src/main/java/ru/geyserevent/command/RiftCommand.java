@@ -17,6 +17,7 @@ import ru.geyserevent.config.PluginConfig;
 import ru.geyserevent.event.DamageLeaderboard;
 import ru.geyserevent.event.EventType;
 import ru.geyserevent.event.InfernalRiftManager;
+import ru.geyserevent.excavation.BrushLootGuiManager;
 import ru.geyserevent.excavation.BrushLootManager;
 import ru.geyserevent.excavation.BrushLootManager.LootCategory;
 import ru.geyserevent.excavation.BrushTier;
@@ -107,6 +108,16 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args.length >= 2) {
+                    if (args[1].equalsIgnoreCase("loot") || args[1].equalsIgnoreCase("лут")
+                            || args[1].equalsIgnoreCase("items")) {
+                        plugin.getBrushLootGuiManager().openEventList(player, BrushLootGuiManager.GuiKind.LOOT);
+                        return true;
+                    }
+                    if (args[1].equalsIgnoreCase("chances") || args[1].equalsIgnoreCase("шансы")
+                            || args[1].equalsIgnoreCase("chance")) {
+                        plugin.getBrushLootGuiManager().openEventList(player, BrushLootGuiManager.GuiKind.CHANCES);
+                        return true;
+                    }
                     if (args[1].equalsIgnoreCase("cauldron") || args[1].equalsIgnoreCase("котел")
                             || args[1].equalsIgnoreCase("котёл") || args[1].equalsIgnoreCase("alchemist")
                             || args[1].equalsIgnoreCase("алхимик")) {
@@ -183,6 +194,15 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     }
                 }
                 plugin.getBrushLootGuiManager().openMineMenu(player);
+                return true;
+            }
+
+            case "chances", "шансы", "chance" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ColorUtil.color("&e┠ &cМеню доступно только в игре!"));
+                    return true;
+                }
+                plugin.getBrushLootGuiManager().openEventList(player, BrushLootGuiManager.GuiKind.CHANCES);
                 return true;
             }
 
@@ -859,7 +879,8 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendAdminHelp(CommandSender sender, String label, PluginConfig cfg) {
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fОбщее GUI-меню настройки лута всех ивентов"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fВыбор: настройка лута или шансов"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu loot &8/ &#E0C912/" + label + " chances"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/minemenu &8(&#E0C912/" + label + " minemenu&8) — &fGUI-меню лута «Шахты Древних (0 ~ 0)»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/cauldronmenu &8(&#E0C912/" + label + " cauldronmenu&8) — &fGUI-меню лута «Котла Алхимика»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mine <regen|spawn|set-here|remove> &8— &fУправление «Шахтой Древних»"));
@@ -1154,7 +1175,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return filterPrefix(Arrays.asList(
-                    "menu", "minemenu", "cauldronmenu", "excavationmenu", "mine", "gui",
+                    "menu", "minemenu", "cauldronmenu", "excavationmenu", "mine", "gui", "chances",
                     "start", "start-here", "stop", "mineloot", "cauldronloot", "brushloot",
                     "givegeode", "givereagent", "givebrush", "copylot", "minplayers", "ability", "setworld", "saveschem", "status", "top", "reload"
             ), args[0]);
@@ -1172,7 +1193,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                     || sub.equals("givebrush") || sub.equals("brush")
                     || sub.equals("givereagent") || sub.equals("reagent")
                     || sub.equals("givegeode") || sub.equals("geode")) {
-                return filterPrefix(Arrays.asList("mine", "cauldron", "excavation", "common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
+                return filterPrefix(Arrays.asList("loot", "chances", "mine", "cauldron", "excavation", "common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[1]);
             }
             if (sub.equals("brushloot") || sub.equals("loot") || sub.equals("cauldronloot")
                     || sub.equals("reagentloot") || sub.equals("alchemistloot")
