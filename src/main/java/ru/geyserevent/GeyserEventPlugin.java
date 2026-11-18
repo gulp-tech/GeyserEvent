@@ -202,7 +202,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.80 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" GeyserEvent v1.21.81 успешно запущен! (Purpur 1.21–26.63)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Гейзер, Рыбалка (пришельцы удалены, скибиди/CR7 выключены)");
         getLogger().info(" Постоянный ивент: Шахта Древних crater-lobby (v9) + подъём на 0 ~ 0");
         getLogger().info("==================================================");
@@ -258,8 +258,10 @@ public final class GeyserEventPlugin extends JavaPlugin {
         try {
             saveResource("geyser/custom-items.json", true);
             saveResource("geyser/Geyser-fishing-rods-mapping.json", true);
+            saveResource("geyser/Geyser-voidpe-mapping.json", true);
             File exported = new File(getDataFolder(), "geyser/custom-items.json");
             File mappingFile = new File(getDataFolder(), "geyser/Geyser-fishing-rods-mapping.json");
+            File voidpeFile = new File(getDataFolder(), "geyser/Geyser-voidpe-mapping.json");
             if (exported.exists()) {
                 Files.copy(exported.toPath(), new File(geyserDir, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
                 File mappings = new File(geyserDir, "custom-mappings");
@@ -268,18 +270,26 @@ public final class GeyserEventPlugin extends JavaPlugin {
                 }
                 Files.copy(exported.toPath(), new File(mappings, "custom-items.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
+            File underscore = new File(geyserDir, "custom_mappings");
+            if (!underscore.exists()) {
+                underscore.mkdirs();
+            }
             if (mappingFile.exists()) {
-                File underscore = new File(geyserDir, "custom_mappings");
-                if (!underscore.exists()) {
-                    underscore.mkdirs();
-                }
                 Files.copy(mappingFile.toPath(), new File(underscore, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-                File pluginsDir = getDataFolder().getParentFile();
-                if (pluginsDir != null && pluginsDir.getParentFile() != null) {
-                    File bedrockMappings = new File(pluginsDir.getParentFile(), "bedrock" + File.separator + "custom_mappings");
-                    if (bedrockMappings.exists() || new File(pluginsDir.getParentFile(), "bedrock").isDirectory()) {
-                        bedrockMappings.mkdirs();
+            }
+            if (voidpeFile.exists()) {
+                Files.copy(voidpeFile.toPath(), new File(underscore, "Geyser-voidpe-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            File pluginsDir = getDataFolder().getParentFile();
+            if (pluginsDir != null && pluginsDir.getParentFile() != null) {
+                File bedrockMappings = new File(pluginsDir.getParentFile(), "bedrock" + File.separator + "custom_mappings");
+                if (bedrockMappings.exists() || new File(pluginsDir.getParentFile(), "bedrock").isDirectory()) {
+                    bedrockMappings.mkdirs();
+                    if (mappingFile.exists()) {
                         Files.copy(mappingFile.toPath(), new File(bedrockMappings, "Geyser-fishing-rods-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    if (voidpeFile.exists()) {
+                        Files.copy(voidpeFile.toPath(), new File(bedrockMappings, "Geyser-voidpe-mapping.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
                 }
             }
