@@ -41,7 +41,10 @@ public class RiftSchematicManager {
     /** Имя файла схемы в plugins/GeyserEvent/schematics (null — из конфига). */
     private final String schematicFileName;
 
-    public record RelativeBlock(int dx, int dy, int dz, Material material) {
+    public record RelativeBlock(int dx, int dy, int dz, Material material, String data) {
+        public RelativeBlock(int dx, int dy, int dz, Material material) {
+            this(dx, dy, dz, material, null);
+        }
     }
 
     private record SavedBlock(World world, int x, int y, int z, BlockData blockData) {
@@ -75,7 +78,8 @@ public class RiftSchematicManager {
             fileName = "infernal_citadel_25.schem.yml";
         }
         File schemFile = new File(schemDir, fileName);
-        boolean export = !schemFile.exists();
+        boolean sponge = fileName.endsWith(".schem") && !fileName.endsWith(".yml");
+        boolean export = !schemFile.exists() || sponge;
         if (schemFile.exists()
                 && ("infernal_citadel_25.schem.yml".equals(fileName)
                 || "fishing_pond.schem.yml".equals(fileName)
@@ -93,12 +97,22 @@ public class RiftSchematicManager {
             }
         }
 
-        if (schemFile.exists()) {
+        if (schemFile.exists() && sponge) {
+            try {
+                SpongeSchematicReader.Result result = SpongeSchematicReader.read(schemFile);
+                for (SpongeSchematicReader.LoadedBlock block : result.blocks()) {
+                    loadedBlocks.add(new RelativeBlock(block.dx(), block.dy(), block.dz(), block.material(), block.data()));
+                }
+                this.bossSpawnOffset = new Location(null, 0.5, 3.0, -4.0, 180.0f, 0.0f);
+            } catch (Exception ex) {
+                plugin.getLogger().warning("Не удалось прочитать " + fileName + ": " + ex.getMessage());
+            }
+        } else if (schemFile.exists()) {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(schemFile);
             parseYamlSchematic(yaml);
         }
 
-        if (loadedBlocks.isEmpty()) {
+        if (loadedBlocks.isEmpty() && !sponge) {
             buildBuiltInFallbackSchematic();
         }
     }
@@ -279,21 +293,29 @@ public class RiftSchematicManager {
                 deferredPortalAndFire.add(rel);
                 continue;
             }
-            captureAndSet(world, cx + rel.dx(), cy + rel.dy(), cz + rel.dz(), rel.material(), capturedCoords);
+            captureAndSet(world, cx + rel.dx(), cy + rel.dy(), cz + rel.dz(), rel, capturedCoords);
         }
         for (RelativeBlock rel : deferredPortalAndFire) {
-            captureAndSet(world, cx + rel.dx(), cy + rel.dy(), cz + rel.dz(), rel.material(), capturedCoords);
+            captureAndSet(world, cx + rel.dx(), cy + rel.dy(), cz + rel.dz(), rel, capturedCoords);
         }
 
         return getBossSpawnLocation();
     }
 
     private void captureAndSet(World world, int bx, int by, int bz, Material material, Set<String> capturedCoords) {
+        captureAndSet(world, bx, by, bz, new RelativeBlock(0, 0, 0, material, null), capturedCoords);
+    }
+
+    private void captureAndSet(World world, int bx, int by, int bz, RelativeBlock rel, Set<String> capturedCoords) {
         String key = blockKey(world.getName(), bx, by, bz);
         Block block = world.getBlockAt(bx, by, bz);
         schematicBlockKeys.add(key);
+        Material material = rel.material();
+        BlockData target = rel.data() != null && !rel.data().isEmpty()
+                ? SpongeSchematicReader.blockDataOf(rel.data(), material)
+                : material.createBlockData();
         Material current = block.getType();
-        if (current == material && material != Material.NETHER_PORTAL) {
+        if (current == material && material != Material.NETHER_PORTAL && rel.data() == null) {
             return;
         }
         if (material == Material.SOUL_FIRE && block.getRelative(0, -1, 0).getType().isAir()) {
@@ -302,7 +324,7 @@ public class RiftSchematicManager {
         if (capturedCoords.add(key)) {
             savedBlocks.add(new SavedBlock(world, bx, by, bz, block.getBlockData().clone()));
         }
-        block.setType(material, false);
+        block.setBlockData(target, false);
         if (material == Material.NETHER_PORTAL) {
             portalBlockKeys.add(key);
             BlockData data = block.getBlockData();

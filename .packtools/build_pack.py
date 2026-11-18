@@ -14,7 +14,7 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 34]
+VERSION = [1, 21, 35]
 VERSION_STR = ".".join(str(v) for v in VERSION)
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
@@ -184,6 +184,11 @@ sound_defs["sound_definitions"]["ronaldo_talk"] = {
     "category": "hostile",
     "max_distance": 64,
     "sounds": [{"name": "sounds/ronaldo/talk", "volume": 1.4}],
+}
+sound_defs["sound_definitions"]["newyear_sleigh"] = {
+    "category": "ambient",
+    "max_distance": 72,
+    "sounds": [{"name": "sounds/newyear/sleigh", "stream": True, "volume": 1.8}],
 }
 entries["sounds/sound_definitions.json"] = json.dumps(sound_defs, ensure_ascii=False, indent=2).encode("utf-8")
 print("sound_definitions:", list(sound_defs["sound_definitions"]))

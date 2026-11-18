@@ -487,6 +487,9 @@ public class RiftEventListener implements Listener {
             InventoryHolder holder = event.getInventory().getHolder();
             if (holder instanceof ShulkerBox box && plugin.getNewYearEventManager().isEventShulker(box.getBlock())) {
                 event.setCancelled(true);
+            } else if (holder instanceof Chest chest
+                    && plugin.getNewYearEventManager().isProtectedBlock(chest.getBlock().getLocation())) {
+                event.setCancelled(true);
             }
         }
     }

@@ -97,5 +97,14 @@
     "volume": 1.5,
     "pitch": 1.0,
     "attenuation_distance": 48
+  },
+  "newyear_sleigh": {
+    "sounds": [
+      {"name": "newyear/sleigh", "stream": true}
+    ],
+    "category": "ambient",
+    "volume": 1.8,
+    "pitch": 1.0,
+    "attenuation_distance": 64
   }
 }

@@ -57,8 +57,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class NewYearEventManager {
 
     public static final String REGION_ID = "geyserevent_newyear";
-    public static final String SCHEMATIC_FILE = "santa_sleigh.schem.yml";
-    public static final int ARENA_RADIUS = 22;
+    public static final String SCHEMATIC_FILE = "mystsantasleigh.schem";
+    public static final int ARENA_RADIUS = 24;
+    public static final String SPAWN_SOUND = "newyear_sleigh";
 
     private final GeyserEventPlugin plugin;
     private final RiftSchematicManager schematicManager;
@@ -427,18 +428,22 @@ public final class NewYearEventManager {
         if (shulkerLocation != null) {
             return shulkerLocation.clone();
         }
-        if (center == null) {
-            return null;
-        }
-        return center.clone().add(0, 5, 16);
+        return null;
     }
 
     public boolean isEventShulker(Block block) {
         if (block == null || !active) {
             return false;
         }
+        Material type = block.getType();
+        if (type != Material.RED_SHULKER_BOX && !type.name().endsWith("SHULKER_BOX")) {
+            return false;
+        }
         Location expected = shulkerBlockLocation();
         if (expected != null && sameBlock(expected, block.getLocation())) {
+            return true;
+        }
+        if (schematicManager.isProtectedBlock(block.getLocation())) {
             return true;
         }
         if (block.getState() instanceof TileState state) {
@@ -466,30 +471,84 @@ public final class NewYearEventManager {
     }
 
     private void placeGiftShulker() {
-        Location loc = shulkerBlockLocation();
-        if (loc == null || loc.getWorld() == null) {
+        if (center == null || center.getWorld() == null) {
             return;
         }
-        this.shulkerLocation = loc;
-        Block block = loc.getBlock();
-        org.bukkit.block.data.BlockData data = Material.RED_SHULKER_BOX.createBlockData();
-        if (data instanceof Directional directional) {
-            directional.setFacing(BlockFace.NORTH);
+        Block found = null;
+        Block fallback = null;
+        World world = center.getWorld();
+        int cx = center.getBlockX();
+        int cy = center.getBlockY();
+        int cz = center.getBlockZ();
+        for (int dx = -18; dx <= 18; dx++) {
+            for (int dy = 0; dy <= 12; dy++) {
+                for (int dz = -18; dz <= 18; dz++) {
+                    Block block = world.getBlockAt(cx + dx, cy + dy, cz + dz);
+                    if (block.getType() != Material.RED_SHULKER_BOX) {
+                        continue;
+                    }
+                    if (fallback == null) {
+                        fallback = block;
+                    }
+                    if (block.getBlockData() instanceof Directional directional
+                            && directional.getFacing() == BlockFace.UP) {
+                        found = block;
+                        break;
+                    }
+                }
+                if (found != null) {
+                    break;
+                }
+            }
+            if (found != null) {
+                break;
+            }
         }
-        block.setBlockData(data, false);
-        if (block.getState() instanceof org.bukkit.block.ShulkerBox box) {
+        if (found == null) {
+            found = fallback;
+        }
+        if (found == null) {
+            return;
+        }
+        this.shulkerLocation = found.getLocation();
+        if (found.getState() instanceof org.bukkit.block.ShulkerBox box) {
             box.getInventory().clear();
             box.getPersistentDataContainer().set(shulkerKey, PersistentDataType.BYTE, (byte) 1);
             box.update(true, false);
+        }
+        emptySchematicContainers();
+    }
+
+    private void emptySchematicContainers() {
+        if (center == null || center.getWorld() == null) {
+            return;
+        }
+        World world = center.getWorld();
+        int cx = center.getBlockX();
+        int cy = center.getBlockY();
+        int cz = center.getBlockZ();
+        for (int dx = -20; dx <= 20; dx++) {
+            for (int dy = 0; dy <= 12; dy++) {
+                for (int dz = -24; dz <= 24; dz++) {
+                    Block block = world.getBlockAt(cx + dx, cy + dy, cz + dz);
+                    if (!schematicManager.isProtectedBlock(block.getLocation())) {
+                        continue;
+                    }
+                    if (block.getState() instanceof org.bukkit.block.ShulkerBox box) {
+                        box.getInventory().clear();
+                        box.update(true, false);
+                    } else if (block.getState() instanceof org.bukkit.block.Chest chest) {
+                        chest.getInventory().clear();
+                        chest.update(true, false);
+                    }
+                }
+            }
         }
     }
 
     private void ensureGiftShulker() {
         Location loc = shulkerBlockLocation();
-        if (loc == null) {
-            return;
-        }
-        if (loc.getBlock().getType() != Material.RED_SHULKER_BOX) {
+        if (loc == null || loc.getBlock().getType() != Material.RED_SHULKER_BOX) {
             placeGiftShulker();
             if (unlocked) {
                 openGiftShulker();
@@ -734,7 +793,7 @@ public final class NewYearEventManager {
         if (block == null) {
             return null;
         }
-        return block.clone().add(0.5, 2.15, 0.5);
+        return block.clone().add(0.5, 1.33, 0.5);
     }
 
     private String[] hologramLines() {
@@ -793,11 +852,29 @@ public final class NewYearEventManager {
         }
     }
 
+    private void playSpawnSound() {
+        Location loc = shulkerBlockLocation();
+        if (loc == null) {
+            loc = center;
+        }
+        if (loc == null || loc.getWorld() == null) {
+            return;
+        }
+        Location at = loc.clone().add(0.5, 0.5, 0.5);
+        at.getWorld().playSound(at, SPAWN_SOUND, 1.8f, 1.0f);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getWorld().equals(at.getWorld())
+                    && player.getLocation().distanceSquared(at) <= 64 * 64) {
+                player.playSound(player.getLocation(), SPAWN_SOUND, 1.8f, 1.0f);
+            }
+        }
+    }
+
     private void broadcastSpawn() {
         if (center == null) {
             return;
         }
-        center.getWorld().playSound(center, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1.0f, 1.1f);
+        playSpawnSound();
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &cКарета Санты приземлилась!"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКрасный шалкер откроется через 10 минут"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fПотом 3 минуты подарки из мешка"));
