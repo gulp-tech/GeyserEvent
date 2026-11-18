@@ -12,11 +12,18 @@ import org.bukkit.World;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -29,9 +36,13 @@ import ru.geyserevent.util.ColorUtil;
 import ru.geyserevent.util.LootStacks;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -48,8 +59,11 @@ public final class NewYearEventManager {
     private final RiftSchematicManager schematicManager;
     private final NamespacedKey giftKey;
     private final NamespacedKey rarityKey;
+    private final NamespacedKey giftIdKey;
     private final NamespacedKey santaKey;
     private final List<UUID> hologramIds = new ArrayList<>();
+    private final Set<String> spentGiftIds = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> exchangeBusy = ConcurrentHashMap.newKeySet();
 
     private boolean active;
     private Location center;
@@ -64,7 +78,16 @@ public final class NewYearEventManager {
         this.schematicManager = new RiftSchematicManager(plugin, SCHEMATIC_FILE);
         this.giftKey = new NamespacedKey(plugin, "newyear_gift");
         this.rarityKey = new NamespacedKey(plugin, "newyear_rarity");
+        this.giftIdKey = new NamespacedKey(plugin, "newyear_gift_id");
         this.santaKey = new NamespacedKey(plugin, "newyear_santa");
+        loadSpentIds();
+    }
+
+    public static final class GiftExchangeHolder implements InventoryHolder {
+        @Override
+        public Inventory getInventory() {
+            return null;
+        }
     }
 
     public boolean startEvent(Location targetCenter, Integer durationSecondsOverride) {
@@ -189,43 +212,77 @@ public final class NewYearEventManager {
         return mark != null && mark == (byte) 1;
     }
 
-    public boolean tryUnwrapGift(Player player) {
+    public boolean isHoldingGift(Player player) {
         if (player == null) {
             return false;
         }
-        ItemStack stack = player.getInventory().getItemInMainHand();
-        if (!isGift(stack)) {
-            stack = player.getInventory().getItemInOffHand();
-            if (!isGift(stack)) {
-                return false;
-            }
-            unwrapInto(player, stack, true);
-            return true;
-        }
-        unwrapInto(player, stack, false);
-        return true;
+        return isGift(player.getInventory().getItemInMainHand())
+                || isGift(player.getInventory().getItemInOffHand());
     }
 
-    private void unwrapInto(Player player, ItemStack gift, boolean offhand) {
-        String rarity = gift.getItemMeta().getPersistentDataContainer()
-                .getOrDefault(rarityKey, PersistentDataType.STRING, "common");
-        int left = gift.getAmount() - 1;
-        if (left <= 0) {
-            if (offhand) {
-                player.getInventory().setItemInOffHand(null);
-            } else {
-                player.getInventory().setItemInMainHand(null);
+    public boolean hasAnyGift(Player player) {
+        if (player == null) {
+            return false;
+        }
+        PlayerInventory inv = player.getInventory();
+        for (ItemStack stack : inv.getContents()) {
+            if (isGift(stack)) {
+                return true;
             }
+        }
+        return isGift(player.getItemOnCursor());
+    }
+
+    public String giftRarity(ItemStack stack) {
+        if (!isGift(stack)) {
+            return null;
+        }
+        return stack.getItemMeta().getPersistentDataContainer()
+                .getOrDefault(rarityKey, PersistentDataType.STRING, "common");
+    }
+
+    public boolean isSpentGift(ItemStack stack) {
+        String id = giftId(stack);
+        return id != null && spentGiftIds.contains(id);
+    }
+
+    private String giftId(ItemStack stack) {
+        if (!isGift(stack)) {
+            return null;
+        }
+        return stack.getItemMeta().getPersistentDataContainer().get(giftIdKey, PersistentDataType.STRING);
+    }
+
+    public void sanitizePlayer(Player player) {
+        if (player == null) {
+            return;
+        }
+        PlayerInventory inv = player.getInventory();
+        for (int i = 0; i < inv.getSize(); i++) {
+            ItemStack stack = inv.getItem(i);
+            if (isSpentGift(stack)) {
+                inv.setItem(i, null);
+            } else {
+                stampGiftId(stack);
+            }
+        }
+        if (isSpentGift(player.getItemOnCursor())) {
+            player.setItemOnCursor(null);
         } else {
-            gift.setAmount(left);
+            stampGiftId(player.getItemOnCursor());
         }
-        ItemStack prize = rollLoot(rarity);
-        if (prize != null) {
-            player.getInventory().addItem(prize).values().forEach(drop ->
-                    player.getWorld().dropItemNaturally(player.getLocation(), drop));
+    }
+
+    public void stampGiftId(ItemStack stack) {
+        if (!isGift(stack) || giftId(stack) != null) {
+            return;
         }
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4f, 1.6f);
-        player.sendMessage(ColorUtil.color("&e┠ &fПодарок открыт: " + rarityLabel(rarity)));
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) {
+            return;
+        }
+        meta.getPersistentDataContainer().set(giftIdKey, PersistentDataType.STRING, UUID.randomUUID().toString());
+        stack.setItemMeta(meta);
     }
 
     private void startTickLoop() {
@@ -355,11 +412,14 @@ public final class NewYearEventManager {
                 default -> "&f&lОбычный подарок";
             }));
             meta.setLore(List.of(
-                    ColorUtil.color("&7ПКМ — открыть"),
-                    ColorUtil.color("&8Шалкер без этой метки — ванильный")
+                    ColorUtil.color("&7Обмен: &#E0C912/gifts"),
+                    ColorUtil.color("&8Не ставится и не открывается")
             ));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             meta.getPersistentDataContainer().set(giftKey, PersistentDataType.BYTE, (byte) 1);
             meta.getPersistentDataContainer().set(rarityKey, PersistentDataType.STRING, rarity);
+            String id = UUID.randomUUID().toString();
+            meta.getPersistentDataContainer().set(giftIdKey, PersistentDataType.STRING, id);
             stack.setItemMeta(meta);
         }
         return stack;
@@ -555,7 +615,7 @@ public final class NewYearEventManager {
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &cКарета Санты приземлилась!"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &f9 оленей, мешок с подарками-шалкерами"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &f&lбелый &8/ &9голубой &8/ &dпурпур &8/ &cкрасный &f— редкость"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fПКМ открыть. Ванильный шалкер без метки не меняется."));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fОбмен подарков: &#E0C912/gifts"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                 + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЛокатор: &#34D711/event gps"));
@@ -598,5 +658,182 @@ public final class NewYearEventManager {
 
     private File restoreSnapshotFile() {
         return new File(plugin.getDataFolder(), "schematics/newyear-restore.yml");
+    }
+
+    @SuppressWarnings("deprecation")
+    public void openExchangeMenu(Player player) {
+        sanitizePlayer(player);
+        Inventory inv = Bukkit.createInventory(new GiftExchangeHolder(), 27, ColorUtil.color("&8Обмен подарков"));
+        ItemStack fill = icon(Material.GRAY_STAINED_GLASS_PANE, "&7", List.of());
+        for (int i = 0; i < 27; i++) {
+            inv.setItem(i, fill);
+        }
+        inv.setItem(10, icon(Material.WHITE_SHULKER_BOX, "&f&lОбычный подарок",
+                List.of("&7Нужен белый шалкер-подарок", "&eНажмите, чтобы обменять")));
+        inv.setItem(12, icon(Material.LIGHT_BLUE_SHULKER_BOX, "&9&lРедкий подарок",
+                List.of("&7Нужен голубой шалкер-подарок", "&eНажмите, чтобы обменять")));
+        inv.setItem(14, icon(Material.MAGENTA_SHULKER_BOX, "&d&lЭпический подарок",
+                List.of("&7Нужен пурпурный шалкер-подарок", "&eНажмите, чтобы обменять")));
+        inv.setItem(16, icon(Material.RED_SHULKER_BOX, "&6&lЛегендарный подарок",
+                List.of("&7Нужен красный шалкер-подарок", "&eНажмите, чтобы обменять")));
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                player.openInventory(inv);
+            }
+        });
+    }
+
+    public boolean handleInventoryClick(InventoryClickEvent event) {
+        if (!(event.getView().getTopInventory().getHolder() instanceof GiftExchangeHolder)) {
+            return false;
+        }
+        event.setCancelled(true);
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return true;
+        }
+        if (event.getClickedInventory() != event.getView().getTopInventory()) {
+            return true;
+        }
+        String rarity = switch (event.getSlot()) {
+            case 10 -> "common";
+            case 12 -> "rare";
+            case 14 -> "epic";
+            case 16 -> "legendary";
+            default -> null;
+        };
+        if (rarity == null) {
+            return true;
+        }
+        if (!exchangeBusy.add(player.getUniqueId())) {
+            return true;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            try {
+                exchangeOne(player, rarity);
+            } finally {
+                exchangeBusy.remove(player.getUniqueId());
+            }
+        });
+        return true;
+    }
+
+    public boolean handleInventoryDrag(InventoryDragEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof GiftExchangeHolder) {
+            event.setCancelled(true);
+            return true;
+        }
+        return false;
+    }
+
+    private void exchangeOne(Player player, String rarity) {
+        if (!player.isOnline()) {
+            return;
+        }
+        sanitizePlayer(player);
+        if (!takeOneGift(player, rarity)) {
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.5f, 0.6f);
+            return;
+        }
+        ItemStack prize = rollLoot(rarity);
+        if (prize != null && !prize.getType().isAir()) {
+            Map<Integer, ItemStack> leftover = player.getInventory().addItem(prize);
+            leftover.values().forEach(drop -> player.getWorld().dropItemNaturally(player.getLocation(), drop));
+        }
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.3f);
+    }
+
+    private boolean takeOneGift(Player player, String rarity) {
+        PlayerInventory inv = player.getInventory();
+        for (int i = 0; i < inv.getSize(); i++) {
+            final int slot = i;
+            if (consumeGiftSlot(inv.getItem(slot), rarity, stack -> inv.setItem(slot, stack))) {
+                return true;
+            }
+        }
+        if (consumeGiftSlot(inv.getItemInOffHand(), rarity, inv::setItemInOffHand)) {
+            return true;
+        }
+        return consumeGiftSlot(player.getItemOnCursor(), rarity, player::setItemOnCursor);
+    }
+
+    private boolean consumeGiftSlot(ItemStack stack, String rarity, java.util.function.Consumer<ItemStack> set) {
+        if (!isGift(stack) || !rarity.equalsIgnoreCase(giftRarity(stack))) {
+            return false;
+        }
+        if (isSpentGift(stack)) {
+            set.accept(null);
+            return false;
+        }
+        String id = giftId(stack);
+        if (id != null) {
+            markSpent(id);
+        }
+        if (stack.getAmount() <= 1) {
+            set.accept(null);
+        } else {
+            stack.setAmount(stack.getAmount() - 1);
+            set.accept(stack);
+        }
+        return true;
+    }
+
+    private void markSpent(String id) {
+        if (id == null || id.isEmpty()) {
+            return;
+        }
+        spentGiftIds.add(id);
+        while (spentGiftIds.size() > 8000) {
+            String first = spentGiftIds.iterator().next();
+            spentGiftIds.remove(first);
+        }
+        saveSpentIds();
+    }
+
+    private void loadSpentIds() {
+        File file = spentFile();
+        if (!file.exists()) {
+            return;
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        for (String id : yaml.getStringList("spent")) {
+            if (id != null && !id.isEmpty()) {
+                spentGiftIds.add(id);
+            }
+        }
+    }
+
+    private void saveSpentIds() {
+        File file = spentFile();
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("spent", new ArrayList<>(spentGiftIds));
+        try {
+            yaml.save(file);
+        } catch (IOException ignored) {
+        }
+    }
+
+    private File spentFile() {
+        return new File(plugin.getDataFolder(), "newyear-spent.yml");
+    }
+
+    @SuppressWarnings("deprecation")
+    private ItemStack icon(Material material, String name, List<String> lore) {
+        ItemStack stack = new ItemStack(material, 1);
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ColorUtil.color(name));
+            List<String> colored = new ArrayList<>();
+            for (String line : lore) {
+                colored.add(ColorUtil.color(line));
+            }
+            meta.setLore(colored);
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            stack.setItemMeta(meta);
+        }
+        return stack;
     }
 }

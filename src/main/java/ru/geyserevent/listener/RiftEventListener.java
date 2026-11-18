@@ -28,6 +28,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockFromToEvent;
+import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -47,6 +48,7 @@ import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
@@ -112,6 +114,9 @@ public class RiftEventListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         plugin.getBrushLootManager().removeAllEventBrushes(player);
+        if (plugin.getNewYearEventManager() != null) {
+            plugin.getNewYearEventManager().sanitizePlayer(player);
+        }
         player.removePotionEffect(PotionEffectType.GLOWING);
         if (plugin.getRiftManager().isActive()) {
             Bukkit.getScheduler().runTaskLater(plugin, () ->
@@ -266,6 +271,16 @@ public class RiftEventListener implements Listener {
             return;
         }
 
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isGift(stack)) {
+            if (plugin.getNewYearEventManager().isSpentGift(stack) || !(event.getEntity() instanceof Player)) {
+                event.setCancelled(true);
+                event.getItem().remove();
+                return;
+            }
+            plugin.getNewYearEventManager().stampGiftId(stack);
+            event.getItem().setItemStack(stack);
+        }
+
         if (plugin.getBrushLootManager().isTemporaryEventItem(stack)) {
             if (!(event.getEntity() instanceof Player player)) {
                 event.setCancelled(true);
@@ -279,8 +294,26 @@ public class RiftEventListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onGiftHopper(InventoryMoveItemEvent event) {
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isGift(event.getItem())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onGiftDispense(BlockDispenseEvent event) {
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isGift(event.getItem())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
         // 1. Обработка кликов в GUI-меню настройки лута (/rift menu) и в меню «Кузница и Рюкзак»
+        if (plugin.getNewYearEventManager() != null
+                && plugin.getNewYearEventManager().handleInventoryClick(event)) {
+            return;
+        }
         if (plugin.getBrushLootGuiManager().handleInventoryClick(event)) {
             return;
         }
@@ -290,25 +323,36 @@ public class RiftEventListener implements Listener {
         }
 
         // 2. Запрет перекладывания ивентовых предметов и непереплавленной руды в сундуки / эндер-сундук / шалкеры
-        if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
-            return;
-        }
         ItemStack current = event.getCurrentItem();
         ItemStack cursor = event.getCursor();
         ItemStack hotbar = (event.getHotbarButton() >= 0 && event.getWhoClicked() instanceof Player p)
                 ? p.getInventory().getItem(event.getHotbarButton())
                 : null;
+        boolean gift = plugin.getNewYearEventManager() != null
+                && (plugin.getNewYearEventManager().isGift(current)
+                || plugin.getNewYearEventManager().isGift(cursor)
+                || plugin.getNewYearEventManager().isGift(hotbar));
+        if (gift && plugin.getNewYearEventManager().isSpentGift(current)) {
+            event.setCurrentItem(null);
+        }
         boolean restricted = plugin.getBrushLootManager().getBrushTier(current) != null
                 || plugin.getBrushLootManager().getBrushTier(cursor) != null
                 || plugin.getBrushLootManager().getBrushTier(hotbar) != null
                 || plugin.getBrushLootManager().isFishingRod(current)
                 || plugin.getBrushLootManager().isFishingRod(cursor)
                 || plugin.getBrushLootManager().isFishingRod(hotbar)
+                || gift
                 || (plugin.getMinerBackpackManager() != null && (
                         plugin.getMinerBackpackManager().isMineOreOrGeode(current)
                         || plugin.getMinerBackpackManager().isMineOreOrGeode(cursor)
                         || plugin.getMinerBackpackManager().isMineOreOrGeode(hotbar)
                 ));
+        if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
+            if (gift && event.getRawSlot() < 5) {
+                event.setCancelled(true);
+            }
+            return;
+        }
         if (restricted) {
             event.setCancelled(true);
         }
@@ -316,6 +360,10 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryDrag(InventoryDragEvent event) {
+        if (plugin.getNewYearEventManager() != null
+                && plugin.getNewYearEventManager().handleInventoryDrag(event)) {
+            return;
+        }
         if (plugin.getBrushLootGuiManager().handleInventoryDrag(event)) {
             return;
         }
@@ -329,6 +377,7 @@ public class RiftEventListener implements Listener {
         ItemStack oldCursor = event.getOldCursor();
         if (plugin.getBrushLootManager().getBrushTier(oldCursor) != null
                 || plugin.getBrushLootManager().isFishingRod(oldCursor)
+                || (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isGift(oldCursor))
                 || (plugin.getMinerBackpackManager() != null && plugin.getMinerBackpackManager().isMineOreOrGeode(oldCursor))) {
             event.setCancelled(true);
         }
@@ -349,7 +398,8 @@ public class RiftEventListener implements Listener {
                 || plugin.getBrushLootManager().isFishingRod(offHand)
                 || plugin.getBrushLootManager().countPlayerFishingRods(player) > 0
                 || (plugin.getMinerBackpackManager() != null
-                && plugin.getMinerBackpackManager().countCarriedMineItems(player) > 0);
+                && plugin.getMinerBackpackManager().countCarriedMineItems(player) > 0)
+                || (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().hasAnyGift(player));
 
         if (!holdingEventItem) {
             return;
@@ -388,6 +438,13 @@ public class RiftEventListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
+        if (plugin.getNewYearEventManager() != null && (
+                plugin.getNewYearEventManager().isGift(event.getPlayerItem())
+                || plugin.getNewYearEventManager().isGift(event.getArmorStandItem())
+                || plugin.getNewYearEventManager().isHoldingGift(event.getPlayer()))) {
+            event.setCancelled(true);
+            return;
+        }
         if (!event.getRightClicked().isVisible() || event.getRightClicked().isMarker()) {
             event.setCancelled(true);
         }
@@ -429,6 +486,10 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isHoldingGift(event.getPlayer())) {
+            event.setCancelled(true);
+            return;
+        }
         Entity clicked = event.getRightClicked();
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(clicked)) {
             event.setCancelled(true);
@@ -448,6 +509,10 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isHoldingGift(event.getPlayer())) {
+            event.setCancelled(true);
+            return;
+        }
         Entity clicked = event.getRightClicked();
         if (plugin.getAncientMineManager() != null && plugin.getAncientMineManager().isBlacksmithNpc(clicked)) {
             event.setCancelled(true);
@@ -507,9 +572,9 @@ public class RiftEventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteractBlock(PlayerInteractEvent event) {
         Action action = event.getAction();
-        if ((action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)
-                && plugin.getNewYearEventManager() != null
-                && plugin.getNewYearEventManager().tryUnwrapGift(event.getPlayer())) {
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isHoldingGift(event.getPlayer())
+                && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK
+                || action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK)) {
             event.setCancelled(true);
             return;
         }
@@ -1218,6 +1283,10 @@ public class RiftEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isGift(event.getItemInHand())) {
+            event.setCancelled(true);
+            return;
+        }
         Block block = event.getBlock();
 
         // Призывные ивенты: поставленный предмет-призывалка становится алтарём

@@ -1127,7 +1127,8 @@ public class BrushLootGuiManager {
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
         if (holder instanceof HubHolder || holder instanceof MainMenuHolder || holder instanceof EventMenuHolder
                 || holder instanceof TierMenuHolder || holder instanceof FlatLootHolder
-                || holder instanceof WindMenuHolder || holder instanceof NewyearMenuHolder) {
+                || holder instanceof WindMenuHolder || holder instanceof NewyearMenuHolder
+                || holder instanceof ru.geyserevent.newyear.NewYearEventManager.GiftExchangeHolder) {
             event.setCancelled(true);
             return true;
         }

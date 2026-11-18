@@ -45,6 +45,7 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event gps &8— &fПоставить локатор до ивента"));
             sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event mine &8— &fСтатус постоянной «Шахты Древних (0 ~ 0)»"));
             sender.sendMessage(ColorUtil.color("&e┠ &#34D711/event backpack &8— &fОткрыть меню Рюкзака Шахтёра"));
+            sender.sendMessage(ColorUtil.color("&e┠ &#34D711/gifts &8— &fОбмен новогодних подарков"));
             return true;
         }
 
@@ -73,7 +74,7 @@ public class EventPlayerCommand implements CommandExecutor, TabCompleter {
                             + ny.getCenterLocation().getBlockX() + " "
                             + ny.getCenterLocation().getBlockY() + " "
                             + ny.getCenterLocation().getBlockZ()));
-                    sender.sendMessage(ColorUtil.color("&e┠ &7ПКМ по подарку-шалкеру — открыть"));
+                    sender.sendMessage(ColorUtil.color("&e┠ &7Обмен подарков: &#E0C912/gifts"));
                     return true;
                 }
                 if (plugin.getFishingEventManager() != null && plugin.getFishingEventManager().isActive()

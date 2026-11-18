@@ -62,6 +62,7 @@ public final class NewYearCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " &8— &fслучайная точка в мире ивентов"));
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " here &8— &fна своей позиции"));
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " stop"));
+                sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/gifts &8— &fобмен подарков"));
                 sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/rift menu &8— &fлут подарков"));
                 return true;
             }

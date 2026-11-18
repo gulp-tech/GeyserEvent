@@ -3,6 +3,7 @@ package ru.geyserevent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+import ru.geyserevent.command.GiftCommand;
 import ru.geyserevent.command.NewYearCommand;
 import ru.geyserevent.fishing.FishingEventManager;
 import ru.geyserevent.newyear.NewYearEventManager;
@@ -170,6 +171,12 @@ public final class GeyserEventPlugin extends JavaPlugin {
             newyearCmd.setExecutor(newyearExecutor);
             newyearCmd.setTabCompleter(newyearExecutor);
         }
+        PluginCommand giftsCmd = getCommand("gifts");
+        if (giftsCmd != null) {
+            GiftCommand giftExecutor = new GiftCommand(this);
+            giftsCmd.setExecutor(giftExecutor);
+            giftsCmd.setTabCompleter(giftExecutor);
+        }
 
         // 8. Экспорт и автоматическая перезапись меню DeluxeMenus (events.yml) и текстурпака (GeyserEvent-Pack.mcpack)
         exportDeluxeMenusConfig();
@@ -195,7 +202,7 @@ public final class GeyserEventPlugin extends JavaPlugin {
         }, 20L);
 
         getLogger().info("==================================================");
-        getLogger().info(" GeyserEvent v1.21.74 успешно запущен! (Purpur 1.21–26.63)");
+        getLogger().info(" GeyserEvent v1.21.75 успешно запущен! (Purpur 1.21–26.63)");
         getLogger().info(" Временные ивенты: Разлом, Раскопки, Котёл, Гейзер, Рыбалка (пришельцы удалены, скибиди/CR7 выключены)");
         getLogger().info(" Постоянный ивент: Шахта Древних crater-lobby (v9) + подъём на 0 ~ 0");
         getLogger().info("==================================================");

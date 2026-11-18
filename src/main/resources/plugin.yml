@@ -1,5 +1,5 @@
 name: GeyserEvent
-version: '1.21.74'
+version: '1.21.75'
 main: ru.geyserevent.GeyserEventPlugin
 api-version: '1.21'
 authors: [GeyserEvent]
@@ -60,6 +60,11 @@ commands:
     aliases: [ny, santa, noviygod]
     usage: /<command> [here|stop]
     permission: geyserevent.admin
+  gifts:
+    description: Обмен новогодних подарков
+    aliases: [podarki, presents, obmen]
+    usage: /<command>
+    permission: geyserevent.use
 
 permissions:
   geyserevent.use:
