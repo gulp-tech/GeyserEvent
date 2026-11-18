@@ -98,16 +98,18 @@ items:
 
 
   'wind_heart':
-    material: ENDER_CHEST
+    material: MAGMA_BLOCK
     slot: 21
     item_flags:
       - HIDE_ATTRIBUTES
-    display_name: '&#7DF9FF&lДревний клад'
+    display_name: '&#7DF9FF&lГейзер'
     lore:
-      - '&8Руины и сундук-ловушка'
+      - '&8Конус и жерло'
       - ''
-      - '&e┠ &fКликни сундук — &#E0C9125 мин&f дрожи, потом лут'
-      - '&e┠ &fСтарт: &#E0C912/klad &f· &#E0C91220 мин'
+      - '&e┠ &fЛут вылетает из жерла, сундуков нет'
+      - '&e┠ &fРедкость ивента: &a40% обычная'
+      - '&e┠ &9 30% редкая &8· &d20% эпик &8· &610% легенда'
+      - '&e┠ &fОткрытие &#E0C91210 мин&f · разброс &#E0C9123 мин'
       - ''
       - '&#34D711» ЛКМ — /event delay'
       - '&#E0C912» ПКМ — /event gps'
@@ -118,11 +120,9 @@ items:
       - '[close]'
       - '[player] event gps'
 
-
-
   'fishing_pond':
     material: FISHING_ROD
-    slot: 28
+    slot: 23
     item_flags:
       - HIDE_ATTRIBUTES
     display_name: '&b&lРыбалка'
