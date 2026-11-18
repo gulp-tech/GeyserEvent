@@ -13,6 +13,7 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.block.EnderChest;
+import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -482,6 +483,12 @@ public class RiftEventListener implements Listener {
                 event.setCancelled(true);
             }
         }
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isActive()) {
+            InventoryHolder holder = event.getInventory().getHolder();
+            if (holder instanceof ShulkerBox box && plugin.getNewYearEventManager().isEventShulker(box.getBlock())) {
+                event.setCancelled(true);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -575,6 +582,13 @@ public class RiftEventListener implements Listener {
         if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isHoldingGift(event.getPlayer())
                 && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK
                 || action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK)) {
+            event.setCancelled(true);
+            return;
+        }
+        if ((action == Action.RIGHT_CLICK_BLOCK || action == Action.LEFT_CLICK_BLOCK)
+                && event.getClickedBlock() != null
+                && plugin.getNewYearEventManager() != null
+                && plugin.getNewYearEventManager().isEventShulker(event.getClickedBlock())) {
             event.setCancelled(true);
             return;
         }
@@ -1261,6 +1275,12 @@ public class RiftEventListener implements Listener {
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
         }
+        if (plugin.getNewYearEventManager() != null
+                && plugin.getNewYearEventManager().isProtectedBlock(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
 
         if (!plugin.getRiftManager().isActive()) {
             return;
@@ -1317,6 +1337,12 @@ public class RiftEventListener implements Listener {
         }
         if (plugin.getRonaldoEventManager() != null
                 && plugin.getRonaldoEventManager().isProtectedBlock(block.getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
+            return;
+        }
+        if (plugin.getNewYearEventManager() != null
+                && plugin.getNewYearEventManager().isProtectedBlock(block.getLocation())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getPluginConfig().getMsgRegionProtected());
             return;
@@ -1461,6 +1487,9 @@ public class RiftEventListener implements Listener {
             return true;
         }
         if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isProtectedBlock(loc)) {
+            return true;
+        }
+        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isProtectedBlock(loc)) {
             return true;
         }
         if (plugin.getRiftManager() == null || !plugin.getRiftManager().isActive()) {

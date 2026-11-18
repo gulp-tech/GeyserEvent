@@ -9,6 +9,11 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Lidded;
+import org.bukkit.block.TileState;
+import org.bukkit.block.data.Directional;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -61,12 +66,17 @@ public final class NewYearEventManager {
     private final NamespacedKey rarityKey;
     private final NamespacedKey giftIdKey;
     private final NamespacedKey santaKey;
+    private final NamespacedKey shulkerKey;
     private final List<UUID> hologramIds = new ArrayList<>();
     private final Set<String> spentGiftIds = ConcurrentHashMap.newKeySet();
     private final Set<UUID> exchangeBusy = ConcurrentHashMap.newKeySet();
 
     private boolean active;
+    private boolean unlocked;
     private Location center;
+    private Location shulkerLocation;
+    private long startEpochSeconds;
+    private long unlockAtEpoch;
     private long eventEndEpochSeconds;
     private BossBar bossBar;
     private BukkitRunnable tickTask;
@@ -80,6 +90,7 @@ public final class NewYearEventManager {
         this.rarityKey = new NamespacedKey(plugin, "newyear_rarity");
         this.giftIdKey = new NamespacedKey(plugin, "newyear_gift_id");
         this.santaKey = new NamespacedKey(plugin, "newyear_santa");
+        this.shulkerKey = new NamespacedKey(plugin, "newyear_shulker");
         loadSpentIds();
     }
 
@@ -117,13 +128,18 @@ public final class NewYearEventManager {
 
         targetCenter.getChunk().load(true);
         this.active = true;
+        this.unlocked = false;
         this.center = snapToSurface(targetCenter);
         this.santaUuid = null;
         this.scatterTick = 0;
-        this.eventEndEpochSeconds = System.currentTimeMillis() / 1000L
+        this.startEpochSeconds = System.currentTimeMillis() / 1000L;
+        int wait = Math.max(10, plugin.getConfig().getInt("newyear.unlock-seconds", 600));
+        int loot = Math.max(15, plugin.getConfig().getInt("newyear.loot-seconds", 180));
+        this.unlockAtEpoch = this.startEpochSeconds + wait;
+        this.eventEndEpochSeconds = this.startEpochSeconds
                 + ((durationSecondsOverride != null && durationSecondsOverride > 0)
                 ? durationSecondsOverride
-                : Math.max(60, plugin.getConfig().getInt("newyear.duration-minutes", 10) * 60));
+                : (wait + loot));
 
         try {
             plugin.saveResource("schematics/" + SCHEMATIC_FILE, true);
@@ -133,6 +149,7 @@ public final class NewYearEventManager {
         setChunksForceLoaded(this.center, true);
         schematicManager.pasteSchematic(this.center, ARENA_RADIUS, 10);
         schematicManager.persistRestoreState(restoreSnapshotFile());
+        placeGiftShulker();
         spawnSanta();
         spawnHologram();
         createBossBar();
@@ -177,7 +194,9 @@ public final class NewYearEventManager {
             setChunksForceLoaded(center, false);
         }
         this.active = false;
+        this.unlocked = false;
         this.center = null;
+        this.shulkerLocation = null;
         this.santaUuid = null;
     }
 
@@ -301,11 +320,15 @@ public final class NewYearEventManager {
                     stopEvent();
                     return;
                 }
+                long now = System.currentTimeMillis() / 1000L;
+                tryUnlock(now);
+                ensureGiftShulker();
                 scatterTick++;
-                if (scatterTick >= Math.max(3, plugin.getConfig().getInt("newyear.gift-interval-seconds", 4))) {
+                if (unlocked && scatterTick >= Math.max(2, plugin.getConfig().getInt("newyear.gift-interval-seconds", 3))) {
                     scatterTick = 0;
                     scatterGifts();
                 }
+                shulkerFx();
                 if (scatterTick % 2 == 0) {
                     snowBurst();
                 }
@@ -325,39 +348,185 @@ public final class NewYearEventManager {
         tickTask.runTaskTimer(plugin, 20L, 20L);
     }
 
+    private void tryUnlock(long now) {
+        if (!active || unlocked || now < unlockAtEpoch) {
+            return;
+        }
+        unlocked = true;
+        scatterTick = 0;
+        openGiftShulker();
+        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &cШалкер Санты открылся — лови подарки!"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fРаздача 3 минуты. Обмен: &#E0C912/gifts"));
+        Location mouth = sackLocation();
+        if (mouth != null && mouth.getWorld() != null) {
+            World world = mouth.getWorld();
+            world.playSound(mouth, Sound.BLOCK_SHULKER_BOX_OPEN, 1.1f, 0.85f);
+            world.playSound(mouth, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 0.7f, 1.15f);
+            world.playSound(mouth, Sound.ENTITY_PLAYER_LEVELUP, 0.45f, 1.4f);
+            world.spawnParticle(Particle.FIREWORK, mouth, 40, 0.35, 0.45, 0.35, 0.08);
+            world.spawnParticle(Particle.TOTEM_OF_UNDYING, mouth, 18, 0.4, 0.5, 0.4, 0.15);
+        }
+        int burst = 8;
+        for (int i = 0; i < burst; i++) {
+            final int idx = i;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (active && unlocked) {
+                    launchGift(idx / (double) burst * Math.PI * 2.0, 0.55, 0.72);
+                }
+            }, i * 2L);
+        }
+        refreshHologram();
+        refreshBossBar();
+    }
+
     private void scatterGifts() {
-        if (center == null || center.getWorld() == null) {
+        if (!unlocked || countGroundGifts() >= 12) {
+            return;
+        }
+        int n = 1 + ThreadLocalRandom.current().nextInt(2);
+        for (int i = 0; i < n; i++) {
+            double angle = ThreadLocalRandom.current().nextDouble() * Math.PI * 2.0;
+            launchGift(angle, 0.42 + ThreadLocalRandom.current().nextDouble() * 0.22,
+                    0.58 + ThreadLocalRandom.current().nextDouble() * 0.22);
+        }
+        Location mouth = sackLocation();
+        if (mouth != null && mouth.getWorld() != null) {
+            mouth.getWorld().playSound(mouth, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.55f, 1.35f);
+            mouth.getWorld().playSound(mouth, Sound.ENTITY_ITEM_PICKUP, 0.35f, 0.6f);
+        }
+    }
+
+    private void launchGift(double angle, double speed, double up) {
+        Location mouth = sackLocation();
+        if (mouth == null || mouth.getWorld() == null) {
             return;
         }
         if (countGroundGifts() >= 12) {
             return;
         }
-        Location mouth = sackLocation();
-        World world = mouth.getWorld();
-        world.playSound(mouth, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.8f, 1.3f);
-        world.playSound(mouth, Sound.ENTITY_SNOWBALL_THROW, 0.45f, 0.7f);
-        int n = 1 + ThreadLocalRandom.current().nextInt(2);
-        for (int i = 0; i < n; i++) {
-            String rarity = rollRarity();
-            ItemStack gift = createGift(rarity);
-            Item dropped = world.dropItem(mouth, gift);
-            dropped.setPickupDelay(10);
-            dropped.setGlowing(true);
-            dropped.setCustomName(gift.getItemMeta() != null ? gift.getItemMeta().getDisplayName() : null);
-            dropped.setCustomNameVisible(true);
-            dropped.setVelocity(new Vector(
-                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.7,
-                    0.38 + ThreadLocalRandom.current().nextDouble() * 0.22,
-                    -0.15 + (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.55
-            ));
-        }
+        ItemStack gift = createGift(rollRarity());
+        Item dropped = mouth.getWorld().dropItem(mouth, gift);
+        dropped.setPickupDelay(12);
+        dropped.setGlowing(true);
+        dropped.setCustomName(gift.getItemMeta() != null ? gift.getItemMeta().getDisplayName() : null);
+        dropped.setCustomNameVisible(true);
+        dropped.setVelocity(new Vector(Math.cos(angle) * speed, up, Math.sin(angle) * speed));
+        mouth.getWorld().spawnParticle(Particle.FIREWORK, mouth, 8, 0.12, 0.18, 0.12, 0.04);
+        mouth.getWorld().spawnParticle(Particle.SNOWFLAKE, mouth, 6, 0.2, 0.15, 0.2, 0.01);
     }
 
     private Location sackLocation() {
+        Location block = shulkerBlockLocation();
+        if (block == null) {
+            return null;
+        }
+        return block.clone().add(0.5, 1.15, 0.5);
+    }
+
+    private Location shulkerBlockLocation() {
+        if (shulkerLocation != null) {
+            return shulkerLocation.clone();
+        }
         if (center == null) {
             return null;
         }
-        return center.clone().add(0.5, 3.6, 16.5);
+        return center.clone().add(0, 5, 16);
+    }
+
+    public boolean isEventShulker(Block block) {
+        if (block == null || !active) {
+            return false;
+        }
+        Location expected = shulkerBlockLocation();
+        if (expected != null && sameBlock(expected, block.getLocation())) {
+            return true;
+        }
+        if (block.getState() instanceof TileState state) {
+            Byte mark = state.getPersistentDataContainer().get(shulkerKey, PersistentDataType.BYTE);
+            return mark != null && mark == (byte) 1;
+        }
+        return false;
+    }
+
+    public boolean isProtectedBlock(Location loc) {
+        if (loc == null) {
+            return false;
+        }
+        if (schematicManager.isProtectedBlock(loc)) {
+            return true;
+        }
+        return shulkerBlockLocation() != null && sameBlock(shulkerBlockLocation(), loc);
+    }
+
+    private boolean sameBlock(Location a, Location b) {
+        return a.getWorld() != null && a.getWorld().equals(b.getWorld())
+                && a.getBlockX() == b.getBlockX()
+                && a.getBlockY() == b.getBlockY()
+                && a.getBlockZ() == b.getBlockZ();
+    }
+
+    private void placeGiftShulker() {
+        Location loc = shulkerBlockLocation();
+        if (loc == null || loc.getWorld() == null) {
+            return;
+        }
+        this.shulkerLocation = loc;
+        Block block = loc.getBlock();
+        org.bukkit.block.data.BlockData data = Material.RED_SHULKER_BOX.createBlockData();
+        if (data instanceof Directional directional) {
+            directional.setFacing(BlockFace.NORTH);
+        }
+        block.setBlockData(data, false);
+        if (block.getState() instanceof org.bukkit.block.ShulkerBox box) {
+            box.getInventory().clear();
+            box.getPersistentDataContainer().set(shulkerKey, PersistentDataType.BYTE, (byte) 1);
+            box.update(true, false);
+        }
+    }
+
+    private void ensureGiftShulker() {
+        Location loc = shulkerBlockLocation();
+        if (loc == null) {
+            return;
+        }
+        if (loc.getBlock().getType() != Material.RED_SHULKER_BOX) {
+            placeGiftShulker();
+            if (unlocked) {
+                openGiftShulker();
+            }
+        }
+    }
+
+    private void openGiftShulker() {
+        Location loc = shulkerBlockLocation();
+        if (loc == null) {
+            return;
+        }
+        org.bukkit.block.BlockState state = loc.getBlock().getState();
+        if (state instanceof Lidded lid) {
+            lid.open();
+            state.update(true, false);
+        }
+    }
+
+    private void shulkerFx() {
+        Location mouth = sackLocation();
+        if (mouth == null || mouth.getWorld() == null) {
+            return;
+        }
+        World world = mouth.getWorld();
+        if (!unlocked) {
+            world.spawnParticle(Particle.END_ROD, mouth, 2, 0.18, 0.22, 0.18, 0.004);
+            world.spawnParticle(Particle.FLAME, mouth.clone().add(0, -0.35, 0), 1, 0.12, 0.08, 0.12, 0.001);
+            return;
+        }
+        world.spawnParticle(Particle.FIREWORK, mouth, 4, 0.25, 0.3, 0.25, 0.02);
+        world.spawnParticle(Particle.HAPPY_VILLAGER, mouth, 2, 0.35, 0.25, 0.35, 0.0);
+        for (Entity entity : world.getNearbyEntities(mouth, 8, 6, 8)) {
+            if (entity instanceof Item item && isGift(item.getItemStack())) {
+                world.spawnParticle(Particle.SNOWFLAKE, item.getLocation().add(0, 0.25, 0), 1, 0.05, 0.05, 0.05, 0.0);
+            }
+        }
     }
 
     private int countGroundGifts() {
@@ -561,20 +730,26 @@ public final class NewYearEventManager {
     }
 
     private Location hologramLocation() {
-        if (center == null) {
+        Location block = shulkerBlockLocation();
+        if (block == null) {
             return null;
         }
-        return new Location(center.getWorld(), center.getX() + 0.5, center.getY() + 4.6, center.getZ() + 14.5);
+        return block.clone().add(0.5, 2.15, 0.5);
     }
 
     private String[] hologramLines() {
-        String coords = center == null ? "—"
-                : center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ();
+        if (!unlocked) {
+            long left = Math.max(0L, unlockAtEpoch - System.currentTimeMillis() / 1000L);
+            return new String[]{
+                    ColorUtil.color("&c&lПодарок Санты"),
+                    ColorUtil.color("&eОткроется через " + ColorUtil.formatDuration(left)),
+                    ColorUtil.color("&7Потом подарки 3 минуты")
+            };
+        }
         return new String[]{
-                ColorUtil.color("&c&lКарета Санты"),
-                ColorUtil.color("&7Собирай подарки-шалкеры"),
-                ColorUtil.color("&7До конца: &#E0C912" + ColorUtil.formatDuration(getSecondsRemaining())),
-                ColorUtil.color("&7Координаты: &#E0C912" + coords)
+                ColorUtil.color("&c&lПодарки летят!"),
+                ColorUtil.color("&aРаздача: " + ColorUtil.formatDuration(getSecondsRemaining())),
+                ColorUtil.color("&7Обмен: &#E0C912/gifts")
         };
     }
 
@@ -602,9 +777,20 @@ public final class NewYearEventManager {
             return;
         }
         int left = getSecondsRemaining();
-        int total = Math.max(1, plugin.getConfig().getInt("newyear.duration-minutes", 10) * 60);
-        bossBar.setProgress(Math.max(0.0, Math.min(1.0, left / (double) total)));
-        bossBar.setTitle(ColorUtil.color("&c&lНовый год &7· &#E0C912" + ColorUtil.formatDuration(left)));
+        if (!unlocked) {
+            long wait = Math.max(0L, unlockAtEpoch - System.currentTimeMillis() / 1000L);
+            int totalWait = Math.max(1, plugin.getConfig().getInt("newyear.unlock-seconds", 600));
+            bossBar.setColor(BarColor.YELLOW);
+            bossBar.setProgress(Math.max(0.0, Math.min(1.0, wait / (double) totalWait)));
+            bossBar.setTitle(ColorUtil.color("&c&lНовый год &8| &eОткроется "
+                    + ColorUtil.formatDuration(wait)));
+        } else {
+            long total = Math.max(1L, eventEndEpochSeconds - unlockAtEpoch);
+            bossBar.setColor(BarColor.RED);
+            bossBar.setProgress(Math.max(0.0, Math.min(1.0, left / (double) total)));
+            bossBar.setTitle(ColorUtil.color("&c&lПодарки летят &8| &f"
+                    + ColorUtil.formatDuration(left)));
+        }
     }
 
     private void broadcastSpawn() {
@@ -613,9 +799,9 @@ public final class NewYearEventManager {
         }
         center.getWorld().playSound(center, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1.0f, 1.1f);
         Bukkit.broadcastMessage(ColorUtil.color("&e┼ &cКарета Санты приземлилась!"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &f9 оленей, мешок с подарками-шалкерами"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &f&lбелый &8/ &9голубой &8/ &dпурпур &8/ &cкрасный &f— редкость"));
-        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fОбмен подарков: &#E0C912/gifts"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКрасный шалкер откроется через 10 минут"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fПотом 3 минуты подарки из мешка"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fОбмен: &#E0C912/gifts"));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
                 + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
         Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЛокатор: &#34D711/event gps"));
