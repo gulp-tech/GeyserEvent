@@ -119,13 +119,6 @@ public class RiftEventListener implements Listener {
             plugin.getNewYearEventManager().sanitizePlayer(player);
         }
         player.removePotionEffect(PotionEffectType.GLOWING);
-        if (plugin.getTopRightHudManager() != null) {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (player.isOnline() && plugin.getTopRightHudManager() != null) {
-                    plugin.getTopRightHudManager().offerJavaPack(player);
-                }
-            }, 40L);
-        }
         if (plugin.getRiftManager().isActive()) {
             Bukkit.getScheduler().runTaskLater(plugin, () ->
                     plugin.getRiftManager().updateEventBossBar(), 10L
