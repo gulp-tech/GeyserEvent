@@ -483,15 +483,51 @@ public class RiftEventListener implements Listener {
                 event.setCancelled(true);
             }
         }
-        if (plugin.getNewYearEventManager() != null && plugin.getNewYearEventManager().isActive()) {
+        if (plugin.getNewYearEventManager() != null) {
             InventoryHolder holder = event.getInventory().getHolder();
-            if (holder instanceof ShulkerBox box && plugin.getNewYearEventManager().isEventShulker(box.getBlock())) {
-                event.setCancelled(true);
-            } else if (holder instanceof Chest chest
-                    && plugin.getNewYearEventManager().isProtectedBlock(chest.getBlock().getLocation())) {
-                event.setCancelled(true);
+            if (holder instanceof ru.geyserevent.newyear.NewYearEventManager.GiftExchangeHolder) {
+                return;
+            }
+            if (plugin.getNewYearEventManager().isHoldingGift(player)
+                    || plugin.getNewYearEventManager().isGift(player.getItemOnCursor())) {
+                InventoryType opened = event.getInventory().getType();
+                if (opened == InventoryType.SHULKER_BOX
+                        || opened == InventoryType.CHEST
+                        || opened == InventoryType.ENDER_CHEST
+                        || event.getInventory().getSize() == 27) {
+                    event.setCancelled(true);
+                    Bukkit.getScheduler().runTask(plugin, () -> closeEventGiftGui(player));
+                    return;
+                }
+            }
+            if (plugin.getNewYearEventManager().isActive()) {
+                if (holder instanceof ShulkerBox box && plugin.getNewYearEventManager().isEventShulker(box.getBlock())) {
+                    event.setCancelled(true);
+                } else if (holder instanceof Chest chest
+                        && plugin.getNewYearEventManager().isProtectedBlock(chest.getBlock().getLocation())) {
+                    event.setCancelled(true);
+                }
             }
         }
+    }
+
+    private void closeEventGiftGui(Player player) {
+        if (player == null || !player.isOnline() || plugin.getNewYearEventManager() == null) {
+            return;
+        }
+        if (!plugin.getNewYearEventManager().isHoldingGift(player)
+                && !plugin.getNewYearEventManager().isGift(player.getItemOnCursor())) {
+            return;
+        }
+        InventoryHolder holder = player.getOpenInventory().getTopInventory().getHolder();
+        if (holder instanceof ru.geyserevent.newyear.NewYearEventManager.GiftExchangeHolder) {
+            return;
+        }
+        InventoryType type = player.getOpenInventory().getTopInventory().getType();
+        if (type == InventoryType.CRAFTING || type == InventoryType.PLAYER) {
+            return;
+        }
+        player.closeInventory();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -586,6 +622,10 @@ public class RiftEventListener implements Listener {
                 && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK
                 || action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK)) {
             event.setCancelled(true);
+            event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+            event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
+            Player holder = event.getPlayer();
+            Bukkit.getScheduler().runTask(plugin, () -> closeEventGiftGui(holder));
             return;
         }
         if ((action == Action.RIGHT_CLICK_BLOCK || action == Action.LEFT_CLICK_BLOCK)

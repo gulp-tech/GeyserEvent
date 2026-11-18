@@ -365,17 +365,16 @@ public final class NewYearEventManager {
             world.playSound(mouth, Sound.BLOCK_SHULKER_BOX_OPEN, 1.1f, 0.85f);
             world.playSound(mouth, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 0.7f, 1.15f);
             world.playSound(mouth, Sound.ENTITY_PLAYER_LEVELUP, 0.45f, 1.4f);
-            world.spawnParticle(Particle.FIREWORK, mouth, 40, 0.35, 0.45, 0.35, 0.08);
-            world.spawnParticle(Particle.TOTEM_OF_UNDYING, mouth, 18, 0.4, 0.5, 0.4, 0.15);
+            world.spawnParticle(Particle.CLOUD, mouth, 8, 0.2, 0.25, 0.2, 0.02);
         }
-        int burst = 8;
+        int burst = 6;
         for (int i = 0; i < burst; i++) {
             final int idx = i;
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (active && unlocked) {
-                    launchGift(idx / (double) burst * Math.PI * 2.0, 0.55, 0.72);
+                    launchGift(idx / (double) burst * Math.PI * 2.0, 0.16, 1.05);
                 }
-            }, i * 2L);
+            }, i * 3L);
         }
         refreshHologram();
         refreshBossBar();
@@ -388,8 +387,8 @@ public final class NewYearEventManager {
         int n = 1 + ThreadLocalRandom.current().nextInt(2);
         for (int i = 0; i < n; i++) {
             double angle = ThreadLocalRandom.current().nextDouble() * Math.PI * 2.0;
-            launchGift(angle, 0.42 + ThreadLocalRandom.current().nextDouble() * 0.22,
-                    0.58 + ThreadLocalRandom.current().nextDouble() * 0.22);
+            launchGift(angle, 0.10 + ThreadLocalRandom.current().nextDouble() * 0.10,
+                    0.92 + ThreadLocalRandom.current().nextDouble() * 0.22);
         }
         Location mouth = sackLocation();
         if (mouth != null && mouth.getWorld() != null) {
@@ -408,13 +407,12 @@ public final class NewYearEventManager {
         }
         ItemStack gift = createGift(rollRarity());
         Item dropped = mouth.getWorld().dropItem(mouth, gift);
-        dropped.setPickupDelay(12);
+        dropped.setPickupDelay(16);
         dropped.setGlowing(true);
         dropped.setCustomName(gift.getItemMeta() != null ? gift.getItemMeta().getDisplayName() : null);
         dropped.setCustomNameVisible(true);
         dropped.setVelocity(new Vector(Math.cos(angle) * speed, up, Math.sin(angle) * speed));
-        mouth.getWorld().spawnParticle(Particle.FIREWORK, mouth, 8, 0.12, 0.18, 0.12, 0.04);
-        mouth.getWorld().spawnParticle(Particle.SNOWFLAKE, mouth, 6, 0.2, 0.15, 0.2, 0.01);
+        mouth.getWorld().spawnParticle(Particle.CLOUD, mouth, 3, 0.08, 0.12, 0.08, 0.01);
     }
 
     private Location sackLocation() {
@@ -576,17 +574,10 @@ public final class NewYearEventManager {
         }
         World world = mouth.getWorld();
         if (!unlocked) {
-            world.spawnParticle(Particle.END_ROD, mouth, 2, 0.18, 0.22, 0.18, 0.004);
-            world.spawnParticle(Particle.FLAME, mouth.clone().add(0, -0.35, 0), 1, 0.12, 0.08, 0.12, 0.001);
+            world.spawnParticle(Particle.END_ROD, mouth, 1, 0.12, 0.16, 0.12, 0.002);
             return;
         }
-        world.spawnParticle(Particle.FIREWORK, mouth, 4, 0.25, 0.3, 0.25, 0.02);
-        world.spawnParticle(Particle.HAPPY_VILLAGER, mouth, 2, 0.35, 0.25, 0.35, 0.0);
-        for (Entity entity : world.getNearbyEntities(mouth, 8, 6, 8)) {
-            if (entity instanceof Item item && isGift(item.getItemStack())) {
-                world.spawnParticle(Particle.SNOWFLAKE, item.getLocation().add(0, 0.25, 0), 1, 0.05, 0.05, 0.05, 0.0);
-            }
-        }
+        world.spawnParticle(Particle.CLOUD, mouth, 2, 0.16, 0.2, 0.16, 0.01);
     }
 
     private int countGroundGifts() {
