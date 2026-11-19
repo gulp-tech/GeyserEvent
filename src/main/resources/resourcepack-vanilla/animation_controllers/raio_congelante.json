@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "animation_controllers": {
+    "controller.animation.raio_congelante": {
+      "initial_state": "default",
+      "states": {
+        "default": {
+          "transitions": [
+            {
+              "shoot": "query.mark_variant == 1 && query.get_equipped_item_name=='raio_congelante' && query.item_remaining_use_duration > 1"
+            }
+          ],
+          "on_entry": [
+            "@s weapon:raio_congelante_fire",
+            "/replaceitem entity @s slot.weapon.mainhand 0 weapon:raio_congelante 1 2"
+          ]
+        },
+        "shoot": {
+          "transitions": [
+            {
+              "default": "query.mark_variant == 1 && query.get_equipped_item_name=='raio_congelante' && query.item_remaining_use_duration > 1"
+            }
+          ],
+          "on_entry": [
+            "@s weapon:raio_congelante_fire",
+            "/replaceitem entity @s slot.weapon.mainhand 0 weapon:raio_congelante 1 1"
+          ]
+        }
+      }
+    }
+  }
+}

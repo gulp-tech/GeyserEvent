@@ -1,0 +1,33 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "geyserevent:nave",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/nave",
+        "shooting": "textures/entity/nave"
+      },
+      "geometry": {
+        "default": "geometry.nave"
+      },
+      "scripts": {
+        "animate": [
+          "nave"
+        ]
+      },
+      "animations": {
+        "nave": "controller.animation.nave",
+        "parado": "animation.nave.para",
+        "andando": "animation.nave.anda",
+        "abduzir": "animation.nave.abduzir"
+      },
+      "render_controllers": [
+        "controller.render.geyserevent_alien"
+      ],
+      "enable_attachables": false
+    }
+  }
+}

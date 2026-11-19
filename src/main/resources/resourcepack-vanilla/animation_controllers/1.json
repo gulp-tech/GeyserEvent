@@ -1,0 +1,53 @@
+{
+  "format_version" : "1.10.0",
+  "animation_controllers" : {
+  "controller.animation.attack": {
+    "states": {
+      "default": {
+        "blend_transition": 0.1,
+        "transitions": [
+          {
+            "attack1": "variable.attack_time && variable.random_attack <= 3"
+          },
+          {
+            "attack2": "variable.attack_time && variable.random_attack >= 3 && variable.random_attack <= 6"
+          },
+          {
+            "attack3": "variable.attack_time && variable.random_attack >= 6"
+          }
+        ],
+        "on_entry": ["variable.random_attack = math.random(0, 9);"]
+      },
+      "attack1": {
+        "blend_transition": 0.1,
+        "animations": ["attack1"],
+        "transitions": [
+          {
+            "default": "query.all_animations_finished"
+          }
+        ]
+      },
+      "attack2": {
+        "blend_transition": 0.1,
+        "animations": ["attack2"],
+        "transitions": [
+          {
+            "default": "query.all_animations_finished"
+          }
+        ]
+      },
+      "attack3": {
+        "blend_transition": 0.1,
+        "animations": ["attack3"],
+        "transitions": [
+          {
+            "default": "query.all_animations_finished"
+      
+       
+                      }
+                  ]
+              }
+          }
+      }
+  }
+}
