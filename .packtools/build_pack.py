@@ -14,8 +14,11 @@ import os
 import uuid
 import zipfile
 
-VERSION = [1, 21, 36]
+VERSION = [1, 21, 83]
 VERSION_STR = ".".join(str(v) for v in VERSION)
+# Java pack_format 34 = 1.21; 26.2 resource = 88. Range covers 1.21 through 26.x.
+JAVA_PACK_FORMAT = 34
+JAVA_PACK_FORMAT_MAX = 99
 
 PACK_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack/" + VERSION_STR))
 MODULE_UUID = str(uuid.uuid5(uuid.NAMESPACE_URL, "https://gulp-tech.github.io/GeyserEvent/pack-module/" + VERSION_STR))
@@ -92,7 +95,7 @@ manifest = {
         "description": "3D-рюкзак шахтёра и блоки призыва. Ванильные мобы и эндер-сундук не подменяются.",
         "uuid": PACK_UUID,
         "version": VERSION,
-        "min_engine_version": [1, 19, 80],
+        "min_engine_version": [1, 21, 0],
     },
     "modules": [
         {
@@ -234,8 +237,11 @@ with zipfile.ZipFile(DST) as z:
 java_entries = {}
 java_entries["pack.mcmeta"] = json.dumps({
     "pack": {
-        "pack_format": 34,
-        "description": "GeyserEvent — звук кареты Санты",
+        "description": "GeyserEvent — звуки ивентов (Java 1.21–26.2+)",
+        "pack_format": JAVA_PACK_FORMAT,
+        "supported_formats": {"min_inclusive": JAVA_PACK_FORMAT, "max_inclusive": JAVA_PACK_FORMAT_MAX},
+        "min_format": JAVA_PACK_FORMAT,
+        "max_format": JAVA_PACK_FORMAT_MAX,
     }
 }, ensure_ascii=False, indent=2).encode("utf-8")
 icon_path = os.path.join(VANILLA, "pack_icon.png")
