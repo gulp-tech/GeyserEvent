@@ -1,0 +1,24 @@
+{
+  "resource_pack_name": "GeyserEvent",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "b": {
+      "textures": "textures/items/b"
+    },
+    "copper_luck_rod": {
+      "textures": "textures/items/copper_luck_rod"
+    },
+    "golden_luck_rod": {
+      "textures": "textures/items/golden_luck_rod"
+    },
+    "crystal_luck_rod": {
+      "textures": "textures/items/crystal_luck_rod"
+    },
+    "alien_display": {
+      "textures": "textures/entity/alien"
+    },
+    "nave_display": {
+      "textures": "textures/entity/nave"
+    }
+  }
+}

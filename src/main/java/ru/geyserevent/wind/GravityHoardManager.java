@@ -1,0 +1,960 @@
+package ru.geyserevent.wind;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Lidded;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+import ru.geyserevent.GeyserEventPlugin;
+import ru.geyserevent.config.PluginConfig;
+import ru.geyserevent.util.ColorUtil;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * «Древний клад» — один эндер-сундук с текстурой ancient-chest, голограмма,
+ * таймер по клику, дрожь самого сундука, крышка только в конце, GUI на 54 слота.
+ */
+public final class GravityHoardManager {
+
+    public static final String REGION_ID = "geyserevent_wind";
+    public static final int ARENA_RADIUS = 12;
+    public static final int CONE_RADIUS = 9;
+    public static final int CONE_HEIGHT = 7;
+
+    private final GeyserEventPlugin plugin;
+    private final NamespacedKey chestKey;
+    private final Random random = new Random();
+    private record SavedBlock(World world, int x, int y, int z, BlockData data) {
+    }
+
+    private final List<SavedBlock> savedBlocks = new ArrayList<>();
+    private final Set<String> savedKeys = new HashSet<>();
+    private final Set<String> protectedKeys = ConcurrentHashMap.newKeySet();
+    private final List<UUID> hologramIds = new ArrayList<>();
+
+    private boolean active;
+    private boolean activated;
+    private boolean unlocked;
+    private boolean lootFilled;
+    private Location center;
+    private Location chestLocation;
+    private long startEpochSeconds;
+    private long unlockAtEpoch;
+    private long eventEndEpochSeconds;
+    private BossBar bossBar;
+    private BukkitRunnable tickTask;
+    private BukkitRunnable ejectTask;
+    private int shakeCounter;
+    private int eruptWaves;
+    private int bossBarSyncCounter;
+    private String eruptTier = "common";
+    private final Map<UUID, Long> ejectCooldown = new ConcurrentHashMap<>();
+
+    public GravityHoardManager(GeyserEventPlugin plugin) {
+        this.plugin = plugin;
+        this.chestKey = new NamespacedKey(plugin, "wind_chest");
+    }
+
+    public boolean startEvent(Location targetCenter, Integer durationSecondsOverride) {
+        if (targetCenter == null || targetCenter.getWorld() == null) {
+            return false;
+        }
+        if (!plugin.getConfig().getBoolean("wind.enabled", true)) {
+            plugin.getLogger().warning("Ивент «Древний клад» выключен (wind.enabled: false).");
+            return false;
+        }
+        if (plugin.getRiftManager() != null && plugin.getRiftManager().isActive()) {
+            plugin.getRiftManager().stopEvent(false);
+        }
+        if (plugin.getSkibidiToiletManager() != null && plugin.getSkibidiToiletManager().isActive()) {
+            plugin.getSkibidiToiletManager().stopEvent();
+        }
+        if (plugin.getRonaldoEventManager() != null && plugin.getRonaldoEventManager().isActive()) {
+            plugin.getRonaldoEventManager().stopEvent();
+        }
+        stopEvent();
+
+        targetCenter.getChunk().load(true);
+        this.active = true;
+        this.activated = true;
+        this.unlocked = false;
+        this.lootFilled = false;
+        this.shakeCounter = 0;
+        this.eruptWaves = 0;
+        this.center = snapToSurface(targetCenter);
+        this.eruptTier = rollRarity();
+        this.startEpochSeconds = System.currentTimeMillis() / 1000L;
+
+        int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 600));
+        int lootSeconds = 180;
+        long durationSeconds = (durationSecondsOverride != null && durationSecondsOverride > 0)
+                ? durationSecondsOverride
+                : (wait + lootSeconds);
+        this.unlockAtEpoch = this.startEpochSeconds + wait;
+        this.eventEndEpochSeconds = this.startEpochSeconds + durationSeconds;
+
+        setChunksForceLoaded(this.center, true);
+        pasteArena(this.center);
+        this.chestLocation = mouthLocation(this.center);
+        spawnHolograms();
+        createBossBar();
+        broadcastSpawn();
+
+        if (plugin.getWorldGuardHook() != null) {
+            plugin.getWorldGuardHook().syncProtectionRegion(
+                    this.center.getWorld(),
+                    REGION_ID,
+                    this.center.getBlockX(),
+                    this.center.getBlockY(),
+                    this.center.getBlockZ(),
+                    ARENA_RADIUS + 6
+            );
+        }
+        startTickLoop();
+        startEjectLoop();
+        return true;
+    }
+
+    public void stopEvent() {
+        if (tickTask != null) {
+            tickTask.cancel();
+            tickTask = null;
+        }
+        if (ejectTask != null) {
+            ejectTask.cancel();
+            ejectTask = null;
+        }
+        ejectCooldown.clear();
+        clearHolograms();
+        this.eruptTier = "common";
+        if (center != null && center.getWorld() != null && plugin.getWorldGuardHook() != null) {
+            plugin.getWorldGuardHook().removeRegion(center.getWorld(), REGION_ID);
+        }
+        restoreArena();
+        if (bossBar != null) {
+            bossBar.removeAll();
+            bossBar = null;
+        }
+        if (center != null) {
+            setChunksForceLoaded(center, false);
+        }
+        this.active = false;
+        this.activated = false;
+        this.unlocked = false;
+        this.lootFilled = false;
+        this.eruptWaves = 0;
+        this.center = null;
+        this.chestLocation = null;
+    }
+
+    public boolean isEventChest(Block block) {
+        return false;
+    }
+
+    private static boolean sameBlock(Block block, Location loc) {
+        return loc != null
+                && block.getWorld().equals(loc.getWorld())
+                && block.getX() == loc.getBlockX()
+                && block.getY() == loc.getBlockY()
+                && block.getZ() == loc.getBlockZ();
+    }
+
+    /**
+     * @return true — открытие сундука надо отменить (ещё не активирован / идёт отсчёт)
+     */
+    public boolean handleChestClick(Player player) {
+        return false;
+    }
+
+    public boolean isLootGui(Inventory inventory) {
+        return false;
+    }
+
+    public boolean isProtectedBlock(Location loc) {
+        if (!active || loc == null || loc.getWorld() == null || center == null) {
+            return false;
+        }
+        if (!loc.getWorld().equals(center.getWorld())) {
+            return false;
+        }
+        return protectedKeys.contains(blockKey(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+    }
+
+    public boolean isInsideArena(Location loc) {
+        if (!active || loc == null || loc.getWorld() == null || center == null) {
+            return false;
+        }
+        if (!loc.getWorld().equals(center.getWorld())) {
+            return false;
+        }
+        double dx = loc.getX() - center.getX();
+        double dz = loc.getZ() - center.getZ();
+        double dy = loc.getY() - center.getY();
+        return Math.abs(dx) <= ARENA_RADIUS + 2
+                && Math.abs(dz) <= ARENA_RADIUS + 2
+                && dy >= -4 && dy <= 16;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public boolean isDefeated() {
+        return false;
+    }
+
+    public Location getCenterLocation() {
+        return center;
+    }
+
+    public Location getChestLocation() {
+        return chestLocation;
+    }
+
+    public int getSecondsRemaining() {
+        long left = eventEndEpochSeconds - (System.currentTimeMillis() / 1000L);
+        return (int) Math.max(0L, left);
+    }
+
+    public double getCoreHealth() {
+        return 0;
+    }
+
+    public double getCoreMaxHealth() {
+        return 0;
+    }
+
+    public org.bukkit.entity.LivingEntity getCoreEntity() {
+        return null;
+    }
+
+    public void handleCoreDefeated() {
+    }
+
+    public void handleShulkerDeath(org.bukkit.entity.LivingEntity entity) {
+    }
+
+    public boolean isCore(Entity entity) {
+        return false;
+    }
+
+    public boolean isHoardShulker(Entity entity) {
+        return false;
+    }
+
+    public boolean isHoardEntity(Entity entity) {
+        return false;
+    }
+
+    public boolean handleDamage(org.bukkit.entity.LivingEntity victim, Player attacker, double damage) {
+        return false;
+    }
+
+    public void handleChargeHit(ProjectileHitEvent event) {
+    }
+
+    public boolean cancelFallInArena(Location loc) {
+        return isInCrater(loc);
+    }
+
+    public boolean isInCrater(Location loc) {
+        if (!active || loc == null || center == null || loc.getWorld() == null) {
+            return false;
+        }
+        if (!loc.getWorld().equals(center.getWorld())) {
+            return false;
+        }
+        double dx = loc.getX() - center.getX();
+        double dz = loc.getZ() - center.getZ();
+        if (dx * dx + dz * dz > 2.25 * 2.25) {
+            return false;
+        }
+        double dy = loc.getY() - center.getBlockY();
+        return dy >= 0.0 && dy <= CONE_HEIGHT + 1.2;
+    }
+
+    private void startTickLoop() {
+        tickTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!active) {
+                    cancel();
+                    return;
+                }
+                if (getSecondsRemaining() <= 0) {
+                    Bukkit.broadcastMessage(ColorUtil.color(
+                            "&e┼ &cГейзер затих — жерло закрылось."));
+                    stopEvent();
+                    return;
+                }
+                long now = System.currentTimeMillis() / 1000L;
+                tryUnlock(now);
+                int interval = Math.max(1, plugin.getConfig().getInt("wind.erupt-interval-seconds", 3));
+                if (unlocked && (now - unlockAtEpoch) % interval == 0) {
+                    eruptBurst();
+                }
+                if (chestLocation != null && chestLocation.getWorld() != null && now % 2 == 0) {
+                    chestLocation.getWorld().spawnParticle(Particle.CLOUD,
+                            chestLocation, unlocked ? 3 : 1, 0.18, 0.35, 0.18, 0.005);
+                }
+                refreshHolograms();
+                refreshBossBar();
+            }
+        };
+        tickTask.runTaskTimer(plugin, 20L, 20L);
+    }
+
+    private void startEjectLoop() {
+        ejectTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!active || center == null || center.getWorld() == null) {
+                    return;
+                }
+                ejectPlayersFromCrater();
+            }
+        };
+        ejectTask.runTaskTimer(plugin, 5L, 5L);
+    }
+
+    private void ejectPlayersFromCrater() {
+        World world = center.getWorld();
+        double cx = center.getX();
+        double cy = center.getBlockY();
+        double cz = center.getZ();
+        long now = System.currentTimeMillis();
+        Sound whoosh = sound("ENTITY_WIND_CHARGE_WIND_BURST", Sound.ENTITY_PLAYER_ATTACK_SWEEP);
+        for (Player player : world.getPlayers()) {
+            if (player.getGameMode() == org.bukkit.GameMode.SPECTATOR
+                    || player.getGameMode() == org.bukkit.GameMode.CREATIVE) {
+                continue;
+            }
+            Location loc = player.getLocation();
+            double dx = loc.getX() - cx;
+            double dz = loc.getZ() - cz;
+            double distSq = dx * dx + dz * dz;
+            if (distSq > 2.2 * 2.2) {
+                continue;
+            }
+            double dy = loc.getY() - cy;
+            if (dy < 0.15 || dy > CONE_HEIGHT + 0.8) {
+                continue;
+            }
+            Long until = ejectCooldown.get(player.getUniqueId());
+            if (until != null && until > now) {
+                continue;
+            }
+            ejectCooldown.put(player.getUniqueId(), now + 400L);
+            Vector dir;
+            if (distSq < 0.05) {
+                dir = new Vector(random.nextGaussian(), 0, random.nextGaussian());
+            } else {
+                dir = new Vector(dx, 0, dz);
+            }
+            if (dir.lengthSquared() < 0.0001) {
+                dir = new Vector(1, 0, 0);
+            }
+            dir.normalize().multiply(0.72).setY(0.22);
+            player.setVelocity(dir);
+            player.playSound(loc, whoosh, 0.85f, 1.35f);
+            world.playSound(loc, Sound.BLOCK_LAVA_EXTINGUISH, 0.35f, 1.6f);
+        }
+        if (ejectCooldown.size() > 32) {
+            ejectCooldown.entrySet().removeIf(e -> e.getValue() < now);
+        }
+    }
+
+    private static Sound sound(String name, Sound fallback) {
+        try {
+            return Sound.valueOf(name);
+        } catch (IllegalArgumentException ex) {
+            return fallback;
+        }
+    }
+
+    private void ensureChestBlock() {
+        if (chestLocation == null) {
+            return;
+        }
+        if (chestLocation.getBlock().getType() != Material.ENDER_CHEST) {
+            placeEnderChestBlock();
+        }
+    }
+
+    private void shakeChest(double progress) {
+        World world = chestLocation.getWorld();
+        Location fx = chestLocation.clone().add(0.5, 0.55, 0.5);
+        float pitch = (float) (0.55 + progress * 1.1);
+        world.playSound(fx, Sound.BLOCK_ENDER_CHEST_CLOSE, 0.35f + (float) progress * 0.45f, pitch);
+        world.playSound(fx, Sound.BLOCK_STONE_HIT, 0.25f + (float) progress * 0.4f, 0.45f);
+        world.spawnParticle(Particle.CRIT, fx, 4 + (int) (progress * 10), 0.28, 0.18, 0.28, 0.04);
+        world.spawnParticle(Particle.SMOKE, fx, 2 + (int) (progress * 5), 0.2, 0.12, 0.2, 0.01);
+        world.spawnParticle(Particle.BLOCK, fx, 8 + (int) (progress * 12), 0.25, 0.2, 0.25, 0.03,
+                Material.ENDER_CHEST.createBlockData());
+    }
+
+    private void placeEventChest() {
+        if (center == null) {
+            return;
+        }
+        Block block = center.getBlock().getRelative(0, 1, 0);
+        this.chestLocation = block.getLocation();
+        placeEnderChestBlock();
+        World world = block.getWorld();
+        world.playSound(block.getLocation(), Sound.BLOCK_ENDER_CHEST_CLOSE, 0.8f, 0.7f);
+        world.spawnParticle(Particle.SCULK_SOUL, block.getLocation().add(0.5, 0.8, 0.5), 16, 0.3, 0.25, 0.3, 0.02);
+    }
+
+    private void placeEnderChestBlock() {
+        if (chestLocation == null) {
+            return;
+        }
+        Block block = chestLocation.getBlock();
+        org.bukkit.block.data.type.EnderChest data =
+                (org.bukkit.block.data.type.EnderChest) Material.ENDER_CHEST.createBlockData();
+        data.setFacing(BlockFace.SOUTH);
+        block.setBlockData(data, false);
+        markProtected(block);
+        if (block.getState() instanceof org.bukkit.block.TileState state) {
+            state.getPersistentDataContainer().set(chestKey, PersistentDataType.BYTE, (byte) 1);
+            state.update(true, false);
+        }
+    }
+
+    private void tryUnlock(long now) {
+        if (!activated || unlocked) {
+            return;
+        }
+        if (now < unlockAtEpoch) {
+            return;
+        }
+        unlocked = true;
+        eruptWaves = 0;
+        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFГейзер прорвался!"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fИз жерла идёт " + rarityLabel() + " &fдобыча"));
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!active || !unlocked) {
+                return;
+            }
+            knockbackNearby();
+            if (chestLocation != null && chestLocation.getWorld() != null) {
+                World world = chestLocation.getWorld();
+                Location fx = chestLocation.clone().add(0, 0.4, 0);
+                world.playSound(fx, Sound.ENTITY_GENERIC_EXPLODE, 0.7f, 0.8f);
+                world.playSound(fx, Sound.BLOCK_LAVA_POP, 1.4f, 0.5f);
+                world.spawnParticle(Particle.CLOUD, fx, 8, 0.35, 0.6, 0.35, 0.03);
+            }
+        }, 4L);
+        refreshHolograms();
+        refreshBossBar();
+    }
+
+    private String rarityLabel() {
+        return switch (eruptTier == null ? "common" : eruptTier) {
+            case "rare" -> "&9&lРедкая";
+            case "epic" -> "&d&lЭпическая";
+            case "legendary" -> "&6&lЛегендарная";
+            default -> "&a&lОбычная";
+        };
+    }
+
+    private String rarityLabelMasculine() {
+        return switch (eruptTier == null ? "common" : eruptTier) {
+            case "rare" -> "&9&lРедкий";
+            case "epic" -> "&d&lЭпический";
+            case "legendary" -> "&6&lЛегендарный";
+            default -> "&a&lОбычный";
+        };
+    }
+
+    private String rollRarity() {
+        // Шанс, с которым заспавнится ивент с этой редкостью лута:
+        // обычная 40%, редкая 30%, эпическая 20%, легендарная 10%.
+        int roll = java.util.concurrent.ThreadLocalRandom.current().nextInt(100);
+        if (roll < 40) {
+            return "common";
+        }
+        if (roll < 70) {
+            return "rare";
+        }
+        if (roll < 90) {
+            return "epic";
+        }
+        return "legendary";
+    }
+
+    private void keepLidOpen() {
+        if (chestLocation == null) {
+            return;
+        }
+        BlockState state = chestLocation.getBlock().getState();
+        if (state instanceof Lidded lid && !lid.isOpen()) {
+            lid.open();
+        }
+    }
+
+    private void keepLidClosed() {
+        if (chestLocation == null) {
+            return;
+        }
+        BlockState state = chestLocation.getBlock().getState();
+        if (state instanceof Lidded lid && lid.isOpen()) {
+            lid.close();
+        }
+    }
+
+    private void knockbackNearby() {
+        if (chestLocation == null || chestLocation.getWorld() == null) {
+            return;
+        }
+        Location origin = chestLocation.clone();
+        double radius = ARENA_RADIUS + 2;
+        double radiusSq = radius * radius;
+        for (Player player : chestLocation.getWorld().getPlayers()) {
+            if (!plugin.getBedrockService().canParticipate(player) && !player.isOp()) {
+                continue;
+            }
+            if (player.getLocation().distanceSquared(origin) > radiusSq) {
+                continue;
+            }
+            Vector dir = player.getLocation().toVector().subtract(origin.toVector());
+            dir.setY(0);
+            if (dir.lengthSquared() < 0.04) {
+                dir = new Vector(random.nextGaussian(), 0, random.nextGaussian());
+                dir.setY(0);
+            }
+            if (dir.lengthSquared() < 0.0001) {
+                dir = new Vector(1, 0, 0);
+            }
+            dir.normalize().multiply(1.75).setY(0.48);
+            player.setVelocity(dir);
+        }
+    }
+
+    private void fillInventory(Inventory inv) {
+        inv.clear();
+        int slot = 0;
+        int size = inv.getSize();
+        slot = addTierRolls(inv, slot, size, "common", 2);
+        slot = addTierRolls(inv, slot, size, "rare", 1);
+        slot = addTierRolls(inv, slot, size, "epic", 1);
+        slot = addTierRolls(inv, slot, size, "legendary", 1);
+        if (slot == 0) {
+            inv.addItem(new ItemStack(Material.IRON_INGOT, 8 + random.nextInt(8)));
+            inv.addItem(new ItemStack(Material.DIAMOND, 3 + random.nextInt(4)));
+            inv.addItem(new ItemStack(Material.ANCIENT_DEBRIS, 1 + random.nextInt(2)));
+        }
+    }
+
+    private int addTierRolls(Inventory inv, int slot, int size, String tier, int count) {
+        List<PluginConfig.AlienLootItem> pool = plugin.getPluginConfig().getWindLoot(tier);
+        if (pool == null || pool.isEmpty()) {
+            pool = plugin.getPluginConfig().getWindLoot("common");
+        }
+        if (pool == null || pool.isEmpty() || count <= 0) {
+            return slot;
+        }
+        for (int i = 0; i < count && slot < size; i++) {
+            PluginConfig.AlienLootItem item = pickLoot(pool);
+            if (item == null) {
+                continue;
+            }
+            inv.setItem(slot++, stackFromLoot(item));
+        }
+        return slot;
+    }
+
+    private PluginConfig.AlienLootItem pickLoot(List<PluginConfig.AlienLootItem> pool) {
+        if (pool == null || pool.isEmpty()) {
+            return null;
+        }
+        for (int i = 0; i < 8; i++) {
+            PluginConfig.AlienLootItem item = pool.get(random.nextInt(pool.size()));
+            if (random.nextDouble() * 100.0 <= Math.max(8.0, item.chancePercent())) {
+                return item;
+            }
+        }
+        return pool.get(random.nextInt(pool.size()));
+    }
+
+    private void eruptBurst() {
+        if (chestLocation == null || chestLocation.getWorld() == null) {
+            return;
+        }
+        eruptWaves++;
+        World world = chestLocation.getWorld();
+        Location mouth = chestLocation.clone().add(0, 0.35, 0);
+        world.playSound(mouth, Sound.BLOCK_LAVA_POP, 0.8f, 0.55f + random.nextFloat() * 0.4f);
+        world.spawnParticle(Particle.CLOUD, mouth, 4, 0.22, 0.55, 0.22, 0.02);
+        int throwsCount = 1 + random.nextInt(2);
+        for (int i = 0; i < throwsCount; i++) {
+            ItemStack stack = eruptStack();
+            if (stack == null) {
+                continue;
+            }
+            org.bukkit.entity.Item dropped = world.dropItem(mouth, stack);
+            dropped.setPickupDelay(12);
+            dropped.setVelocity(new Vector(
+                    (random.nextDouble() - 0.5) * 0.55,
+                    0.72 + random.nextDouble() * 0.4,
+                    (random.nextDouble() - 0.5) * 0.55
+            ));
+        }
+    }
+
+    private ItemStack eruptStack() {
+        String tier = eruptTier == null ? "common" : eruptTier;
+        List<PluginConfig.AlienLootItem> pool = plugin.getPluginConfig().getWindLoot(tier);
+        if (pool == null || pool.isEmpty()) {
+            pool = plugin.getPluginConfig().getWindLoot();
+        }
+        PluginConfig.AlienLootItem item = pickLoot(pool);
+        return item == null ? null : stackFromLoot(item);
+    }
+
+    private static Particle particle(String name, Particle fallback) {
+        try {
+            return Particle.valueOf(name);
+        } catch (IllegalArgumentException ex) {
+            return fallback;
+        }
+    }
+
+    private ItemStack stackFromLoot(PluginConfig.AlienLootItem item) {
+        int min = item.minAmount();
+        int max = Math.max(min, item.maxAmount());
+        int amount = min + (max > min ? random.nextInt(max - min + 1) : 0);
+        return ru.geyserevent.util.LootStacks.fromAlien(item, Math.max(1, amount));
+    }
+
+    private Location mouthLocation(Location origin) {
+        return new Location(origin.getWorld(), origin.getX(), origin.getBlockY() + 2.15, origin.getZ());
+    }
+
+    private void pasteArena(Location origin) {
+        restoreArena();
+        World world = origin.getWorld();
+        int cx = origin.getBlockX();
+        int cy = origin.getBlockY();
+        int cz = origin.getBlockZ();
+        int r = CONE_RADIUS;
+        Material magma = mat("MAGMA_BLOCK", Material.NETHERRACK);
+
+        for (int dx = -r; dx <= r; dx++) {
+            for (int dz = -r; dz <= r; dz++) {
+                double dist = Math.hypot(dx, dz);
+                if (dist > r + 0.35) {
+                    continue;
+                }
+                for (int dy = 1; dy <= CONE_HEIGHT + 2; dy++) {
+                    Block block = world.getBlockAt(cx + dx, cy + dy, cz + dz);
+                    Material type = block.getType();
+                    if (type.isAir() || type == Material.CAVE_AIR || type == Material.VOID_AIR) {
+                        continue;
+                    }
+                    saveOnce(block);
+                    block.setType(Material.AIR, false);
+                }
+
+                double t = Math.max(0.0, 1.0 - dist / (r + 0.2));
+                int height = (int) Math.round(CONE_HEIGHT * t);
+                if (dist > r - 1.2) {
+                    height = Math.min(height, 1);
+                }
+                boolean crater = dist < 2.15;
+
+                if (crater) {
+                    setProtected(world, cx + dx, cy, cz + dz, coneShell(dx, 0, dz));
+                    setProtected(world, cx + dx, cy + 1, cz + dz, magma);
+                    continue;
+                }
+
+                for (int h = 0; h <= Math.max(0, height); h++) {
+                    if (dist < 2.6 && h >= 2) {
+                        continue;
+                    }
+                    setProtected(world, cx + dx, cy + h, cz + dz, coneShell(dx, h, dz));
+                }
+                if (dist >= 2.15 && dist < 3.15) {
+                    int rim = Math.max(height, 5);
+                    for (int h = 2; h <= rim; h++) {
+                        setProtected(world, cx + dx, cy + h, cz + dz,
+                                h == rim ? magma : coneShell(dx, h, dz));
+                    }
+                }
+            }
+        }
+        setProtected(world, cx, cy + 1, cz, magma);
+    }
+
+    private Material coneShell(int dx, int dy, int dz) {
+        int n = Math.floorMod(dx * 131 + dz * 197 + dy * 17, 10);
+        if (dy == 0) {
+            if (n < 4) {
+                return Material.STONE;
+            }
+            if (n < 7) {
+                return Material.ANDESITE;
+            }
+            return Material.COBBLESTONE;
+        }
+        if (n < 3) {
+            return Material.STONE;
+        }
+        if (n < 5) {
+            return Material.ANDESITE;
+        }
+        if (n < 7) {
+            return Material.COBBLESTONE;
+        }
+        if (n < 9) {
+            return mat("TUFF", Material.ANDESITE);
+        }
+        return mat("SMOOTH_BASALT", Material.BASALT);
+    }
+
+    private void setProtected(World world, int x, int y, int z, Material material) {
+        Block block = world.getBlockAt(x, y, z);
+        if (block.getType() != material) {
+            saveOnce(block);
+            block.setType(material, false);
+        }
+        markProtected(block);
+    }
+
+    private void saveOnce(Block block) {
+        String key = blockKey(block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
+        if (savedKeys.add(key)) {
+            savedBlocks.add(new SavedBlock(
+                    block.getWorld(),
+                    block.getX(),
+                    block.getY(),
+                    block.getZ(),
+                    block.getBlockData().clone()
+            ));
+        }
+    }
+
+    private void markProtected(Block block) {
+        protectedKeys.add(blockKey(block.getWorld().getName(), block.getX(), block.getY(), block.getZ()));
+    }
+
+    private void restoreArena() {
+        for (int i = savedBlocks.size() - 1; i >= 0; i--) {
+            SavedBlock saved = savedBlocks.get(i);
+            if (saved.world() == null) {
+                continue;
+            }
+            Block block = saved.world().getBlockAt(saved.x(), saved.y(), saved.z());
+            if (!block.getBlockData().matches(saved.data())) {
+                block.setBlockData(saved.data(), false);
+            }
+        }
+        savedBlocks.clear();
+        savedKeys.clear();
+        protectedKeys.clear();
+    }
+
+    private static Material mat(String name, Material fallback) {
+        Material material = Material.matchMaterial(name);
+        return material != null ? material : fallback;
+    }
+
+    private void spawnHolograms() {
+        clearHolograms();
+        if (chestLocation == null || chestLocation.getWorld() == null) {
+            return;
+        }
+        double hologramY = (center != null ? center.getBlockY() : chestLocation.getBlockY()) + CONE_HEIGHT + 0.55;
+        Location base = new Location(
+                chestLocation.getWorld(),
+                chestLocation.getX(),
+                hologramY,
+                chestLocation.getZ()
+        );
+        String[] lines = hologramLines();
+        for (int i = 0; i < lines.length; i++) {
+            Location lineLoc = base.clone().add(0, 0.28 * (lines.length - 1 - i), 0);
+            String text = lines[i];
+            ArmorStand stand = chestLocation.getWorld().spawn(lineLoc, ArmorStand.class, s -> {
+                s.setVisible(false);
+                s.setGravity(false);
+                s.setMarker(true);
+                s.setSmall(false);
+                s.setBasePlate(false);
+                s.setArms(false);
+                s.setCustomNameVisible(true);
+                s.setInvulnerable(true);
+                s.setPersistent(false);
+                s.setCustomName(text);
+            });
+            hologramIds.add(stand.getUniqueId());
+        }
+    }
+
+    private void refreshHolograms() {
+        String[] lines = hologramLines();
+        if (hologramIds.size() != lines.length || !hologramsAlive()) {
+            if (active && chestLocation != null) {
+                spawnHolograms();
+            }
+            return;
+        }
+        for (int i = 0; i < lines.length; i++) {
+            Entity entity = Bukkit.getEntity(hologramIds.get(i));
+            if (entity instanceof ArmorStand stand) {
+                stand.setCustomName(lines[i]);
+                stand.setCustomNameVisible(true);
+            }
+        }
+    }
+
+    private boolean hologramsAlive() {
+        for (UUID id : hologramIds) {
+            Entity entity = Bukkit.getEntity(id);
+            if (entity == null || !entity.isValid()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String[] hologramLines() {
+        String rarity = ColorUtil.color("&fредкость: " + rarityLabel());
+        if (!unlocked) {
+            long left = Math.max(0L, unlockAtEpoch - System.currentTimeMillis() / 1000L);
+            return new String[]{
+                    ColorUtil.color("&#7DF9FF&lГейзер"),
+                    rarity,
+                    ColorUtil.color("&eОткроется через " + ColorUtil.formatDuration(left))
+            };
+        }
+        return new String[]{
+                ColorUtil.color("&#34D711&lГейзер открыт"),
+                rarity,
+                ColorUtil.color("&fЛут из жерла каждые 3 сек")
+        };
+    }
+
+    private void clearHolograms() {
+        for (UUID id : hologramIds) {
+            Entity entity = Bukkit.getEntity(id);
+            if (entity != null) {
+                entity.remove();
+            }
+        }
+        hologramIds.clear();
+    }
+
+    private void createBossBar() {
+        if (bossBar != null) {
+            bossBar.removeAll();
+        }
+        bossBar = Bukkit.createBossBar(ColorUtil.color("&b&lГейзер"), BarColor.BLUE, BarStyle.SEGMENTED_10);
+        bossBar.setVisible(true);
+        refreshBossBar();
+    }
+
+    private void refreshBossBar() {
+        if (bossBar == null) {
+            return;
+        }
+        int left = getSecondsRemaining();
+        if (!unlocked) {
+            long wait = Math.max(0L, unlockAtEpoch - System.currentTimeMillis() / 1000L);
+            int totalWait = Math.max(1, plugin.getConfig().getInt("wind.unlock-seconds", 600));
+            bossBar.setColor(BarColor.YELLOW);
+            bossBar.setProgress(Math.max(0.0, Math.min(1.0, wait / (double) totalWait)));
+            bossBar.setTitle(ColorUtil.color("&b&lГейзер &8| " + rarityLabelMasculine()
+                    + " &8| &e" + ColorUtil.formatDuration(wait)));
+        } else {
+            long total = Math.max(1L, eventEndEpochSeconds - unlockAtEpoch);
+            bossBar.setColor(BarColor.GREEN);
+            bossBar.setProgress(Math.max(0.0, Math.min(1.0, left / (double) total)));
+            bossBar.setTitle(ColorUtil.color("&b&lГейзер бьёт &8| " + rarityLabelMasculine()
+                    + " &8| &f" + ColorUtil.formatDuration(left)));
+        }
+        if (bossBarSyncCounter++ % 5 == 0) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (plugin.getBedrockService().canParticipate(player)) {
+                    bossBar.addPlayer(player);
+                }
+            }
+        }
+    }
+
+    private void broadcastSpawn() {
+        if (center == null) {
+            return;
+        }
+        int wait = Math.max(10, plugin.getConfig().getInt("wind.unlock-seconds", 600));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┼ &#7DF9FFГейзер &fзаспавнился!"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fРедкость лута этого ивента: " + rarityLabel()));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fВесь лут из жерла будет только этой редкости"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЧерез &#E0C912" + ColorUtil.formatDuration(wait)
+                + " &fжерло откроется"));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fКоординаты: &#E0C912"
+                + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()));
+        Bukkit.broadcastMessage(ColorUtil.color("&e┠ &fЛокатор: &#34D711/event gps"));
+    }
+
+    private Location snapToSurface(Location loc) {
+        World world = loc.getWorld();
+        int x = loc.getBlockX();
+        int z = loc.getBlockZ();
+        int y = world.getHighestBlockYAt(x, z);
+        return new Location(world, x + 0.5, y, z + 0.5);
+    }
+
+    private void setChunksForceLoaded(Location loc, boolean loaded) {
+        if (loc == null || loc.getWorld() == null) {
+            return;
+        }
+        World world = loc.getWorld();
+        int cx = loc.getBlockX() >> 4;
+        int cz = loc.getBlockZ() >> 4;
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                Chunk chunk = world.getChunkAt(cx + dx, cz + dz);
+                chunk.setForceLoaded(loaded);
+                if (loaded) {
+                    chunk.load(true);
+                }
+            }
+        }
+    }
+
+    private static String blockKey(String world, int x, int y, int z) {
+        return world + ":" + x + ":" + y + ":" + z;
+    }
+}

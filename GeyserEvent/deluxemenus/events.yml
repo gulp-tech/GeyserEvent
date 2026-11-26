@@ -1,0 +1,186 @@
+# Меню ивентов DeluxeMenus. Файл: plugins/DeluxeMenus/gui_menus/events.yml
+# gui_menus:
+#   events:
+#     file: events.yml
+
+menu_title: '&8Ивенты сервера'
+open_command:
+  - events
+register_command: true
+size: 45
+
+items:
+  'infernal_rift':
+    material: NETHERITE_AXE
+    slot: 10
+    item_flags:
+      - HIDE_ATTRIBUTES
+      - HIDE_ENCHANTS
+    display_name: '&#FF2E2E&lАдский Разлом'
+    lore:
+      - '&8Цитадель и босс-пиглин'
+      - ''
+      - '&e┠ &fБрутальный пиглин &c3500 ❤&f, урон &c8'
+      - '&e┠ &fПритягивание, отталкивание, стяжка'
+      - '&e┠ &fПриспешники с лутом · &#E0C91220 мин'
+      - ''
+      - '&#34D711» ЛКМ — /event delay'
+      - '&#E0C912» ПКМ — /event gps'
+    left_click_commands:
+      - '[close]'
+      - '[player] event delay'
+    right_click_commands:
+      - '[close]'
+      - '[player] event gps'
+
+  'beach_excavation':
+    material: BRUSH
+    slot: 12
+    item_flags:
+      - HIDE_ATTRIBUTES
+    display_name: '&#FFD614&lПляжные Раскопки'
+    lore:
+      - '&8Пляж 31×31 и археолог'
+      - ''
+      - '&e┠ &fЖитель выдаёт кисточки: обычная / эпик / легенда'
+      - '&e┠ &fЛимит 3 кисточки · вне зоны пропадают'
+      - ''
+      - '&#34D711» ЛКМ — /event delay'
+      - '&#E0C912» ПКМ — /event gps'
+    left_click_commands:
+      - '[close]'
+      - '[player] event delay'
+    right_click_commands:
+      - '[close]'
+      - '[player] event gps'
+
+  'alchemist_cauldron':
+    material: BREWING_STAND
+    slot: 14
+    item_flags:
+      - HIDE_ATTRIBUTES
+    display_name: '&#C850FF&lКотёл Алхимика'
+    lore:
+      - '&8Болото и реагенты'
+      - ''
+      - '&e┠ &fСрывай реагенты, кликай по алхимику или котлу'
+      - '&e┠ &fОбычный / эпик / легенда · лимит 3'
+      - ''
+      - '&#34D711» ЛКМ — /event delay'
+      - '&#E0C912» ПКМ — /event gps'
+    left_click_commands:
+      - '[close]'
+      - '[player] event delay'
+    right_click_commands:
+      - '[close]'
+      - '[player] event gps'
+
+  'ancient_mine':
+    material: ANVIL
+    slot: 16
+    item_flags:
+      - HIDE_ATTRIBUTES
+    display_name: '&#FFB81C&lШахта Древних'
+    lore:
+      - '&8Постоянно на &60 ~ 0'
+      - ''
+      - '&e┠ &fКарьер 45×45, 3D-рюкзак, жеоды у кузнеца'
+      - '&e┠ &fРуда падает на пол, рюкзак 15–160'
+      - ''
+      - '&#34D711» ЛКМ — /event backpack'
+      - '&#E0C912» ПКМ — /event gps'
+    left_click_commands:
+      - '[close]'
+      - '[player] event backpack'
+    right_click_commands:
+      - '[close]'
+      - '[player] event gps'
+
+
+  'wind_heart':
+    material: ENDER_CHEST
+    slot: 21
+    item_flags:
+      - HIDE_ATTRIBUTES
+    display_name: '&#7DF9FF&lДревний клад'
+    lore:
+      - '&8Руины и сундук-ловушка'
+      - ''
+      - '&e┠ &fКликни сундук — &#E0C9125 мин&f дрожи, потом лут'
+      - '&e┠ &fСтарт: &#E0C912/klad &f· &#E0C91220 мин'
+      - ''
+      - '&#34D711» ЛКМ — /event delay'
+      - '&#E0C912» ПКМ — /event gps'
+    left_click_commands:
+      - '[close]'
+      - '[player] event delay'
+    right_click_commands:
+      - '[close]'
+      - '[player] event gps'
+
+
+
+  'fishing_pond':
+    material: FISHING_ROD
+    slot: 28
+    item_flags:
+      - HIDE_ATTRIBUTES
+    display_name: '&b&lРыбалка'
+    lore:
+      - '&8Пруд и рыбак'
+      - ''
+      - '&e┠ &fВозьми удочку у NPC: обычная / эпик / легенда'
+      - '&e┠ &fЛут настраивается в &#E0C912/rift menu'
+      - '&e┠ &fСтарт: &#E0C912/fishing &f· &#E0C9128 мин'
+      - ''
+      - '&#34D711» ЛКМ — /event delay'
+      - '&#E0C912» ПКМ — /event gps'
+    left_click_commands:
+      - '[close]'
+      - '[player] event delay'
+    right_click_commands:
+      - '[close]'
+      - '[player] event gps'
+
+  'event_delay':
+    material: CLOCK
+    slot: 38
+    display_name: '&#34D711&lВремя до ивента'
+    lore:
+      - '&7/event delay'
+      - ''
+      - '&e┠ &fТаймер следующего ивента'
+      - '&e┠ &fили координаты активного'
+    left_click_commands:
+      - '[close]'
+      - '[player] event delay'
+    right_click_commands:
+      - '[close]'
+      - '[player] event delay'
+
+  'event_gps':
+    material: RECOVERY_COMPASS
+    slot: 40
+    display_name: '&#E0C912&lGPS-локатор'
+    lore:
+      - '&7/event gps'
+      - ''
+      - '&e┠ &fСтрелка до ивента'
+      - '&e┠ &7Нет ивента — шахта 0 ~ 0'
+    left_click_commands:
+      - '[close]'
+      - '[player] event gps'
+    right_click_commands:
+      - '[close]'
+      - '[player] event gps'
+
+  'close_menu':
+    material: BARRIER
+    slot: 42
+    display_name: '&c&lЗакрыть'
+    lore:
+      - '&7Закрыть окно'
+    left_click_commands:
+      - '[close]'
+    right_click_commands:
+      - '[close]'
