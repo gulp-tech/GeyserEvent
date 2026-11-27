@@ -23,9 +23,11 @@ import ru.geyserevent.util.VanillaEventLoot;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -123,8 +125,7 @@ public class BrushLootManager {
             brushUses.put(tier, Math.max(1, cfg.getInt(brushBasePath + ".uses", tier.getDefaultUses())));
 
             List<BrushLootEntry> brushEntries = loadLootListFromConfig(cfg, brushBasePath + ".loot");
-            if (brushEntries.isEmpty()) {
-                brushEntries.addAll(getDefaultLootForTier(tier));
+            if (fillOrMergeBrush(brushEntries, getDefaultLootForTier(tier))) {
                 saveTierLootToConfig(tier, brushEntries, LootCategory.EXCAVATION);
             }
             lootByTier.put(tier, brushEntries);
@@ -134,8 +135,7 @@ public class BrushLootManager {
             reagentWeights.put(tier, Math.max(1.0, cfg.getDouble(reagentBasePath + ".chance", defaultWeight)));
 
             List<BrushLootEntry> cauldronEntries = loadLootListFromConfig(cfg, reagentBasePath + ".loot");
-            if (cauldronEntries.isEmpty()) {
-                cauldronEntries.addAll(getDefaultLootForTier(tier));
+            if (fillOrMergeBrush(cauldronEntries, getDefaultLootForTier(tier))) {
                 saveTierLootToConfig(tier, cauldronEntries, LootCategory.CAULDRON);
             }
             cauldronLootByTier.put(tier, cauldronEntries);
@@ -145,8 +145,7 @@ public class BrushLootManager {
             geodeWeights.put(tier, Math.max(1.0, cfg.getDouble(geodeBasePath + ".chance", defaultWeight)));
 
             List<BrushLootEntry> mineEntries = loadLootListFromConfig(cfg, geodeBasePath + ".loot");
-            if (mineEntries.isEmpty()) {
-                mineEntries.addAll(getDefaultLootForTier(tier));
+            if (fillOrMergeBrush(mineEntries, getDefaultLootForTier(tier))) {
                 saveTierLootToConfig(tier, mineEntries, LootCategory.MINE);
             }
             mineLootByTier.put(tier, mineEntries);
@@ -155,8 +154,7 @@ public class BrushLootManager {
             fishingWeights.put(tier, Math.max(1.0, cfg.getDouble(fishingBasePath + ".chance", defaultWeight)));
             fishingUses.put(tier, Math.max(1, cfg.getInt(fishingBasePath + ".uses", tier.getDefaultUses() + 2)));
             List<BrushLootEntry> fishingEntries = loadLootListFromConfig(cfg, fishingBasePath + ".loot");
-            if (fishingEntries.isEmpty()) {
-                fishingEntries.addAll(getDefaultFishingLootForTier(tier));
+            if (fillOrMergeBrush(fishingEntries, getDefaultFishingLootForTier(tier))) {
                 saveTierLootToConfig(tier, fishingEntries, LootCategory.FISHING);
             }
             fishingLootByTier.put(tier, fishingEntries);
@@ -200,6 +198,34 @@ public class BrushLootManager {
             list.add(new BrushLootEntry(entry.item().clone(), entry.chance()));
         }
         return list;
+    }
+
+    private boolean fillOrMergeBrush(List<BrushLootEntry> current, List<BrushLootEntry> defaults) {
+        if (current.isEmpty()) {
+            current.addAll(defaults);
+            return true;
+        }
+        Set<String> have = new HashSet<>();
+        for (BrushLootEntry entry : current) {
+            String sign = VanillaEventLoot.signature(entry.item());
+            if (!sign.isEmpty()) {
+                have.add(sign);
+            }
+        }
+        boolean changed = false;
+        for (BrushLootEntry extra : defaults) {
+            if (current.size() >= VanillaEventLoot.MAX_SLOTS) {
+                break;
+            }
+            String sign = VanillaEventLoot.signature(extra.item());
+            if (sign.isEmpty() || have.contains(sign)) {
+                continue;
+            }
+            current.add(new BrushLootEntry(extra.item().clone(), extra.chance()));
+            have.add(sign);
+            changed = true;
+        }
+        return changed;
     }
 
     public BrushTier rollRandomBrushTier() {

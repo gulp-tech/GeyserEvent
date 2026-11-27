@@ -12,9 +12,11 @@ import ru.geyserevent.util.VanillaEventLoot;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Конфигурация плагина GeyserEvent v1.4.0 («Адский Разлом» и «Пляжные Раскопки»).
@@ -812,8 +814,7 @@ public class PluginConfig {
                 }
             }
         }
-        if (this.alienChestLoot.isEmpty()) {
-            this.alienChestLoot.addAll(seedVanillaSection(cfg, "alien.chests.loot", VanillaEventLoot.epic()));
+        if (fillOrMergeVanilla(cfg, "alien.chests.loot", this.alienChestLoot, VanillaEventLoot.epic())) {
             plugin.saveConfig();
         }
 
@@ -964,8 +965,7 @@ public class PluginConfig {
     private void loadSkibidiLoot(FileConfiguration cfg) {
         this.skibidiLoot.clear();
         this.skibidiLoot.addAll(readChanceLoot(cfg.getConfigurationSection("skibidi.loot")));
-        if (this.skibidiLoot.isEmpty()) {
-            this.skibidiLoot.addAll(seedVanillaSection(cfg, "skibidi.loot", VanillaEventLoot.epic()));
+        if (fillOrMergeVanilla(cfg, "skibidi.loot", this.skibidiLoot, VanillaEventLoot.epic())) {
             plugin.saveConfig();
         }
     }
@@ -974,31 +974,30 @@ public class PluginConfig {
         this.windLoot.clear();
         this.windLootTiers.clear();
         ConfigurationSection loot = cfg.getConfigurationSection("wind.loot");
-        if (loot != null && (loot.isConfigurationSection("common")
+        boolean tiered = loot != null && (loot.isConfigurationSection("common")
                 || loot.isConfigurationSection("rare")
                 || loot.isConfigurationSection("epic")
-                || loot.isConfigurationSection("legendary"))) {
+                || loot.isConfigurationSection("legendary"));
+        boolean wrote = false;
+        if (tiered) {
             for (String tier : List.of("common", "rare", "epic", "legendary")) {
-                List<AlienLootItem> items = readChanceLoot(loot.getConfigurationSection(tier));
+                List<AlienLootItem> items = new ArrayList<>(readChanceLoot(loot.getConfigurationSection(tier)));
+                if (fillOrMergeVanilla(cfg, "wind.loot." + tier, items, VanillaEventLoot.fourTier(tier))) {
+                    wrote = true;
+                }
                 this.windLootTiers.put(tier, items);
                 this.windLoot.addAll(items);
             }
         } else {
-            List<AlienLootItem> items = readChanceLoot(loot);
+            List<AlienLootItem> items = new ArrayList<>(readChanceLoot(loot));
+            if (fillOrMergeVanilla(cfg, "wind.loot", items, VanillaEventLoot.epic())) {
+                wrote = true;
+            }
             this.windLootTiers.put("common", items);
             this.windLoot.addAll(items);
         }
-        if (this.windLoot.isEmpty()) {
-            boolean wrote = false;
-            for (String tier : List.of("common", "rare", "epic", "legendary")) {
-                List<AlienLootItem> seeded = seedVanillaSection(cfg, "wind.loot." + tier, VanillaEventLoot.fourTier(tier));
-                this.windLootTiers.put(tier, seeded);
-                this.windLoot.addAll(seeded);
-                wrote = true;
-            }
-            if (wrote) {
-                plugin.saveConfig();
-            }
+        if (wrote) {
+            plugin.saveConfig();
         }
     }
 
@@ -1007,16 +1006,16 @@ public class PluginConfig {
         ConfigurationSection loot = cfg.getConfigurationSection("newyear.loot");
         if (loot != null) {
             for (String tier : List.of("common", "rare", "epic", "legendary")) {
-                this.newyearLootTiers.put(tier, readChanceLoot(loot.getConfigurationSection(tier)));
+                this.newyearLootTiers.put(tier, new ArrayList<>(readChanceLoot(loot.getConfigurationSection(tier))));
             }
         }
         boolean wrote = false;
         for (String tier : List.of("common", "rare", "epic", "legendary")) {
-            if (this.newyearLootTiers.getOrDefault(tier, List.of()).isEmpty()) {
-                List<AlienLootItem> seeded = seedVanillaSection(cfg, "newyear.loot." + tier, VanillaEventLoot.fourTier(tier));
-                this.newyearLootTiers.put(tier, seeded);
+            List<AlienLootItem> items = new ArrayList<>(this.newyearLootTiers.getOrDefault(tier, List.of()));
+            if (fillOrMergeVanilla(cfg, "newyear.loot." + tier, items, VanillaEventLoot.fourTier(tier))) {
                 wrote = true;
             }
+            this.newyearLootTiers.put(tier, items);
         }
         if (wrote) {
             plugin.saveConfig();
@@ -1026,10 +1025,17 @@ public class PluginConfig {
     private void loadRonaldoLoot(FileConfiguration cfg) {
         this.ronaldoLoot.clear();
         this.ronaldoLoot.addAll(readChanceLoot(cfg.getConfigurationSection("ronaldo.loot")));
-        if (this.ronaldoLoot.isEmpty()) {
-            this.ronaldoLoot.addAll(seedVanillaSection(cfg, "ronaldo.loot", VanillaEventLoot.epic()));
+        if (fillOrMergeVanilla(cfg, "ronaldo.loot", this.ronaldoLoot, VanillaEventLoot.epic())) {
             plugin.saveConfig();
         }
+    }
+
+    private boolean fillOrMergeVanilla(FileConfiguration cfg, String path, List<AlienLootItem> current, List<VanillaEventLoot.Entry> vanilla) {
+        if (current.isEmpty()) {
+            current.addAll(seedVanillaSection(cfg, path, vanilla));
+            return true;
+        }
+        return mergeVanillaSection(cfg, path, current, vanilla);
     }
 
     private List<AlienLootItem> seedVanillaSection(FileConfiguration cfg, String path, List<VanillaEventLoot.Entry> entries) {
@@ -1037,17 +1043,48 @@ public class PluginConfig {
         int i = 0;
         for (VanillaEventLoot.Entry entry : entries) {
             i++;
-            String key = "v" + i;
-            ItemStack stack = entry.item().clone();
-            int amount = Math.max(1, stack.getAmount());
-            cfg.set(path + "." + key + ".item", stack);
-            cfg.set(path + "." + key + ".material", stack.getType().name());
-            cfg.set(path + "." + key + ".min", amount);
-            cfg.set(path + "." + key + ".max", amount);
-            cfg.set(path + "." + key + ".chance", entry.chance());
-            list.add(new AlienLootItem(key, stack.getType(), amount, amount, entry.chance(), false, null, List.of(), Map.of(), stack));
+            appendVanillaItem(cfg, path, "v" + i, entry, list);
         }
         return list;
+    }
+
+    private boolean mergeVanillaSection(FileConfiguration cfg, String path, List<AlienLootItem> current, List<VanillaEventLoot.Entry> vanilla) {
+        Set<String> have = new HashSet<>();
+        for (AlienLootItem item : current) {
+            if (item.customItem() != null && !item.customItem().getType().isAir()) {
+                have.add(VanillaEventLoot.signature(item.customItem()));
+            } else if (item.material() != null) {
+                have.add(item.material().name());
+            }
+        }
+        boolean wrote = false;
+        int i = 0;
+        for (VanillaEventLoot.Entry entry : vanilla) {
+            if (current.size() >= VanillaEventLoot.MAX_SLOTS) {
+                break;
+            }
+            String sign = VanillaEventLoot.signature(entry.item());
+            if (sign.isEmpty() || have.contains(sign)) {
+                continue;
+            }
+            i++;
+            Material mat = entry.item().getType();
+            appendVanillaItem(cfg, path, "g_" + mat.name().toLowerCase(Locale.ROOT) + "_" + i, entry, current);
+            have.add(sign);
+            wrote = true;
+        }
+        return wrote;
+    }
+
+    private void appendVanillaItem(FileConfiguration cfg, String path, String key, VanillaEventLoot.Entry entry, List<AlienLootItem> list) {
+        ItemStack stack = entry.item().clone();
+        int amount = Math.max(1, stack.getAmount());
+        cfg.set(path + "." + key + ".item", stack);
+        cfg.set(path + "." + key + ".material", stack.getType().name());
+        cfg.set(path + "." + key + ".min", amount);
+        cfg.set(path + "." + key + ".max", amount);
+        cfg.set(path + "." + key + ".chance", entry.chance());
+        list.add(new AlienLootItem(key, stack.getType(), amount, amount, entry.chance(), false, null, List.of(), Map.of(), stack));
     }
 
     private List<AlienLootItem> readChanceLoot(ConfigurationSection lootSec) {
