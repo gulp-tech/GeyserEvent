@@ -851,14 +851,9 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 sendMenuUsage(player, label);
                 return;
             }
-            if (args.length >= 4) {
-                BrushTier t = BrushTier.fromString(args[3]);
-                if (t != null) {
-                    openEventLootMenu(player, event, kind, t);
-                    return;
-                }
-            }
-            openEventLootMenu(player, event, kind, null);
+            Integer rarity = args.length >= 4 ? parseRarityNumber(args[3]) : null;
+            BrushTier t = args.length >= 4 ? BrushTier.fromString(args[3]) : null;
+            openEventLootMenu(player, event, kind, t, rarity);
             return;
         }
 
@@ -881,10 +876,16 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
 
         BrushLootGuiManager.GuiKind mode = BrushLootGuiManager.GuiKind.LOOT;
         BrushTier eventTier = null;
+        Integer rarity = null;
         for (int i = 2; i < args.length; i++) {
             BrushLootGuiManager.GuiKind parsedKind = parseGuiKind(args[i]);
             if (parsedKind != null) {
                 mode = parsedKind;
+                continue;
+            }
+            Integer parsedRarity = parseRarityNumber(args[i]);
+            if (parsedRarity != null) {
+                rarity = parsedRarity;
                 continue;
             }
             BrushTier parsedTier = BrushTier.fromString(args[i]);
@@ -892,7 +893,20 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 eventTier = parsedTier;
             }
         }
-        openEventLootMenu(player, event, mode, eventTier);
+        openEventLootMenu(player, event, mode, eventTier, rarity);
+    }
+
+    private Integer parseRarityNumber(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        return switch (raw.trim().toLowerCase(Locale.ROOT)) {
+            case "1", "i" -> 1;
+            case "2", "ii" -> 2;
+            case "3", "iii" -> 3;
+            case "4", "iv" -> 4;
+            default -> null;
+        };
     }
 
     private BrushLootGuiManager.GuiKind parseGuiKind(String raw) {
@@ -923,8 +937,17 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         };
     }
 
-    private void openEventLootMenu(Player player, String event, BrushLootGuiManager.GuiKind kind, BrushTier tier) {
+    private void openEventLootMenu(Player player, String event, BrushLootGuiManager.GuiKind kind, BrushTier tier, Integer rarity) {
         BrushLootGuiManager gui = plugin.getBrushLootGuiManager();
+        if (("geyser".equals(event) || "newyear".equals(event)) && (rarity != null || tier != null)) {
+            int n = rarity != null ? rarity : switch (tier) {
+                case COMMON -> 1;
+                case EPIC -> 3;
+                case LEGENDARY -> 4;
+            };
+            openNumberedPool(player, event, kind, n);
+            return;
+        }
         LootCategory category = switch (event) {
             case "excavation" -> LootCategory.EXCAVATION;
             case "cauldron" -> LootCategory.CAULDRON;
@@ -933,8 +956,12 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
             default -> null;
         };
         if (category != null) {
-            if (tier != null) {
-                gui.openTierMenu(player, tier, category, kind);
+            BrushTier resolved = tier;
+            if (resolved == null && rarity != null) {
+                resolved = rarity <= 1 ? BrushTier.COMMON : rarity == 2 ? BrushTier.EPIC : BrushTier.LEGENDARY;
+            }
+            if (resolved != null) {
+                gui.openTierMenu(player, resolved, category, kind);
             } else {
                 switch (event) {
                     case "excavation" -> gui.openExcavationMenu(player, kind);
@@ -955,18 +982,55 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void openNumberedPool(Player player, String event, BrushLootGuiManager.GuiKind kind, int rarity) {
+        int n = Math.max(1, Math.min(4, rarity));
+        String[] keys = {"common", "rare", "epic", "legendary"};
+        String key = keys[n - 1];
+        BrushLootGuiManager gui = plugin.getBrushLootGuiManager();
+        if ("geyser".equals(event)) {
+            Material icon = switch (n) {
+                case 1 -> Material.IRON_INGOT;
+                case 2 -> Material.LAPIS_LAZULI;
+                case 3 -> Material.AMETHYST_SHARD;
+                default -> Material.GOLD_INGOT;
+            };
+            String title = switch (n) {
+                case 1 -> "Гейзер · обычный";
+                case 2 -> "Гейзер · редкий";
+                case 3 -> "Гейзер · эпический";
+                default -> "Гейзер · легендарный";
+            };
+            gui.openFlatLootMenu(player, "wind.loot." + key, title, icon, false, kind);
+            return;
+        }
+        Material icon = switch (n) {
+            case 1 -> Material.WHITE_SHULKER_BOX;
+            case 2 -> Material.LIGHT_BLUE_SHULKER_BOX;
+            case 3 -> Material.MAGENTA_SHULKER_BOX;
+            default -> Material.RED_SHULKER_BOX;
+        };
+        String title = switch (n) {
+            case 1 -> "Новый год · обычный";
+            case 2 -> "Новый год · редкий";
+            case 3 -> "Новый год · эпический";
+            default -> "Новый год · легендарный";
+        };
+        gui.openFlatLootMenu(player, "newyear.loot." + key, title, icon, false, kind);
+    }
+
     private void sendMenuUsage(Player player, String label) {
         player.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fхаб: лут или шансы"));
         player.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu <ивент> loot"));
         player.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu <ивент> chances"));
         player.sendMessage(ColorUtil.color("&7ивенты: excavation, cauldron, mine, fishing, geyser, newyear, skibidi, ronaldo"));
-        player.sendMessage(ColorUtil.color("&7пример: &#E0C912/" + label + " menu fishing loot"));
-        player.sendMessage(ColorUtil.color("&7пример: &#E0C912/" + label + " menu mine chances"));
+        player.sendMessage(ColorUtil.color("&7редкость: &f1 &7обычный &8/ &f2 &7редкий/эпик &8/ &f3 &7эпик/легенда &8/ &f4 &7легенда (нг/гейзер)"));
+        player.sendMessage(ColorUtil.color("&7пример: &#E0C912/" + label + " menu newyear loot 1"));
+        player.sendMessage(ColorUtil.color("&7пример: &#E0C912/" + label + " menu fishing chances 2"));
     }
 
     private void sendAdminHelp(CommandSender sender, String label, PluginConfig cfg) {
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu &8— &fХаб: настройка лута или шансов"));
-        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu <ивент> loot|chances &8— &fсразу меню ивента"));
+        sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " menu <ивент> loot|chances [1|2|3] &8— &fлут/шансы редкости"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/minemenu &8(&#E0C912/" + label + " minemenu&8) — &fGUI-меню лута «Шахты Древних (0 ~ 0)»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/cauldronmenu &8(&#E0C912/" + label + " cauldronmenu&8) — &fGUI-меню лута «Котла Алхимика»"));
         sender.sendMessage(ColorUtil.color("&e┠ &#E0C912/" + label + " mine <regen|spawn|set-here|remove> &8— &fУправление «Шахтой Древних»"));
@@ -1278,6 +1342,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return filterPrefix(Arrays.asList(
                         "loot", "chances", "chans",
                         "excavation", "cauldron", "mine", "fishing", "geyser", "newyear", "skibidi", "ronaldo",
+                        "1", "2", "3", "4",
                         "common", "epic", "legendary", "обычная", "эпическая", "легендарная"
                 ), args[1]);
             }
@@ -1325,6 +1390,7 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
                 return filterPrefix(Arrays.asList(
                         "loot", "chances", "chans",
                         "excavation", "cauldron", "mine", "fishing", "geyser", "newyear", "skibidi", "ronaldo",
+                        "1", "2", "3", "4",
                         "common", "epic", "legendary", "обычная", "эпическая", "легендарная"
                 ), args[2]);
             }
@@ -1336,6 +1402,10 @@ public class RiftCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 4) {
             String sub = args[0].toLowerCase(Locale.ROOT);
+            if (sub.equals("menu") || sub.equals("gui")) {
+                return filterPrefix(Arrays.asList("1", "2", "3", "4", "loot", "chances", "chans",
+                        "common", "epic", "legendary", "обычная", "эпическая", "легендарная"), args[3]);
+            }
             if (sub.equals("copylot") || sub.equals("copyloot") || sub.equals("cloneloot")) {
                 return filterPrefix(Arrays.asList("обычная", "эпическая", "легендарная", "common", "epic", "legendary"), args[3]);
             }
