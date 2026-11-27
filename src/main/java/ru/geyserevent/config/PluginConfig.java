@@ -4,9 +4,11 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
+import org.bukkit.inventory.ItemStack;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.event.EventType;
 import ru.geyserevent.util.ColorUtil;
+import ru.geyserevent.util.VanillaEventLoot;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -811,9 +813,8 @@ public class PluginConfig {
             }
         }
         if (this.alienChestLoot.isEmpty()) {
-            this.alienChestLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 3, 60.0, false, null, List.of(), Map.of()));
-            this.alienChestLoot.add(new AlienLootItem("emerald", Material.EMERALD, 2, 5, 70.0, false, null, List.of(), Map.of()));
-            this.alienChestLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 20.0, true, null, List.of(), Map.of()));
+            this.alienChestLoot.addAll(seedVanillaSection(cfg, "alien.chests.loot", VanillaEventLoot.epic()));
+            plugin.saveConfig();
         }
 
         this.alienRewardsEnabled = cfg.getBoolean("alien.rewards.enabled", true);
@@ -964,11 +965,8 @@ public class PluginConfig {
         this.skibidiLoot.clear();
         this.skibidiLoot.addAll(readChanceLoot(cfg.getConfigurationSection("skibidi.loot")));
         if (this.skibidiLoot.isEmpty()) {
-            this.skibidiLoot.add(new AlienLootItem("iron", Material.IRON_INGOT, 3, 8, 80.0, false, null, List.of(), Map.of()));
-            this.skibidiLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 2, 5, 60.0, false, null, List.of(), Map.of()));
-            this.skibidiLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 1, 3, 30.0, false, null, List.of(), Map.of()));
-            this.skibidiLoot.add(new AlienLootItem("emerald", Material.EMERALD, 1, 4, 35.0, false, null, List.of(), Map.of()));
-            this.skibidiLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 10.0, true, null, List.of(), Map.of()));
+            this.skibidiLoot.addAll(seedVanillaSection(cfg, "skibidi.loot", VanillaEventLoot.epic()));
+            plugin.saveConfig();
         }
     }
 
@@ -991,8 +989,16 @@ public class PluginConfig {
             this.windLoot.addAll(items);
         }
         if (this.windLoot.isEmpty()) {
-            this.windLoot.addAll(this.alienChestLoot);
-            this.windLootTiers.put("common", new ArrayList<>(this.alienChestLoot));
+            boolean wrote = false;
+            for (String tier : List.of("common", "rare", "epic", "legendary")) {
+                List<AlienLootItem> seeded = seedVanillaSection(cfg, "wind.loot." + tier, VanillaEventLoot.fourTier(tier));
+                this.windLootTiers.put(tier, seeded);
+                this.windLoot.addAll(seeded);
+                wrote = true;
+            }
+            if (wrote) {
+                plugin.saveConfig();
+            }
         }
     }
 
@@ -1004,11 +1010,16 @@ public class PluginConfig {
                 this.newyearLootTiers.put(tier, readChanceLoot(loot.getConfigurationSection(tier)));
             }
         }
-        if (this.newyearLootTiers.getOrDefault("common", List.of()).isEmpty()) {
-            this.newyearLootTiers.put("common", List.of(
-                    new AlienLootItem("cookie", Material.COOKIE, 4, 12, 80.0, false, null, List.of(), Map.of()),
-                    new AlienLootItem("snow", Material.SNOWBALL, 8, 16, 70.0, false, null, List.of(), Map.of())
-            ));
+        boolean wrote = false;
+        for (String tier : List.of("common", "rare", "epic", "legendary")) {
+            if (this.newyearLootTiers.getOrDefault(tier, List.of()).isEmpty()) {
+                List<AlienLootItem> seeded = seedVanillaSection(cfg, "newyear.loot." + tier, VanillaEventLoot.fourTier(tier));
+                this.newyearLootTiers.put(tier, seeded);
+                wrote = true;
+            }
+        }
+        if (wrote) {
+            plugin.saveConfig();
         }
     }
 
@@ -1016,10 +1027,27 @@ public class PluginConfig {
         this.ronaldoLoot.clear();
         this.ronaldoLoot.addAll(readChanceLoot(cfg.getConfigurationSection("ronaldo.loot")));
         if (this.ronaldoLoot.isEmpty()) {
-            this.ronaldoLoot.add(new AlienLootItem("gold", Material.GOLD_INGOT, 4, 10, 80.0, false, null, List.of(), Map.of()));
-            this.ronaldoLoot.add(new AlienLootItem("diamond", Material.DIAMOND, 2, 5, 35.0, false, null, List.of(), Map.of()));
-            this.ronaldoLoot.add(new AlienLootItem("netherite", Material.NETHERITE_INGOT, 1, 1, 12.0, true, null, List.of(), Map.of()));
+            this.ronaldoLoot.addAll(seedVanillaSection(cfg, "ronaldo.loot", VanillaEventLoot.epic()));
+            plugin.saveConfig();
         }
+    }
+
+    private List<AlienLootItem> seedVanillaSection(FileConfiguration cfg, String path, List<VanillaEventLoot.Entry> entries) {
+        List<AlienLootItem> list = new ArrayList<>();
+        int i = 0;
+        for (VanillaEventLoot.Entry entry : entries) {
+            i++;
+            String key = "v" + i;
+            ItemStack stack = entry.item().clone();
+            int amount = Math.max(1, stack.getAmount());
+            cfg.set(path + "." + key + ".item", stack);
+            cfg.set(path + "." + key + ".material", stack.getType().name());
+            cfg.set(path + "." + key + ".min", amount);
+            cfg.set(path + "." + key + ".max", amount);
+            cfg.set(path + "." + key + ".chance", entry.chance());
+            list.add(new AlienLootItem(key, stack.getType(), amount, amount, entry.chance(), false, null, List.of(), Map.of(), stack));
+        }
+        return list;
     }
 
     private List<AlienLootItem> readChanceLoot(ConfigurationSection lootSec) {

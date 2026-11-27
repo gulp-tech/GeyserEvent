@@ -19,6 +19,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.util.ColorUtil;
+import ru.geyserevent.util.VanillaEventLoot;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -124,6 +125,7 @@ public class BrushLootManager {
             List<BrushLootEntry> brushEntries = loadLootListFromConfig(cfg, brushBasePath + ".loot");
             if (brushEntries.isEmpty()) {
                 brushEntries.addAll(getDefaultLootForTier(tier));
+                saveTierLootToConfig(tier, brushEntries, LootCategory.EXCAVATION);
             }
             lootByTier.put(tier, brushEntries);
 
@@ -134,6 +136,7 @@ public class BrushLootManager {
             List<BrushLootEntry> cauldronEntries = loadLootListFromConfig(cfg, reagentBasePath + ".loot");
             if (cauldronEntries.isEmpty()) {
                 cauldronEntries.addAll(getDefaultLootForTier(tier));
+                saveTierLootToConfig(tier, cauldronEntries, LootCategory.CAULDRON);
             }
             cauldronLootByTier.put(tier, cauldronEntries);
 
@@ -144,6 +147,7 @@ public class BrushLootManager {
             List<BrushLootEntry> mineEntries = loadLootListFromConfig(cfg, geodeBasePath + ".loot");
             if (mineEntries.isEmpty()) {
                 mineEntries.addAll(getDefaultLootForTier(tier));
+                saveTierLootToConfig(tier, mineEntries, LootCategory.MINE);
             }
             mineLootByTier.put(tier, mineEntries);
 
@@ -153,6 +157,7 @@ public class BrushLootManager {
             List<BrushLootEntry> fishingEntries = loadLootListFromConfig(cfg, fishingBasePath + ".loot");
             if (fishingEntries.isEmpty()) {
                 fishingEntries.addAll(getDefaultFishingLootForTier(tier));
+                saveTierLootToConfig(tier, fishingEntries, LootCategory.FISHING);
             }
             fishingLootByTier.put(tier, fishingEntries);
         }
@@ -191,33 +196,8 @@ public class BrushLootManager {
 
     private List<BrushLootEntry> getDefaultLootForTier(BrushTier tier) {
         List<BrushLootEntry> list = new ArrayList<>();
-        switch (tier) {
-            case COMMON -> {
-                list.add(new BrushLootEntry(new ItemStack(Material.GOLD_INGOT, 4), 45.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.IRON_INGOT, 6), 50.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.EMERALD, 3), 40.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.DIAMOND, 2), 25.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.GOLDEN_APPLE, 1), 20.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.EXPERIENCE_BOTTLE, 8), 35.0));
-            }
-            case EPIC -> {
-                list.add(new BrushLootEntry(new ItemStack(Material.DIAMOND, 5), 45.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.GOLD_BLOCK, 2), 40.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.GOLDEN_APPLE, 3), 35.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.EMERALD_BLOCK, 2), 30.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.NETHERITE_SCRAP, 1), 18.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.TOTEM_OF_UNDYING, 1), 15.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.EXPERIENCE_BOTTLE, 16), 35.0));
-            }
-            case LEGENDARY -> {
-                list.add(new BrushLootEntry(new ItemStack(Material.NETHERITE_INGOT, 1), 25.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.ANCIENT_DEBRIS, 2), 35.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.DIAMOND_BLOCK, 2), 40.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1), 15.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.TOTEM_OF_UNDYING, 1), 30.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE, 1), 25.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.NETHERITE_PICKAXE, 1), 10.0));
-            }
+        for (VanillaEventLoot.Entry entry : VanillaEventLoot.threeTier(tier.getConfigKey())) {
+            list.add(new BrushLootEntry(entry.item().clone(), entry.chance()));
         }
         return list;
     }
@@ -624,27 +604,18 @@ public class BrushLootManager {
 
     private List<BrushLootEntry> getDefaultFishingLootForTier(BrushTier tier) {
         List<BrushLootEntry> list = new ArrayList<>();
-        switch (tier) {
-            case COMMON -> {
-                list.add(new BrushLootEntry(new ItemStack(Material.COD, 3), 45.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.SALMON, 2), 35.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.IRON_INGOT, 3), 25.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.PRISMARINE_SHARD, 2), 20.0));
-            }
-            case EPIC -> {
-                list.add(new BrushLootEntry(new ItemStack(Material.SALMON, 4), 35.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.GOLD_INGOT, 4), 40.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.PRISMARINE_CRYSTALS, 3), 30.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.DIAMOND, 1), 18.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.NAUTILUS_SHELL, 1), 12.0));
-            }
-            case LEGENDARY -> {
-                list.add(new BrushLootEntry(new ItemStack(Material.GOLDEN_APPLE, 1), 25.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.DIAMOND, 2), 35.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.HEART_OF_THE_SEA, 1), 15.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.EMERALD, 6), 30.0));
-                list.add(new BrushLootEntry(new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1), 6.0));
-            }
+        for (VanillaEventLoot.Entry entry : VanillaEventLoot.threeTier(tier.getConfigKey())) {
+            list.add(new BrushLootEntry(entry.item().clone(), entry.chance()));
+        }
+        if (tier == BrushTier.COMMON) {
+            list.add(new BrushLootEntry(new ItemStack(Material.COD, 8), 30.0));
+            list.add(new BrushLootEntry(new ItemStack(Material.SALMON, 6), 25.0));
+        } else if (tier == BrushTier.EPIC) {
+            list.add(new BrushLootEntry(new ItemStack(Material.NAUTILUS_SHELL, 1), 14.0));
+            list.add(new BrushLootEntry(new ItemStack(Material.PRISMARINE_CRYSTALS, 8), 22.0));
+        } else {
+            list.add(new BrushLootEntry(new ItemStack(Material.HEART_OF_THE_SEA, 1), 12.0));
+            list.add(new BrushLootEntry(new ItemStack(Material.TRIDENT, 1), 8.0));
         }
         return list;
     }
