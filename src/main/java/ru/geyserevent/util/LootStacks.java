@@ -21,6 +21,11 @@ public final class LootStacks {
     }
 
     public static ItemStack fromAlien(PluginConfig.AlienLootItem item, int amount) {
+        if (item.customItem() != null && !item.customItem().getType().isAir()) {
+            ItemStack stack = item.customItem().clone();
+            stack.setAmount(Math.max(1, amount));
+            return stack;
+        }
         return build(item.material(), amount, item.displayName(), item.lore(), item.enchants());
     }
 

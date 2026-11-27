@@ -181,11 +181,26 @@ public class PluginConfig {
             boolean rare,
             String displayName,
             List<String> lore,
-            Map<String, Integer> enchants
+            Map<String, Integer> enchants,
+            org.bukkit.inventory.ItemStack customItem
     ) {
         public AlienLootItem {
             lore = lore == null ? List.of() : lore;
             enchants = enchants == null ? Map.of() : enchants;
+        }
+
+        public AlienLootItem(
+                String key,
+                Material material,
+                int minAmount,
+                int maxAmount,
+                double chancePercent,
+                boolean rare,
+                String displayName,
+                List<String> lore,
+                Map<String, Integer> enchants
+        ) {
+            this(key, material, minAmount, maxAmount, chancePercent, rare, displayName, lore, enchants, null);
         }
     }
 
@@ -1017,7 +1032,15 @@ public class PluginConfig {
             if (itemSec == null) {
                 continue;
             }
-            Material mat = material(itemSec.getString("material", "IRON_INGOT"), Material.IRON_INGOT);
+            org.bukkit.inventory.ItemStack custom = itemSec.getItemStack("item");
+            if (custom != null && custom.getType().isAir()) {
+                custom = null;
+            } else if (custom != null) {
+                custom = custom.clone();
+            }
+            Material mat = custom != null
+                    ? custom.getType()
+                    : material(itemSec.getString("material", "IRON_INGOT"), Material.IRON_INGOT);
             if (mat == null || mat.isAir()) {
                 continue;
             }
@@ -1031,7 +1054,7 @@ public class PluginConfig {
                 lore.add(ColorUtil.color(loreLine));
             }
             Map<String, Integer> enchants = ru.geyserevent.util.LootStacks.readEnchants(itemSec.get("enchants"));
-            list.add(new AlienLootItem(key, mat, min, max, chance, rare, name, lore, enchants));
+            list.add(new AlienLootItem(key, mat, min, max, chance, rare, name, lore, enchants, custom));
         }
         return list;
     }

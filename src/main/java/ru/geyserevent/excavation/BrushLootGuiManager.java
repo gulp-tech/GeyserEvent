@@ -462,21 +462,23 @@ public class BrushLootGuiManager {
         int max = Math.min(entries.size(), 36);
         for (int i = 0; i < max; i++) {
             FlatLootEntry e = entries.get(i);
-            ItemStack item = new ItemStack(e.material == null ? Material.STONE : e.material);
+            ItemStack item = e.stack() != null && !e.stack().getType().isAir()
+                    ? e.stack().clone()
+                    : new ItemStack(e.material == null ? Material.STONE : e.material);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                meta.setDisplayName(ColorUtil.color("&f" + e.material.name() + " &7[" + (int) e.chance + "%]"));
+                List<String> lore = meta.hasLore() && meta.getLore() != null
+                        ? new ArrayList<>(meta.getLore())
+                        : new ArrayList<>();
+                lore.add(ColorUtil.color("&8------------------------"));
+                lore.add(ColorUtil.color("&fШанс: &#34D711" + (int) e.chance + "%"));
+                lore.add(ColorUtil.color("&7Кол-во: &f" + e.min + "&7–&f" + e.max));
                 if (loot) {
-                    meta.setLore(List.of(
-                            ColorUtil.color("&7Мин: &f" + e.min + " &7Макс: &f" + e.max),
-                            ColorUtil.color("&cНажмите, чтобы удалить")
-                    ));
+                    lore.add(ColorUtil.color("&cНажмите, чтобы удалить"));
                 } else {
-                    meta.setLore(List.of(
-                            ColorUtil.color("&7Шанс: &#34D711" + (int) e.chance + "%"),
-                            ColorUtil.color("&7ЛКМ +5% &8· &7ПКМ -5%")
-                    ));
+                    lore.add(ColorUtil.color("&7ЛКМ +5% &8· &7ПКМ -5%"));
                 }
+                meta.setLore(lore);
                 item.setItemMeta(meta);
             }
             inv.setItem(9 + i, item);
@@ -492,7 +494,24 @@ public class BrushLootGuiManager {
         player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.7f, 1.2f);
     }
 
-    private record FlatLootEntry(String key, Material material, int min, int max, double chance) {
+    private record FlatLootEntry(String key, Material material, ItemStack stack, int min, int max, double chance) {
+    }
+
+    @SuppressWarnings("unchecked")
+    private ItemStack readStoredItem(Object raw) {
+        if (raw instanceof ItemStack stack && !stack.getType().isAir()) {
+            return stack.clone();
+        }
+        if (raw instanceof Map<?, ?> map) {
+            try {
+                ItemStack stack = ItemStack.deserialize((Map<String, Object>) map);
+                if (stack != null && !stack.getType().isAir()) {
+                    return stack;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
     }
 
     private List<FlatLootEntry> readFlatLoot(FlatLootHolder holder) {
@@ -509,7 +528,11 @@ public class BrushLootGuiManager {
                 double chance = entry.get("chance") instanceof Number n ? n.doubleValue() : 25.0;
                 int min = entry.get("min") instanceof Number n ? n.intValue() : 1;
                 int max = entry.get("max") instanceof Number n ? n.intValue() : min;
-                out.add(new FlatLootEntry(String.valueOf(i), mat, min, max, chance));
+                ItemStack custom = readStoredItem(entry.get("item"));
+                if (custom != null) {
+                    mat = custom.getType();
+                }
+                out.add(new FlatLootEntry(String.valueOf(i), mat, custom, min, max, chance));
             }
             return out;
         }
@@ -522,13 +545,20 @@ public class BrushLootGuiManager {
             if (item == null) {
                 continue;
             }
-            Material mat = Material.matchMaterial(item.getString("material", "STONE"));
+            ItemStack custom = item.getItemStack("item");
+            if (custom == null || custom.getType().isAir()) {
+                custom = readStoredItem(item.get("item"));
+            }
+            Material mat = custom != null && !custom.getType().isAir()
+                    ? custom.getType()
+                    : Material.matchMaterial(item.getString("material", "STONE"));
             if (mat == null || mat.isAir()) {
                 mat = Material.STONE;
             }
             out.add(new FlatLootEntry(
                     key,
                     mat,
+                    custom,
                     Math.max(1, item.getInt("min", 1)),
                     Math.max(1, item.getInt("max", 1)),
                     item.getDouble("chance", 25.0)
@@ -600,6 +630,9 @@ public class BrushLootGuiManager {
                 return;
             }
             Map<String, Object> newEntry = new HashMap<>();
+            ItemStack stored = clickedItem.clone();
+            stored.setAmount(1);
+            newEntry.put("item", stored);
             newEntry.put("material", clickedItem.getType().name());
             newEntry.put("min", Math.max(1, clickedItem.getAmount()));
             newEntry.put("max", Math.max(1, clickedItem.getAmount()));
@@ -613,6 +646,9 @@ public class BrushLootGuiManager {
                 return;
             }
             String key = "gui_" + Integer.toHexString((int) System.nanoTime());
+            ItemStack stored = clickedItem.clone();
+            stored.setAmount(1);
+            plugin.getConfig().set(holder.path + "." + key + ".item", stored);
             plugin.getConfig().set(holder.path + "." + key + ".material", clickedItem.getType().name());
             plugin.getConfig().set(holder.path + "." + key + ".min", Math.max(1, clickedItem.getAmount()));
             plugin.getConfig().set(holder.path + "." + key + ".max", Math.max(1, clickedItem.getAmount()));
