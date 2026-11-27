@@ -16,6 +16,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import ru.geyserevent.GeyserEventPlugin;
 import ru.geyserevent.excavation.BrushLootManager.LootCategory;
 import ru.geyserevent.util.ColorUtil;
+import ru.geyserevent.util.VanillaEventLoot;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -84,11 +85,17 @@ public class BrushLootGuiManager {
         private final BrushTier tier;
         private final LootCategory category;
         private final GuiKind kind;
+        private final int page;
 
         public TierMenuHolder(BrushTier tier, LootCategory category, GuiKind kind) {
+            this(tier, category, kind, 0);
+        }
+
+        public TierMenuHolder(BrushTier tier, LootCategory category, GuiKind kind, int page) {
             this.tier = tier;
             this.category = category;
             this.kind = kind;
+            this.page = Math.max(0, page);
         }
 
         public BrushTier getTier() {
@@ -102,6 +109,10 @@ public class BrushLootGuiManager {
         public GuiKind getKind() {
             return kind;
         }
+
+        public int getPage() {
+            return page;
+        }
     }
 
     public static class FlatLootHolder extends GuiHolder {
@@ -110,18 +121,28 @@ public class BrushLootGuiManager {
         private final Material icon;
         private final boolean yamlList;
         private final GuiKind kind;
+        private final int page;
         private final List<String> keys = new ArrayList<>();
 
         public FlatLootHolder(String path, String title, Material icon, boolean yamlList, GuiKind kind) {
+            this(path, title, icon, yamlList, kind, 0);
+        }
+
+        public FlatLootHolder(String path, String title, Material icon, boolean yamlList, GuiKind kind, int page) {
             this.path = path;
             this.title = title;
             this.icon = icon;
             this.yamlList = yamlList;
             this.kind = kind;
+            this.page = Math.max(0, page);
         }
 
         public GuiKind getKind() {
             return kind;
+        }
+
+        public int getPage() {
+            return page;
         }
     }
 
@@ -429,8 +450,16 @@ public class BrushLootGuiManager {
 
     @SuppressWarnings("deprecation")
     public void openFlatLootMenu(Player player, String path, String title, Material icon, boolean yamlList, GuiKind kind) {
+        openFlatLootMenu(player, path, title, icon, yamlList, kind, 0);
+    }
+
+    @SuppressWarnings("deprecation")
+    public void openFlatLootMenu(Player player, String path, String title, Material icon, boolean yamlList, GuiKind kind, int page) {
         boolean loot = kind == GuiKind.LOOT;
-        FlatLootHolder holder = new FlatLootHolder(path, title, icon, yamlList, kind);
+        List<FlatLootEntry> preview = readFlatLoot(new FlatLootHolder(path, title, icon, yamlList, kind, 0));
+        int pages = Math.max(1, (preview.size() + VanillaEventLoot.PAGE_SIZE - 1) / VanillaEventLoot.PAGE_SIZE);
+        int safePage = Math.max(0, Math.min(page, pages - 1));
+        FlatLootHolder holder = new FlatLootHolder(path, title, icon, yamlList, kind, safePage);
         Inventory inv = createGui(
                 holder,
                 54,
@@ -459,8 +488,9 @@ public class BrushLootGuiManager {
         for (FlatLootEntry e : entries) {
             holder.keys.add(e.key);
         }
-        int max = Math.min(entries.size(), 36);
-        for (int i = 0; i < max; i++) {
+        int from = safePage * VanillaEventLoot.PAGE_SIZE;
+        int to = Math.min(from + VanillaEventLoot.PAGE_SIZE, entries.size());
+        for (int i = from; i < to; i++) {
             FlatLootEntry e = entries.get(i);
             ItemStack item = e.stack() != null && !e.stack().getType().isAir()
                     ? e.stack().clone()
@@ -481,9 +511,15 @@ public class BrushLootGuiManager {
                 meta.setLore(lore);
                 item.setItemMeta(meta);
             }
-            inv.setItem(9 + i, item);
+            inv.setItem(9 + (i - from), item);
         }
         inv.setItem(45, createButton(Material.ARROW, "&e« Назад", List.of("&7К списку ивентов")));
+        if (safePage > 0) {
+            inv.setItem(48, createButton(Material.ARROW, "&e« Страница " + safePage, List.of("&7Предыдущие предметы")));
+        }
+        if (safePage < pages - 1) {
+            inv.setItem(50, createButton(Material.ARROW, "&eСтраница " + (safePage + 2) + " »", List.of("&7Следующие предметы")));
+        }
         inv.setItem(49, createButton(
                 loot ? Material.GOLD_INGOT : Material.CHEST,
                 loot ? "&6К шансам" : "&aК предметам",
@@ -577,7 +613,7 @@ public class BrushLootGuiManager {
             removeFlatLoot(holder, index, entry.key);
             player.sendMessage(ColorUtil.color("&cУдалён предмет из лута «" + holder.title + "»."));
             player.playSound(player.getLocation(), Sound.BLOCK_STONE_BREAK, 0.8f, 1.0f);
-            openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList, holder.kind);
+            openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList, holder.kind, holder.page);
             return;
         }
         double chance = entry.chance;
@@ -589,7 +625,7 @@ public class BrushLootGuiManager {
         setFlatLootChance(holder, index, entry.key, chance);
         player.sendMessage(ColorUtil.color("&eШанс: " + (int) chance + "%"));
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, event.isRightClick() ? 0.9f : 1.1f);
-        openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList, holder.kind);
+        openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList, holder.kind, holder.page);
     }
 
     @SuppressWarnings("unchecked")
@@ -625,8 +661,8 @@ public class BrushLootGuiManager {
     private void addFlatLoot(Player player, FlatLootHolder holder, ItemStack clickedItem) {
         if (holder.yamlList) {
             List<Map<?, ?>> lootList = plugin.getConfig().getMapList(holder.path);
-            if (lootList.size() >= 36) {
-                player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум 36 слотов)."));
+            if (lootList.size() >= VanillaEventLoot.MAX_SLOTS) {
+                player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум " + VanillaEventLoot.MAX_SLOTS + " слотов)."));
                 return;
             }
             Map<String, Object> newEntry = new HashMap<>();
@@ -641,8 +677,8 @@ public class BrushLootGuiManager {
             plugin.getConfig().set(holder.path, lootList);
         } else {
             ConfigurationSection sec = plugin.getConfig().getConfigurationSection(holder.path);
-            if (sec != null && sec.getKeys(false).size() >= 36) {
-                player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум 36 слотов)."));
+            if (sec != null && sec.getKeys(false).size() >= VanillaEventLoot.MAX_SLOTS) {
+                player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум " + VanillaEventLoot.MAX_SLOTS + " слотов)."));
                 return;
             }
             String key = "gui_" + Integer.toHexString((int) System.nanoTime());
@@ -658,7 +694,7 @@ public class BrushLootGuiManager {
         plugin.getPluginConfig().reload();
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.3f);
         player.sendMessage(ColorUtil.color("&a# " + clickedItem.getType().name() + " добавлен в лут «" + holder.title + "»."));
-        openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList, holder.kind);
+        openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList, holder.kind, holder.page);
     }
 
     private ItemStack createTierSelectIcon(BrushTier tier, LootCategory category, GuiKind kind) {
@@ -736,18 +772,26 @@ public class BrushLootGuiManager {
 
     @SuppressWarnings("deprecation")
     public void openTierMenu(Player player, BrushTier tier, LootCategory category, GuiKind kind) {
+        openTierMenu(player, tier, category, kind, 0);
+    }
+
+    @SuppressWarnings("deprecation")
+    public void openTierMenu(Player player, BrushTier tier, LootCategory category, GuiKind kind, int page) {
         BrushLootManager mgr = plugin.getBrushLootManager();
         String titleLabel = mgr.getCategoryItemTitle(tier, category);
         boolean loot = kind == GuiKind.LOOT;
+        List<BrushLootManager.BrushLootEntry> entries = mgr.getLootEntries(tier, category);
+        int pages = Math.max(1, (entries.size() + VanillaEventLoot.PAGE_SIZE - 1) / VanillaEventLoot.PAGE_SIZE);
+        int safePage = Math.max(0, Math.min(page, pages - 1));
         Inventory inv = createGui(
-                new TierMenuHolder(tier, category, kind),
+                new TierMenuHolder(tier, category, kind, safePage),
                 54,
                 ColorUtil.color((loot ? "&8Лут: " : "&8Шансы: ") + titleLabel)
         );
 
-        List<BrushLootManager.BrushLootEntry> entries = mgr.getLootEntries(tier, category);
-        int maxSlots = Math.min(36, entries.size());
-        for (int i = 0; i < maxSlots; i++) {
+        int from = safePage * VanillaEventLoot.PAGE_SIZE;
+        int to = Math.min(from + VanillaEventLoot.PAGE_SIZE, entries.size());
+        for (int i = from; i < to; i++) {
             BrushLootManager.BrushLootEntry entry = entries.get(i);
             ItemStack display = entry.item().clone();
             ItemMeta meta = display.getItemMeta();
@@ -766,7 +810,7 @@ public class BrushLootGuiManager {
                 meta.setLore(lore);
                 display.setItemMeta(meta);
             }
-            inv.setItem(i, display);
+            inv.setItem(i - from, display);
         }
 
         ItemStack sep = createButton(Material.BLACK_STAINED_GLASS_PANE, "&8", List.of());
@@ -800,7 +844,7 @@ public class BrushLootGuiManager {
                     "&6К шансам этой редкости",
                     List.of("&7Проценты предметов и вес " + itemKind)
             ));
-            inv.setItem(50, createButton(
+            inv.setItem(52, createButton(
                     Material.RED_WOOL,
                     "&4Очистить весь лут этой редкости",
                     List.of("&cНажмите, чтобы очистить")
@@ -834,6 +878,12 @@ public class BrushLootGuiManager {
                     "&aК предметам этой редкости",
                     List.of("&7Добавить / убрать лут")
             ));
+        }
+        if (safePage > 0) {
+            inv.setItem(46, createButton(Material.ARROW, "&e« Страница " + safePage, List.of("&7Предыдущие предметы")));
+        }
+        if (safePage < pages - 1) {
+            inv.setItem(51, createButton(Material.ARROW, "&eСтраница " + (safePage + 2) + " »", List.of("&7Следующие предметы")));
         }
 
         openLater(player, inv);
@@ -995,16 +1045,26 @@ public class BrushLootGuiManager {
                 }
                 return true;
             }
+            if (slot == 48) {
+                openFlatLootMenu(player, flatHolder.path, flatHolder.title, flatHolder.icon, flatHolder.yamlList,
+                        flatHolder.kind, flatHolder.page - 1);
+                return true;
+            }
+            if (slot == 50) {
+                openFlatLootMenu(player, flatHolder.path, flatHolder.title, flatHolder.icon, flatHolder.yamlList,
+                        flatHolder.kind, flatHolder.page + 1);
+                return true;
+            }
             if (slot == 49) {
                 openFlatLootMenu(player, flatHolder.path, flatHolder.title, flatHolder.icon, flatHolder.yamlList,
-                        flatHolder.kind == GuiKind.LOOT ? GuiKind.CHANCES : GuiKind.LOOT);
+                        flatHolder.kind == GuiKind.LOOT ? GuiKind.CHANCES : GuiKind.LOOT, flatHolder.page);
                 return true;
             }
             if (slot == 53) {
                 return true;
             }
             if (slot >= 9 && slot <= 44) {
-                handleFlatLootClick(event, player, flatHolder, slot - 9);
+                handleFlatLootClick(event, player, flatHolder, flatHolder.page * VanillaEventLoot.PAGE_SIZE + (slot - 9));
             }
             return true;
         }
@@ -1048,17 +1108,18 @@ public class BrushLootGuiManager {
                     player.sendMessage(ColorUtil.color("&e┠ &cСам предмет ивента нельзя добавить в лут."));
                     return true;
                 }
-                if (mgr.getLootEntries(tier, category).size() >= 36) {
-                    player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум 36 слотов)."));
+                if (mgr.getLootEntries(tier, category).size() >= VanillaEventLoot.MAX_SLOTS) {
+                    player.sendMessage(ColorUtil.color("&e┠ &cСписок лута заполнен (максимум " + VanillaEventLoot.MAX_SLOTS + " слотов)."));
                     return true;
                 }
                 mgr.addLootItem(tier, clickedItem.clone(), 25.0, category);
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.3f);
-                openTierMenu(player, tier, category, kind);
+                openTierMenu(player, tier, category, kind, tierHolder.getPage());
                 return true;
             }
 
             int slot = event.getRawSlot();
+            int page = tierHolder.getPage();
             if (slot == 45) {
                 if (event.getClick() == ClickType.RIGHT) {
                     openMainMenu(player);
@@ -1067,46 +1128,55 @@ public class BrushLootGuiManager {
                 }
                 return true;
             }
+            if (slot == 46) {
+                openTierMenu(player, tier, category, kind, page - 1);
+                return true;
+            }
+            if (slot == 51) {
+                openTierMenu(player, tier, category, kind, page + 1);
+                return true;
+            }
             if (kind == GuiKind.LOOT) {
                 if (slot == 49) {
-                    openTierMenu(player, tier, category, GuiKind.CHANCES);
+                    openTierMenu(player, tier, category, GuiKind.CHANCES, page);
                     return true;
                 }
-                if (slot == 50) {
+                if (slot == 52) {
                     mgr.clearLoot(tier, category);
                     player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 1.2f);
                     player.sendMessage(ColorUtil.color("&cЛут этой редкости очищен."));
-                    openTierMenu(player, tier, category, kind);
+                    openTierMenu(player, tier, category, kind, 0);
                     return true;
                 }
             } else {
                 if (slot == 47) {
                     mgr.setTierWeight(tier, mgr.getTierWeight(tier, category) - 5.0, category);
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.9f);
-                    openTierMenu(player, tier, category, kind);
+                    openTierMenu(player, tier, category, kind, page);
                     return true;
                 }
                 if (slot == 49) {
                     mgr.setTierWeight(tier, mgr.getTierWeight(tier, category) + 5.0, category);
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.3f);
-                    openTierMenu(player, tier, category, kind);
+                    openTierMenu(player, tier, category, kind, page);
                     return true;
                 }
                 if (slot == 53) {
-                    openTierMenu(player, tier, category, GuiKind.LOOT);
+                    openTierMenu(player, tier, category, GuiKind.LOOT, page);
                     return true;
                 }
             }
 
             List<BrushLootManager.BrushLootEntry> entries = mgr.getLootEntries(tier, category);
-            if (slot >= 0 && slot < entries.size()) {
-                BrushLootManager.BrushLootEntry entry = entries.get(slot);
+            int index = page * VanillaEventLoot.PAGE_SIZE + slot;
+            if (slot >= 0 && slot < VanillaEventLoot.PAGE_SIZE && index < entries.size()) {
+                BrushLootManager.BrushLootEntry entry = entries.get(index);
                 ClickType click = event.getClick();
                 if (kind == GuiKind.LOOT) {
-                    mgr.removeLootItem(tier, slot + 1, category);
+                    mgr.removeLootItem(tier, index + 1, category);
                     player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 1.2f);
                     player.sendMessage(ColorUtil.color("&cПредмет убран из лута."));
-                    openTierMenu(player, tier, category, kind);
+                    openTierMenu(player, tier, category, kind, page);
                     return true;
                 }
                 double next = entry.chance();
@@ -1119,9 +1189,9 @@ public class BrushLootGuiManager {
                 } else {
                     next += 5.0;
                 }
-                mgr.updateLootEntryChance(tier, slot, next, category);
+                mgr.updateLootEntryChance(tier, index, next, category);
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.1f);
-                openTierMenu(player, tier, category, kind);
+                openTierMenu(player, tier, category, kind, page);
             }
             return true;
         }

@@ -30,9 +30,16 @@ public final class LootStacks {
     }
 
     public static ItemStack build(Material material, int amount, String name, List<String> lore, Map<String, Integer> enchants) {
-        ItemStack stack = new ItemStack(material, Math.max(1, amount));
-        apply(stack, name, lore, enchants);
-        return stack;
+        if (material == null || material.isAir()) {
+            return new ItemStack(Material.AIR);
+        }
+        try {
+            ItemStack stack = new ItemStack(material, Math.max(1, amount));
+            apply(stack, name, lore, enchants);
+            return stack;
+        } catch (Throwable ignored) {
+            return new ItemStack(Material.AIR);
+        }
     }
 
     public static void apply(ItemStack stack, String name, List<String> lore, Map<String, Integer> enchants) {
@@ -62,7 +69,10 @@ public final class LootStacks {
                 continue;
             }
             int level = Math.max(1, entry.getValue() == null ? 1 : entry.getValue());
-            stack.addUnsafeEnchantment(enchantment, level);
+            try {
+                stack.addUnsafeEnchantment(enchantment, level);
+            } catch (Throwable ignored) {
+            }
         }
     }
 
