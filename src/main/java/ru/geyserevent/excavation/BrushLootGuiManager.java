@@ -33,14 +33,24 @@ public class BrushLootGuiManager {
         CHANCES
     }
 
-    public static class HubHolder implements InventoryHolder {
+    /** Paper 1.21+/26.x: getHolder() пустой, если getInventory() == null. */
+    public static class GuiHolder implements InventoryHolder {
+        private Inventory inventory;
+
+        public void attach(Inventory inventory) {
+            this.inventory = inventory;
+        }
+
         @Override
         public Inventory getInventory() {
-            return null;
+            return inventory;
         }
     }
 
-    public static class MainMenuHolder implements InventoryHolder {
+    public static class HubHolder extends GuiHolder {
+    }
+
+    public static class MainMenuHolder extends GuiHolder {
         private final GuiKind kind;
 
         public MainMenuHolder(GuiKind kind) {
@@ -50,14 +60,9 @@ public class BrushLootGuiManager {
         public GuiKind getKind() {
             return kind;
         }
-
-        @Override
-        public Inventory getInventory() {
-            return null;
-        }
     }
 
-    public static class EventMenuHolder implements InventoryHolder {
+    public static class EventMenuHolder extends GuiHolder {
         private final LootCategory category;
         private final GuiKind kind;
 
@@ -73,14 +78,9 @@ public class BrushLootGuiManager {
         public GuiKind getKind() {
             return kind;
         }
-
-        @Override
-        public Inventory getInventory() {
-            return null;
-        }
     }
 
-    public static class TierMenuHolder implements InventoryHolder {
+    public static class TierMenuHolder extends GuiHolder {
         private final BrushTier tier;
         private final LootCategory category;
         private final GuiKind kind;
@@ -102,14 +102,9 @@ public class BrushLootGuiManager {
         public GuiKind getKind() {
             return kind;
         }
-
-        @Override
-        public Inventory getInventory() {
-            return null;
-        }
     }
 
-    public static class FlatLootHolder implements InventoryHolder {
+    public static class FlatLootHolder extends GuiHolder {
         private final String path;
         private final String title;
         private final Material icon;
@@ -128,14 +123,9 @@ public class BrushLootGuiManager {
         public GuiKind getKind() {
             return kind;
         }
-
-        @Override
-        public Inventory getInventory() {
-            return null;
-        }
     }
 
-    public static class WindMenuHolder implements InventoryHolder {
+    public static class WindMenuHolder extends GuiHolder {
         private final GuiKind kind;
 
         public WindMenuHolder(GuiKind kind) {
@@ -145,14 +135,9 @@ public class BrushLootGuiManager {
         public GuiKind getKind() {
             return kind;
         }
-
-        @Override
-        public Inventory getInventory() {
-            return null;
-        }
     }
 
-    public static class NewyearMenuHolder implements InventoryHolder {
+    public static class NewyearMenuHolder extends GuiHolder {
         private final GuiKind kind;
 
         public NewyearMenuHolder(GuiKind kind) {
@@ -162,11 +147,6 @@ public class BrushLootGuiManager {
         public GuiKind getKind() {
             return kind;
         }
-
-        @Override
-        public Inventory getInventory() {
-            return null;
-        }
     }
 
     private final GeyserEventPlugin plugin;
@@ -175,9 +155,20 @@ public class BrushLootGuiManager {
         this.plugin = plugin;
     }
 
+    private Inventory createGui(GuiHolder holder, int size, String title) {
+        Inventory inv = Bukkit.createInventory(holder, size, title);
+        holder.attach(inv);
+        return inv;
+    }
+
+    private boolean isTopClick(InventoryClickEvent event, Inventory top) {
+        int raw = event.getRawSlot();
+        return raw >= 0 && raw < top.getSize();
+    }
+
     @SuppressWarnings("deprecation")
     public void openMainMenu(Player player) {
-        Inventory inv = Bukkit.createInventory(new HubHolder(), 27, ColorUtil.color("&8Что настраиваем?"));
+        Inventory inv = createGui(new HubHolder(), 27, ColorUtil.color("&8Что настраиваем?"));
         ItemStack filler = createButton(Material.GRAY_STAINED_GLASS_PANE, "&7", List.of());
         for (int i = 0; i < 27; i++) {
             inv.setItem(i, filler);
@@ -196,7 +187,7 @@ public class BrushLootGuiManager {
                 "&a&lНастройка лута",
                 List.of(
                         "&7Добавить предмет — клик в инвентаре.",
-                        "&7Убрать — Shift+ЛКМ по предмету.",
+                        "&7Убрать — нажать на предмет в меню.",
                         "",
                         "&eНажмите, чтобы выбрать ивент"
                 )
@@ -218,7 +209,7 @@ public class BrushLootGuiManager {
     @SuppressWarnings("deprecation")
     public void openEventList(Player player, GuiKind kind) {
         boolean loot = kind == GuiKind.LOOT;
-        Inventory inv = Bukkit.createInventory(
+        Inventory inv = createGui(
                 new MainMenuHolder(kind),
                 45,
                 ColorUtil.color(loot ? "&8Настройка лута" : "&8Настройка шансов")
@@ -337,7 +328,7 @@ public class BrushLootGuiManager {
     private void openCategoryMenu(Player player, LootCategory category, GuiKind kind, Material icon, Material borderMat,
                                   String title, String invTitle, List<String> extraLore) {
         boolean loot = kind == GuiKind.LOOT;
-        Inventory inv = Bukkit.createInventory(
+        Inventory inv = createGui(
                 new EventMenuHolder(category, kind),
                 27,
                 ColorUtil.color((loot ? "&8Лут: " : "&8Шансы: ") + invTitle.replace("&8", ""))
@@ -369,7 +360,7 @@ public class BrushLootGuiManager {
     @SuppressWarnings("deprecation")
     public void openGeyserMenu(Player player, GuiKind kind) {
         boolean loot = kind == GuiKind.LOOT;
-        Inventory inv = Bukkit.createInventory(
+        Inventory inv = createGui(
                 new WindMenuHolder(kind),
                 27,
                 ColorUtil.color(loot ? "&8Лут: Гейзер" : "&8Шансы: Гейзер")
@@ -404,7 +395,7 @@ public class BrushLootGuiManager {
     @SuppressWarnings("deprecation")
     public void openNewyearMenu(Player player, GuiKind kind) {
         boolean loot = kind == GuiKind.LOOT;
-        Inventory inv = Bukkit.createInventory(
+        Inventory inv = createGui(
                 new NewyearMenuHolder(kind),
                 27,
                 ColorUtil.color(loot ? "&8Лут: Новый год" : "&8Шансы: Новый год")
@@ -440,7 +431,7 @@ public class BrushLootGuiManager {
     public void openFlatLootMenu(Player player, String path, String title, Material icon, boolean yamlList, GuiKind kind) {
         boolean loot = kind == GuiKind.LOOT;
         FlatLootHolder holder = new FlatLootHolder(path, title, icon, yamlList, kind);
-        Inventory inv = Bukkit.createInventory(
+        Inventory inv = createGui(
                 holder,
                 54,
                 ColorUtil.color((loot ? "&8Лут: " : "&8Шансы: ") + title)
@@ -453,7 +444,7 @@ public class BrushLootGuiManager {
         if (loot) {
             inv.setItem(4, createButton(icon, "&a&l" + title + " — предметы", List.of(
                     "&7Клик в инвентаре — добавить.",
-                    "&7Shift+ЛКМ по слоту — удалить.",
+                    "&7Нажмите на предмет в меню — удалить.",
                     "&7Шансы правятся в другом меню."
             )));
         } else {
@@ -478,7 +469,7 @@ public class BrushLootGuiManager {
                 if (loot) {
                     meta.setLore(List.of(
                             ColorUtil.color("&7Мин: &f" + e.min + " &7Макс: &f" + e.max),
-                            ColorUtil.color("&7Shift+ЛКМ — удалить")
+                            ColorUtil.color("&cНажмите, чтобы удалить")
                     ));
                 } else {
                     meta.setLore(List.of(
@@ -553,12 +544,10 @@ public class BrushLootGuiManager {
         }
         FlatLootEntry entry = entries.get(index);
         if (holder.kind == GuiKind.LOOT) {
-            if (event.isShiftClick() && event.isLeftClick()) {
-                removeFlatLoot(holder, index, entry.key);
-                player.sendMessage(ColorUtil.color("&cУдалён предмет из лута «" + holder.title + "»."));
-                player.playSound(player.getLocation(), Sound.BLOCK_STONE_BREAK, 0.8f, 1.0f);
-                openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList, holder.kind);
-            }
+            removeFlatLoot(holder, index, entry.key);
+            player.sendMessage(ColorUtil.color("&cУдалён предмет из лута «" + holder.title + "»."));
+            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BREAK, 0.8f, 1.0f);
+            openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList, holder.kind);
             return;
         }
         double chance = entry.chance;
@@ -714,7 +703,7 @@ public class BrushLootGuiManager {
         BrushLootManager mgr = plugin.getBrushLootManager();
         String titleLabel = mgr.getCategoryItemTitle(tier, category);
         boolean loot = kind == GuiKind.LOOT;
-        Inventory inv = Bukkit.createInventory(
+        Inventory inv = createGui(
                 new TierMenuHolder(tier, category, kind),
                 54,
                 ColorUtil.color((loot ? "&8Лут: " : "&8Шансы: ") + titleLabel)
@@ -733,7 +722,7 @@ public class BrushLootGuiManager {
                 lore.add(ColorUtil.color("&8------------------------"));
                 lore.add(ColorUtil.color("&fШанс: &#34D711" + entry.chance() + "%"));
                 if (loot) {
-                    lore.add(ColorUtil.color("&7Shift+ЛКМ или Q — удалить"));
+                    lore.add(ColorUtil.color("&cНажмите, чтобы удалить"));
                 } else {
                     lore.add(ColorUtil.color("&7ЛКМ +5% &8· &7ПКМ -5%"));
                     lore.add(ColorUtil.color("&7Shift ±1%"));
@@ -778,7 +767,7 @@ public class BrushLootGuiManager {
             inv.setItem(50, createButton(
                     Material.RED_WOOL,
                     "&4Очистить весь лут этой редкости",
-                    List.of("&7Shift+ЛКМ или Q — подтвердить")
+                    List.of("&cНажмите, чтобы очистить")
             ));
             inv.setItem(53, createButton(
                     Material.EMERALD,
@@ -823,12 +812,12 @@ public class BrushLootGuiManager {
 
         if (holder instanceof HubHolder) {
             event.setCancelled(true);
-            if (event.getClickedInventory() != top) {
+            if (!isTopClick(event, top)) {
                 return true;
             }
-            if (event.getSlot() == 11) {
+            if (event.getRawSlot() == 11) {
                 openEventList(player, GuiKind.LOOT);
-            } else if (event.getSlot() == 15) {
+            } else if (event.getRawSlot() == 15) {
                 openEventList(player, GuiKind.CHANCES);
             }
             return true;
@@ -836,11 +825,11 @@ public class BrushLootGuiManager {
 
         if (holder instanceof MainMenuHolder mainHolder) {
             event.setCancelled(true);
-            if (event.getClickedInventory() != top) {
+            if (!isTopClick(event, top)) {
                 return true;
             }
             GuiKind kind = mainHolder.getKind();
-            int slot = event.getSlot();
+            int slot = event.getRawSlot();
             switch (slot) {
                 case 0 -> openMainMenu(player);
                 case 9 -> openExcavationMenu(player, kind);
@@ -868,11 +857,11 @@ public class BrushLootGuiManager {
 
         if (holder instanceof WindMenuHolder windHolder) {
             event.setCancelled(true);
-            if (event.getClickedInventory() != top) {
+            if (!isTopClick(event, top)) {
                 return true;
             }
             GuiKind kind = windHolder.getKind();
-            int slot = event.getSlot();
+            int slot = event.getRawSlot();
             if (slot == 18) {
                 openEventList(player, kind);
                 return true;
@@ -903,11 +892,11 @@ public class BrushLootGuiManager {
 
         if (holder instanceof NewyearMenuHolder nyHolder) {
             event.setCancelled(true);
-            if (event.getClickedInventory() != top) {
+            if (!isTopClick(event, top)) {
                 return true;
             }
             GuiKind kind = nyHolder.getKind();
-            int slot = event.getSlot();
+            int slot = event.getRawSlot();
             if (slot == 18) {
                 openEventList(player, kind);
                 return true;
@@ -945,8 +934,8 @@ public class BrushLootGuiManager {
 
         if (holder instanceof FlatLootHolder flatHolder) {
             event.setCancelled(true);
-            if (event.getClickedInventory() != top) {
-                if (event.getClickedInventory() == player.getInventory() && flatHolder.kind == GuiKind.LOOT) {
+            if (!isTopClick(event, top)) {
+                if (flatHolder.kind == GuiKind.LOOT) {
                     ItemStack clickedItem = event.getCurrentItem();
                     if (clickedItem == null || clickedItem.getType().isAir()) {
                         return true;
@@ -956,11 +945,10 @@ public class BrushLootGuiManager {
                         return true;
                     }
                     addFlatLoot(player, flatHolder, clickedItem);
-                    return true;
                 }
                 return true;
             }
-            int slot = event.getSlot();
+            int slot = event.getRawSlot();
             if (slot == 45) {
                 if (flatHolder.path.startsWith("wind.loot.")) {
                     openGeyserMenu(player, flatHolder.kind);
@@ -987,12 +975,12 @@ public class BrushLootGuiManager {
 
         if (holder instanceof EventMenuHolder eventHolder) {
             event.setCancelled(true);
-            if (event.getClickedInventory() != top) {
+            if (!isTopClick(event, top)) {
                 return true;
             }
             LootCategory category = eventHolder.getCategory();
             GuiKind kind = eventHolder.getKind();
-            int slot = event.getSlot();
+            int slot = event.getRawSlot();
             switch (slot) {
                 case 11 -> openTierMenu(player, BrushTier.COMMON, category, kind);
                 case 13 -> openTierMenu(player, BrushTier.EPIC, category, kind);
@@ -1012,7 +1000,7 @@ public class BrushLootGuiManager {
             GuiKind kind = tierHolder.getKind();
             BrushLootManager mgr = plugin.getBrushLootManager();
 
-            if (event.getClickedInventory() == player.getInventory()) {
+            if (!isTopClick(event, top)) {
                 if (kind != GuiKind.LOOT) {
                     return true;
                 }
@@ -1033,11 +1021,8 @@ public class BrushLootGuiManager {
                 openTierMenu(player, tier, category, kind);
                 return true;
             }
-            if (event.getClickedInventory() != top) {
-                return true;
-            }
 
-            int slot = event.getSlot();
+            int slot = event.getRawSlot();
             if (slot == 45) {
                 if (event.getClick() == ClickType.RIGHT) {
                     openMainMenu(player);
@@ -1052,14 +1037,10 @@ public class BrushLootGuiManager {
                     return true;
                 }
                 if (slot == 50) {
-                    ClickType click = event.getClick();
-                    if (click.isShiftClick() || click == ClickType.DROP || click == ClickType.CONTROL_DROP || click == ClickType.MIDDLE) {
-                        mgr.clearLoot(tier, category);
-                        player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 1.2f);
-                        openTierMenu(player, tier, category, kind);
-                    } else {
-                        player.sendMessage(ColorUtil.color("&e┠ &cНажмите &#E0C912Shift+ЛКМ &cили &#E0C912Q&c для очистки."));
-                    }
+                    mgr.clearLoot(tier, category);
+                    player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 1.2f);
+                    player.sendMessage(ColorUtil.color("&cЛут этой редкости очищен."));
+                    openTierMenu(player, tier, category, kind);
                     return true;
                 }
             } else {
@@ -1086,12 +1067,10 @@ public class BrushLootGuiManager {
                 BrushLootManager.BrushLootEntry entry = entries.get(slot);
                 ClickType click = event.getClick();
                 if (kind == GuiKind.LOOT) {
-                    if (click == ClickType.DROP || click == ClickType.CONTROL_DROP || click == ClickType.MIDDLE
-                            || (click.isShiftClick() && click.isLeftClick())) {
-                        mgr.removeLootItem(tier, slot + 1, category);
-                        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 1.2f);
-                        openTierMenu(player, tier, category, kind);
-                    }
+                    mgr.removeLootItem(tier, slot + 1, category);
+                    player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 1.2f);
+                    player.sendMessage(ColorUtil.color("&cПредмет убран из лута."));
+                    openTierMenu(player, tier, category, kind);
                     return true;
                 }
                 double next = entry.chance();
