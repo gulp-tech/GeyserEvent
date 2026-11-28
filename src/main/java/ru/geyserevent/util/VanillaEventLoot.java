@@ -60,63 +60,83 @@ public final class VanillaEventLoot {
         };
     }
 
+    public static boolean isStarterJunk(Material material) {
+        if (material == null) {
+            return false;
+        }
+        String name = material.name();
+        return name.startsWith("LEATHER_")
+                || name.startsWith("CHAINMAIL_")
+                || name.equals("GOLDEN_HELMET")
+                || name.equals("GOLDEN_CHESTPLATE")
+                || name.equals("GOLDEN_LEGGINGS")
+                || name.equals("GOLDEN_BOOTS")
+                || name.equals("STONE_SWORD")
+                || name.equals("WOODEN_SWORD")
+                || name.equals("WOODEN_AXE")
+                || name.equals("WOODEN_PICKAXE")
+                || name.equals("GOLDEN_SWORD")
+                || name.equals("TURTLE_HELMET")
+                || name.equals("COOKIE")
+                || name.equals("SWEET_BERRIES")
+                || name.equals("GLOW_BERRIES")
+                || name.equals("PUMPKIN_PIE")
+                || name.equals("MUSHROOM_STEW")
+                || name.equals("RABBIT_STEW")
+                || name.equals("SUSPICIOUS_STEW")
+                || name.equals("COBBLESTONE")
+                || name.equals("STONE");
+    }
+
+    public static boolean isPluginSeedKey(String key) {
+        if (key == null || key.isBlank()) {
+            return false;
+        }
+        return key.startsWith("v") || key.startsWith("g_");
+    }
+
     public static List<Entry> common() {
         List<Entry> list = new ArrayList<>();
-        item(list, "GOLDEN_APPLE", 2, 36);
-        item(list, "GOLDEN_CARROT", 8, 28);
-        item(list, "HONEY_BOTTLE", 4, 26);
-        item(list, "COOKIE", 16, 30);
-        item(list, "SWEET_BERRIES", 16, 24);
-        item(list, "PUMPKIN_PIE", 4, 22);
-        item(list, "RABBIT_STEW", 2, 18);
-        item(list, "MUSHROOM_STEW", 4, 20);
-        add(list, stew("REGENERATION", 8), 16);
-        item(list, "COOKED_BEEF", 16, 30);
-        item(list, "ENDER_PEARL", 8, 34);
-        item(list, "EXPERIENCE_BOTTLE", 16, 40);
-        item(list, "IRON_INGOT", 16, 38);
-        item(list, "GOLD_INGOT", 8, 34);
-        item(list, "ARROW", 32, 28);
-        item(list, "SPECTRAL_ARROW", 16, 16);
-        gear(list, "LEATHER_HELMET", 12, "protection", 2, "unbreaking", 2);
-        gear(list, "LEATHER_CHESTPLATE", 10, "protection", 2, "unbreaking", 2);
-        gear(list, "CHAINMAIL_HELMET", 12, "protection", 3, "unbreaking", 2);
-        gear(list, "CHAINMAIL_CHESTPLATE", 12, "protection", 3, "unbreaking", 2);
-        gear(list, "GOLDEN_LEGGINGS", 10, "protection", 2, "unbreaking", 2);
-        gear(list, "GOLDEN_BOOTS", 12, "protection", 2, "unbreaking", 2, "feather_falling", 2);
-        gear(list, "IRON_HELMET", 16, "protection", 3, "unbreaking", 2);
-        gear(list, "IRON_CHESTPLATE", 14, "protection", 3, "unbreaking", 2);
-        gear(list, "IRON_LEGGINGS", 14, "protection", 3, "unbreaking", 2);
-        gear(list, "IRON_BOOTS", 16, "protection", 3, "unbreaking", 2, "feather_falling", 2);
-        gear(list, "TURTLE_HELMET", 8, "protection", 2, "unbreaking", 2);
-        gear(list, "IRON_SWORD", 16, "sharpness", 2, "unbreaking", 2);
-        gear(list, "STONE_SWORD", 12, "sharpness", 3, "unbreaking", 2);
-        gear(list, "GOLDEN_SWORD", 10, "sharpness", 2, "unbreaking", 2);
-        gear(list, "IRON_AXE", 12, "sharpness", 2, "unbreaking", 2);
-        gear(list, "BOW", 12, "power", 2, "unbreaking", 2);
-        gear(list, "SHIELD", 10, "unbreaking", 2);
-        gear(list, "IRON_PICKAXE", 14, "efficiency", 3, "unbreaking", 2);
-        gear(list, "IRON_SHOVEL", 10, "efficiency", 3, "unbreaking", 2);
-        gear(list, "FISHING_ROD", 8, "luck_of_the_sea", 2, "unbreaking", 2);
+        item(list, "GOLDEN_APPLE", 4, 38);
+        item(list, "ENDER_PEARL", 12, 34);
+        item(list, "EXPERIENCE_BOTTLE", 24, 40);
+        item(list, "DIAMOND", 4, 32);
+        item(list, "IRON_INGOT", 16, 36);
+        item(list, "GOLD_INGOT", 8, 30);
+        item(list, "ARROW", 32, 26);
+        item(list, "TOTEM_OF_UNDYING", 1, 8);
+        item(list, "COOKED_BEEF", 16, 24);
+        item(list, "GOLDEN_CARROT", 8, 20);
+        item(list, "HONEY_BOTTLE", 4, 16);
+        gear(list, "IRON_HELMET", 18, "protection", 3, "unbreaking", 3);
+        gear(list, "IRON_CHESTPLATE", 16, "protection", 3, "unbreaking", 3);
+        gear(list, "IRON_LEGGINGS", 16, "protection", 3, "unbreaking", 3);
+        gear(list, "IRON_BOOTS", 18, "protection", 3, "unbreaking", 3, "feather_falling", 3);
+        gear(list, "DIAMOND_HELMET", 14, "protection", 3, "unbreaking", 3);
+        gear(list, "DIAMOND_CHESTPLATE", 10, "protection", 3, "unbreaking", 3);
+        gear(list, "DIAMOND_LEGGINGS", 10, "protection", 3, "unbreaking", 3);
+        gear(list, "DIAMOND_BOOTS", 14, "protection", 3, "unbreaking", 3, "feather_falling", 3);
+        gear(list, "IRON_SWORD", 16, "sharpness", 3, "unbreaking", 3);
+        gear(list, "DIAMOND_SWORD", 12, "sharpness", 3, "unbreaking", 3);
+        gear(list, "IRON_AXE", 12, "sharpness", 3, "unbreaking", 3);
+        gear(list, "BOW", 14, "power", 3, "unbreaking", 3);
+        gear(list, "CROSSBOW", 8, "piercing", 2, "unbreaking", 3);
+        gear(list, "SHIELD", 12, "unbreaking", 3);
+        gear(list, "IRON_PICKAXE", 12, "efficiency", 4, "unbreaking", 3);
+        gear(list, "DIAMOND_PICKAXE", 8, "efficiency", 4, "unbreaking", 3);
         add(list, potion("SPLASH_POTION", "HEALING", 2), 22);
         add(list, potion("POTION", "SWIFTNESS", 1), 16);
+        add(list, potion("POTION", "STRENGTH", 1), 12);
         add(list, potion("POTION", "FIRE_RESISTANCE", 1), 12);
-        add(list, potion("POTION", "NIGHT_VISION", 1), 10);
-        add(list, potion("POTION", "WATER_BREATHING", 1), 10);
-        add(list, potion("TIPPED_ARROW", "HEALING", 8), 14);
+        add(list, potion("TIPPED_ARROW", "HEALING", 8), 12);
         return list;
     }
 
     public static List<Entry> rare() {
         List<Entry> list = new ArrayList<>();
         item(list, "GOLDEN_APPLE", 4, 36);
-        item(list, "GOLDEN_CARROT", 16, 24);
-        item(list, "HONEY_BOTTLE", 8, 22);
-        item(list, "COOKIE", 24, 20);
-        item(list, "GLOW_BERRIES", 16, 18);
-        item(list, "RABBIT_STEW", 4, 16);
-        add(list, stew("STRENGTH", 12), 14);
-        item(list, "CHORUS_FRUIT", 8, 14);
+        item(list, "GOLDEN_CARROT", 16, 22);
+        item(list, "HONEY_BOTTLE", 4, 14);
         item(list, "ENDER_PEARL", 12, 30);
         item(list, "DIAMOND", 6, 32);
         item(list, "EXPERIENCE_BOTTLE", 24, 34);
@@ -127,12 +147,10 @@ public final class VanillaEventLoot {
         gear(list, "IRON_CHESTPLATE", 12, "protection", 4, "unbreaking", 3);
         gear(list, "IRON_LEGGINGS", 12, "protection", 4, "unbreaking", 3);
         gear(list, "IRON_BOOTS", 14, "protection", 4, "unbreaking", 3, "feather_falling", 4);
-        gear(list, "CHAINMAIL_LEGGINGS", 10, "protection", 3, "unbreaking", 3);
-        gear(list, "GOLDEN_CHESTPLATE", 10, "protection", 3, "unbreaking", 3);
-        gear(list, "DIAMOND_HELMET", 16, "protection", 3, "unbreaking", 3);
-        gear(list, "DIAMOND_LEGGINGS", 14, "protection", 3, "unbreaking", 3);
-        gear(list, "DIAMOND_BOOTS", 16, "protection", 3, "unbreaking", 3, "feather_falling", 4);
-        gear(list, "TURTLE_HELMET", 8, "protection", 3, "unbreaking", 3, "respiration", 3);
+        gear(list, "DIAMOND_HELMET", 16, "protection", 4, "unbreaking", 3);
+        gear(list, "DIAMOND_CHESTPLATE", 12, "protection", 3, "unbreaking", 3);
+        gear(list, "DIAMOND_LEGGINGS", 14, "protection", 4, "unbreaking", 3);
+        gear(list, "DIAMOND_BOOTS", 16, "protection", 4, "unbreaking", 3, "feather_falling", 4);
         gear(list, "DIAMOND_SWORD", 16, "sharpness", 4, "unbreaking", 3);
         gear(list, "IRON_SWORD", 12, "sharpness", 4, "unbreaking", 3, "knockback", 1);
         gear(list, "DIAMOND_AXE", 12, "sharpness", 3, "unbreaking", 3);
@@ -157,9 +175,7 @@ public final class VanillaEventLoot {
         item(list, "GOLDEN_APPLE", 6, 34);
         item(list, "ENCHANTED_GOLDEN_APPLE", 1, 6);
         item(list, "TOTEM_OF_UNDYING", 1, 20);
-        item(list, "HONEY_BOTTLE", 8, 16);
-        add(list, stew("REGENERATION", 16), 12);
-        item(list, "RABBIT_STEW", 4, 12);
+        item(list, "HONEY_BOTTLE", 4, 12);
         item(list, "GOLDEN_CARROT", 16, 18);
         item(list, "ENDER_PEARL", 16, 26);
         item(list, "DIAMOND", 8, 30);
@@ -175,7 +191,6 @@ public final class VanillaEventLoot {
         gear(list, "DIAMOND_BOOTS", 16, "protection", 4, "unbreaking", 3, "feather_falling", 4);
         gear(list, "IRON_CHESTPLATE", 10, "protection", 4, "unbreaking", 3);
         gear(list, "NETHERITE_BOOTS", 8, "protection", 3, "unbreaking", 3, "feather_falling", 4);
-        gear(list, "TURTLE_HELMET", 8, "protection", 4, "unbreaking", 3, "respiration", 3, "aqua_affinity", 1);
         gear(list, "DIAMOND_SWORD", 16, "sharpness", 4, "unbreaking", 3, "fire_aspect", 2);
         gear(list, "DIAMOND_AXE", 12, "sharpness", 4, "unbreaking", 3);
         gear(list, "NETHERITE_SWORD", 6, "sharpness", 4, "unbreaking", 3);
@@ -208,8 +223,7 @@ public final class VanillaEventLoot {
         item(list, "ELYTRA", 1, 8);
         item(list, "END_CRYSTAL", 4, 14);
         item(list, "GOLDEN_APPLE", 8, 26);
-        item(list, "HONEY_BOTTLE", 8, 14);
-        add(list, stew("REGENERATION", 20), 10);
+        item(list, "HONEY_BOTTLE", 4, 10);
         item(list, "GOLDEN_CARROT", 32, 16);
         item(list, "HEAVY_CORE", 1, 4);
         item(list, "TRIAL_KEY", 1, 6);

@@ -201,6 +201,8 @@ public class BrushLootManager {
     }
 
     private boolean fillOrMergeBrush(List<BrushLootEntry> current, List<BrushLootEntry> defaults) {
+        boolean stripped = current.removeIf(entry ->
+                entry.item() != null && VanillaEventLoot.isStarterJunk(entry.item().getType()));
         if (current.isEmpty()) {
             current.addAll(defaults);
             return true;
@@ -212,7 +214,7 @@ public class BrushLootManager {
                 have.add(sign);
             }
         }
-        boolean changed = false;
+        boolean changed = stripped;
         for (BrushLootEntry extra : defaults) {
             if (current.size() >= VanillaEventLoot.MAX_SLOTS) {
                 break;

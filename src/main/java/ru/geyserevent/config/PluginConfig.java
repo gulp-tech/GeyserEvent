@@ -1031,11 +1031,25 @@ public class PluginConfig {
     }
 
     private boolean fillOrMergeVanilla(FileConfiguration cfg, String path, List<AlienLootItem> current, List<VanillaEventLoot.Entry> vanilla) {
+        boolean stripped = false;
+        List<AlienLootItem> kept = new ArrayList<>();
+        for (AlienLootItem item : current) {
+            boolean seed = VanillaEventLoot.isPluginSeedKey(item.key());
+            boolean junk = VanillaEventLoot.isStarterJunk(item.material());
+            if (seed || junk) {
+                cfg.set(path + "." + item.key(), null);
+                stripped = true;
+                continue;
+            }
+            kept.add(item);
+        }
+        current.clear();
+        current.addAll(kept);
         if (current.isEmpty()) {
             current.addAll(seedVanillaSection(cfg, path, vanilla));
             return true;
         }
-        return mergeVanillaSection(cfg, path, current, vanilla);
+        return mergeVanillaSection(cfg, path, current, vanilla) || stripped;
     }
 
     private List<AlienLootItem> seedVanillaSection(FileConfiguration cfg, String path, List<VanillaEventLoot.Entry> entries) {
