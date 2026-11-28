@@ -448,26 +448,26 @@ excavation:
           amount: 1
           chance: 12.0
           enchants:
-            protection: 3
+            protection: 4
             unbreaking: 3
         - material: "DIAMOND_HELMET"
           amount: 1
           chance: 12.0
           enchants:
-            protection: 3
+            protection: 4
             unbreaking: 3
             respiration: 2
         - material: "DIAMOND_LEGGINGS"
           amount: 1
           chance: 12.0
           enchants:
-            protection: 3
+            protection: 4
             unbreaking: 3
         - material: "DIAMOND_BOOTS"
           amount: 1
           chance: 12.0
           enchants:
-            protection: 3
+            protection: 4
             feather_falling: 4
             unbreaking: 3
             depth_strider: 2

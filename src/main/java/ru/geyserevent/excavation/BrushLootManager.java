@@ -125,7 +125,8 @@ public class BrushLootManager {
             brushUses.put(tier, Math.max(1, cfg.getInt(brushBasePath + ".uses", tier.getDefaultUses())));
 
             List<BrushLootEntry> brushEntries = loadLootListFromConfig(cfg, brushBasePath + ".loot");
-            if (fillOrMergeBrush(brushEntries, getDefaultExcavationLoot(tier))) {
+            if (brushEntries.isEmpty()) {
+                brushEntries.addAll(getDefaultExcavationLoot(tier));
                 saveTierLootToConfig(tier, brushEntries, LootCategory.EXCAVATION);
             }
             lootByTier.put(tier, brushEntries);
@@ -201,23 +202,60 @@ public class BrushLootManager {
     }
 
     private List<BrushLootEntry> getDefaultExcavationLoot(BrushTier tier) {
-        List<BrushLootEntry> list = getDefaultLootForTier(tier);
+        List<BrushLootEntry> list = new ArrayList<>();
         switch (tier) {
             case COMMON -> {
-                addStack(list, "NAUTILUS_SHELL", 1, 16.0);
-                addStack(list, "PRISMARINE_CRYSTALS", 8, 22.0);
+                addStack(list, "GOLD_NUGGET", 16, 75.0);
+                addStack(list, "IRON_NUGGET", 20, 75.0);
+                addStack(list, "PRISMARINE_SHARD", 10, 60.0);
+                addStack(list, "PRISMARINE_CRYSTALS", 8, 50.0);
+                addStack(list, "GOLD_INGOT", 6, 55.0);
+                addStack(list, "IRON_INGOT", 8, 55.0);
+                addStack(list, "COPPER_INGOT", 10, 50.0);
+                addStack(list, "EMERALD", 4, 40.0);
+                addStack(list, "NAUTILUS_SHELL", 1, 20.0);
+                addStack(list, "INK_SAC", 12, 45.0);
+                addStack(list, "KELP", 16, 40.0);
+                addStack(list, "TROPICAL_FISH", 8, 35.0);
+                addStack(list, "EXPERIENCE_BOTTLE", 10, 45.0);
+                addStack(list, "GOLDEN_APPLE", 1, 18.0);
             }
             case EPIC -> {
-                addStack(list, "HEART_OF_THE_SEA", 1, 18.0);
-                addStack(list, "SCUTE", 3, 16.0);
-                addStack(list, "TURTLE_SCUTE", 3, 16.0);
-                addStack(list, "TRIDENT", 1, 8.0);
-                addStack(list, "GOLD_BLOCK", 2, 20.0);
-                addStack(list, "EMERALD_BLOCK", 1, 16.0);
+                addStack(list, "DIAMOND", 5, 55.0);
+                addStack(list, "HEART_OF_THE_SEA", 1, 25.0);
+                addStack(list, "TURTLE_SCUTE", 3, 32.0);
+                addStack(list, "SCUTE", 3, 32.0);
+                addStack(list, "GOLDEN_APPLE", 3, 40.0);
+                addStack(list, "GOLD_BLOCK", 2, 30.0);
+                addStack(list, "EMERALD_BLOCK", 1, 22.0);
+                addStack(list, "TRIDENT", 1, 10.0);
+                addGear(list, "DIAMOND_SWORD", 14.0, "sharpness", 4, "unbreaking", 3, "looting", 2);
+                addGear(list, "DIAMOND_HELMET", 12.0, "protection", 4, "unbreaking", 3, "respiration", 2);
+                addGear(list, "DIAMOND_CHESTPLATE", 12.0, "protection", 4, "unbreaking", 3);
+                addGear(list, "DIAMOND_LEGGINGS", 12.0, "protection", 4, "unbreaking", 3);
+                addGear(list, "DIAMOND_BOOTS", 12.0, "protection", 4, "unbreaking", 3, "feather_falling", 4, "depth_strider", 2);
+                addGear(list, "BOW", 16.0, "power", 4, "unbreaking", 3, "punch", 1);
+                addStack(list, "EXPERIENCE_BOTTLE", 20, 40.0);
+                addStack(list, "TOTEM_OF_UNDYING", 1, 12.0);
             }
             case LEGENDARY -> {
-                addStack(list, "CONDUIT", 1, 10.0);
-                addStack(list, "HEART_OF_THE_SEA", 1, 14.0);
+                addStack(list, "NETHERITE_INGOT", 1, 22.0);
+                addStack(list, "CONDUIT", 1, 18.0);
+                addStack(list, "ENCHANTED_GOLDEN_APPLE", 1, 14.0);
+                addStack(list, "TOTEM_OF_UNDYING", 1, 28.0);
+                addGear(list, "TRIDENT", 16.0, "loyalty", 3, "impaling", 5, "unbreaking", 3, "mending", 1);
+                addStack(list, "HEART_OF_THE_SEA", 1, 30.0);
+                addStack(list, "NETHERITE_UPGRADE_SMITHING_TEMPLATE", 1, 20.0);
+                addGear(list, "NETHERITE_HELMET", 10.0, "protection", 4, "unbreaking", 3, "mending", 1);
+                addGear(list, "NETHERITE_CHESTPLATE", 10.0, "protection", 4, "unbreaking", 3, "mending", 1);
+                addGear(list, "NETHERITE_LEGGINGS", 10.0, "protection", 4, "unbreaking", 3, "mending", 1);
+                addGear(list, "NETHERITE_BOOTS", 10.0, "protection", 4, "unbreaking", 3, "mending", 1, "feather_falling", 4);
+                addGear(list, "NETHERITE_SWORD", 10.0, "sharpness", 5, "unbreaking", 3, "mending", 1, "looting", 3, "fire_aspect", 2);
+                addGear(list, "DIAMOND_HELMET", 16.0, "protection", 4, "unbreaking", 3, "mending", 1);
+                addGear(list, "DIAMOND_CHESTPLATE", 16.0, "protection", 4, "unbreaking", 3, "mending", 1);
+                addGear(list, "DIAMOND_LEGGINGS", 16.0, "protection", 4, "unbreaking", 3, "mending", 1);
+                addGear(list, "DIAMOND_BOOTS", 16.0, "protection", 4, "unbreaking", 3, "mending", 1, "feather_falling", 4);
+                addGear(list, "DIAMOND_SWORD", 16.0, "sharpness", 5, "unbreaking", 3, "mending", 1, "looting", 3, "fire_aspect", 2);
             }
         }
         return list;
@@ -235,6 +273,21 @@ public class BrushLootManager {
             }
         }
         list.add(new BrushLootEntry(new ItemStack(mat, Math.max(1, amount)), chance));
+    }
+
+    private void addGear(List<BrushLootEntry> list, String material, double chance, Object... enchPairs) {
+        Material mat = Material.matchMaterial(material);
+        if (mat == null || mat.isAir()) {
+            return;
+        }
+        java.util.Map<String, Integer> enchants = new LinkedHashMap<>();
+        for (int i = 0; i + 1 < enchPairs.length; i += 2) {
+            if (enchPairs[i] instanceof String key && enchPairs[i + 1] instanceof Integer level) {
+                enchants.put(key, level);
+            }
+        }
+        ItemStack stack = ru.geyserevent.util.LootStacks.build(mat, 1, null, List.of(), enchants);
+        list.add(new BrushLootEntry(stack, chance));
     }
 
     private boolean fillOrMergeBrush(List<BrushLootEntry> current, List<BrushLootEntry> defaults) {
