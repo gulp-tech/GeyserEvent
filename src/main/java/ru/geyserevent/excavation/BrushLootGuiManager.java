@@ -6,6 +6,7 @@ import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
@@ -217,7 +218,7 @@ public class BrushLootGuiManager {
                 Material.GOLD_INGOT,
                 "&6&lНастройка шансов",
                 List.of(
-                        "&7ЛКМ +5% &8· &7ПКМ -5%",
+                        "&7ЛКМ +5%  &8·  &7Shift / Q / ПКМ -5%",
                         "&7Shift ±1%. Редкость кисточки/удочки тут.",
                         "",
                         "&eНажмите, чтобы выбрать ивент"
@@ -478,7 +479,7 @@ public class BrushLootGuiManager {
             )));
         } else {
             inv.setItem(4, createButton(icon, "&6&l" + title + " — шансы", List.of(
-                    "&7ЛКМ: +5%   ПКМ: -5%",
+                    "&7ЛКМ +5%   Shift / Q / ПКМ -5%",
                     "&7Предметы не добавляются здесь."
             )));
         }
@@ -506,7 +507,8 @@ public class BrushLootGuiManager {
                 if (loot) {
                     lore.add(ColorUtil.color("&cНажмите, чтобы удалить"));
                 } else {
-                    lore.add(ColorUtil.color("&7ЛКМ +5% &8· &7ПКМ -5%"));
+                    lore.add(ColorUtil.color("&7ЛКМ +5%"));
+                    lore.add(ColorUtil.color("&7Shift / Q / ПКМ -5%"));
                 }
                 meta.setLore(lore);
                 item.setItemMeta(meta);
@@ -617,14 +619,15 @@ public class BrushLootGuiManager {
             return;
         }
         double chance = entry.chance;
-        if (event.isRightClick()) {
+        boolean down = isChanceDown(event);
+        if (down) {
             chance = Math.max(0, chance - 5.0);
         } else {
             chance = Math.min(100, chance + 5.0);
         }
         setFlatLootChance(holder, index, entry.key, chance);
         player.sendMessage(ColorUtil.color("&eШанс: " + (int) chance + "%"));
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, event.isRightClick() ? 0.9f : 1.1f);
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, down ? 0.9f : 1.1f);
         openFlatLootMenu(player, holder.path, holder.title, holder.icon, holder.yamlList, holder.kind, holder.page);
     }
 
@@ -804,8 +807,8 @@ public class BrushLootGuiManager {
                 if (loot) {
                     lore.add(ColorUtil.color("&cНажмите, чтобы удалить"));
                 } else {
-                    lore.add(ColorUtil.color("&7ЛКМ +5% &8· &7ПКМ -5%"));
-                    lore.add(ColorUtil.color("&7Shift ±1%"));
+                    lore.add(ColorUtil.color("&7ЛКМ +5%"));
+                    lore.add(ColorUtil.color("&7Shift / Q / ПКМ -5%"));
                 }
                 meta.setLore(lore);
                 display.setItemMeta(meta);
@@ -1180,11 +1183,7 @@ public class BrushLootGuiManager {
                     return true;
                 }
                 double next = entry.chance();
-                if (click == ClickType.SHIFT_LEFT) {
-                    next += 1.0;
-                } else if (click == ClickType.SHIFT_RIGHT) {
-                    next -= 1.0;
-                } else if (click == ClickType.RIGHT) {
+                if (isChanceDown(event)) {
                     next -= 5.0;
                 } else {
                     next += 5.0;
@@ -1226,6 +1225,30 @@ public class BrushLootGuiManager {
                 player.openInventory(inv);
             }
         });
+    }
+
+    /**
+     * Bedrock/Geyser часто шлёт ЛКМ вместо ПКМ. Минус: Shift, Q, F, хотбар, ПКМ.
+     */
+    private static boolean isChanceDown(InventoryClickEvent event) {
+        ClickType click = event.getClick();
+        if (click == ClickType.RIGHT
+                || click == ClickType.SHIFT_RIGHT
+                || click == ClickType.SHIFT_LEFT
+                || click == ClickType.DROP
+                || click == ClickType.CONTROL_DROP
+                || click == ClickType.SWAP_OFFHAND
+                || click == ClickType.NUMBER_KEY) {
+            return true;
+        }
+        InventoryAction action = event.getAction();
+        return action == InventoryAction.PICKUP_HALF
+                || action == InventoryAction.PICKUP_SOME
+                || action == InventoryAction.MOVE_TO_OTHER_INVENTORY
+                || action == InventoryAction.DROP_ONE_SLOT
+                || action == InventoryAction.DROP_ALL_SLOT
+                || action == InventoryAction.HOTBAR_SWAP
+                || action == InventoryAction.HOTBAR_MOVE_AND_READD;
     }
 
     @SuppressWarnings("deprecation")
