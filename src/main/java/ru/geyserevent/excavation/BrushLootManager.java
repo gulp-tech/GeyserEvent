@@ -125,7 +125,7 @@ public class BrushLootManager {
             brushUses.put(tier, Math.max(1, cfg.getInt(brushBasePath + ".uses", tier.getDefaultUses())));
 
             List<BrushLootEntry> brushEntries = loadLootListFromConfig(cfg, brushBasePath + ".loot");
-            if (fillOrMergeBrush(brushEntries, getDefaultLootForTier(tier))) {
+            if (fillOrMergeBrush(brushEntries, getDefaultExcavationLoot(tier))) {
                 saveTierLootToConfig(tier, brushEntries, LootCategory.EXCAVATION);
             }
             lootByTier.put(tier, brushEntries);
@@ -198,6 +198,43 @@ public class BrushLootManager {
             list.add(new BrushLootEntry(entry.item().clone(), entry.chance()));
         }
         return list;
+    }
+
+    private List<BrushLootEntry> getDefaultExcavationLoot(BrushTier tier) {
+        List<BrushLootEntry> list = getDefaultLootForTier(tier);
+        switch (tier) {
+            case COMMON -> {
+                addStack(list, "NAUTILUS_SHELL", 1, 16.0);
+                addStack(list, "PRISMARINE_CRYSTALS", 8, 22.0);
+            }
+            case EPIC -> {
+                addStack(list, "HEART_OF_THE_SEA", 1, 18.0);
+                addStack(list, "SCUTE", 3, 16.0);
+                addStack(list, "TURTLE_SCUTE", 3, 16.0);
+                addStack(list, "TRIDENT", 1, 8.0);
+                addStack(list, "GOLD_BLOCK", 2, 20.0);
+                addStack(list, "EMERALD_BLOCK", 1, 16.0);
+            }
+            case LEGENDARY -> {
+                addStack(list, "CONDUIT", 1, 10.0);
+                addStack(list, "HEART_OF_THE_SEA", 1, 14.0);
+            }
+        }
+        return list;
+    }
+
+    private void addStack(List<BrushLootEntry> list, String material, int amount, double chance) {
+        Material mat = Material.matchMaterial(material);
+        if (mat == null || mat.isAir()) {
+            return;
+        }
+        String sign = VanillaEventLoot.signature(new ItemStack(mat, Math.max(1, amount)));
+        for (BrushLootEntry existing : list) {
+            if (sign.equals(VanillaEventLoot.signature(existing.item()))) {
+                return;
+            }
+        }
+        list.add(new BrushLootEntry(new ItemStack(mat, Math.max(1, amount)), chance));
     }
 
     private boolean fillOrMergeBrush(List<BrushLootEntry> current, List<BrushLootEntry> defaults) {
